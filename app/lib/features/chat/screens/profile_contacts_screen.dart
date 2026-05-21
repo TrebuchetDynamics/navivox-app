@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../../router/app_routes.dart';
 
 class ProfileContactsScreen extends ConsumerStatefulWidget {
   const ProfileContactsScreen({super.key});
@@ -187,6 +188,7 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     BuildContext context,
     NavivoxProfileContact contact,
   ) {
+    final channel = ref.read(navivoxChannelProvider);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -199,6 +201,56 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
               title: const Text('Profile details'),
               subtitle: Text('${contact.displayName}\n${contact.profileId}'),
             ),
+            const Divider(height: 1),
+            const ListTile(
+              leading: Icon(Icons.monitor_heart_outlined),
+              title: Text('Profile diagnostics'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 72, right: 16, bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Health: ${_profileHealthLabel(contact.health)}'),
+                  Text('Workspace: ${_profileWorkspaceLabel(contact)}'),
+                  Text('Voice: ${_profileVoiceLabel(contact)}'),
+                  Text('Latest: ${_profileLatestLabel(contact)}'),
+                  Text('Server: ${contact.serverLabel}'),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline),
+              title: const Text('Open chat'),
+              subtitle: const Text('Use this profile for the next turn.'),
+              onTap: () {
+                final router = GoRouter.of(context);
+                Navigator.of(context).pop();
+                channel.selectProfileContact(
+                  serverId: contact.serverId,
+                  profileId: contact.profileId,
+                );
+                router.go(
+                  '/chats/${Uri.encodeComponent(contact.serverId)}/'
+                  '${Uri.encodeComponent(contact.profileId)}',
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.psychology_alt_outlined),
+              title: const Text('Open memory'),
+              subtitle: const Text('Inspect memory scoped to this profile.'),
+              onTap: () {
+                final router = GoRouter.of(context);
+                Navigator.of(context).pop();
+                channel.selectProfileContact(
+                  serverId: contact.serverId,
+                  profileId: contact.profileId,
+                );
+                router.go(AppRoutes.memory);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Edit profile'),
@@ -209,6 +261,30 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
         ),
       ),
     );
+  }
+
+  String _profileHealthLabel(NavivoxProfileHealth health) => switch (health) {
+    NavivoxProfileHealth.online => 'online',
+    NavivoxProfileHealth.offline => 'offline',
+    NavivoxProfileHealth.needsAuth => 'auth required',
+    NavivoxProfileHealth.warning => 'warning',
+  };
+
+  String _profileWorkspaceLabel(NavivoxProfileContact contact) {
+    if (!contact.workspaceRootsOk) return 'workspace issue';
+    if (contact.workspaceRootCount == 1) return '1 root';
+    return '${contact.workspaceRootCount} roots';
+  }
+
+  String _profileVoiceLabel(NavivoxProfileContact contact) {
+    if (!contact.micAvailable) return 'mic unavailable';
+    return 'mic available';
+  }
+
+  String _profileLatestLabel(NavivoxProfileContact contact) {
+    if (contact.activeTurnState == 'streaming') return 'typing…';
+    final preview = contact.latestPreview.trim();
+    return preview.isEmpty ? 'no recent activity' : preview;
   }
 }
 

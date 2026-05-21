@@ -243,9 +243,12 @@ void main() {
     ));
   });
 
-  testWidgets('long pressing a profile opens edit/details placeholder', (
+  testWidgets('long pressing a profile opens diagnostics and scoped actions', (
     tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final channel = TestNavivoxChannel()
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
@@ -265,7 +268,29 @@ void main() {
 
     expect(find.text('Profile details'), findsOneWidget);
     expect(find.text('Mineru Builder\nmineru'), findsOneWidget);
+    expect(find.text('Profile diagnostics'), findsOneWidget);
+    expect(find.text('Health: online'), findsOneWidget);
+    expect(find.text('Workspace: 2 roots'), findsOneWidget);
+    expect(find.text('Voice: mic available'), findsOneWidget);
+    expect(find.text('Latest: Ready to work on mineru'), findsOneWidget);
+    expect(find.text('Open chat'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Open memory'),
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Open memory'), findsOneWidget);
     expect(find.text('Edit profile'), findsOneWidget);
+
+    await tester.tap(find.text('Open memory'));
+    await tester.pumpAndSettle();
+
+    expect(channel.selectedProfileScope, (
+      serverId: 'local',
+      profileId: 'mineru',
+    ));
+    expect(find.text('Memory'), findsWidgets);
+    expect(find.text('Profile: Mineru Builder'), findsOneWidget);
   });
 
   testWidgets('deep-linked chat route selects the profile scope', (
