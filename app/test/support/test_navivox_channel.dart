@@ -31,6 +31,7 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   int agentListRequests = 0;
   NavivoxMemoryOverview? _memoryOverview;
   NavivoxMemorySearchResult? _memorySearch;
+  NavivoxMemoryDetail? _memoryDetail;
   final List<
     ({
       String? serverId,
@@ -42,6 +43,10 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     })
   >
   memorySearchCalls = [];
+  final List<
+    ({String? serverId, String? profileId, String id, NavivoxMemoryType type})
+  >
+  memoryDetailCalls = [];
 
   @override
   NavivoxChannelState get state => _state;
@@ -106,6 +111,10 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void seedMemorySearch(NavivoxMemorySearchResult result) {
     _memorySearch = result;
+  }
+
+  void seedMemoryDetail(NavivoxMemoryDetail detail) {
+    _memoryDetail = detail;
   }
 
   @override
@@ -267,6 +276,27 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     return _memorySearch ??
         const NavivoxMemorySearchResult.degraded(
           reason: 'Gormes memory search API is unavailable.',
+        );
+  }
+
+  @override
+  Future<NavivoxMemoryDetail> memoryDetail({
+    String? serverId,
+    String? profileId,
+    required String id,
+    required NavivoxMemoryType type,
+  }) async {
+    final active = _state.activeProfileContact;
+    memoryDetailCalls.add((
+      serverId: serverId ?? active?.serverId,
+      profileId: profileId ?? active?.profileId,
+      id: id,
+      type: type,
+    ));
+    return _memoryDetail ??
+        NavivoxMemoryDetail.degraded(
+          id: id,
+          reason: 'Gormes memory detail API is unavailable.',
         );
   }
 

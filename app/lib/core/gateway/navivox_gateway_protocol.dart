@@ -95,6 +95,25 @@ class NavivoxGatewayConfig {
     ).replace(queryParameters: params.isEmpty ? null : params);
   }
 
+  Uri memoryDetailUri({
+    String? serverId,
+    String? profileId,
+    required String id,
+    required NavivoxMemoryType type,
+  }) {
+    final params = <String, String>{
+      if (serverId != null && serverId.trim().isNotEmpty)
+        'server_id': serverId.trim(),
+      if (profileId != null && profileId.trim().isNotEmpty)
+        'profile_id': profileId.trim(),
+      'id': id.trim(),
+      if (type != NavivoxMemoryType.all) 'type': type.wireValue,
+    };
+    return _withPath(
+      '/v1/navivox/memory/detail',
+    ).replace(queryParameters: params);
+  }
+
   Uri get sessionsUri => _withPath('/v1/navivox/sessions');
   Uri sessionUri(String sessionId) =>
       _withPath('/v1/navivox/sessions/$sessionId');

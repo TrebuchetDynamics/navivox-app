@@ -106,6 +106,82 @@ class NavivoxMemoryItem {
   final double? score;
 }
 
+class NavivoxMemoryDetail {
+  const NavivoxMemoryDetail({
+    required this.id,
+    required this.type,
+    required this.content,
+    this.source = '',
+    this.sessionId = '',
+    this.peerId = '',
+    this.createdAt = '',
+    this.updatedAt = '',
+    this.status = '',
+    this.tags = const [],
+    this.provenance = '',
+    this.linkedEntities = const [],
+    this.linkedRelationships = const [],
+    this.degradedReason = '',
+  });
+
+  const NavivoxMemoryDetail.degraded({required this.id, required String reason})
+    : type = NavivoxMemoryType.all,
+      content = '',
+      source = '',
+      sessionId = '',
+      peerId = '',
+      createdAt = '',
+      updatedAt = '',
+      status = '',
+      tags = const [],
+      provenance = '',
+      linkedEntities = const [],
+      linkedRelationships = const [],
+      degradedReason = reason;
+
+  factory NavivoxMemoryDetail.fromJson(Map<String, Object?> json) {
+    return NavivoxMemoryDetail(
+      id: _string(json['id'], fallback: ''),
+      type: NavivoxMemoryType.fromWire(json['type']),
+      content: _string(json['content'] ?? json['snippet'], fallback: ''),
+      source: _string(json['source'] ?? json['source_table'], fallback: ''),
+      sessionId: _string(
+        json['session_id'] ?? json['session_key'],
+        fallback: '',
+      ),
+      peerId: _string(json['peer_id'], fallback: ''),
+      createdAt: _string(json['created_at'] ?? json['timestamp'], fallback: ''),
+      updatedAt: _string(json['updated_at'], fallback: ''),
+      status: _string(json['status'], fallback: ''),
+      tags: _stringList(json['tags']),
+      provenance: _string(json['provenance'], fallback: ''),
+      linkedEntities: _stringList(json['linked_entities']),
+      linkedRelationships: _stringList(json['linked_relationships']),
+      degradedReason: _string(
+        json['degraded_reason'] ?? json['reason'],
+        fallback: '',
+      ),
+    );
+  }
+
+  final String id;
+  final NavivoxMemoryType type;
+  final String content;
+  final String source;
+  final String sessionId;
+  final String peerId;
+  final String createdAt;
+  final String updatedAt;
+  final String status;
+  final List<String> tags;
+  final String provenance;
+  final List<String> linkedEntities;
+  final List<String> linkedRelationships;
+  final String degradedReason;
+
+  bool get isDegraded => degradedReason.trim().isNotEmpty;
+}
+
 class NavivoxMemoryOverview {
   const NavivoxMemoryOverview({
     required this.profileId,

@@ -67,6 +67,24 @@ class NavivoxGatewayClient {
     );
   }
 
+  Future<NavivoxMemoryDetail> memoryDetail({
+    String? serverId,
+    String? profileId,
+    required String id,
+    required NavivoxMemoryType type,
+  }) async {
+    return NavivoxMemoryDetail.fromJson(
+      await _getJson(
+        config.memoryDetailUri(
+          serverId: serverId,
+          profileId: profileId,
+          id: id,
+          type: type,
+        ),
+      ),
+    );
+  }
+
   Future<List<Map<String, Object?>>> profileContacts() async {
     final body = await _getJson(config.profileContactsUri);
     final contacts = body['contacts'];

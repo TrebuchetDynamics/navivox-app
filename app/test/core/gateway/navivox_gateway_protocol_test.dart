@@ -48,6 +48,17 @@ void main() {
       'https://gromit.tailnet.test:8765/v1/navivox/memory/search?server_id=local&profile_id=mineru&q=agent+memory&type=memory_items&limit=10',
     );
     expect(
+      config
+          .memoryDetailUri(
+            serverId: 'local',
+            profileId: 'mineru',
+            id: 'mem-1',
+            type: NavivoxMemoryType.memoryItems,
+          )
+          .toString(),
+      'https://gromit.tailnet.test:8765/v1/navivox/memory/detail?server_id=local&profile_id=mineru&id=mem-1&type=memory_items',
+    );
+    expect(
       config.streamUri.toString(),
       'wss://gromit.tailnet.test:8765/v1/navivox/stream',
     );
@@ -245,6 +256,52 @@ void main() {
     expect(
       seen.keys.single.toString(),
       'http://127.0.0.1:8765/v1/navivox/memory/search?server_id=local&profile_id=mineru&q=Goncho+memory&type=memory_items&limit=10',
+    );
+    expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
+  });
+
+  test('client decodes authenticated memory detail safely', () async {
+    final seen = <Uri, Map<String, String>>{};
+    final client = NavivoxGatewayClient(
+      config: NavivoxGatewayConfig.fromBaseUrl(
+        'http://127.0.0.1:8765',
+        token: 'nvbx_test_token',
+      ),
+      get: (uri, headers) async {
+        seen[uri] = headers;
+        return jsonEncode({
+          'id': 'mem-1',
+          'type': 'memory_items',
+          'content': 'Mineru uses Goncho memory for workspace recall.',
+          'source': 'goncho_memory_items',
+          'session_id': 's-1',
+          'peer_id': 'mineru',
+          'created_at': '2026-05-21T15:30:00Z',
+          'status': 'current',
+          'tags': ['workspace'],
+          'provenance': 'derived from reviewed session s-1',
+          'linked_entities': ['Mineru', 'Goncho'],
+          'linked_relationships': ['Mineru RELATED_TO Goncho'],
+        });
+      },
+    );
+
+    final detail = await client.memoryDetail(
+      serverId: 'local',
+      profileId: 'mineru',
+      id: 'mem-1',
+      type: NavivoxMemoryType.memoryItems,
+    );
+
+    expect(detail.id, 'mem-1');
+    expect(detail.type, NavivoxMemoryType.memoryItems);
+    expect(detail.content, contains('workspace recall'));
+    expect(detail.provenance, contains('reviewed session'));
+    expect(detail.linkedEntities, ['Mineru', 'Goncho']);
+    expect(detail.linkedRelationships, ['Mineru RELATED_TO Goncho']);
+    expect(
+      seen.keys.single.toString(),
+      'http://127.0.0.1:8765/v1/navivox/memory/detail?server_id=local&profile_id=mineru&id=mem-1&type=memory_items',
     );
     expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
   });

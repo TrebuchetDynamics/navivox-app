@@ -318,6 +318,38 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
+  Future<NavivoxMemoryDetail> memoryDetail({
+    String? serverId,
+    String? profileId,
+    required String id,
+    required NavivoxMemoryType type,
+  }) async {
+    final activeProfile = _state.activeProfileContact;
+    final scopedServerId = serverId ?? activeProfile?.serverId;
+    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final client = _client;
+    if (client == null) {
+      return NavivoxMemoryDetail.degraded(
+        id: id,
+        reason: 'Connect to Gormes to inspect Goncho memory.',
+      );
+    }
+    try {
+      return await client.memoryDetail(
+        serverId: scopedServerId,
+        profileId: scopedProfileId,
+        id: id,
+        type: type,
+      );
+    } catch (_) {
+      return NavivoxMemoryDetail.degraded(
+        id: id,
+        reason: 'Gormes memory detail API is unavailable.',
+      );
+    }
+  }
+
+  @override
   void selectAgent(String agentId) {
     _state = _state.copyWith(selectedAgentId: agentId);
     notifyListeners();

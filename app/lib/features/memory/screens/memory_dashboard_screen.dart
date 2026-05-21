@@ -174,6 +174,23 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
     });
   }
 
+  void _showMemoryDetail(BuildContext context, NavivoxMemoryItem item) {
+    final channel = ref.read(navivoxChannelProvider);
+    final activeProfile = channel.state.activeProfileContact;
+    final detail = channel.memoryDetail(
+      serverId: activeProfile?.serverId,
+      profileId: activeProfile?.profileId,
+      id: item.id,
+      type: item.type,
+    );
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => _MemoryDetailSheet(detail: detail),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -241,7 +258,10 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
                 return Column(
                   children: [
                     for (final item in result.items)
-                      _MemoryItemCard(item: item),
+                      _MemoryItemCard(
+                        item: item,
+                        onTap: () => _showMemoryDetail(context, item),
+                      ),
                   ],
                 );
               },
@@ -254,9 +274,10 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
 }
 
 class _MemoryItemCard extends StatelessWidget {
-  const _MemoryItemCard({required this.item});
+  const _MemoryItemCard({required this.item, required this.onTap});
 
   final NavivoxMemoryItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -267,9 +288,11 @@ class _MemoryItemCard extends StatelessWidget {
       item.peerId,
     ].where((value) => value.trim().isNotEmpty).join(' · ');
     return Card.outlined(
+      key: ValueKey('memory-item-${item.type.wireValue}-${item.id}'),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
+        onTap: onTap,
         title: Text(item.snippet),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,6 +316,112 @@ class _MemoryItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _MemoryDetailSheet extends StatelessWidget {
+  const _MemoryDetailSheet({required this.detail});
+
+  final Future<NavivoxMemoryDetail> detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: FutureBuilder<NavivoxMemoryDetail>(
+        future: detail,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final item = snapshot.data;
+          if (snapshot.hasError || item == null || item.isDegraded) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                item?.degradedReason ??
+                    'Gormes memory detail API is unavailable.',
+              ),
+            );
+          }
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              Text(
+                'Memory detail',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              SelectableText(item.content),
+              const SizedBox(height: 12),
+              _DetailLine(label: 'Type', value: item.type.wireValue),
+              _DetailLine(label: 'Source', value: item.source),
+              _DetailLine(label: 'Session', value: item.sessionId),
+              _DetailLine(label: 'Peer', value: item.peerId),
+              _DetailLine(label: 'Status', value: item.status),
+              _DetailLine(label: 'Created', value: item.createdAt),
+              if (item.provenance.isNotEmpty) ...[
+                const Divider(),
+                Text(
+                  'Provenance',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                SelectableText(item.provenance),
+              ],
+              if (item.linkedEntities.isNotEmpty) ...[
+                const Divider(),
+                Text(
+                  'Linked entities',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                for (final entity in item.linkedEntities) Text(entity),
+              ],
+              if (item.linkedRelationships.isNotEmpty) ...[
+                const Divider(),
+                Text(
+                  'Linked relationships',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                for (final relationship in item.linkedRelationships)
+                  Text(relationship),
+              ],
+              const Divider(),
+              const Text('Raw source preserved'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  OutlinedButton(onPressed: null, child: Text('Pin')),
+                  OutlinedButton(onPressed: null, child: Text('Archive')),
+                  OutlinedButton(onPressed: null, child: Text('Mark stale')),
+                  OutlinedButton(
+                    onPressed: null,
+                    child: Text('Add correction'),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DetailLine extends StatelessWidget {
+  const _DetailLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Text('$label: $value');
   }
 }
 
