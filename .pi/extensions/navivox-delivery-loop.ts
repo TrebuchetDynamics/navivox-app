@@ -17,6 +17,7 @@ const REQUIRED_WORKFLOWS = [
 	"using-superpowers",
 	"test-driven-development",
 	"verification-before-completion",
+	"navivox-git",
 ];
 
 type LoopDecision = "continue" | "stop" | "blocked" | "done";
@@ -426,7 +427,7 @@ Hard requirements for this iteration:
 6. Report exact changed files.
 7. Run the full Navivox CI gate before claiming green:
 ${fullGate.map((cmd) => `   - ${cmd}`).join("\n")}
-8. Commit/push only safe changes. If ${projectPath} is still an untracked project tree or unrelated dirty work makes a safe commit impossible, do not stage a partial tree; report the blocker instead.
+8. Commit/push only safe changes through navivox-git. If ${projectPath} is still an untracked project tree or unrelated dirty work makes a safe commit impossible, do not stage a partial tree; report the blocker instead.
 9. Report commit hash and push status. Use exact wording if skipped: commit: skipped (<reason>); push: skipped (<reason>).
 10. Write CI_GREEN: yes only after every full gate command above exits 0 in this iteration. Otherwise write CI_GREEN: no.
 11. Final line must be exactly one of:

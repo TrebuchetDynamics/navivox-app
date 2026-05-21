@@ -33,6 +33,7 @@ void main() {
     expect(source, contains('using-superpowers'));
     expect(source, contains('test-driven-development'));
     expect(source, contains('verification-before-completion'));
+    expect(source, contains('navivox-git'));
     expect(source, contains('one vertical slice'));
   });
 
