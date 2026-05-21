@@ -30,6 +30,18 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ({String serverId, String profileId})? selectedProfileScope;
   int agentListRequests = 0;
   NavivoxMemoryOverview? _memoryOverview;
+  NavivoxMemorySearchResult? _memorySearch;
+  final List<
+    ({
+      String? serverId,
+      String? profileId,
+      String query,
+      NavivoxMemoryType type,
+      int limit,
+      String? pageToken,
+    })
+  >
+  memorySearchCalls = [];
 
   @override
   NavivoxChannelState get state => _state;
@@ -90,6 +102,10 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void seedMemoryOverview(NavivoxMemoryOverview overview) {
     _memoryOverview = overview;
+  }
+
+  void seedMemorySearch(NavivoxMemorySearchResult result) {
+    _memorySearch = result;
   }
 
   @override
@@ -227,6 +243,30 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         NavivoxMemoryOverview.degraded(
           profileId: profileId ?? active?.profileId ?? 'default',
           reason: 'Gormes memory API is unavailable.',
+        );
+  }
+
+  @override
+  Future<NavivoxMemorySearchResult> memorySearch({
+    String? serverId,
+    String? profileId,
+    String query = '',
+    NavivoxMemoryType type = NavivoxMemoryType.all,
+    int limit = 20,
+    String? pageToken,
+  }) async {
+    final active = _state.activeProfileContact;
+    memorySearchCalls.add((
+      serverId: serverId ?? active?.serverId,
+      profileId: profileId ?? active?.profileId,
+      query: query,
+      type: type,
+      limit: limit,
+      pageToken: pageToken,
+    ));
+    return _memorySearch ??
+        const NavivoxMemorySearchResult.degraded(
+          reason: 'Gormes memory search API is unavailable.',
         );
   }
 

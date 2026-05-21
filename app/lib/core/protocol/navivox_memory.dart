@@ -1,5 +1,111 @@
 enum NavivoxMemoryHealth { active, degraded, unavailable }
 
+enum NavivoxMemoryType {
+  all('all', 'All'),
+  turns('turns', 'Turns'),
+  memoryItems('memory_items', 'Memory items'),
+  observations('observations', 'Observations'),
+  conclusions('conclusions', 'Conclusions'),
+  sessionSummaries('session_summaries', 'Session summaries'),
+  entities('entities', 'Entities'),
+  relationships('relationships', 'Relationships');
+
+  const NavivoxMemoryType(this.wireValue, this.label);
+
+  final String wireValue;
+  final String label;
+
+  static NavivoxMemoryType fromWire(Object? value) {
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) return all;
+    for (final type in values) {
+      if (type.wireValue == text) return type;
+    }
+    return all;
+  }
+}
+
+class NavivoxMemorySearchResult {
+  const NavivoxMemorySearchResult({
+    required this.items,
+    this.nextPageToken = '',
+    this.degradedReason = '',
+  });
+
+  const NavivoxMemorySearchResult.degraded({required String reason})
+    : items = const [],
+      nextPageToken = '',
+      degradedReason = reason;
+
+  factory NavivoxMemorySearchResult.fromJson(Map<String, Object?> json) {
+    final rawItems = json['items'];
+    return NavivoxMemorySearchResult(
+      items: rawItems is List
+          ? rawItems
+                .whereType<Map>()
+                .map(
+                  (item) => NavivoxMemoryItem.fromJson(
+                    Map<String, Object?>.from(item),
+                  ),
+                )
+                .toList(growable: false)
+          : const [],
+      nextPageToken: _string(json['next_page_token'], fallback: ''),
+      degradedReason: _string(
+        json['degraded_reason'] ?? json['reason'],
+        fallback: '',
+      ),
+    );
+  }
+
+  final List<NavivoxMemoryItem> items;
+  final String nextPageToken;
+  final String degradedReason;
+
+  bool get isDegraded => degradedReason.trim().isNotEmpty;
+}
+
+class NavivoxMemoryItem {
+  const NavivoxMemoryItem({
+    required this.id,
+    required this.type,
+    required this.snippet,
+    this.timestamp = '',
+    this.sessionId = '',
+    this.peerId = '',
+    this.status = '',
+    this.tags = const [],
+    this.score,
+  });
+
+  factory NavivoxMemoryItem.fromJson(Map<String, Object?> json) {
+    return NavivoxMemoryItem(
+      id: _string(json['id'], fallback: ''),
+      type: NavivoxMemoryType.fromWire(json['type']),
+      snippet: _string(json['snippet'] ?? json['content'], fallback: ''),
+      timestamp: _string(json['timestamp'] ?? json['created_at'], fallback: ''),
+      sessionId: _string(
+        json['session_id'] ?? json['session_key'],
+        fallback: '',
+      ),
+      peerId: _string(json['peer_id'], fallback: ''),
+      status: _string(json['status'], fallback: ''),
+      tags: _stringList(json['tags']),
+      score: _double(json['score']),
+    );
+  }
+
+  final String id;
+  final NavivoxMemoryType type;
+  final String snippet;
+  final String timestamp;
+  final String sessionId;
+  final String peerId;
+  final String status;
+  final List<String> tags;
+  final double? score;
+}
+
 class NavivoxMemoryOverview {
   const NavivoxMemoryOverview({
     required this.profileId,
@@ -100,6 +206,20 @@ int _int(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double? _double(Object? value) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '');
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) return const [];
+  return value
+      .map((item) => item.toString().trim())
+      .where((item) => item.isNotEmpty)
+      .toList(growable: false);
 }
 
 DateTime? _dateTime(Object? value) {

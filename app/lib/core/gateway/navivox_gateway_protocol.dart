@@ -1,3 +1,5 @@
+import '../protocol/navivox_memory.dart';
+
 const navivoxWebSocketProtocol = 'navivox.v1';
 const navivoxLegacyWebSocketProtocol = 'gormes.navivox.v1';
 const navivoxWebSocketTokenProtocolPrefix = 'gormes.navivox.token.';
@@ -67,6 +69,30 @@ class NavivoxGatewayConfig {
     return _withPath(
       '/v1/navivox/memory/overview',
     ).replace(queryParameters: query.isEmpty ? null : query);
+  }
+
+  Uri memorySearchUri({
+    String? serverId,
+    String? profileId,
+    String? query,
+    NavivoxMemoryType type = NavivoxMemoryType.all,
+    int limit = 20,
+    String? pageToken,
+  }) {
+    final params = <String, String>{
+      if (serverId != null && serverId.trim().isNotEmpty)
+        'server_id': serverId.trim(),
+      if (profileId != null && profileId.trim().isNotEmpty)
+        'profile_id': profileId.trim(),
+      if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+      if (type != NavivoxMemoryType.all) 'type': type.wireValue,
+      if (limit > 0) 'limit': limit.toString(),
+      if (pageToken != null && pageToken.trim().isNotEmpty)
+        'page_token': pageToken.trim(),
+    };
+    return _withPath(
+      '/v1/navivox/memory/search',
+    ).replace(queryParameters: params.isEmpty ? null : params);
   }
 
   Uri get sessionsUri => _withPath('/v1/navivox/sessions');

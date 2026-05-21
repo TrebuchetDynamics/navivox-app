@@ -45,6 +45,28 @@ class NavivoxGatewayClient {
     );
   }
 
+  Future<NavivoxMemorySearchResult> memorySearch({
+    String? serverId,
+    String? profileId,
+    String query = '',
+    NavivoxMemoryType type = NavivoxMemoryType.all,
+    int limit = 20,
+    String? pageToken,
+  }) async {
+    return NavivoxMemorySearchResult.fromJson(
+      await _getJson(
+        config.memorySearchUri(
+          serverId: serverId,
+          profileId: profileId,
+          query: query,
+          type: type,
+          limit: limit,
+          pageToken: pageToken,
+        ),
+      ),
+    );
+  }
+
   Future<List<Map<String, Object?>>> profileContacts() async {
     final body = await _getJson(config.profileContactsUri);
     final contacts = body['contacts'];

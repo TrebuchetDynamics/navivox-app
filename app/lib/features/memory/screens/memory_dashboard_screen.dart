@@ -128,7 +128,191 @@ class _MemoryOverviewBody extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        const _MemorySearchSection(),
       ],
+    );
+  }
+}
+
+class _MemorySearchSection extends ConsumerStatefulWidget {
+  const _MemorySearchSection();
+
+  @override
+  ConsumerState<_MemorySearchSection> createState() =>
+      _MemorySearchSectionState();
+}
+
+class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
+  String _query = '';
+  NavivoxMemoryType _selectedType = NavivoxMemoryType.all;
+  late Future<NavivoxMemorySearchResult> _results;
+
+  @override
+  void initState() {
+    super.initState();
+    _results = _load();
+  }
+
+  Future<NavivoxMemorySearchResult> _load() {
+    final channel = ref.read(navivoxChannelProvider);
+    final activeProfile = channel.state.activeProfileContact;
+    return channel.memorySearch(
+      serverId: activeProfile?.serverId,
+      profileId: activeProfile?.profileId,
+      query: _query,
+      type: _selectedType,
+      limit: 20,
+    );
+  }
+
+  void _refresh({String? query, NavivoxMemoryType? type}) {
+    setState(() {
+      if (query != null) _query = query.trim();
+      if (type != null) _selectedType = type;
+      _results = _load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Search & Browse',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Search memories',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (value) => _refresh(query: value),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                for (final type in NavivoxMemoryType.values)
+                  ChoiceChip(
+                    label: Text(type.label),
+                    selected: _selectedType == type,
+                    onSelected: (_) => _refresh(type: type),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FutureBuilder<NavivoxMemorySearchResult>(
+              future: _results,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const _MemorySearchMessage(
+                    icon: Icons.warning_amber_outlined,
+                    message: 'Gormes memory search API is unavailable.',
+                  );
+                }
+                final result =
+                    snapshot.data ??
+                    const NavivoxMemorySearchResult.degraded(
+                      reason: 'Gormes memory search API is unavailable.',
+                    );
+                if (result.isDegraded) {
+                  return _MemorySearchMessage(
+                    icon: Icons.warning_amber_outlined,
+                    message: result.degradedReason,
+                  );
+                }
+                if (result.items.isEmpty) {
+                  return const _MemorySearchMessage(
+                    icon: Icons.manage_search,
+                    message: 'No memories found.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final item in result.items)
+                      _MemoryItemCard(item: item),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryItemCard extends StatelessWidget {
+  const _MemoryItemCard({required this.item});
+
+  final NavivoxMemoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final metadata = [
+      item.type.wireValue,
+      item.status,
+      item.sessionId,
+      item.peerId,
+    ].where((value) => value.trim().isNotEmpty).join(' · ');
+    return Card.outlined(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        title: Text(item.snippet),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (metadata.isNotEmpty) Text(metadata),
+            if (item.tags.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final tag in item.tags)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(tag),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemorySearchMessage extends StatelessWidget {
+  const _MemorySearchMessage({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Icon(icon),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message)),
+        ],
+      ),
     );
   }
 }

@@ -36,6 +36,18 @@ void main() {
       'https://gromit.tailnet.test:8765/v1/navivox/memory/overview?server_id=local&profile_id=mineru',
     );
     expect(
+      config
+          .memorySearchUri(
+            serverId: 'local',
+            profileId: 'mineru',
+            query: 'agent memory',
+            type: NavivoxMemoryType.memoryItems,
+            limit: 10,
+          )
+          .toString(),
+      'https://gromit.tailnet.test:8765/v1/navivox/memory/search?server_id=local&profile_id=mineru&q=agent+memory&type=memory_items&limit=10',
+    );
+    expect(
       config.streamUri.toString(),
       'wss://gromit.tailnet.test:8765/v1/navivox/stream',
     );
@@ -187,6 +199,55 @@ void main() {
       expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
     },
   );
+
+  test('client decodes authenticated memory search results', () async {
+    final seen = <Uri, Map<String, String>>{};
+    final client = NavivoxGatewayClient(
+      config: NavivoxGatewayConfig.fromBaseUrl(
+        'http://127.0.0.1:8765',
+        token: 'nvbx_test_token',
+      ),
+      get: (uri, headers) async {
+        seen[uri] = headers;
+        return jsonEncode({
+          'items': [
+            {
+              'id': 'mem-1',
+              'type': 'memory_items',
+              'snippet': 'Mineru uses Goncho memory for workspace recall.',
+              'timestamp': '2026-05-21T15:30:00Z',
+              'session_id': 's-1',
+              'peer_id': 'mineru',
+              'status': 'current',
+              'tags': ['workspace', 'recall'],
+              'score': 0.92,
+            },
+          ],
+          'next_page_token': 'cursor-2',
+        });
+      },
+    );
+
+    final result = await client.memorySearch(
+      serverId: 'local',
+      profileId: 'mineru',
+      query: 'Goncho memory',
+      type: NavivoxMemoryType.memoryItems,
+      limit: 10,
+    );
+
+    expect(result.items, hasLength(1));
+    expect(result.items.single.id, 'mem-1');
+    expect(result.items.single.type, NavivoxMemoryType.memoryItems);
+    expect(result.items.single.snippet, contains('Goncho memory'));
+    expect(result.items.single.tags, ['workspace', 'recall']);
+    expect(result.nextPageToken, 'cursor-2');
+    expect(
+      seen.keys.single.toString(),
+      'http://127.0.0.1:8765/v1/navivox/memory/search?server_id=local&profile_id=mineru&q=Goncho+memory&type=memory_items&limit=10',
+    );
+    expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
+  });
 
   test(
     'client decodes WebSocket event stream and exposes bounded backoff',

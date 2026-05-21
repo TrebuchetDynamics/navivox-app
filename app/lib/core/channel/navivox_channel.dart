@@ -209,6 +209,14 @@ abstract interface class NavivoxChannel implements Listenable {
     String? serverId,
     String? profileId,
   });
+  Future<NavivoxMemorySearchResult> memorySearch({
+    String? serverId,
+    String? profileId,
+    String query,
+    NavivoxMemoryType type,
+    int limit,
+    String? pageToken,
+  });
   void selectAgent(String agentId);
   void selectProfileContact({
     required String serverId,
