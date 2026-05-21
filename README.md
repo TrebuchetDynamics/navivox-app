@@ -27,6 +27,14 @@ Current focus:
 4. Send the first text or device-transcribed voice turn.
 5. Render assistant, system, tool, approval, and connection-state UI clearly.
 
+## Screenshots
+
+The screenshots below are generated from real Flutter widgets and checked by the test suite.
+
+![Setup screen](docs/screenshots/setup.png)
+
+![Chat screen](docs/screenshots/chat.png)
+
 ## Gateway Surface
 
 Navivox expects a Gormes host exposing the Navivox channel:
@@ -103,4 +111,4 @@ Start with:
 
 ## License
 
-Not specified yet.
+MIT License. See [LICENSE](LICENSE).
