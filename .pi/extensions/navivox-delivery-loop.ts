@@ -51,7 +51,20 @@ type ParsedCommand = {
 	maxIterations: number;
 };
 
+type PendingAssistantDecision = {
+	iteration: number;
+	text: string;
+	decision?: LoopDecision;
+	ciGreen: boolean;
+	finalLine: string;
+};
+
+type ResolvedAssistantResult = PendingAssistantDecision & {
+	source: "agent_end" | "message_end" | "missing";
+};
+
 let state: LoopState | null = null;
+let pendingAssistantDecision: PendingAssistantDecision | null = null;
 
 export default function navivoxDeliveryLoop(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
@@ -64,18 +77,27 @@ export default function navivoxDeliveryLoop(pi: ExtensionAPI) {
 		setLoopStatus(ctx);
 	});
 
+	pi.on("message_end", async (event, ctx) => {
+		if (event.message?.role !== "assistant") return;
+		const current = await ensureState(ctx);
+		if (!current.active) return;
+		pendingAssistantDecision = assistantResultFromText(current.iteration, textContent(event.message.content));
+	});
+
 	pi.on("agent_end", async (event, ctx) => {
 		const current = await ensureState(ctx);
 		if (!current.active) return;
 
-		const assistantText = latestAssistantText(event.messages ?? []);
-		const decision = parseFinalDecision(assistantText);
-		const ciGreen = hasCiGreen(assistantText);
+		const assistantResult = resolvedAssistantResult(current, event.messages ?? []);
+		const decision = assistantResult.decision;
+		const ciGreen = assistantResult.ciGreen;
+		pendingAssistantDecision = null;
 
 		if (!decision) {
 			await markBlocked(pi, ctx, "assistant_decision_missing", {
 				ciGreen,
-				finalLine: finalNonEmptyLine(assistantText),
+				finalLine: assistantResult.finalLine,
+				decisionSource: assistantResult.source,
 			});
 			return;
 		}
@@ -85,7 +107,8 @@ export default function navivoxDeliveryLoop(pi: ExtensionAPI) {
 			iteration: current.iteration,
 			decision,
 			ciGreen,
-			finalLine: finalNonEmptyLine(assistantText),
+			finalLine: assistantResult.finalLine,
+			decisionSource: assistantResult.source,
 		});
 
 		if ((decision === "continue" || decision === "done") && !ciGreen) {
@@ -530,6 +553,39 @@ function latestAssistantText(messages: unknown[]): string {
 		return textContent(message.content);
 	}
 	return "";
+}
+
+function assistantResultFromText(iteration: number, text: string): PendingAssistantDecision {
+	return {
+		iteration,
+		text,
+		decision: parseFinalDecision(text),
+		ciGreen: hasCiGreen(text),
+		finalLine: finalNonEmptyLine(text),
+	};
+}
+
+function resolvedAssistantResult(current: LoopState, messages: unknown[]): ResolvedAssistantResult {
+	const assistantText = latestAssistantText(messages);
+	if (assistantText.trim().length > 0) {
+		return {
+			...assistantResultFromText(current.iteration, assistantText),
+			source: "agent_end",
+		};
+	}
+	if (pendingAssistantDecision?.iteration === current.iteration) {
+		return {
+			...pendingAssistantDecision,
+			source: "message_end",
+		};
+	}
+	return {
+		iteration: current.iteration,
+		text: "",
+		ciGreen: false,
+		finalLine: "",
+		source: "missing",
+	};
 }
 
 function textContent(content: unknown): string {

@@ -51,6 +51,17 @@ void main() {
     expect(source, contains('LOOP_DECISION: done'));
   });
 
+  test('assistant decisions are cached from message_end before agent_end', () {
+    expect(source, contains('pi.on("message_end"'));
+    expect(source, contains('pendingAssistantDecision'));
+    expect(source, contains('resolvedAssistantResult'));
+    expect(source, contains('event.message?.role !== "assistant"'));
+    expect(
+      source,
+      contains('pendingAssistantDecision?.iteration === current.iteration'),
+    );
+  });
+
   test('active default start reports status without replacing state', () {
     expect(source, contains('ACTIVE_START_POLICY'));
     expect(source, contains('status-only-no-replace'));
