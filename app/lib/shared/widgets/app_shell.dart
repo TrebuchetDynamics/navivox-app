@@ -15,6 +15,7 @@ class AppShell extends StatelessWidget {
       _Destination(AppRoutes.chats, Icons.chat_bubble_outlined, 'Chats'),
       _Destination(AppRoutes.servers, Icons.dns_outlined, 'Servers'),
       _Destination(AppRoutes.agents, Icons.smart_toy_outlined, 'Agents'),
+      _Destination(AppRoutes.memory, Icons.psychology_alt_outlined, 'Memory'),
       _Destination(AppRoutes.config, Icons.settings_outlined, 'Config'),
       _Destination(
         AppRoutes.settings,

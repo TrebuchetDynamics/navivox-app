@@ -4,6 +4,7 @@ abstract final class AppRoutes {
   static const chatThread = '/chats/:serverId/:profileId';
   static const servers = '/servers';
   static const serverDetail = '/servers/:id';
+  static const memory = '/memory';
   static const agents = '/agents';
   static const agentEditor = '/agents/:id/edit';
   static const agentCreate = '/agents/create';

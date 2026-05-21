@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import '../protocol/navivox_memory.dart';
 import 'navivox_gateway_protocol.dart';
 import 'navivox_gateway_transport_stub.dart'
     if (dart.library.io) 'navivox_gateway_transport_io.dart'
@@ -31,6 +32,17 @@ class NavivoxGatewayClient {
   Future<Map<String, Object?>> status() => _getJson(config.statusUri);
   Future<NavivoxGatewayStatus> gatewayStatus() async {
     return NavivoxGatewayStatus.fromJson(await status());
+  }
+
+  Future<NavivoxMemoryOverview> memoryOverview({
+    String? serverId,
+    String? profileId,
+  }) async {
+    return NavivoxMemoryOverview.fromJson(
+      await _getJson(
+        config.memoryOverviewUri(serverId: serverId, profileId: profileId),
+      ),
+    );
   }
 
   Future<List<Map<String, Object?>>> profileContacts() async {

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
+import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
 class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
@@ -28,6 +29,7 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   String? lastSelectedAgentId;
   ({String serverId, String profileId})? selectedProfileScope;
   int agentListRequests = 0;
+  NavivoxMemoryOverview? _memoryOverview;
 
   @override
   NavivoxChannelState get state => _state;
@@ -84,6 +86,10 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void emitConfigDiff(Map<String, Object?> diff) {
     state = _state.copyWith(configDiff: diff);
+  }
+
+  void seedMemoryOverview(NavivoxMemoryOverview overview) {
+    _memoryOverview = overview;
   }
 
   @override
@@ -210,6 +216,19 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   @override
   void requestAgentList() => agentListRequests += 1;
+
+  @override
+  Future<NavivoxMemoryOverview> memoryOverview({
+    String? serverId,
+    String? profileId,
+  }) async {
+    final active = _state.activeProfileContact;
+    return _memoryOverview ??
+        NavivoxMemoryOverview.degraded(
+          profileId: profileId ?? active?.profileId ?? 'default',
+          reason: 'Gormes memory API is unavailable.',
+        );
+  }
 
   @override
   void selectAgent(String agentId) {

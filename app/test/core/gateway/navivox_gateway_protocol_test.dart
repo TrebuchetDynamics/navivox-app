@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/gateway/navivox_gateway_client.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
+import 'package:navivox/core/protocol/navivox_memory.dart';
 
 void main() {
   test('constructs HTTP and WebSocket URLs from one base URL', () {
@@ -27,6 +28,12 @@ void main() {
     expect(
       config.profileContactsUri.toString(),
       'https://gromit.tailnet.test:8765/v1/navivox/profile-contacts',
+    );
+    expect(
+      config
+          .memoryOverviewUri(serverId: 'local', profileId: 'mineru')
+          .toString(),
+      'https://gromit.tailnet.test:8765/v1/navivox/memory/overview?server_id=local&profile_id=mineru',
     );
     expect(
       config.streamUri.toString(),
@@ -130,6 +137,56 @@ void main() {
     );
     expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
   });
+
+  test(
+    'client decodes authenticated memory overview with safe DB label',
+    () async {
+      final seen = <Uri, Map<String, String>>{};
+      final client = NavivoxGatewayClient(
+        config: NavivoxGatewayConfig.fromBaseUrl(
+          'http://127.0.0.1:8765',
+          token: 'nvbx_test_token',
+        ),
+        get: (uri, headers) async {
+          seen[uri] = headers;
+          return jsonEncode({
+            'profile_id': 'mineru',
+            'workspace_id': 'gormes',
+            'database_path': '/home/xel/.gormes/profiles/mineru/memory.db',
+            'health': 'active',
+            'last_updated_at': '2026-05-21T15:28:18.000Z',
+            'counts': {
+              'turns': 120,
+              'memory_items': 12,
+              'observations': 34,
+              'conclusions': 5,
+              'session_summaries': 7,
+              'entities': 18,
+              'relationships': 21,
+            },
+          });
+        },
+      );
+
+      final overview = await client.memoryOverview(
+        serverId: 'local',
+        profileId: 'mineru',
+      );
+
+      expect(overview.profileId, 'mineru');
+      expect(overview.workspaceId, 'gormes');
+      expect(overview.health, NavivoxMemoryHealth.active);
+      expect(overview.totalTurns, 120);
+      expect(overview.activeMemoryItems, 12);
+      expect(overview.databaseLabel, '~/.gormes/profiles/mineru/memory.db');
+      expect(overview.databaseLabel, isNot(contains('/home/xel')));
+      expect(
+        seen.keys.single.toString(),
+        'http://127.0.0.1:8765/v1/navivox/memory/overview?server_id=local&profile_id=mineru',
+      );
+      expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
+    },
+  );
 
   test(
     'client decodes WebSocket event stream and exposes bounded backoff',

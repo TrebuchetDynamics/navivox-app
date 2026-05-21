@@ -7,6 +7,7 @@ import '../features/agents/screens/agents_screen.dart';
 import '../features/chat/screens/profile_contacts_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/config/screens/config_screen.dart';
+import '../features/memory/screens/memory_dashboard_screen.dart';
 import '../features/servers/screens/servers_screen.dart';
 import '../features/servers/screens/setup_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
@@ -58,6 +59,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.agents,
             builder: (context, state) => const AgentsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.memory,
+            builder: (context, state) => const MemoryDashboardScreen(),
           ),
           GoRoute(
             path: AppRoutes.config,

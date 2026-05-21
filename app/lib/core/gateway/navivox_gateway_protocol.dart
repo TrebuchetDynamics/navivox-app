@@ -57,6 +57,18 @@ class NavivoxGatewayConfig {
   Uri get healthUri => _withPath('/healthz');
   Uri get statusUri => _withPath('/v1/navivox/status');
   Uri get profileContactsUri => _withPath('/v1/navivox/profile-contacts');
+  Uri memoryOverviewUri({String? serverId, String? profileId}) {
+    final query = <String, String>{
+      if (serverId != null && serverId.trim().isNotEmpty)
+        'server_id': serverId.trim(),
+      if (profileId != null && profileId.trim().isNotEmpty)
+        'profile_id': profileId.trim(),
+    };
+    return _withPath(
+      '/v1/navivox/memory/overview',
+    ).replace(queryParameters: query.isEmpty ? null : query);
+  }
+
   Uri get sessionsUri => _withPath('/v1/navivox/sessions');
   Uri sessionUri(String sessionId) =>
       _withPath('/v1/navivox/sessions/$sessionId');

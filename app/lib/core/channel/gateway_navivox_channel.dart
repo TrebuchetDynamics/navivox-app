@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../gateway/navivox_gateway_client.dart';
 import '../gateway/navivox_gateway_protocol.dart';
 import '../protocol/navivox_event.dart';
+import '../protocol/navivox_memory.dart';
 import '../protocol/navivox_voice_run.dart';
 import 'navivox_channel.dart';
 
@@ -20,6 +21,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
 
+  NavivoxGatewayClient? _client;
   NavivoxGatewaySocket? _socket;
   StreamSubscription<NavivoxGatewayEvent>? _events;
   NavivoxChannelState _state = const NavivoxChannelState();
@@ -37,6 +39,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final config = NavivoxGatewayConfig.fromBaseUrl(baseUrl, token: token);
     final client = NavivoxGatewayClient(config: config);
     await client.status();
+    _client = client;
     final contactPayloads = await client.profileContacts();
     final profileContacts = contactPayloads
         .map(_profileContactFromJson)
@@ -69,6 +72,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _events = null;
     await _socket?.close();
     _socket = null;
+    _client = null;
   }
 
   @override
@@ -249,6 +253,34 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   void requestAgentList() {
     _appendSystemMessage('Agent listing is not available on this channel yet.');
+  }
+
+  @override
+  Future<NavivoxMemoryOverview> memoryOverview({
+    String? serverId,
+    String? profileId,
+  }) async {
+    final activeProfile = _state.activeProfileContact;
+    final scopedServerId = serverId ?? activeProfile?.serverId;
+    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final client = _client;
+    if (client == null) {
+      return NavivoxMemoryOverview.degraded(
+        profileId: scopedProfileId,
+        reason: 'Connect to Gormes to load Goncho memory.',
+      );
+    }
+    try {
+      return await client.memoryOverview(
+        serverId: scopedServerId,
+        profileId: scopedProfileId,
+      );
+    } catch (_) {
+      return NavivoxMemoryOverview.degraded(
+        profileId: scopedProfileId,
+        reason: 'Gormes memory API is unavailable.',
+      );
+    }
   }
 
   @override

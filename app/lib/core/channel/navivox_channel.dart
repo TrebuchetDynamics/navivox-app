@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../protocol/navivox_event.dart';
+import '../protocol/navivox_memory.dart';
 import '../protocol/navivox_voice_run.dart';
 
 /// A pending approval request issued by the server while a tool call is mid-
@@ -204,6 +205,10 @@ abstract interface class NavivoxChannel implements Listenable {
   void stopActiveTurn();
   void respondToApproval({required String approvalId, required bool approved});
   void requestAgentList();
+  Future<NavivoxMemoryOverview> memoryOverview({
+    String? serverId,
+    String? profileId,
+  });
   void selectAgent(String agentId);
   void selectProfileContact({
     required String serverId,

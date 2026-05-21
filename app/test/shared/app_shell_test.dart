@@ -39,6 +39,19 @@ void main() {
       expect(find.text('Servers'), findsOneWidget);
     });
   });
+
+  testWidgets('top-level navigation includes Memory dashboard', (tester) async {
+    await _withMobileSurface(tester, () async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AppShell(location: '/memory', child: Text('Memory body')),
+        ),
+      );
+
+      expect(find.text('Memory body'), findsOneWidget);
+      expect(find.text('Memory'), findsOneWidget);
+    });
+  });
 }
 
 Future<void> _withMobileSurface(
