@@ -4,7 +4,7 @@ Navivox is an Android-first Flutter app for talking to local or self-hosted Gorm
 
 It is the mobile operator console for a Gormes agent server: connect to a trusted gateway, chat with profile contacts, send text or device-transcribed voice turns, and watch assistant responses, tool activity, approvals, and recovery states stream back in a phone-friendly UI.
 
-Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, and talk to an agent. The next product loop makes that agent understandable: inspect what it remembers, why it recalled something, and which memories need correction or cleanup.
+Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, talk to an agent, and inspect its memory.
 
 ## Relationship To Gormes
 
@@ -21,12 +21,9 @@ Planning and early implementation.
 
 Current focus:
 
-1. Connect to a Gormes Navivox gateway with a base URL and optional token.
-2. Verify `/healthz` and `/v1/navivox/status`.
-3. Open the Navivox event stream.
-4. Send the first text or device-transcribed voice turn.
-5. Render assistant, system, tool, approval, and connection-state UI clearly.
-6. Surface profile-scoped Goncho memory status so users can see whether memory is active, degraded, or unavailable.
+1. Connect to a trusted Gormes Navivox gateway.
+2. Send text or device-transcribed voice turns.
+3. Render assistant, tool, approval, connection, and memory-state UI clearly.
 
 ## Screenshots
 
@@ -38,29 +35,13 @@ The screenshots below are generated from real Flutter widgets and checked by the
 
 ## Real-World Usage
 
-Navivox is for moments when a user needs agent control away from a terminal:
-
-- **Hands-free agent control:** ask a local Gormes profile to check status, summarize failures, restart safe services, or explain what changed.
-- **Blind or low-vision operation:** use a screen-reader-friendly mobile surface for chat, voice turns, logs, memory, approvals, and recovery states.
-- **Project briefings:** ask what happened overnight, which agents are blocked, what the latest successful test was, or what should happen next.
-- **Incident response from a phone:** inspect gateway health, recent turns, active profile, provider state, and safe recovery actions.
-- **Voice task capture:** turn spoken ideas, reminders, project notes, and corrections into durable agent context.
-- **Agent fleet control:** switch between Gormes profiles, verify which one is active, and inspect each profile's health and memory.
-- **Trust and privacy review:** see what the agent remembers, what influenced a response, and which memories should be corrected, archived, or marked stale.
+Navivox is for mobile agent operation: hands-free chat, project briefings, incident checks, voice task capture, agent switching, and screen-reader-friendly control away from a terminal.
 
 ## Goncho Memory Console
 
-Navivox should make Gormes memory visible without turning the phone into a raw database browser. The app reads profile-scoped memory summaries through the Gormes Navivox API, not by opening SQLite directly.
+Navivox makes Gormes memory inspectable without becoming a raw database browser. It should show memory health, counts, search results, provenance, and safe management actions such as pin, archive, correction, or mark stale.
 
-The memory experience should help users answer:
-
-- What does this profile remember?
-- Is memory active, degraded, or unavailable?
-- Which turns, summaries, entities, relationships, observations, and conclusions exist?
-- Why might this memory be recalled now?
-- What should be pinned, archived, corrected, or marked stale?
-
-The local Mineru profile currently uses Goncho at `~/.gormes/profiles/mineru/memory.db`; that path is useful for operator diagnostics, but UI payloads should expose only safe labels and bounded summaries.
+The app reads memory through authenticated, profile-scoped Gormes APIs. It must not open SQLite directly.
 
 ## Gateway Surface
 
@@ -79,7 +60,12 @@ On the host side, `gormes navivox connect-info` prints reachable base URLs for s
 
 ```text
 .
-├── app/                         # Flutter app package
+├── lib/                         # Flutter app source
+├── test/                        # Widget, unit, and tooling tests
+├── integration_test/            # Connect-and-talk integration tests
+├── web/                         # Flutter web shell
+├── linux/                       # Flutter Linux runner
+├── docs/screenshots/            # README screenshots generated from widgets
 ├── CONTEXT.md                   # Shared product language
 ├── navivox-architecture.md      # Architecture notes
 ├── navivox-chat-ui-research.md  # Chat UI research notes
@@ -92,27 +78,62 @@ On the host side, `gormes navivox connect-info` prints reachable base URLs for s
 └── navivox-ui-design.md         # UI design notes
 ```
 
-## Development
+## Install And Run
 
 Prerequisites:
 
-- Flutter SDK
-- A Gormes gateway with the Navivox channel enabled for full connect-and-talk testing
+- Flutter SDK on `PATH`
+- Android SDK or another Flutter target for local app runs
+- A trusted Gormes gateway with the Navivox channel enabled for full connect-and-talk testing
 
-Run checks from the Flutter package:
+Install dependencies from the repository root:
 
 ```bash
-cd app
 flutter pub get
+```
+
+Run the local verification gate:
+
+```bash
+flutter analyze
 flutter test
 ```
 
-Run the app:
+Find available Flutter targets:
 
 ```bash
-cd app
-flutter run
+flutter devices
 ```
+
+Run the app from the repository root, replacing `<device-id>` with one of the listed targets:
+
+```bash
+flutter run -d <device-id>
+```
+
+## Connected Smoke Test
+
+Use this only with a trusted local or self-hosted Gormes host:
+
+1. Start or select a Gormes host with the Navivox channel enabled.
+2. On the host, print the setup values:
+
+   ```bash
+   gormes navivox connect-info
+   ```
+
+3. Confirm the gateway answers `GET /healthz` and authenticated `GET /v1/navivox/status`.
+4. Copy the reachable base URL into the Navivox setup screen.
+5. If `connect-info` prints a token, paste it into Navivox only. Do not paste tokens into issues, logs, or screenshots.
+6. Send a short text turn and confirm the app shows an assistant response, tool activity, or a clear connection recovery state.
+
+## Troubleshooting
+
+- If Flutter is missing, run `flutter doctor` and fix the reported SDK or platform setup before running Navivox.
+- If `flutter devices` shows `No supported devices found`, start an emulator, connect an Android device, or choose another Flutter target that appears in the device list.
+- If `flutter run -d <device-id>` fails after a layout move, run `flutter clean` and `flutter pub get` from the repository root. Do not delete source files while clearing generated state.
+- If the setup screen shows `Connection refused`, confirm the Gormes host is running, reachable from the device, and listening on the base URL from `gormes navivox connect-info`.
+- If the gateway returns `401` or `403`, refresh the setup values from `gormes navivox connect-info` and paste the token into Navivox only.
 
 ## Security And Product Boundaries
 
@@ -120,14 +141,11 @@ Navivox is built for trusted local or self-hosted Gormes deployments.
 
 Important boundaries:
 
-- The Navivox channel is disabled by default on the Gormes side.
-- Local mode should stay loopback by default.
+- Navivox is for trusted local or self-hosted Gormes deployments.
 - Public exposure requires explicit server-side confirmation.
-- Tokens must not be printed in screenshots, logs, route URLs, or deep links.
-- The app should not directly edit local Gormes config files.
-- The app should not open Gormes or Goncho SQLite databases directly; memory data must come through authenticated, profile-scoped Gormes APIs.
-- Raw tool arguments, stdout, secrets, full logs, and secret-bearing memories should not be primary UI.
-- Memory management should prefer pin/archive/mark-stale/correction flows over destructive deletion unless the server exposes an explicit safe deletion policy.
+- Tokens, secrets, raw tool output, and full logs must not be primary UI.
+- Config and Goncho memory are managed through authenticated Gormes APIs, not direct file or SQLite edits.
+- Memory management should prefer pin/archive/mark-stale/correction flows over destructive deletion.
 
 ## Documentation
 

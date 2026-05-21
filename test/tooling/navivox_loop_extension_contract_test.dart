@@ -6,7 +6,7 @@ void main() {
   late String source;
 
   setUpAll(() {
-    final extensionFile = File('../.pi/extensions/navivox-delivery-loop.ts');
+    final extensionFile = File('.pi/extensions/navivox-delivery-loop.ts');
     expect(
       extensionFile.existsSync(),
       isTrue,

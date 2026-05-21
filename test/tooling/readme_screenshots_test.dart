@@ -28,7 +28,7 @@ void main() {
 
       await expectLater(
         find.byKey(_screenshotKey),
-        matchesGoldenFile('../../../docs/screenshots/setup.png'),
+        matchesGoldenFile('../../docs/screenshots/setup.png'),
       );
     },
   );
@@ -91,7 +91,7 @@ void main() {
 
     await expectLater(
       find.byKey(_screenshotKey),
-      matchesGoldenFile('../../../docs/screenshots/chat.png'),
+      matchesGoldenFile('../../docs/screenshots/chat.png'),
     );
   });
 }
