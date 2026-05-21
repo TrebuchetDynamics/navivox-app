@@ -144,6 +144,11 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                 contact.serverId,
                 contact.serverLabel,
                 contact.latestPreview,
+                _profileHealthLabel(contact.health),
+                _profileWorkspaceLabel(contact),
+                _profileVoiceLabel(contact),
+                _profileLatestLabel(contact),
+                contact.activeTurnState,
                 ...contact.attentionBadges,
               ].any((field) => field.toLowerCase().contains(query)),
         )

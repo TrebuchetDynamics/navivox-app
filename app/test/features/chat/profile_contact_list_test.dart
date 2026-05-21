@@ -139,6 +139,44 @@ void main() {
     expect(find.text('Personal'), findsNothing);
   });
 
+  testWidgets('search matches profile health and capability diagnostics', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Search profiles'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('profile-search-field')),
+      'auth required',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Support Triage'), findsOneWidget);
+    expect(find.text('Mineru Builder'), findsNothing);
+    expect(find.text('Personal'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('profile-search-field')),
+      'mic unavailable',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Support Triage'), findsOneWidget);
+    expect(find.text('Personal'), findsOneWidget);
+    expect(find.text('Mineru Builder'), findsNothing);
+  });
+
   testWidgets('search shows a no results state', (tester) async {
     final channel = TestNavivoxChannel()
       ..seedServers(_servers, activeServerId: 'local')
