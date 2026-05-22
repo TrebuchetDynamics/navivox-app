@@ -151,6 +151,11 @@ class NavivoxPairingDescriptor {
     required this.exposureMode,
     required this.tokenRequired,
     this.token,
+    this.serverId,
+    this.profileId,
+    this.workspaceId,
+    this.providerId,
+    this.channelIds = const [],
   });
 
   factory NavivoxPairingDescriptor.parse(String value) {
@@ -173,6 +178,11 @@ class NavivoxPairingDescriptor {
       exposureMode: _optionalPairingParam(query['exposure_mode']) ?? '',
       tokenRequired: tokenRequired,
       token: token,
+      serverId: _optionalPairingParam(query['server_id']),
+      profileId: _optionalPairingParam(query['profile_id']),
+      workspaceId: _optionalPairingParam(query['workspace_id']),
+      providerId: _optionalPairingParam(query['provider_id']),
+      channelIds: _csvPairingParam(query['channel_ids']),
     );
   }
 
@@ -182,6 +192,11 @@ class NavivoxPairingDescriptor {
   final String exposureMode;
   final bool tokenRequired;
   final String? token;
+  final String? serverId;
+  final String? profileId;
+  final String? workspaceId;
+  final String? providerId;
+  final List<String> channelIds;
 
   NavivoxGatewayConfig toGatewayConfig() {
     return NavivoxGatewayConfig(baseUri: baseUri, token: token);
@@ -208,6 +223,16 @@ String? _optionalPairingParam(String? value) {
 
 bool _boolFromPairingParam(String? value) {
   return value?.trim().toLowerCase() == 'true';
+}
+
+List<String> _csvPairingParam(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return const [];
+  return trimmed
+      .split(',')
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toList(growable: false);
 }
 
 class NavivoxGatewayMessage {

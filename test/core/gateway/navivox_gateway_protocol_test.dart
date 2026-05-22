@@ -96,6 +96,29 @@ void main() {
     expect(config.headers, {'Authorization': 'Bearer setup-secret-token'});
   });
 
+  test('parses optional Gormes routing defaults from pairing descriptor', () {
+    final descriptor = NavivoxPairingDescriptor.parse(
+      'navivox://connect?'
+      'base_url=http%3A%2F%2F127.0.0.1%3A8765&'
+      'websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&'
+      'auth_mode=pairing_token&'
+      'exposure_mode=local&'
+      'token_required=true&'
+      'rest_token=setup-secret-token&'
+      'server_id=local&'
+      'profile_id=mineru&'
+      'workspace_id=gormes-agent&'
+      'provider_id=openai-codex&'
+      'channel_ids=telegram%2Cnavivox%2Cdiscord',
+    );
+
+    expect(descriptor.serverId, 'local');
+    expect(descriptor.profileId, 'mineru');
+    expect(descriptor.workspaceId, 'gormes-agent');
+    expect(descriptor.providerId, 'openai-codex');
+    expect(descriptor.channelIds, ['telegram', 'navivox', 'discord']);
+  });
+
   test('builds typed gateway messages', () {
     final start = NavivoxGatewayMessage.startTurn(
       requestId: 'req-1',
