@@ -16,6 +16,17 @@ const _seedServers = [
   NavivoxServer(id: 'srv1', name: 'Local', status: 'ready'),
 ];
 
+const _seedProfiles = [
+  NavivoxProfileContact(
+    serverId: 'srv1',
+    profileId: 'mineru',
+    displayName: 'Mineru Builder',
+    serverLabel: 'Local',
+    health: NavivoxProfileHealth.online,
+    latestPreview: 'Ready for scoped chat',
+  ),
+];
+
 void main() {
   testWidgets(
     'chat AppBar omits the active-agent indicator when no agent is selected',
@@ -58,5 +69,29 @@ void main() {
     expect(find.text('Chat info'), findsOneWidget);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Architect'), findsOneWidget);
+  });
+
+  testWidgets('chat info exposes active server and profile scope', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_seedServers, activeServerId: 'srv1')
+      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ChatScreen()),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('chat-context-action')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chat info'), findsOneWidget);
+    expect(find.text('Profile ID'), findsOneWidget);
+    expect(find.text('mineru'), findsOneWidget);
+    expect(find.text('Server ID'), findsOneWidget);
+    expect(find.text('srv1'), findsOneWidget);
   });
 }

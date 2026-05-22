@@ -242,9 +242,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            shrinkWrap: true,
             children: [
               Text('Chat info', style: theme.textTheme.titleLarge),
               const SizedBox(height: 12),
@@ -255,10 +254,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   value: profile.displayName,
                 ),
                 _ChatInfoRow(
+                  icon: Icons.badge_outlined,
+                  label: 'Profile ID',
+                  value: profile.profileId,
+                ),
+                _ChatInfoRow(
                   icon: Icons.dns,
                   label: 'Server',
                   value: profile.serverLabel,
                 ),
+                if (profile.serverId.trim() != profile.serverLabel.trim())
+                  _ChatInfoRow(
+                    icon: Icons.tag,
+                    label: 'Server ID',
+                    value: profile.serverId,
+                  ),
                 _ChatInfoRow(
                   icon: Icons.circle,
                   label: 'Status',
