@@ -56,6 +56,15 @@ void main() {
     expect(result?.token, 'nvbx_pair_rest_token');
   });
 
+  test('derives pair base URL from websocket-only QR descriptors', () {
+    final result = parseNavivoxQrPayload(
+      'navivox://connect?websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&auth_mode=pairing_token&token_required=true&rest_token=nvbx_ws_only_token',
+    );
+
+    expect(result?.baseUrl, 'http://127.0.0.1:8765');
+    expect(result?.token, 'nvbx_ws_only_token');
+  });
+
   test('parses connect-info JSON payloads', () {
     final result = parseNavivoxQrPayload('''
 {

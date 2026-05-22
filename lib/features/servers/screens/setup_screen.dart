@@ -607,14 +607,23 @@ SetupQrImageImport? parseNavivoxQrPayload(String payload) {
       uri.queryParameters['rest_token'],
       uri.queryParameters['restToken'],
     ]);
-    final queryBaseUrl = _normalizeBaseUrl(
-      _firstNonEmpty([
-        uri.queryParameters['base_url'],
-        uri.queryParameters['baseUrl'],
-        uri.queryParameters['gateway_url'],
-        uri.queryParameters['url'],
-      ]),
-    );
+    final queryBaseUrl =
+        _normalizeBaseUrl(
+          _firstNonEmpty([
+            uri.queryParameters['base_url'],
+            uri.queryParameters['baseUrl'],
+            uri.queryParameters['gateway_url'],
+            uri.queryParameters['url'],
+          ]),
+        ) ??
+        _normalizeWebSocketBaseUrl(
+          _firstNonEmpty([
+            uri.queryParameters['websocket_url'],
+            uri.queryParameters['websocketUrl'],
+            uri.queryParameters['ws_url'],
+            uri.queryParameters['wsUrl'],
+          ]),
+        );
 
     if (queryBaseUrl != null || token != null) {
       return SetupQrImageImport(baseUrl: queryBaseUrl, token: token);
@@ -779,6 +788,18 @@ String? _normalizeBaseUrl(String? raw) {
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
   if (uri.scheme != 'http' && uri.scheme != 'https') return value;
   return _originFromUri(uri);
+}
+
+String? _normalizeWebSocketBaseUrl(String? raw) {
+  final value = _asNonEmptyString(raw);
+  if (value == null) return null;
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme == 'ws') return _originFromUri(uri.replace(scheme: 'http'));
+  if (scheme == 'wss') return _originFromUri(uri.replace(scheme: 'https'));
+  if (scheme == 'http' || scheme == 'https') return _originFromUri(uri);
+  return null;
 }
 
 String _originFromUri(Uri uri) {
