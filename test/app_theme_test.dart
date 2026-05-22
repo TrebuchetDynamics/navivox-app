@@ -41,6 +41,22 @@ void main() {
     }
   });
 
+  test('Navivox themes use compact Telegram-like navigation list tiles', () {
+    for (final theme in [navivoxLightTheme, navivoxDarkTheme]) {
+      final colorScheme = theme.colorScheme;
+      final listTileTheme = theme.listTileTheme;
+
+      expect(listTileTheme.iconColor, colorScheme.onSurfaceVariant);
+      expect(listTileTheme.textColor, colorScheme.onSurface);
+      expect(
+        listTileTheme.contentPadding,
+        const EdgeInsets.symmetric(horizontal: 24),
+      );
+      expect(listTileTheme.horizontalTitleGap, 20);
+      expect(listTileTheme.minLeadingWidth, 24);
+    }
+  });
+
   test(
     'Navivox themes style the desktop rail with Telegram-blue selection',
     () {

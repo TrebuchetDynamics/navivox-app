@@ -39,8 +39,13 @@ ThemeData _buildNavivoxTheme(Brightness brightness) {
       space: 1,
     ),
     listTileTheme: ListTileThemeData(
+      iconColor: colorScheme.onSurfaceVariant,
+      textColor: colorScheme.onSurface,
       selectedColor: colorScheme.primary,
       selectedTileColor: colorScheme.primary.withAlpha(24),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      horizontalTitleGap: 20,
+      minLeadingWidth: 24,
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: colorScheme.surface,
