@@ -304,7 +304,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Continuous voice unavailable: select a profile'),
+      find.text('Continuous voice unavailable: select a profile contact'),
       findsOneWidget,
     );
     expect(

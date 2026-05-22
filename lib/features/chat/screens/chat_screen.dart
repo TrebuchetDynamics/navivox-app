@@ -333,7 +333,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     required NavivoxVoiceSettings settings,
   }) {
     if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
-    if (activeProfile == null) return 'select a profile';
+    if (activeProfile == null) return 'select a profile contact';
     if (voiceService == null) return 'device STT unavailable';
     if (!settings.isTrusted(activeProfile.serverId)) {
       return 'trust ${activeProfile.serverLabel}';
@@ -766,7 +766,7 @@ class _VoiceModeBanner extends StatelessWidget {
         : 'Voice standby';
     final voiceSettingsSubtitle = disabledReason == 'device STT unavailable'
         ? 'Review continuous voice after enabling device speech recognition.'
-        : disabledReason == 'select a profile'
+        : disabledReason == 'select a profile contact'
         ? 'Select a profile contact before reviewing continuous voice settings.'
         : 'Review continuous voice and trust settings';
     showModalBottomSheet<void>(
