@@ -16,6 +16,8 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(navivoxVoiceSettingsProvider.notifier);
     final activeServer = channel.state.activeServer;
     final activeProfile = channel.state.activeProfileContact;
+    final serverCount = channel.state.servers.length;
+    final profileContactCount = channel.state.profileContacts.length;
     final activeServerTrusted =
         activeServer != null && settings.isTrusted(activeServer.id);
 
@@ -79,6 +81,14 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (trusted) =>
                   controller.setServerTrusted(activeServer.id, trusted),
             ),
+          ListTile(
+            key: const ValueKey('settings-management-overview'),
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: const Text('Management overview'),
+            subtitle: Text(
+              '${_countLabel(serverCount, 'Gormes gateway')} · ${_countLabel(profileContactCount, 'profile contact')}',
+            ),
+          ),
           if (activeServer != null || activeProfile != null) ...[
             const Divider(),
             const ListTile(
@@ -109,4 +119,9 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _countLabel(int count, String singular) {
+  final plural = count == 1 ? singular : '${singular}s';
+  return '$count $plural';
 }

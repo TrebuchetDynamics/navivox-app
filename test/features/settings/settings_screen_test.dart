@@ -80,6 +80,59 @@ void main() {
     );
   });
 
+  testWidgets('settings summarize registered gateways and profile contacts', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+        NavivoxServer(id: 'remote', name: 'Remote Gormes', status: 'offline'),
+      ], activeServerId: 'local')
+      ..seedProfileContacts(const [
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru Builder',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'link',
+          displayName: 'Link Reviewer',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.warning,
+          latestPreview: 'Reviewing',
+        ),
+        NavivoxProfileContact(
+          serverId: 'remote',
+          profileId: 'sidon',
+          displayName: 'Sidon Planner',
+          serverLabel: 'remote',
+          health: NavivoxProfileHealth.offline,
+          latestPreview: 'Away',
+        ),
+      ], selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+
+    await tester.scrollUntilVisible(find.text('Management overview'), 200);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('settings-management-overview')),
+      findsOneWidget,
+    );
+    expect(find.text('Management overview'), findsOneWidget);
+    expect(find.text('2 Gormes gateways · 3 profile contacts'), findsOneWidget);
+  });
+
   testWidgets('settings expose the active gateway and profile scope', (
     tester,
   ) async {
