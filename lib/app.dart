@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'router/app_router.dart';
+import 'theme/navivox_theme.dart';
 
 class NavivoxApp extends StatelessWidget {
   const NavivoxApp({super.key});
@@ -21,10 +22,9 @@ class _NavivoxMaterialApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Navivox',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff256d85)),
-        useMaterial3: true,
-      ),
+      theme: navivoxLightTheme,
+      darkTheme: navivoxDarkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }
