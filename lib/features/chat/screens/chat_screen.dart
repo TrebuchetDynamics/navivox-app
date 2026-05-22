@@ -754,6 +754,18 @@ class _VoiceModeBanner extends StatelessWidget {
                   onCancelPending();
                 },
               ),
+            if (disabledReason != null)
+              ListTile(
+                leading: const Icon(Icons.settings_voice_outlined),
+                title: const Text('Open voice settings'),
+                subtitle: const Text(
+                  'Review continuous voice and trust settings',
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  GoRouter.maybeOf(context)?.go(AppRoutes.settings);
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.short_text),
               title: const Text('Command word'),
