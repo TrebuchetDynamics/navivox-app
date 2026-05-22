@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/shared/widgets/app_shell.dart';
+import 'package:navivox/theme/navivox_theme.dart';
 
 void main() {
   testWidgets('mobile chat thread hides app bottom navigation like Telegram', (
@@ -45,6 +46,30 @@ void main() {
       expect(find.text('Chats'), findsWidgets);
       expect(find.text('Servers'), findsOneWidget);
       expect(find.text('Memory'), findsOneWidget);
+    });
+  });
+
+  testWidgets('mobile drawer uses Telegram-blue branded header', (
+    tester,
+  ) async {
+    await _withMobileSurface(tester, () async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: navivoxLightTheme,
+          home: const AppShell(location: '/chats', child: Text('Contact list')),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      final header = tester.widget<DrawerHeader>(find.byType(DrawerHeader));
+      final decoration = header.decoration as BoxDecoration?;
+
+      expect(decoration?.color, navivoxLightTheme.colorScheme.primary);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      expect(find.text('Navivox'), findsOneWidget);
+      expect(find.text('Gormes operator console'), findsOneWidget);
     });
   });
 

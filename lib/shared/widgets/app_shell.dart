@@ -105,14 +105,45 @@ class _AppNavigationDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Drawer(
       child: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const ListTile(
-              title: Text('Navivox'),
-              subtitle: Text('Gormes operator console'),
+            DrawerHeader(
+              margin: EdgeInsets.zero,
+              decoration: BoxDecoration(color: colorScheme.primary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: colorScheme.onPrimary.withAlpha(32),
+                    child: Icon(
+                      Icons.smart_toy_outlined,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Navivox',
+                    style: textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    'Gormes operator console',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const Divider(height: 1),
             for (var index = 0; index < destinations.length; index++)
