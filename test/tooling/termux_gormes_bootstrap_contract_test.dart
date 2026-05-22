@@ -27,7 +27,13 @@ void main() {
     expect(text, contains('Navivox cannot silently install Gormes'));
     expect(text, contains('gormes navivox connect-info'));
     expect(text, contains('Never paste pairing tokens'));
+    expect(text, contains('Termux:Boot'));
+    expect(text, contains('same APK source'));
+    expect(text, contains('gormes gateway boot-install'));
+    expect(text, contains('gormes gateway boot-uninstall'));
+    expect(text, contains('.termux/boot/gormes-gateway.sh'));
     expect(text, isNot(contains('curl | sh')));
+    expect(text, isNot(contains('pm install')));
     expect(text, isNot(contains('nvbx_')));
     expect(readme, contains('docs/termux-gormes-bootstrap.md'));
   });

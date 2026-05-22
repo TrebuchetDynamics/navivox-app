@@ -71,6 +71,7 @@ Navivox may help by:
 - detecting that no trusted gateway is configured;
 - showing the Phase 1 Termux checklist inside the setup flow;
 - copying the safe command block to the clipboard;
+- copying an optional Termux:Boot helper after manual Gormes setup succeeds;
 - opening the official Termux download page or this guide;
 - warning when a device URL uses `127.0.0.1` incorrectly for a separate host; and
 - prompting the operator to paste values from `gormes navivox connect-info` after Termux finishes.
@@ -80,9 +81,34 @@ Navivox must not:
 - install Termux APKs itself;
 - bypass Android package-install prompts;
 - run Termux commands silently;
+- install the Termux:Boot plugin or enable boot actions without the operator;
 - read private Termux files directly;
 - embed pairing tokens in logs or screenshots; or
 - assume a Google Play Termux build has the same behavior as F-Droid or official GitHub Releases.
+
+## Optional Termux:Boot auto-start
+
+Use this only after `bash install.sh`, `gormes gateway`, and `gormes navivox connect-info` work manually in Termux.
+
+Install the Termux:Boot plugin from the same APK source as Termux. For example, do not mix a F-Droid Termux app with a GitHub Releases Termux:Boot plugin.
+
+Then run these commands in Termux:
+
+```sh
+gormes gateway boot-install
+gormes gateway status
+gormes navivox connect-info
+```
+
+The boot install command writes `~/.termux/boot/gormes-gateway.sh`. Reboot Android to let Termux:Boot start the tmux gateway, then verify with `gormes gateway status` and paste fresh `gormes navivox connect-info` values into Navivox only.
+
+Rollback is explicit:
+
+```sh
+gormes gateway boot-uninstall
+```
+
+This helper does not make Android background execution reliable. Android battery management may still stop Termux, and Navivox still does not install APKs or run Termux commands for the operator.
 
 ## Android networking notes
 
