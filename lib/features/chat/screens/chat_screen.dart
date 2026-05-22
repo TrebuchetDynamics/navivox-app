@@ -341,6 +341,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final profileVoiceReason = activeProfile.voiceCapability.disabledReason
         .trim();
     if (profileVoiceReason.isNotEmpty) return profileVoiceReason;
+    if (activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
+            'unavailable' &&
+        activeProfile.voiceCapability.recoveryAction.trim().isNotEmpty) {
+      return 'device STT unavailable';
+    }
     if (!activeProfile.micAvailable) return 'mic unavailable';
     return null;
   }
