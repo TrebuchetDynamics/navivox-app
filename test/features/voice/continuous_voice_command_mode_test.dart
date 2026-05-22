@@ -288,6 +288,44 @@ void main() {
     expect(find.text('device STT unavailable'), findsOneWidget);
   });
 
+  testWidgets('continuous voice unavailable banner announces controls', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final channel = _seedChannel(selectedKey: 'local::mineru');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const MaterialApp(
+            home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('continuous-voice-banner')),
+        ),
+        matchesSemantics(
+          label: 'Continuous voice unavailable: device STT unavailable',
+          hint: 'Open continuous voice controls',
+          textDirection: TextDirection.ltr,
+          isButton: true,
+          isEnabled: true,
+          hasEnabledState: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('profile-reported STT unavailability blocks capture', (
     tester,
   ) async {

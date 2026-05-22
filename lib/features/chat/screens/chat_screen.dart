@@ -718,28 +718,33 @@ class _VoiceModeBanner extends StatelessWidget {
       child: InkWell(
         key: const ValueKey('continuous-voice-banner'),
         onTap: () => _showVoiceControls(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Icon(
-                disabledReason == null ? Icons.keyboard_voice : Icons.mic_off,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: Text(text)),
-              const Icon(Icons.tune, size: 18),
-              if (pending)
-                TextButton(
-                  onPressed: onCancelPending,
-                  child: const Text('Cancel'),
+        child: Semantics(
+          button: true,
+          enabled: true,
+          hint: 'Open continuous voice controls',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  disabledReason == null ? Icons.keyboard_voice : Icons.mic_off,
+                  size: 18,
                 ),
-              if (!pending && canTrustServer)
-                TextButton(
-                  onPressed: onTrustServer,
-                  child: const Text('Trust server'),
-                ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(child: Text(text)),
+                const Icon(Icons.tune, size: 18),
+                if (pending)
+                  TextButton(
+                    onPressed: onCancelPending,
+                    child: const Text('Cancel'),
+                  ),
+                if (!pending && canTrustServer)
+                  TextButton(
+                    onPressed: onTrustServer,
+                    child: const Text('Trust server'),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
