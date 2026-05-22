@@ -69,6 +69,33 @@ void main() {
     expect(config.headers, {'Authorization': 'Bearer nvbx_test_token'});
   });
 
+  test('parses Gormes pairing descriptor into gateway config', () {
+    final descriptor = NavivoxPairingDescriptor.parse(
+      'navivox://connect?'
+      'base_url=http%3A%2F%2F127.0.0.1%3A8765&'
+      'websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&'
+      'auth_mode=pairing_token&'
+      'exposure_mode=local&'
+      'token_required=true&'
+      'rest_token=setup-secret-token',
+    );
+
+    expect(descriptor.baseUri.toString(), 'http://127.0.0.1:8765');
+    expect(
+      descriptor.webSocketUri.toString(),
+      'ws://127.0.0.1:8765/v1/navivox/stream',
+    );
+    expect(descriptor.authMode, 'pairing_token');
+    expect(descriptor.exposureMode, 'local');
+    expect(descriptor.tokenRequired, isTrue);
+    expect(descriptor.token, 'setup-secret-token');
+
+    final config = descriptor.toGatewayConfig();
+    expect(config.baseUri.toString(), 'http://127.0.0.1:8765');
+    expect(config.streamUri.toString(), descriptor.webSocketUri.toString());
+    expect(config.headers, {'Authorization': 'Bearer setup-secret-token'});
+  });
+
   test('builds typed gateway messages', () {
     final start = NavivoxGatewayMessage.startTurn(
       requestId: 'req-1',

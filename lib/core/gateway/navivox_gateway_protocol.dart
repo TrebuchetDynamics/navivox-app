@@ -143,6 +143,73 @@ class NavivoxGatewayConfig {
   }
 }
 
+class NavivoxPairingDescriptor {
+  const NavivoxPairingDescriptor({
+    required this.baseUri,
+    required this.webSocketUri,
+    required this.authMode,
+    required this.exposureMode,
+    required this.tokenRequired,
+    this.token,
+  });
+
+  factory NavivoxPairingDescriptor.parse(String value) {
+    final uri = Uri.parse(value.trim());
+    if (uri.scheme != 'navivox' || uri.host != 'connect') {
+      throw FormatException('Expected navivox://connect descriptor', value);
+    }
+    final query = uri.queryParameters;
+    final tokenRequired = _boolFromPairingParam(query['token_required']);
+    final token = _optionalPairingParam(query['rest_token']);
+    if (tokenRequired && token == null) {
+      throw FormatException('Pairing descriptor requires rest_token', value);
+    }
+    return NavivoxPairingDescriptor(
+      baseUri: Uri.parse(_requiredPairingParam(query, 'base_url', value)),
+      webSocketUri: Uri.parse(
+        _requiredPairingParam(query, 'websocket_url', value),
+      ),
+      authMode: _optionalPairingParam(query['auth_mode']) ?? '',
+      exposureMode: _optionalPairingParam(query['exposure_mode']) ?? '',
+      tokenRequired: tokenRequired,
+      token: token,
+    );
+  }
+
+  final Uri baseUri;
+  final Uri webSocketUri;
+  final String authMode;
+  final String exposureMode;
+  final bool tokenRequired;
+  final String? token;
+
+  NavivoxGatewayConfig toGatewayConfig() {
+    return NavivoxGatewayConfig(baseUri: baseUri, token: token);
+  }
+}
+
+String _requiredPairingParam(
+  Map<String, String> query,
+  String name,
+  String descriptor,
+) {
+  final value = _optionalPairingParam(query[name]);
+  if (value == null) {
+    throw FormatException('Pairing descriptor missing $name', descriptor);
+  }
+  return value;
+}
+
+String? _optionalPairingParam(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  return trimmed;
+}
+
+bool _boolFromPairingParam(String? value) {
+  return value?.trim().toLowerCase() == 'true';
+}
+
 class NavivoxGatewayMessage {
   const NavivoxGatewayMessage._(this.body);
 
