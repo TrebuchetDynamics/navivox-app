@@ -15,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(navivoxVoiceSettingsProvider);
     final controller = ref.read(navivoxVoiceSettingsProvider.notifier);
     final activeServer = channel.state.activeServer;
+    final activeProfile = channel.state.activeProfileContact;
     final activeServerTrusted =
         activeServer != null && settings.isTrusted(activeServer.id);
 
@@ -78,6 +79,32 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: (trusted) =>
                   controller.setServerTrusted(activeServer.id, trusted),
             ),
+          if (activeServer != null || activeProfile != null) ...[
+            const Divider(),
+            const ListTile(
+              leading: Icon(Icons.route_outlined),
+              title: Text('Current session scope'),
+              subtitle: Text(
+                'Local settings apply to the currently selected gateway and profile contact.',
+              ),
+            ),
+            if (activeServer != null)
+              ListTile(
+                key: const ValueKey('settings-current-gateway'),
+                leading: const Icon(Icons.dns_outlined),
+                title: const Text('Active Gormes gateway'),
+                subtitle: Text('${activeServer.name} · ${activeServer.id}'),
+              ),
+            if (activeProfile != null)
+              ListTile(
+                key: const ValueKey('settings-current-profile'),
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('Active profile contact'),
+                subtitle: Text(
+                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId}',
+                ),
+              ),
+          ],
         ],
       ),
     );

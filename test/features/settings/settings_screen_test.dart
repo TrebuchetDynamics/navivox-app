@@ -63,16 +63,63 @@ void main() {
     expect(find.text('Manage profile contacts'), findsOneWidget);
 
     expect(
-      tester.widget<ListTile>(
-        find.byKey(const ValueKey('settings-manage-gateways')),
-      ).onTap,
+      tester
+          .widget<ListTile>(
+            find.byKey(const ValueKey('settings-manage-gateways')),
+          )
+          .onTap,
       isNotNull,
     );
     expect(
-      tester.widget<ListTile>(
-        find.byKey(const ValueKey('settings-manage-profiles')),
-      ).onTap,
+      tester
+          .widget<ListTile>(
+            find.byKey(const ValueKey('settings-manage-profiles')),
+          )
+          .onTap,
       isNotNull,
     );
+  });
+
+  testWidgets('settings expose the active gateway and profile scope', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+      ], activeServerId: 'local')
+      ..seedProfileContacts(const [
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru Builder',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+      ], selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+
+    await tester.scrollUntilVisible(find.text('Current session scope'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Current session scope'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-current-gateway')),
+      findsOneWidget,
+    );
+    expect(find.text('Active Gormes gateway'), findsOneWidget);
+    expect(find.text('Local Gormes · local'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-current-profile')),
+      findsOneWidget,
+    );
+    expect(find.text('Active profile contact'), findsOneWidget);
+    expect(find.text('Mineru Builder · local/mineru'), findsOneWidget);
   });
 }
