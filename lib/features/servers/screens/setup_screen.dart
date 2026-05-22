@@ -19,6 +19,15 @@ bash install.sh
 gormes navivox connect-info
 ''';
 
+const termuxDownloadLinks = '''
+Termux install sources:
+- Official site: https://termux.dev/en/
+- Preferred Android package: https://f-droid.org/packages/com.termux/
+- Official GitHub Releases: https://github.com/termux/termux-app/releases
+
+Use one signing source for Termux and plugins. Do not mix F-Droid, GitHub, or other APK sources on the same install.
+''';
+
 typedef SetupQrImageImporter = Future<SetupQrImageImport?> Function();
 
 class SetupQrImageImport {
@@ -203,6 +212,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             icon: const Icon(Icons.content_copy),
                             label: const Text('Copy Termux commands'),
                           ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _copyTermuxDownloadLinks,
+                            icon: const Icon(Icons.link),
+                            label: const Text('Copy Termux download links'),
+                          ),
                         ],
                       ),
                     ),
@@ -290,6 +305,23 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Could not copy Termux commands.');
+      }
+    }
+  }
+
+  Future<void> _copyTermuxDownloadLinks() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(const ClipboardData(text: termuxDownloadLinks));
+      if (mounted) {
+        setState(() => _status = 'Copied Termux download links.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy Termux download links.');
       }
     }
   }

@@ -145,6 +145,55 @@ void main() {
     expect(find.text('Copied Termux bootstrap commands.'), findsOneWidget);
   });
 
+  testWidgets('copy Termux download links stores official sources only', (
+    tester,
+  ) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Copy Termux download links'));
+    await tester.tap(find.text('Copy Termux download links'));
+    await tester.pumpAndSettle();
+
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('https://termux.dev/en/'));
+    expect(copied.single, contains('https://f-droid.org/packages/com.termux/'));
+    expect(
+      copied.single,
+      contains('https://github.com/termux/termux-app/releases'),
+    );
+    expect(copied.single, contains('Use one signing source'));
+    expect(copied.single.toLowerCase(), isNot(contains('play.google')));
+    expect(find.text('Copied Termux download links.'), findsOneWidget);
+  });
+
   testWidgets(
     'connect failure gives connect-info guidance without token leak',
     (tester) async {
