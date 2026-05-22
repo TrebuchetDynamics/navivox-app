@@ -91,6 +91,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       activeProfile: activeProfile,
       settings: voiceSettings,
     );
+    final voiceRecoveryAction = _voiceRecoveryAction(activeProfile);
     final activeVoiceRun = state.activeVoiceRun;
     final pendingVoiceRun =
         activeVoiceRun?.status == NavivoxVoiceRunStatus.pendingSend
@@ -172,6 +173,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             pending: pendingVoiceRun != null,
             pendingTranscript: pendingVoiceRun?.transcript,
             profileName: activeProfile?.displayName,
+            recoveryAction: voiceRecoveryAction,
             ready:
                 voiceService != null &&
                 activeProfile != null &&
@@ -341,6 +343,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (profileVoiceReason.isNotEmpty) return profileVoiceReason;
     if (!activeProfile.micAvailable) return 'mic unavailable';
     return null;
+  }
+
+  String? _voiceRecoveryAction(NavivoxProfileContact? activeProfile) {
+    final disabledReason = activeProfile?.voiceCapability.disabledReason.trim();
+    if (disabledReason == null || disabledReason.isEmpty) return null;
+    final recoveryAction = activeProfile?.voiceCapability.recoveryAction.trim();
+    if (recoveryAction == null || recoveryAction.isEmpty) return null;
+    return recoveryAction;
   }
 
   void _handleTextSubmit(NavivoxChannel channel, String text) {
@@ -652,6 +662,7 @@ class _VoiceModeBanner extends StatelessWidget {
     required this.pending,
     required this.pendingTranscript,
     required this.profileName,
+    required this.recoveryAction,
     required this.ready,
     required this.canTrustServer,
     required this.onTrustServer,
@@ -665,6 +676,7 @@ class _VoiceModeBanner extends StatelessWidget {
   final bool pending;
   final String? pendingTranscript;
   final String? profileName;
+  final String? recoveryAction;
   final bool ready;
   final bool canTrustServer;
   final VoidCallback? onTrustServer;
@@ -756,6 +768,12 @@ class _VoiceModeBanner extends StatelessWidget {
                   Navigator.of(context).pop();
                   onCancelPending();
                 },
+              ),
+            if (disabledReason != null && recoveryAction != null)
+              ListTile(
+                leading: const Icon(Icons.tips_and_updates_outlined),
+                title: const Text('Recovery action'),
+                subtitle: Text(recoveryAction!),
               ),
             if (disabledReason != null)
               ListTile(
