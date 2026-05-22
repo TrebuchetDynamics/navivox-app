@@ -26,6 +26,15 @@ ThemeData _buildNavivoxTheme(Brightness brightness) {
       backgroundColor: colorScheme.primary,
       foregroundColor: colorScheme.onPrimary,
     ),
+    drawerTheme: DrawerThemeData(
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    ),
+    listTileTheme: ListTileThemeData(
+      selectedColor: colorScheme.primary,
+      selectedTileColor: colorScheme.primary.withAlpha(24),
+    ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: colorScheme.surface,
       indicatorColor: colorScheme.primaryContainer,

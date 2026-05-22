@@ -14,6 +14,22 @@ void main() {
     expect(navivoxDarkTheme.appBarTheme.centerTitle, isFalse);
   });
 
+  test('Navivox themes style the drawer like a Telegram side menu', () {
+    for (final theme in [navivoxLightTheme, navivoxDarkTheme]) {
+      final colorScheme = theme.colorScheme;
+      final drawerShape = theme.drawerTheme.shape as RoundedRectangleBorder?;
+
+      expect(theme.drawerTheme.backgroundColor, colorScheme.surface);
+      expect(theme.drawerTheme.surfaceTintColor, Colors.transparent);
+      expect(drawerShape?.borderRadius, BorderRadius.zero);
+      expect(theme.listTileTheme.selectedColor, colorScheme.primary);
+      expect(
+        theme.listTileTheme.selectedTileColor,
+        colorScheme.primary.withAlpha(24),
+      );
+    }
+  });
+
   testWidgets('NavivoxApp exposes system light and dark themes', (
     tester,
   ) async {
