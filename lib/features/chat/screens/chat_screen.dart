@@ -357,17 +357,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     NavivoxProfileContact? activeProfile,
     String? voiceDisabledReason,
   ) {
-    if (activeProfile == null || voiceDisabledReason == null) return null;
-    final recoveryAction = activeProfile.voiceCapability.recoveryAction.trim();
-    if (recoveryAction.isEmpty) return null;
-    final disabledReason = activeProfile.voiceCapability.disabledReason.trim();
-    if (disabledReason.isNotEmpty && voiceDisabledReason == disabledReason) {
-      return recoveryAction;
+    if (voiceDisabledReason == null) return null;
+    final recoveryAction = activeProfile?.voiceCapability.recoveryAction.trim();
+    if (recoveryAction != null && recoveryAction.isNotEmpty) {
+      final disabledReason = activeProfile!.voiceCapability.disabledReason
+          .trim();
+      if (disabledReason.isNotEmpty && voiceDisabledReason == disabledReason) {
+        return recoveryAction;
+      }
+      if (voiceDisabledReason == 'device STT unavailable' &&
+          activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
+              'unavailable') {
+        return recoveryAction;
+      }
     }
-    if (voiceDisabledReason == 'device STT unavailable' &&
-        activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
-            'unavailable') {
-      return recoveryAction;
+    if (voiceDisabledReason == 'device STT unavailable') {
+      return 'Install or enable device speech recognition, then reopen Navivox.';
     }
     return null;
   }

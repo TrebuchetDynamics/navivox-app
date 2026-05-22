@@ -288,6 +288,34 @@ void main() {
     expect(find.text('device STT unavailable'), findsOneWidget);
   });
 
+  testWidgets('continuous voice unavailable sheet gives STT recovery action', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(
+          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(
+      find.text(
+        'Install or enable device speech recognition, then reopen Navivox.',
+      ),
+      findsOneWidget,
+    );
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('continuous voice unavailable banner announces controls', (
     tester,
   ) async {
