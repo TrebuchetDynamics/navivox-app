@@ -361,7 +361,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (capability != null &&
         recoveryAction != null &&
         recoveryAction.isNotEmpty &&
-        voiceDisabledReason == capability.captureUnavailableReason) {
+        (voiceDisabledReason == capability.captureUnavailableReason ||
+            voiceDisabledReason == 'device STT unavailable')) {
       return recoveryAction;
     }
     if (voiceDisabledReason == 'device STT unavailable') {

@@ -60,13 +60,17 @@ void main() {
       expect(capability.blocksDeviceCapture, isFalse);
     });
 
-    test('blocks when unavailable device STT includes recovery guidance', () {
-      const capability = NavivoxVoiceCapability(
-        deviceStt: ' unavailable ',
-        recoveryAction: 'Enable device speech recognition',
-      );
+    test(
+      'does not block when unavailable device STT only has recovery guidance',
+      () {
+        const capability = NavivoxVoiceCapability(
+          deviceStt: ' unavailable ',
+          recoveryAction: 'Enable device speech recognition',
+        );
 
-      expect(capability.blocksDeviceCapture, isTrue);
-    });
+        expect(capability.captureUnavailableReason, isNull);
+        expect(capability.blocksDeviceCapture, isFalse);
+      },
+    );
   });
 }
