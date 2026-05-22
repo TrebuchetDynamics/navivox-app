@@ -27,6 +27,20 @@ void main() {
     expect(text, contains('Navivox cannot silently install Gormes'));
     expect(text, contains('gormes navivox connect-info'));
     expect(text, contains('Never paste pairing tokens'));
+    expect(text, contains('one terminal interaction maximum'));
+    expect(
+      text,
+      contains('Install Termux, paste one command, continue in Navivox'),
+    );
+    expect(text, contains('Gormes installed successfully'));
+    expect(text, contains('Navivox (recommended)'));
+    expect(text, contains('CLI setup'));
+    expect(text, contains('gormes navivox pair'));
+    expect(text, contains('start local bridge'));
+    expect(text, contains('generate a pairing token'));
+    expect(text, contains('show a QR'));
+    expect(text, contains('print localhost URL'));
+    expect(text, contains('wait for Navivox connection'));
     expect(text, contains('Termux:Boot'));
     expect(text, contains('same APK source'));
     expect(text, contains('gormes gateway boot-install'));

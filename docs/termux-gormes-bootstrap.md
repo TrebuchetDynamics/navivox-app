@@ -4,6 +4,24 @@ Use this guide when the operator wants to run a trusted Gormes gateway on the sa
 
 This is not a silent mobile installer. Phase 1 is a user-run Termux bootstrap. Phase 2 can make Navivox assist the handoff, but Android app sandboxing means Navivox cannot silently install Gormes or run arbitrary Termux commands without explicit user action.
 
+## Target product direction: one terminal interaction maximum
+
+The target Android flow is: Install Termux, paste one command, continue in Navivox. Termux installation remains an explicit Android user action, but after Termux opens the operator should need at most one pasted bootstrap command before setup moves to the app.
+
+After the bootstrap finishes, Gormes should print a short handoff instead of keeping the operator in a long terminal wizard:
+
+```text
+Gormes installed successfully
+Choose setup path:
+1. Navivox (recommended)
+   Pair your Android app and continue setup there.
+2. CLI setup
+   Continue fully in terminal.
+Recommended next step: gormes navivox pair
+```
+
+`gormes navivox pair` is the intended app-first handoff command. It should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection. Navivox then finishes configuration, verifies gateway status, and keeps pairing tokens inside the app.
+
 ## Source-backed Termux facts
 
 - Termux publishes current install guidance from the Termux app repository and site: <https://termux.dev/en/> and <https://github.com/termux/termux-app>.
