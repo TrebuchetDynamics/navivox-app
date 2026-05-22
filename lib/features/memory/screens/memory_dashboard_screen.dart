@@ -34,6 +34,7 @@ class MemoryDashboardScreen extends ConsumerWidget {
         ),
         data: (overview) => _MemoryOverviewBody(
           overview: overview,
+          serverLabel: _serverLabel(activeProfile, fallback: 'default'),
           profileLabel: _profileLabel(
             activeProfile,
             fallback: overview.profileId,
@@ -47,10 +48,12 @@ class MemoryDashboardScreen extends ConsumerWidget {
 class _MemoryOverviewBody extends StatelessWidget {
   const _MemoryOverviewBody({
     required this.overview,
+    required this.serverLabel,
     required this.profileLabel,
   });
 
   final NavivoxMemoryOverview overview;
+  final String serverLabel;
   final String profileLabel;
 
   @override
@@ -82,6 +85,7 @@ class _MemoryOverviewBody extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
+                Text('Server: $serverLabel'),
                 Text('Profile: $profileLabel'),
                 if (overview.workspaceId.isNotEmpty)
                   Text('Workspace: ${overview.workspaceId}'),
@@ -607,5 +611,14 @@ String _profileLabel(
 }) {
   final displayName = contact?.displayName.trim();
   if (displayName != null && displayName.isNotEmpty) return displayName;
+  return fallback;
+}
+
+String _serverLabel(
+  NavivoxProfileContact? contact, {
+  required String fallback,
+}) {
+  final serverLabel = contact?.serverLabel.trim();
+  if (serverLabel != null && serverLabel.isNotEmpty) return serverLabel;
   return fallback;
 }

@@ -53,6 +53,7 @@ void main() {
 
       expect(find.text('Memory'), findsWidgets);
       expect(find.text('Goncho active'), findsOneWidget);
+      expect(find.text('Server: local'), findsOneWidget);
       expect(find.text('Profile: Mineru Builder'), findsOneWidget);
       expect(find.text('120'), findsOneWidget);
       expect(find.text('Turns'), findsWidgets);
