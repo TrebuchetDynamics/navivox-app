@@ -28,20 +28,25 @@ class ServersScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final server = servers[index];
                 final contacts = contactsByServer[server.id] ?? const [];
+                final active = server.id == state.activeServerId;
                 return _ServerCard(
                   server: server,
                   contacts: contacts,
-                  active: server.id == state.activeServerId,
-                  onManage: () => _showManageGateway(context, server, contacts),
+                  active: active,
+                  onManage: () => _showManageGateway(
+                    context,
+                    ref.read(navivoxChannelProvider),
+                    server,
+                    contacts,
+                    active: active,
+                  ),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
         tooltip: 'Register gateway',
-        onPressed: () => _showRegisterGateway(
-          context,
-          ref.read(navivoxChannelProvider),
-        ),
+        onPressed: () =>
+            _showRegisterGateway(context, ref.read(navivoxChannelProvider)),
         icon: const Icon(Icons.add_link),
         label: const Text('Register'),
       ),
@@ -50,9 +55,11 @@ class ServersScreen extends ConsumerWidget {
 
   void _showManageGateway(
     BuildContext context,
+    NavivoxChannel channel,
     NavivoxServer server,
-    List<NavivoxProfileContact> contacts,
-  ) {
+    List<NavivoxProfileContact> contacts, {
+    required bool active,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -81,6 +88,19 @@ class ServersScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(left: 56, bottom: 12),
               child: SelectableText(server.id),
             ),
+            if (active) ...[
+              const Divider(),
+              ListTile(
+                key: const ValueKey('server-disconnect-current'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.link_off),
+                title: const Text('Disconnect current session'),
+                subtitle: const Text(
+                  'Close the active Gormes gateway connection for this app session.',
+                ),
+                onTap: () => _confirmDisconnect(context, channel, server),
+              ),
+            ],
             const Divider(),
             const ListTile(
               contentPadding: EdgeInsets.zero,
@@ -109,6 +129,49 @@ class ServersScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDisconnect(
+    BuildContext context,
+    NavivoxChannel channel,
+    NavivoxServer server,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Disconnect ${server.name}?'),
+        content: const Text(
+          'Navivox will close the active gateway session. Stored app settings stay on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('server-disconnect-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await channel.disconnect();
+      if (!context.mounted) return;
+      await Navigator.of(context).maybePop();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('Disconnected ${server.name}')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('Disconnect failed: $error')));
+    }
   }
 
   void _showRegisterGateway(BuildContext context, NavivoxChannel channel) {

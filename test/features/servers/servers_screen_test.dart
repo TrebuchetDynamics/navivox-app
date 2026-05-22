@@ -9,10 +9,16 @@ import '../../support/test_navivox_channel.dart';
 
 class RecordingConnectChannel extends TestNavivoxChannel {
   final connectCalls = <({String baseUrl, String? token})>[];
+  int disconnectCalls = 0;
 
   @override
   Future<void> connect({required String baseUrl, String? token}) async {
     connectCalls.add((baseUrl: baseUrl, token: token));
+  }
+
+  @override
+  Future<void> disconnect() async {
+    disconnectCalls += 1;
   }
 }
 
@@ -153,5 +159,41 @@ void main() {
       find.text('Connection test passed for http://127.0.0.1:7319'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('active gateway management can disconnect the current session', (
+    tester,
+  ) async {
+    final channel = RecordingConnectChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+      ], activeServerId: 'local');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ServersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('server-manage-local')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('server-disconnect-current')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('server-disconnect-current')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Disconnect Local Gormes?'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('server-disconnect-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(channel.disconnectCalls, 1);
+    expect(find.text('Disconnected Local Gormes'), findsOneWidget);
   });
 }
