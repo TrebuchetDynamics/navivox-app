@@ -54,7 +54,7 @@ Navivox expects a Gormes host exposing the Navivox channel:
 - `POST /v1/navivox/turn` — submit a user turn
 - `WS /v1/navivox/stream` — stream session and assistant events
 
-On the host side, `gormes navivox connect-info` prints reachable base URLs for setup.
+On the host side, `gormes navivox pair` is the recommended setup path. It should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection. `gormes navivox connect-info` remains the fallback for older Gormes builds or manual setup.
 
 ## Repository Layout
 
@@ -114,8 +114,9 @@ flutter run -d <device-id>
 Android target notes:
 
 - Android emulator: use `http://10.0.2.2:<port>` when the Gormes gateway is running on the host machine.
-- A physical Android device cannot reach the host through `127.0.0.1`; use the host LAN, VPN, or Tailscale URL printed by `gormes navivox connect-info`.
-- If the operator wants to run Gormes on the same Android device through Termux, follow `docs/termux-gormes-bootstrap.md`.
+- A physical Android device cannot reach the host through `127.0.0.1`; use the host LAN, VPN, or Tailscale URL printed by `gormes navivox pair` or the `gormes navivox connect-info` fallback.
+- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/termux-gormes-bootstrap.md`.
+- Recommended setup path: `gormes navivox pair`.
 - Keep the pairing token inside Navivox only; never paste it into issue reports, logs, screenshots, or chat transcripts.
 
 ## Connected Smoke Test
@@ -123,15 +124,17 @@ Android target notes:
 Use this only with a trusted local or self-hosted Gormes host:
 
 1. Start or select a Gormes host with the Navivox channel enabled.
-2. On the host, print the setup values:
+2. On the host or in Termux, start the app-first pairing handoff:
 
    ```bash
-   gormes navivox connect-info
+   gormes navivox pair
    ```
 
+   This should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection. `gormes navivox connect-info` remains the fallback when pairing is unavailable or manual setup is required.
+
 3. Confirm the gateway answers `GET /healthz` and authenticated `GET /v1/navivox/status`.
-4. Copy the reachable base URL into the Navivox setup screen.
-5. If `connect-info` prints a token, paste it into Navivox only. Do not paste tokens into issues, logs, or screenshots.
+4. Scan/import the QR, or copy the reachable base URL into the Navivox setup screen.
+5. If setup output prints a token, paste it into Navivox only. Do not paste tokens into issues, logs, or screenshots.
 6. Send a short text turn and confirm the app shows an assistant response, tool activity, or a clear connection recovery state.
 
 ## Troubleshooting
@@ -139,8 +142,8 @@ Use this only with a trusted local or self-hosted Gormes host:
 - If Flutter is missing, run `flutter doctor` and fix the reported SDK or platform setup before running Navivox.
 - If `flutter devices` shows `No supported devices found`, start an emulator, connect an Android device, or choose another Flutter target that appears in the device list.
 - If `flutter run -d <device-id>` fails after a layout move, run `flutter clean` and `flutter pub get` from the repository root. Do not delete source files while clearing generated state.
-- If the setup screen shows `Connection refused`, confirm the Gormes host is running, reachable from the device, and listening on the base URL from `gormes navivox connect-info`.
-- If the gateway returns `401` or `403`, refresh the setup values from `gormes navivox connect-info` and paste the token into Navivox only.
+- If the setup screen shows `Connection refused`, confirm the Gormes host is running, reachable from the device, and listening on the base URL from `gormes navivox pair` or the `gormes navivox connect-info` fallback.
+- If the gateway returns `401` or `403`, refresh setup with `gormes navivox pair` or `gormes navivox connect-info`, then paste the token into Navivox only.
 
 ## Security And Product Boundaries
 

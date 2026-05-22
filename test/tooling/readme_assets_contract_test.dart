@@ -25,6 +25,21 @@ void main() {
     expect(readme, contains('Android emulator'));
     expect(readme, contains('10.0.2.2'));
     expect(readme, contains('physical Android device'));
+    expect(
+      readme,
+      contains('Install Termux, paste one command, then continue in Navivox.'),
+    );
+    expect(readme, contains('Recommended setup path: `gormes navivox pair`'));
+    expect(
+      readme,
+      contains(
+        'start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection',
+      ),
+    );
+    expect(
+      readme,
+      contains('`gormes navivox connect-info` remains the fallback'),
+    );
     expect(readme, contains('## Connected Smoke Test'));
     expect(readme, contains('GET /healthz'));
     expect(readme, contains('GET /v1/navivox/status'));
