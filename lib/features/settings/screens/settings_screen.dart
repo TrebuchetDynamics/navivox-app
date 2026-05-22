@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
 import '../providers/voice_settings_provider.dart';
@@ -103,7 +104,9 @@ class SettingsScreen extends ConsumerWidget {
                 key: const ValueKey('settings-current-gateway'),
                 leading: const Icon(Icons.dns_outlined),
                 title: const Text('Active Gormes gateway'),
-                subtitle: Text('${activeServer.name} · ${activeServer.id}'),
+                subtitle: Text(
+                  '${activeServer.name} · ${activeServer.id} · ${activeServer.status}',
+                ),
               ),
             if (activeProfile != null)
               ListTile(
@@ -111,7 +114,7 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.badge_outlined),
                 title: const Text('Active profile contact'),
                 subtitle: Text(
-                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId}',
+                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId} · ${_healthLabel(activeProfile.health)}',
                 ),
               ),
           ],
@@ -124,4 +127,13 @@ class SettingsScreen extends ConsumerWidget {
 String _countLabel(int count, String singular) {
   final plural = count == 1 ? singular : '${singular}s';
   return '$count $plural';
+}
+
+String _healthLabel(NavivoxProfileHealth health) {
+  return switch (health) {
+    NavivoxProfileHealth.online => 'online',
+    NavivoxProfileHealth.offline => 'offline',
+    NavivoxProfileHealth.needsAuth => 'auth',
+    NavivoxProfileHealth.warning => 'warning',
+  };
 }

@@ -167,12 +167,12 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Active Gormes gateway'), findsOneWidget);
-    expect(find.text('Local Gormes · local'), findsOneWidget);
+    expect(find.text('Local Gormes · local · online'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('settings-current-profile')),
       findsOneWidget,
     );
     expect(find.text('Active profile contact'), findsOneWidget);
-    expect(find.text('Mineru Builder · local/mineru'), findsOneWidget);
+    expect(find.text('Mineru Builder · local/mineru · online'), findsOneWidget);
   });
 }
