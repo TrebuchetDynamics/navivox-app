@@ -314,6 +314,40 @@ void main() {
     expect(channel.sentVoiceTranscripts, isEmpty);
   });
 
+  testWidgets('missing profile sheet points to profile selection first', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ChatScreen(serverId: 'local')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open voice settings'), findsOneWidget);
+    expect(
+      find.text(
+        'Select a profile contact before reviewing continuous voice settings.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Review continuous voice after enabling device speech recognition.',
+      ),
+      findsNothing,
+    );
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('disabled continuous voice setting beats unavailable STT', (
     tester,
   ) async {

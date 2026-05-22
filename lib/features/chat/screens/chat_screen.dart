@@ -766,6 +766,8 @@ class _VoiceModeBanner extends StatelessWidget {
         : 'Voice standby';
     final voiceSettingsSubtitle = disabledReason == 'device STT unavailable'
         ? 'Review continuous voice after enabling device speech recognition.'
+        : disabledReason == 'select a profile'
+        ? 'Select a profile contact before reviewing continuous voice settings.'
         : 'Review continuous voice and trust settings';
     showModalBottomSheet<void>(
       context: context,
