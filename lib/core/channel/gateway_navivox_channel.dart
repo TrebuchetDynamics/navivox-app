@@ -38,7 +38,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     await disconnect();
     final config = NavivoxGatewayConfig.fromBaseUrl(baseUrl, token: token);
     final client = NavivoxGatewayClient(config: config);
-    await client.status();
+    final status = await client.gatewayStatus();
     _client = client;
     final contactPayloads = await client.profileContacts();
     final profileContacts = contactPayloads
@@ -47,6 +47,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final contacts = profileContacts.isEmpty
         ? [_fallbackProfileContact()]
         : profileContacts;
+    final profileRouting = status.supports('profile_routing')
+        ? await client.profileRouting()
+        : const NavivoxProfileRoutingReport();
     final socket = await client.connectStream();
     _socket = socket;
     _events = client
@@ -62,6 +65,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       activeServerId: contacts.first.serverId,
       profileContacts: contacts,
       selectedProfileContactKey: contacts.first.key,
+      profileRouting: profileRouting,
     );
     notifyListeners();
   }

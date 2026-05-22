@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../gateway/navivox_gateway_protocol.dart';
 import '../protocol/navivox_event.dart';
 import '../protocol/navivox_memory.dart';
 import '../protocol/navivox_voice_run.dart';
@@ -138,6 +139,7 @@ class NavivoxChannelState {
     this.selectedAgentId,
     this.profileContacts = const [],
     this.selectedProfileContactKey,
+    this.profileRouting = const NavivoxProfileRoutingReport(),
     this.configSchema,
     this.configValues = const {},
     this.configDiff,
@@ -152,6 +154,7 @@ class NavivoxChannelState {
   final String? selectedAgentId;
   final List<NavivoxProfileContact> profileContacts;
   final String? selectedProfileContactKey;
+  final NavivoxProfileRoutingReport profileRouting;
   final Map<String, Object?>? configSchema;
   final Map<String, Object?> configValues;
   final Map<String, Object?>? configDiff;
@@ -171,6 +174,13 @@ class NavivoxChannelState {
   NavivoxProfileContact? get activeProfileContact => profileContacts
       .where((contact) => contact.key == selectedProfileContactKey)
       .firstOrNull;
+  NavivoxProfileRoute? get activeProfileRoute {
+    final profileId = activeProfileContact?.profileId;
+    if (profileId == null) return null;
+    return profileRouting.profiles
+        .where((route) => route.profileId == profileId)
+        .firstOrNull;
+  }
 
   NavivoxChannelState copyWith({
     List<NavivoxServer>? servers,
@@ -182,6 +192,7 @@ class NavivoxChannelState {
     String? selectedAgentId,
     List<NavivoxProfileContact>? profileContacts,
     String? selectedProfileContactKey,
+    NavivoxProfileRoutingReport? profileRouting,
     Map<String, Object?>? configSchema,
     Map<String, Object?>? configValues,
     Map<String, Object?>? configDiff,
@@ -197,6 +208,7 @@ class NavivoxChannelState {
       profileContacts: profileContacts ?? this.profileContacts,
       selectedProfileContactKey:
           selectedProfileContactKey ?? this.selectedProfileContactKey,
+      profileRouting: profileRouting ?? this.profileRouting,
       configSchema: configSchema ?? this.configSchema,
       configValues: configValues ?? this.configValues,
       configDiff: configDiff ?? this.configDiff,
