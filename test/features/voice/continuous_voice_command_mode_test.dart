@@ -526,6 +526,58 @@ void main() {
     expect(channel.sentVoiceTranscripts, isEmpty);
   });
 
+  testWidgets('profile STT unavailable beats trust prompt', (tester) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts([
+        const NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          workspaceRootCount: 1,
+          micAvailable: true,
+          voiceCapability: NavivoxVoiceCapability(
+            deviceStt: 'unavailable',
+            recoveryAction: 'Enable device speech recognition',
+          ),
+        ),
+      ], selectedKey: 'local::mineru');
+    final voiceService = FakeVoiceCaptureService(
+      audio: Uint8List.fromList([1]),
+      transcript: 'should not capture',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.9,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: MaterialApp(
+          home: ChatScreen(
+            serverId: 'local',
+            profileId: 'mineru',
+            voiceCaptureServiceOverride: voiceService,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Continuous voice unavailable: trust local'),
+      findsNothing,
+    );
+    expect(find.text('Trust server'), findsNothing);
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('profile STT recovery action blocks capture without reason', (
     tester,
   ) async {
@@ -938,7 +990,17 @@ Future<void> _pumpTrustedChat(
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Trust server'));
+  final trustButton = find.text('Trust server');
+  if (trustButton.evaluate().isNotEmpty) {
+    await tester.tap(trustButton);
+  } else {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ChatScreen)),
+    );
+    container
+        .read(navivoxVoiceSettingsProvider.notifier)
+        .setServerTrusted('local', true);
+  }
   await tester.pumpAndSettle();
 }
 

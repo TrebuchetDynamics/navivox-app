@@ -183,8 +183,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 voiceDisabledReason == null,
             canTrustServer:
                 activeProfile != null &&
-                voiceService != null &&
-                !_voiceSettings(ref).isTrusted(activeProfile.serverId),
+                voiceDisabledReason == 'trust ${activeProfile.serverLabel}',
             onTrustServer: activeProfile == null
                 ? null
                 : () => ref
@@ -335,12 +334,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
     if (activeProfile == null) return 'select a profile contact';
     if (voiceService == null) return 'device STT unavailable';
-    if (!settings.isTrusted(activeProfile.serverId)) {
-      return 'trust ${activeProfile.serverLabel}';
-    }
-    if (activeProfile.health != NavivoxProfileHealth.online) {
-      return _profileHealthLabel(activeProfile.health);
-    }
     final profileVoiceReason = activeProfile.voiceCapability.disabledReason
         .trim();
     if (profileVoiceReason.isNotEmpty) return profileVoiceReason;
@@ -348,6 +341,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             'unavailable' &&
         activeProfile.voiceCapability.recoveryAction.trim().isNotEmpty) {
       return 'device STT unavailable';
+    }
+    if (!settings.isTrusted(activeProfile.serverId)) {
+      return 'trust ${activeProfile.serverLabel}';
+    }
+    if (activeProfile.health != NavivoxProfileHealth.online) {
+      return _profileHealthLabel(activeProfile.health);
     }
     if (!activeProfile.micAvailable) return 'mic unavailable';
     return null;
