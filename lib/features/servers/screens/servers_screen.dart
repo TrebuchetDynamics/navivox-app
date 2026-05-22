@@ -39,6 +39,7 @@ class ServersScreen extends ConsumerWidget {
                     server,
                     contacts,
                     active: active,
+                    activeProfile: state.activeProfileContact,
                   ),
                 );
               },
@@ -59,7 +60,12 @@ class ServersScreen extends ConsumerWidget {
     NavivoxServer server,
     List<NavivoxProfileContact> contacts, {
     required bool active,
+    NavivoxProfileContact? activeProfile,
   }) {
+    final activeProfileOnGateway =
+        activeProfile != null && activeProfile.serverId == server.id
+        ? activeProfile
+        : null;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -88,6 +94,18 @@ class ServersScreen extends ConsumerWidget {
               padding: const EdgeInsets.only(left: 56, bottom: 12),
               child: SelectableText(server.id),
             ),
+            if (activeProfileOnGateway != null) ...[
+              const Divider(),
+              ListTile(
+                key: ValueKey('server-active-profile-${server.id}'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('Active profile contact'),
+                subtitle: Text(
+                  '${activeProfileOnGateway.displayName} · ${activeProfileOnGateway.profileId}',
+                ),
+              ),
+            ],
             if (active) ...[
               const Divider(),
               ListTile(

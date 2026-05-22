@@ -196,4 +196,41 @@ void main() {
     expect(channel.disconnectCalls, 1);
     expect(find.text('Disconnected Local Gormes'), findsOneWidget);
   });
+
+  testWidgets('gateway management identifies the active profile contact', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+      ], activeServerId: 'local')
+      ..seedProfileContacts(const [
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru Builder',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+      ], selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ServersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('server-manage-local')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('server-active-profile-local')),
+      findsOneWidget,
+    );
+    expect(find.text('Active profile contact'), findsOneWidget);
+    expect(find.text('Mineru Builder · mineru'), findsOneWidget);
+  });
 }
