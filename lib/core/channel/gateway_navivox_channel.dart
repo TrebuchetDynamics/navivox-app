@@ -815,6 +815,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           fallback: micAvailable ? '' : 'mic unavailable',
         ),
         recoveryAction: _stringFromJson(value['recovery_action'], fallback: ''),
+        isReported: true,
       );
     }
     return NavivoxVoiceCapability(

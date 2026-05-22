@@ -343,7 +343,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     if (activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
             'unavailable' &&
-        activeProfile.voiceCapability.recoveryAction.trim().isNotEmpty) {
+        (activeProfile.voiceCapability.isReported ||
+            activeProfile.voiceCapability.recoveryAction.trim().isNotEmpty)) {
       return 'device STT unavailable';
     }
     if (!settings.isTrusted(activeProfile.serverId)) {

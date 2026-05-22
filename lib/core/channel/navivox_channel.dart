@@ -53,6 +53,7 @@ class NavivoxVoiceCapability {
     this.serverTts = 'unavailable',
     this.disabledReason = '',
     this.recoveryAction = '',
+    this.isReported = false,
   });
 
   final String deviceStt;
@@ -60,6 +61,7 @@ class NavivoxVoiceCapability {
   final String serverTts;
   final String disabledReason;
   final String recoveryAction;
+  final bool isReported;
 
   bool get enabled => disabledReason.trim().isEmpty;
 }
