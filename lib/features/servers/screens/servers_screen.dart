@@ -399,7 +399,7 @@ class _ServerCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        server.status,
+                        '${active ? 'Active session gateway' : 'Registered gateway'} · ${server.status}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

@@ -96,6 +96,27 @@ void main() {
     },
   );
 
+  testWidgets('gateway cards distinguish active session from registered', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+        NavivoxServer(id: 'office', name: 'Office Gateway', status: 'offline'),
+      ], activeServerId: 'local');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ServersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Active session gateway · online'), findsOneWidget);
+    expect(find.text('Registered gateway · offline'), findsOneWidget);
+  });
+
   testWidgets('register gateway action explains connect-info import boundary', (
     tester,
   ) async {
