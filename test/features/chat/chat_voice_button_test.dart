@@ -63,7 +63,9 @@ void main() {
     expect(find.text('Voice unavailable'), findsOneWidget);
     expect(find.text('device STT unavailable'), findsOneWidget);
     expect(
-      find.text('Check microphone permissions and Settings.'),
+      find.text(
+        'Install or enable device speech recognition, then reopen Navivox.',
+      ),
       findsOneWidget,
     );
   });
