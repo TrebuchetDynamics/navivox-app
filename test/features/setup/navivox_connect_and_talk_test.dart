@@ -242,6 +242,58 @@ void main() {
     expect(find.text('Copied same-device connection hint.'), findsOneWidget);
   });
 
+  testWidgets('copy Navivox pair handoff describes app-first setup', (
+    tester,
+  ) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Copy Navivox pair handoff'));
+    await tester.tap(find.text('Copy Navivox pair handoff'));
+    await tester.pumpAndSettle();
+
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('one terminal interaction maximum'));
+    expect(copied.single, contains('Navivox (recommended)'));
+    expect(copied.single, contains('gormes navivox pair'));
+    expect(copied.single, contains('start local bridge'));
+    expect(copied.single, contains('generate a pairing token'));
+    expect(copied.single, contains('show a QR'));
+    expect(copied.single, contains('print localhost URL'));
+    expect(copied.single, contains('wait for Navivox connection'));
+    expect(copied.single, contains('gormes navivox connect-info'));
+    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+    expect(copied.single.toLowerCase(), isNot(contains('silent install')));
+    expect(find.text('Copied Navivox pair handoff.'), findsOneWidget);
+  });
+
   testWidgets('copy post-install Termux checks keeps tokens out', (
     tester,
   ) async {

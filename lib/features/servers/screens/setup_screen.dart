@@ -38,6 +38,21 @@ gormes navivox connect-info
 If connect-info prints a pairing token, paste it only into Navivox. Do not share tokens in logs, screenshots, issues, or chat transcripts.
 ''';
 
+const termuxNavivoxPairHandoff = '''
+Navivox pair handoff target:
+The goal is one terminal interaction maximum: install Termux, paste one command, then continue setup in Navivox.
+
+After Gormes installs, choose Navivox (recommended) when prompted. If the installer prints the recommended next step, run:
+
+gormes navivox pair
+
+That command should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection.
+
+In Navivox, scan/import the QR or paste the base URL and token here. If this Gormes build does not offer pair yet, run gormes navivox connect-info and paste those values into Navivox only.
+
+Navivox does not install APKs or run Termux commands for you. Do not share pairing tokens in logs, screenshots, issues, or chat transcripts.
+''';
+
 const termuxGatewayLifecycle = '''
 Termux gateway foreground/tmux lifecycle:
 Run the Gormes gateway in a Termux foreground tmux session, then use status and connect-info from another Termux session.
@@ -284,6 +299,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
+                            onPressed: _copyTermuxNavivoxPairHandoff,
+                            icon: const Icon(Icons.qr_code_2),
+                            label: const Text('Copy Navivox pair handoff'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
                             onPressed: _copyTermuxGatewayLifecycle,
                             icon: const Icon(Icons.terminal),
                             label: const Text('Copy Termux gateway lifecycle'),
@@ -431,6 +452,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Could not copy post-install checks.');
+      }
+    }
+  }
+
+  Future<void> _copyTermuxNavivoxPairHandoff() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: termuxNavivoxPairHandoff),
+      );
+      if (mounted) {
+        setState(() => _status = 'Copied Navivox pair handoff.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy Navivox pair handoff.');
       }
     }
   }
