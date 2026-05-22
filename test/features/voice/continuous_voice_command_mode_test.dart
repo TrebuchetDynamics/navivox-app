@@ -288,6 +288,40 @@ void main() {
     expect(find.text('device STT unavailable'), findsOneWidget);
   });
 
+  testWidgets('disabled continuous voice setting beats unavailable STT', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(
+          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ChatScreen)),
+    );
+    container
+        .read(navivoxVoiceSettingsProvider.notifier)
+        .setContinuousVoiceEnabled(false);
+    await tester.pump();
+
+    expect(
+      find.text('Continuous voice unavailable: disabled in Settings'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsNothing,
+    );
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('continuous voice unavailable sheet gives STT recovery action', (
     tester,
   ) async {
