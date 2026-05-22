@@ -30,6 +30,21 @@ void main() {
     }
   });
 
+  test(
+    'Navivox themes style the desktop rail with Telegram-blue selection',
+    () {
+      for (final theme in [navivoxLightTheme, navivoxDarkTheme]) {
+        final colorScheme = theme.colorScheme;
+        final railTheme = theme.navigationRailTheme;
+
+        expect(railTheme.backgroundColor, colorScheme.surface);
+        expect(railTheme.indicatorColor, colorScheme.primary.withAlpha(24));
+        expect(railTheme.selectedIconTheme?.color, colorScheme.primary);
+        expect(railTheme.selectedLabelTextStyle?.color, colorScheme.primary);
+      }
+    },
+  );
+
   testWidgets('NavivoxApp exposes system light and dark themes', (
     tester,
   ) async {

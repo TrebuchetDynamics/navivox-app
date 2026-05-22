@@ -37,9 +37,9 @@ ThemeData _buildNavivoxTheme(Brightness brightness) {
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: colorScheme.surface,
-      indicatorColor: colorScheme.primaryContainer,
-      selectedIconTheme: IconThemeData(color: colorScheme.onPrimaryContainer),
-      selectedLabelTextStyle: TextStyle(color: colorScheme.onSurface),
+      indicatorColor: colorScheme.primary.withAlpha(24),
+      selectedIconTheme: IconThemeData(color: colorScheme.primary),
+      selectedLabelTextStyle: TextStyle(color: colorScheme.primary),
     ),
   );
 }
