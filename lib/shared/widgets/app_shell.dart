@@ -42,7 +42,7 @@ class AppShell extends StatelessWidget {
         return _MobileShell(
           destinations: destinations,
           selectedIndex: selected,
-          showNavigationBar: !isChatThread,
+          showNavigationMenu: !isChatThread,
           onSelected: (index) => context.go(destinations[index].path),
           child: child,
         );
@@ -56,30 +56,78 @@ class _MobileShell extends StatelessWidget {
     required this.child,
     required this.destinations,
     required this.selectedIndex,
-    required this.showNavigationBar,
+    required this.showNavigationMenu,
     required this.onSelected,
   });
 
   final Widget child;
   final List<_Destination> destinations;
   final int selectedIndex;
-  final bool showNavigationBar;
+  final bool showNavigationMenu;
   final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
-      bottomNavigationBar: showNavigationBar
-          ? NavigationBar(
+      drawer: showNavigationMenu
+          ? _AppNavigationDrawer(
+              destinations: destinations,
               selectedIndex: selectedIndex,
-              onDestinationSelected: onSelected,
-              destinations: [
-                for (final d in destinations)
-                  NavigationDestination(icon: Icon(d.icon), label: d.label),
-              ],
+              onSelected: onSelected,
             )
           : null,
+      floatingActionButton: showNavigationMenu
+          ? Builder(
+              builder: (context) => FloatingActionButton.small(
+                heroTag: 'navivox-navigation-menu',
+                tooltip: 'Open navigation menu',
+                onPressed: () => Scaffold.of(context).openDrawer(),
+                child: const Icon(Icons.menu),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
+      body: child,
+    );
+  }
+}
+
+class _AppNavigationDrawer extends StatelessWidget {
+  const _AppNavigationDrawer({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<_Destination> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const ListTile(
+              title: Text('Navivox'),
+              subtitle: Text('Gormes operator console'),
+            ),
+            const Divider(height: 1),
+            for (var index = 0; index < destinations.length; index++)
+              ListTile(
+                leading: Icon(destinations[index].icon),
+                title: Text(destinations[index].label),
+                selected: index == selectedIndex,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSelected(index);
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

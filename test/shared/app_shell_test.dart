@@ -23,7 +23,7 @@ void main() {
     });
   });
 
-  testWidgets('mobile chat list still shows top-level navigation', (
+  testWidgets('mobile chat list uses hamburger drawer instead of bottom nav', (
     tester,
   ) async {
     await _withMobileSurface(tester, () async {
@@ -34,13 +34,23 @@ void main() {
       );
 
       expect(find.text('Contact list'), findsOneWidget);
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('Chats'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+      expect(find.text('Servers'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Drawer), findsOneWidget);
+      expect(find.text('Chats'), findsWidgets);
       expect(find.text('Servers'), findsOneWidget);
+      expect(find.text('Memory'), findsOneWidget);
     });
   });
 
-  testWidgets('top-level navigation includes Memory dashboard', (tester) async {
+  testWidgets('top-level navigation includes Memory dashboard in drawer', (
+    tester,
+  ) async {
     await _withMobileSurface(tester, () async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -49,7 +59,12 @@ void main() {
       );
 
       expect(find.text('Memory body'), findsOneWidget);
-      expect(find.text('Memory'), findsOneWidget);
+      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Memory'), findsWidgets);
     });
   });
 }
