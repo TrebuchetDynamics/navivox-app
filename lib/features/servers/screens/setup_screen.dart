@@ -655,10 +655,26 @@ SetupQrImageImport? _parseQrJsonPayload(String text) {
     'pairing_token',
     'pairingToken',
     'auth_token',
+    'rest_token',
+    'restToken',
   ]);
-  final topLevelBaseUrl = _normalizeBaseUrl(
-    _stringField(decoded, const ['base_url', 'baseUrl', 'gateway_url', 'url']),
-  );
+  final topLevelBaseUrl =
+      _normalizeBaseUrl(
+        _stringField(decoded, const [
+          'base_url',
+          'baseUrl',
+          'gateway_url',
+          'url',
+        ]),
+      ) ??
+      _normalizeWebSocketBaseUrl(
+        _stringField(decoded, const [
+          'websocket_url',
+          'websocketUrl',
+          'ws_url',
+          'wsUrl',
+        ]),
+      );
   if (topLevelBaseUrl != null || topLevelToken != null) {
     return SetupQrImageImport(baseUrl: topLevelBaseUrl, token: topLevelToken);
   }
@@ -667,19 +683,30 @@ SetupQrImageImport? _parseQrJsonPayload(String text) {
   if (entries is List) {
     for (final entry in entries) {
       if (entry is! Map) continue;
-      final baseUrl = _normalizeBaseUrl(
-        _stringField(entry, const [
-          'base_url',
-          'baseUrl',
-          'gateway_url',
-          'url',
-        ]),
-      );
+      final baseUrl =
+          _normalizeBaseUrl(
+            _stringField(entry, const [
+              'base_url',
+              'baseUrl',
+              'gateway_url',
+              'url',
+            ]),
+          ) ??
+          _normalizeWebSocketBaseUrl(
+            _stringField(entry, const [
+              'websocket_url',
+              'websocketUrl',
+              'ws_url',
+              'wsUrl',
+            ]),
+          );
       final token = _stringField(entry, const [
         'token',
         'pairing_token',
         'pairingToken',
         'auth_token',
+        'rest_token',
+        'restToken',
       ]);
       if (baseUrl != null || token != null) {
         return SetupQrImageImport(baseUrl: baseUrl, token: token);

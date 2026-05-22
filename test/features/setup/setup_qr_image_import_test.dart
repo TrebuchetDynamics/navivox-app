@@ -76,6 +76,20 @@ void main() {
     expect(result?.baseUrl, 'http://100.64.1.2:8765');
     expect(result?.token, 'nvbx_json_token');
   });
+
+  test('parses Gormes pair JSON descriptors with websocket URL', () {
+    final result = parseNavivoxQrPayload('''
+{
+  "websocket_url": "ws://127.0.0.1:8765/v1/navivox/stream",
+  "auth_mode": "pairing_token",
+  "token_required": true,
+  "rest_token": "nvbx_pair_json_token"
+}
+''');
+
+    expect(result?.baseUrl, 'http://127.0.0.1:8765');
+    expect(result?.token, 'nvbx_pair_json_token');
+  });
 }
 
 Finder _visibleTextContaining(String needle) {
