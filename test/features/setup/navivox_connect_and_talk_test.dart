@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
@@ -79,7 +80,7 @@ void main() {
       find.textContaining('Run Gormes on this Android device'),
       findsOneWidget,
     );
-    expect(find.textContaining('Termux'), findsOneWidget);
+    expect(find.textContaining('Termux'), findsWidgets);
     expect(find.textContaining('pkg upgrade'), findsOneWidget);
     expect(find.textContaining('pkg install git curl'), findsOneWidget);
     expect(find.textContaining('bash install.sh'), findsOneWidget);
@@ -88,6 +89,60 @@ void main() {
       findsOneWidget,
     );
     expect(_caseInsensitiveText('curl | sh'), findsNothing);
+  });
+
+  testWidgets('copy Termux commands stores safe inspect-first bootstrap', (
+    tester,
+  ) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Copy Termux commands'));
+    await tester.tap(find.text('Copy Termux commands'));
+    await tester.pumpAndSettle();
+
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('pkg upgrade'));
+    expect(copied.single, contains('pkg install git curl'));
+    expect(
+      copied.single,
+      contains(
+        'curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh',
+      ),
+    );
+    expect(copied.single, contains('less install.sh'));
+    expect(copied.single, contains('bash install.sh'));
+    expect(copied.single, contains('gormes navivox connect-info'));
+    expect(copied.single.toLowerCase(), isNot(contains('curl | sh')));
+    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+    expect(find.text('Copied Termux bootstrap commands.'), findsOneWidget);
   });
 
   testWidgets(

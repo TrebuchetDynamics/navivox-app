@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,15 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
+
+const termuxGormesBootstrapCommands = '''
+pkg upgrade
+pkg install git curl
+curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh
+less install.sh
+bash install.sh
+gormes navivox connect-info
+''';
 
 typedef SetupQrImageImporter = Future<SetupQrImageImport?> Function();
 
@@ -173,14 +183,27 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
-                      child: Text(
-                        'Run Gormes on this Android device with Termux: install '
-                        'Termux from F-Droid or official GitHub Releases, then '
-                        'run `pkg upgrade`, `pkg install git curl`, download '
-                        'and inspect `install.sh`, and run `bash install.sh`. '
-                        'Navivox cannot silently install Gormes; paste '
-                        '`gormes navivox connect-info` values here after setup.',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Run Gormes on this Android device with Termux: '
+                            'install Termux from F-Droid or official GitHub '
+                            'Releases, then run `pkg upgrade`, '
+                            '`pkg install git curl`, download and inspect '
+                            '`install.sh`, and run `bash install.sh`. Navivox '
+                            'cannot silently install Gormes; paste '
+                            '`gormes navivox connect-info` values here after '
+                            'setup.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _copyTermuxCommands,
+                            icon: const Icon(Icons.content_copy),
+                            label: const Text('Copy Termux commands'),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -249,6 +272,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       }
     } finally {
       if (mounted) setState(() => _connecting = false);
+    }
+  }
+
+  Future<void> _copyTermuxCommands() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: termuxGormesBootstrapCommands),
+      );
+      if (mounted) {
+        setState(() => _status = 'Copied Termux bootstrap commands.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy Termux commands.');
+      }
     }
   }
 }
