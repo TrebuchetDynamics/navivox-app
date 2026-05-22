@@ -75,7 +75,7 @@ class NavivoxVoiceCapability {
 
   bool get blocksDeviceCapture =>
       deviceStt.trim().toLowerCase() == 'unavailable' &&
-      (isReported || recoveryAction.trim().isNotEmpty);
+      recoveryAction.trim().isNotEmpty;
 
   static String _canonicalUnavailableReason(String reason) {
     final trimmed = reason.trim();

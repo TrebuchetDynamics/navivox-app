@@ -3,13 +3,13 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 
 void main() {
   group('NavivoxVoiceCapability.captureUnavailableReason', () {
-    test('reports canonical device STT unavailable for blocked capture', () {
+    test('keeps bare reported device STT unavailable informational', () {
       const capability = NavivoxVoiceCapability(
         deviceStt: 'unavailable',
         isReported: true,
       );
 
-      expect(capability.captureUnavailableReason, 'device STT unavailable');
+      expect(capability.captureUnavailableReason, isNull);
     });
 
     test('returns canonical trimmed disabled reason', () {
@@ -28,13 +28,13 @@ void main() {
   });
 
   group('NavivoxVoiceCapability.enabled', () {
-    test('is false when reported unavailable device STT blocks capture', () {
+    test('keeps bare reported unavailable device STT enabled', () {
       const capability = NavivoxVoiceCapability(
         deviceStt: 'unavailable',
         isReported: true,
       );
 
-      expect(capability.enabled, isFalse);
+      expect(capability.enabled, isTrue);
     });
 
     test('keeps unreported fallback unavailable values enabled', () {
@@ -45,13 +45,13 @@ void main() {
   });
 
   group('NavivoxVoiceCapability.blocksDeviceCapture', () {
-    test('blocks when reported device STT is unavailable without recovery', () {
+    test('does not block for reported device STT without recovery', () {
       const capability = NavivoxVoiceCapability(
         deviceStt: 'unavailable',
         isReported: true,
       );
 
-      expect(capability.blocksDeviceCapture, isTrue);
+      expect(capability.blocksDeviceCapture, isFalse);
     });
 
     test('does not block for an unreported fallback unavailable value', () {
