@@ -38,7 +38,10 @@ class ServersScreen extends ConsumerWidget {
             ),
       floatingActionButton: FloatingActionButton.extended(
         tooltip: 'Register gateway',
-        onPressed: () => _showRegisterGateway(context),
+        onPressed: () => _showRegisterGateway(
+          context,
+          ref.read(navivoxChannelProvider),
+        ),
         icon: const Icon(Icons.add_link),
         label: const Text('Register'),
       ),
@@ -108,33 +111,162 @@ class ServersScreen extends ConsumerWidget {
     );
   }
 
-  void _showRegisterGateway(BuildContext context) {
+  void _showRegisterGateway(BuildContext context, NavivoxChannel channel) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: const [
-            ListTile(
-              leading: Icon(Icons.add_link),
-              title: Text('Register gateway'),
-              subtitle: Text(
-                'Run `gormes navivox connect-info --json` on the server, then import its base URL and auth requirements.',
+      isScrollControlled: true,
+      builder: (context) => _RegisterGatewaySheet(channel: channel),
+    );
+  }
+}
+
+class _RegisterGatewaySheet extends StatefulWidget {
+  const _RegisterGatewaySheet({required this.channel});
+
+  final NavivoxChannel channel;
+
+  @override
+  State<_RegisterGatewaySheet> createState() => _RegisterGatewaySheetState();
+}
+
+class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _labelController = TextEditingController();
+  final _baseUrlController = TextEditingController();
+  final _tokenController = TextEditingController();
+  bool _testing = false;
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _baseUrlController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.add_link),
+                title: Text('Register gateway'),
+                subtitle: Text(
+                  'Run `gormes navivox connect-info --json` on the server, then enter its base URL and auth token here.',
+                ),
               ),
-            ),
-            ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('Current boundary'),
-              subtitle: Text(
-                'This view manages gateways already reported by Navivox. persistent multi-gateway connection storage is the next protocol slice.',
+              TextFormField(
+                key: const ValueKey('register-gateway-label'),
+                controller: _labelController,
+                decoration: const InputDecoration(
+                  labelText: 'Gateway label',
+                  helperText: 'Screen-reader friendly name for this device.',
+                ),
+                textInputAction: TextInputAction.next,
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const ValueKey('register-gateway-base-url'),
+                controller: _baseUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'Base URL',
+                  hintText: 'http://127.0.0.1:7319',
+                ),
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.next,
+                validator: _validateBaseUrl,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const ValueKey('register-gateway-token'),
+                controller: _tokenController,
+                decoration: const InputDecoration(
+                  labelText: 'Auth token (optional)',
+                  helperText: 'Stored by the gateway connection layer only.',
+                ),
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  key: const ValueKey('register-gateway-test'),
+                  onPressed: _testing ? null : _testConnection,
+                  icon: _testing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.network_check),
+                  label: Text(_testing ? 'Testing' : 'Test connection'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.info_outline),
+                title: Text('Current boundary'),
+                subtitle: Text(
+                  'This test connects the current session now; persistent multi-gateway connection storage is the next protocol slice.',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String? _validateBaseUrl(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'Enter the Gormes gateway base URL.';
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || uri.host.isEmpty) {
+      return 'Enter a valid Gormes gateway URL.';
+    }
+    if (!{'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
+      return 'Use http, https, ws, or wss.';
+    }
+    return null;
+  }
+
+  Future<void> _testConnection() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final baseUrl = _baseUrlController.text.trim();
+    final token = _tokenController.text.trim();
+    setState(() => _testing = true);
+    try {
+      await widget.channel.connect(
+        baseUrl: baseUrl,
+        token: token.isEmpty ? null : token,
+      );
+      if (!mounted) return;
+      _showSnackBar('Connection test passed for $baseUrl');
+    } catch (error) {
+      if (!mounted) return;
+      _showSnackBar('Connection test failed: $error');
+    } finally {
+      if (mounted) setState(() => _testing = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(duration: const Duration(seconds: 8), content: Text(message)),
+      );
   }
 }
 

@@ -7,6 +7,15 @@ import 'package:navivox/features/servers/screens/servers_screen.dart';
 
 import '../../support/test_navivox_channel.dart';
 
+class RecordingConnectChannel extends TestNavivoxChannel {
+  final connectCalls = <({String baseUrl, String? token})>[];
+
+  @override
+  Future<void> connect({required String baseUrl, String? token}) async {
+    connectCalls.add((baseUrl: baseUrl, token: token));
+  }
+}
+
 void main() {
   testWidgets(
     'servers screen groups profiles by gateway and opens management sheet',
@@ -103,5 +112,46 @@ void main() {
     expect(find.text('Register gateway'), findsOneWidget);
     expect(find.textContaining('gormes navivox connect-info'), findsOneWidget);
     expect(find.textContaining('persistent multi-gateway'), findsOneWidget);
+  });
+
+  testWidgets('register gateway sheet can test a Gormes connection', (
+    tester,
+  ) async {
+    final channel = RecordingConnectChannel();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ServersScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Register gateway'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('register-gateway-label')),
+      'Local Gormes',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('register-gateway-base-url')),
+      'http://127.0.0.1:7319',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('register-gateway-token')),
+      'secret-token',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('register-gateway-test')));
+    await tester.pumpAndSettle();
+
+    expect(channel.connectCalls, [
+      (baseUrl: 'http://127.0.0.1:7319', token: 'secret-token'),
+    ]);
+    expect(
+      find.text('Connection test passed for http://127.0.0.1:7319'),
+      findsOneWidget,
+    );
   });
 }
