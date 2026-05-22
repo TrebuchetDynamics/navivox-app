@@ -38,6 +38,19 @@ gormes navivox connect-info
 If connect-info prints a pairing token, paste it only into Navivox. Do not share tokens in logs, screenshots, issues, or chat transcripts.
 ''';
 
+const termuxGatewayLifecycle = '''
+Termux gateway foreground/tmux lifecycle:
+Run the Gormes gateway in a Termux foreground tmux session, then use status and connect-info from another Termux session.
+
+tmux new-session -s gormes-gateway "gormes gateway"
+gormes gateway status
+gormes navivox connect-info
+gormes gateway stop
+
+termux-wake-lock and Android battery settings are best-effort only. Android may still stop background processes.
+Paste pairing tokens only into Navivox; do not share tokens in logs or screenshots.
+''';
+
 const termuxSameDeviceConnectionHint = '''
 Navivox connection hints:
 - Same Android device (Gormes in Termux): use the loopback URL printed by `gormes navivox connect-info`, usually http://127.0.0.1:<port>.
@@ -255,6 +268,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
+                            onPressed: _copyTermuxGatewayLifecycle,
+                            icon: const Icon(Icons.terminal),
+                            label: const Text('Copy Termux gateway lifecycle'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
                             onPressed: _copyTermuxConnectionHint,
                             icon: const Icon(Icons.device_hub),
                             label: const Text(
@@ -390,6 +409,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Could not copy post-install checks.');
+      }
+    }
+  }
+
+  Future<void> _copyTermuxGatewayLifecycle() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: termuxGatewayLifecycle),
+      );
+      if (mounted) {
+        setState(() => _status = 'Copied Termux gateway lifecycle.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy gateway lifecycle.');
       }
     }
   }

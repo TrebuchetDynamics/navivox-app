@@ -290,6 +290,59 @@ void main() {
     expect(find.text('Copied post-install Termux checks.'), findsOneWidget);
   });
 
+  testWidgets(
+    'copy Termux gateway lifecycle avoids desktop service assumptions',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              (call.arguments as Map<Object?, Object?>)['text']! as String,
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      final channel = ConnectAndTalkChannel();
+      addTearDown(channel.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const _RouterTestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Copy Termux gateway lifecycle'));
+      await tester.tap(find.text('Copy Termux gateway lifecycle'));
+      await tester.pumpAndSettle();
+
+      expect(copied, hasLength(1));
+      expect(copied.single, contains('foreground/tmux lifecycle'));
+      expect(copied.single, contains('tmux new-session'));
+      expect(copied.single, contains('gormes gateway'));
+      expect(copied.single, contains('gormes gateway status'));
+      expect(copied.single, contains('gormes gateway stop'));
+      expect(copied.single, contains('gormes navivox connect-info'));
+      expect(copied.single, contains('termux-wake-lock'));
+      expect(copied.single, contains('Android battery'));
+      expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+      expect(copied.single, isNot(contains('systemd')));
+      expect(copied.single, isNot(contains('Scheduled Task')));
+      expect(find.text('Copied Termux gateway lifecycle.'), findsOneWidget);
+    },
+  );
+
   testWidgets('copy optional Termux storage command stays permission-scoped', (
     tester,
   ) async {
