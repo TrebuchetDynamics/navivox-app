@@ -36,49 +36,28 @@ Recommended next step: gormes navivox pair
    - Preferred: F-Droid package `com.termux`.
    - Alternative: official Termux GitHub Releases.
    - Avoid mixing APK sources. If changing sources, uninstall existing Termux app and plugin APKs first and restore from a backup only after reinstalling from the same source family.
-2. Open Termux and update package metadata and installed packages:
+2. Open Termux and paste this one bootstrap command:
 
    ```sh
-   pkg upgrade
+   printf '%s\n' 'This is one pasted Termux command for Navivox setup.' && \
+   pkg upgrade -y && \
+   pkg install -y git curl && \
+   curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh && \
+   printf '%s\n' 'Review install.sh in the pager. Press q to continue install, or Ctrl-C to abort.' && \
+   less install.sh && \
+   GORMES_SKIP_SETUP=1 bash install.sh && \
+   (gormes navivox pair || gormes navivox connect-info)
    ```
 
-3. Install the base tools needed to fetch and inspect the Gormes installer:
+   This keeps the normal path to one pasted bootstrap command while still avoiding a blind network-to-shell pipe: it downloads `install.sh`, pauses for review in `less`, skips the long terminal setup wizard, and then starts the Navivox pairing handoff. If the installed Gormes build does not have `gormes navivox pair`, the command falls back to `gormes navivox connect-info`.
 
-   ```sh
-   pkg install git curl
-   ```
+3. Paste or scan the reachable base URL and token into Navivox only. Never paste pairing tokens into issues, logs, screenshots, chat transcripts, or this repository.
 
-4. Grant shared-storage access only if the operator needs to move logs, screenshots, or exported files between Android storage and Termux:
+4. Grant shared-storage access only if the operator needs to move logs, screenshots, or exported files between Android storage and Termux. This is not part of the normal one-terminal setup path:
 
    ```sh
    termux-setup-storage
    ```
-
-5. Download the trusted Gormes installer instead of piping it straight into a shell:
-
-   ```sh
-   curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh
-   ```
-
-6. Inspect the installer before running it:
-
-   ```sh
-   less install.sh
-   ```
-
-7. Run the installer after review:
-
-   ```sh
-   bash install.sh
-   ```
-
-8. After Gormes starts, print the Navivox setup values from Termux:
-
-   ```sh
-   gormes navivox connect-info
-   ```
-
-9. Paste the reachable base URL and token into Navivox only. Never paste pairing tokens into issues, logs, screenshots, chat transcripts, or this repository.
 
 ## Phase 2: Navivox-assisted bootstrap
 

@@ -24,6 +24,11 @@ void main() {
     expect(text, contains('termux-setup-storage'));
     expect(text, contains('install.sh'));
     expect(text, contains('bash install.sh'));
+    expect(text, contains('GORMES_SKIP_SETUP=1 bash install.sh'));
+    expect(
+      text,
+      contains('(gormes navivox pair || gormes navivox connect-info)'),
+    );
     expect(text, contains('Navivox cannot silently install Gormes'));
     expect(text, contains('gormes navivox connect-info'));
     expect(text, contains('Never paste pairing tokens'));
