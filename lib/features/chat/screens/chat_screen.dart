@@ -336,6 +336,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (activeProfile.health != NavivoxProfileHealth.online) {
       return _profileHealthLabel(activeProfile.health);
     }
+    final profileVoiceReason = activeProfile.voiceCapability.disabledReason
+        .trim();
+    if (profileVoiceReason.isNotEmpty) return profileVoiceReason;
     if (!activeProfile.micAvailable) return 'mic unavailable';
     return null;
   }

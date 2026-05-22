@@ -288,6 +288,54 @@ void main() {
     expect(find.text('device STT unavailable'), findsOneWidget);
   });
 
+  testWidgets('profile-reported STT unavailability blocks capture', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts([
+        const NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          workspaceRootCount: 1,
+          micAvailable: true,
+          voiceCapability: NavivoxVoiceCapability(
+            deviceStt: 'unavailable',
+            disabledReason: 'device STT unavailable',
+          ),
+        ),
+      ], selectedKey: 'local::mineru');
+    final voiceService = FakeVoiceCaptureService(
+      audio: Uint8List.fromList([1]),
+      transcript: 'should not capture',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.9,
+    );
+
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
+    );
+
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.mic), findsNothing);
+    expect(find.byIcon(Icons.mic_off), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('device STT unavailable'), findsOneWidget);
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('continuous voice unavailable sheet opens voice settings', (
     tester,
   ) async {
