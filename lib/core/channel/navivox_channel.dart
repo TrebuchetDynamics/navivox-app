@@ -128,6 +128,18 @@ class NavivoxProfileContact {
   String get key => '$serverId::$profileId';
 }
 
+class NavivoxProfileRoutingSelection {
+  const NavivoxProfileRoutingSelection({
+    this.workspace,
+    this.provider,
+    this.channel,
+  });
+
+  final String? workspace;
+  final String? provider;
+  final String? channel;
+}
+
 class NavivoxChannelState {
   const NavivoxChannelState({
     this.servers = const [],
@@ -140,6 +152,8 @@ class NavivoxChannelState {
     this.profileContacts = const [],
     this.selectedProfileContactKey,
     this.profileRouting = const NavivoxProfileRoutingReport(),
+    this.profileRoutingSelections =
+        const <String, NavivoxProfileRoutingSelection>{},
     this.configSchema,
     this.configValues = const {},
     this.configDiff,
@@ -155,6 +169,7 @@ class NavivoxChannelState {
   final List<NavivoxProfileContact> profileContacts;
   final String? selectedProfileContactKey;
   final NavivoxProfileRoutingReport profileRouting;
+  final Map<String, NavivoxProfileRoutingSelection> profileRoutingSelections;
   final Map<String, Object?>? configSchema;
   final Map<String, Object?> configValues;
   final Map<String, Object?>? configDiff;
@@ -182,6 +197,36 @@ class NavivoxChannelState {
         .firstOrNull;
   }
 
+  NavivoxProfileRoutingSelection? get activeProfileRoutingSelection {
+    final contact = activeProfileContact;
+    final route = activeProfileRoute;
+    if (contact == null || route == null) return null;
+    final selected = profileRoutingSelections[contact.key];
+    return NavivoxProfileRoutingSelection(
+      workspace: _routingChoice(route.workspaces, selected?.workspace),
+      provider: _routingChoice(route.providers, selected?.provider),
+      channel: _routingChoice(route.channels, selected?.channel),
+    );
+  }
+
+  NavivoxChannelState withActiveProfileRouting({
+    String? workspace,
+    String? provider,
+    String? channel,
+  }) {
+    final contact = activeProfileContact;
+    if (contact == null) return this;
+    final selections = Map<String, NavivoxProfileRoutingSelection>.from(
+      profileRoutingSelections,
+    );
+    selections[contact.key] = NavivoxProfileRoutingSelection(
+      workspace: workspace,
+      provider: provider,
+      channel: channel,
+    );
+    return copyWith(profileRoutingSelections: selections);
+  }
+
   NavivoxChannelState copyWith({
     List<NavivoxServer>? servers,
     String? activeServerId,
@@ -193,6 +238,7 @@ class NavivoxChannelState {
     List<NavivoxProfileContact>? profileContacts,
     String? selectedProfileContactKey,
     NavivoxProfileRoutingReport? profileRouting,
+    Map<String, NavivoxProfileRoutingSelection>? profileRoutingSelections,
     Map<String, Object?>? configSchema,
     Map<String, Object?>? configValues,
     Map<String, Object?>? configDiff,
@@ -209,11 +255,23 @@ class NavivoxChannelState {
       selectedProfileContactKey:
           selectedProfileContactKey ?? this.selectedProfileContactKey,
       profileRouting: profileRouting ?? this.profileRouting,
+      profileRoutingSelections:
+          profileRoutingSelections ?? this.profileRoutingSelections,
       configSchema: configSchema ?? this.configSchema,
       configValues: configValues ?? this.configValues,
       configDiff: configDiff ?? this.configDiff,
     );
   }
+}
+
+String? _routingChoice(List<String> allowed, String? selected) {
+  final candidate = selected?.trim();
+  if (candidate != null &&
+      candidate.isNotEmpty &&
+      allowed.contains(candidate)) {
+    return candidate;
+  }
+  return allowed.firstOrNull;
 }
 
 abstract interface class NavivoxChannel implements Listenable {
@@ -268,6 +326,11 @@ abstract interface class NavivoxChannel implements Listenable {
   void selectProfileContact({
     required String serverId,
     required String profileId,
+  });
+  void selectProfileRouting({
+    String? workspace,
+    String? provider,
+    String? channel,
   });
   void sendConfigSet({required String field, required Object? value});
   void sendConfigSecretSet({required String name, required String secret});

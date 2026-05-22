@@ -361,6 +361,19 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
+  void selectProfileRouting({
+    String? workspace,
+    String? provider,
+    String? channel,
+  }) {
+    state = _state.withActiveProfileRouting(
+      workspace: workspace,
+      provider: provider,
+      channel: channel,
+    );
+  }
+
+  @override
   void sendConfigSet({required String field, required Object? value}) {
     configSetCalls.add((field: field, value: value));
   }

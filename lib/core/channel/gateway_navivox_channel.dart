@@ -31,6 +31,22 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   NavivoxChannelState get state => _state;
 
   @override
+  void selectProfileRouting({
+    String? workspace,
+    String? provider,
+    String? channel,
+  }) {
+    final next = _state.withActiveProfileRouting(
+      workspace: workspace,
+      provider: provider,
+      channel: channel,
+    );
+    if (identical(next, _state)) return;
+    _state = next;
+    notifyListeners();
+  }
+
+  @override
   Stream<NavivoxApprovalRequest> get approvalRequests => _approvals.stream;
 
   @override
@@ -665,6 +681,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   Map<String, Object?> _turnMetadata(NavivoxProfileContact? profile) {
+    final routing = _state.activeProfileRoutingSelection;
     return {
       'client': 'navivox',
       'platform': 'flutter',
@@ -672,6 +689,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         'server_id': profile.serverId,
         'profile_id': profile.profileId,
       },
+      if (routing?.workspace != null) 'workspace': routing!.workspace,
+      if (routing?.provider != null) 'provider_id': routing!.provider,
+      if (routing?.channel != null) 'channel_id': routing!.channel,
     };
   }
 
