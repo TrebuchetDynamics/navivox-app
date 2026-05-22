@@ -70,6 +70,41 @@ void main() {
     );
   });
 
+  testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptSurface(
+            messages: const <NavivoxChatMessage>[],
+            onSend: (_) {},
+            voiceUnavailableReason: ' Device STT unavailable ',
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byTooltip('Voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(
+      find.byTooltip('Voice unavailable: Device STT unavailable'),
+      findsNothing,
+    );
+
+    await tester.tap(find.byIcon(Icons.mic_off));
+    await tester.pumpAndSettle();
+
+    expect(find.text('device STT unavailable'), findsOneWidget);
+    expect(find.text('Device STT unavailable'), findsNothing);
+    expect(
+      find.text(
+        'Install or enable device speech recognition, then reopen Navivox.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'tap mic invokes the voice service and forwards result via onVoice',
     (tester) async {

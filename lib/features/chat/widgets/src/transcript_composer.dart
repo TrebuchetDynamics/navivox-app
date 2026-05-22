@@ -26,8 +26,19 @@ class _InputBarState extends State<_InputBar> {
 
   static const _quickEmoji = ['😀', '👍', '🙏', '🔥', '✅', '👀'];
 
+  String? _canonicalVoiceUnavailableReason(String? reason) {
+    final trimmed = reason?.trim();
+    if (trimmed == null || trimmed.isEmpty) return trimmed;
+    if (trimmed.toLowerCase() == 'device stt unavailable') {
+      return 'device STT unavailable';
+    }
+    return trimmed;
+  }
+
   void _showVoiceUnavailable(BuildContext context) {
-    final reason = widget.voiceUnavailableReason?.trim();
+    final reason = _canonicalVoiceUnavailableReason(
+      widget.voiceUnavailableReason,
+    );
     final helpText = reason == 'device STT unavailable'
         ? 'Install or enable device speech recognition, then reopen Navivox.'
         : 'Check microphone permissions and Settings.';
@@ -111,7 +122,9 @@ class _InputBarState extends State<_InputBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unavailableReason = widget.voiceUnavailableReason?.trim();
+    final unavailableReason = _canonicalVoiceUnavailableReason(
+      widget.voiceUnavailableReason,
+    );
     final unavailableTooltip = unavailableReason?.isNotEmpty == true
         ? 'Voice unavailable: $unavailableReason'
         : 'Voice unavailable';
