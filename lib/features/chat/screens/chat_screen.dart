@@ -674,7 +674,7 @@ class _VoiceModeBanner extends StatelessWidget {
         : commandMode
         ? 'Command mode'
         : disabledReason != null
-        ? 'Voice disabled: $disabledReason'
+        ? 'Continuous voice unavailable: $disabledReason'
         : ready
         ? 'Continuous voice ready'
         : notice;
@@ -716,7 +716,7 @@ class _VoiceModeBanner extends StatelessWidget {
     final status = pending
         ? 'Pending voice turn'
         : disabledReason != null
-        ? 'Voice disabled'
+        ? 'Continuous voice unavailable'
         : ready
         ? 'Ready for ${profileName ?? 'chat'}'
         : 'Voice standby';

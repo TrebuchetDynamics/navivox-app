@@ -258,6 +258,36 @@ void main() {
     },
   );
 
+  testWidgets('continuous voice explains unavailable device STT', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(
+          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.mic), findsNothing);
+    expect(find.byIcon(Icons.mic_off), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Continuous voice'), findsOneWidget);
+    expect(find.text('Continuous voice unavailable'), findsOneWidget);
+    expect(find.text('device STT unavailable'), findsOneWidget);
+  });
+
   testWidgets('continuous voice banner opens a control sheet', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
     final voiceService = FakeVoiceCaptureService(
@@ -348,7 +378,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Voice disabled: trust local'), findsOneWidget);
+    expect(
+      find.textContaining('Continuous voice unavailable: trust local'),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.mic), findsNothing);
 
     await tester.tap(find.text('Trust server'));
