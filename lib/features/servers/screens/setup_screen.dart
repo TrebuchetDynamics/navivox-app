@@ -169,6 +169,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                       'Run `gormes navivox connect-info` on the host and retry.',
                     ),
                   ],
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'Run Gormes on this Android device with Termux: install '
+                        'Termux from F-Droid or official GitHub Releases, then '
+                        'run `pkg upgrade`, `pkg install git curl`, download '
+                        'and inspect `install.sh`, and run `bash install.sh`. '
+                        'Navivox cannot silently install Gormes; paste '
+                        '`gormes navivox connect-info` values here after setup.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -61,6 +61,35 @@ void main() {
     expect(_caseInsensitiveText('telephony'), findsNothing);
   });
 
+  testWidgets('setup screen shows Termux same-device bootstrap guidance', (
+    tester,
+  ) async {
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Run Gormes on this Android device'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Termux'), findsOneWidget);
+    expect(find.textContaining('pkg upgrade'), findsOneWidget);
+    expect(find.textContaining('pkg install git curl'), findsOneWidget);
+    expect(find.textContaining('bash install.sh'), findsOneWidget);
+    expect(
+      find.textContaining('Navivox cannot silently install Gormes'),
+      findsOneWidget,
+    );
+    expect(_caseInsensitiveText('curl | sh'), findsNothing);
+  });
+
   testWidgets(
     'connect failure gives connect-info guidance without token leak',
     (tester) async {
