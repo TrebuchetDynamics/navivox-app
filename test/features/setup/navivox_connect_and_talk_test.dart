@@ -88,6 +88,9 @@ void main() {
       find.textContaining('Navivox cannot silently install Gormes'),
       findsOneWidget,
     );
+    expect(find.textContaining('Navivox (recommended)'), findsOneWidget);
+    expect(find.textContaining('gormes navivox pair'), findsOneWidget);
+    expect(find.textContaining('connect-info fallback'), findsOneWidget);
     expect(_caseInsensitiveText('curl | sh'), findsNothing);
   });
 

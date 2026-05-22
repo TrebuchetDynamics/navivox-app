@@ -273,10 +273,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             'install Termux from F-Droid or official GitHub '
                             'Releases, then run `pkg upgrade`, '
                             '`pkg install git curl`, download and inspect '
-                            '`install.sh`, and run `bash install.sh`. Navivox '
-                            'cannot silently install Gormes; paste '
-                            '`gormes navivox connect-info` values here after '
-                            'setup.',
+                            '`install.sh`, and run `bash install.sh`. After '
+                            'Gormes installs, choose Navivox (recommended) '
+                            'and run `gormes navivox pair` to continue setup '
+                            'in Navivox. Navivox cannot silently install '
+                            'Gormes; if pair is not available in this Gormes '
+                            'build, use the connect-info fallback and paste '
+                            '`gormes navivox connect-info` values here.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 12),
