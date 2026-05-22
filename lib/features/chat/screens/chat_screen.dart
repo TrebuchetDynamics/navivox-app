@@ -199,6 +199,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? voiceService
                   : null,
               voiceUnavailableReason: voiceDisabledReason,
+              voiceRecoveryAction: voiceRecoveryAction,
               onOpenVoiceSettings: () => context.go(AppRoutes.settings),
               textToSpeechService: textToSpeechService,
               assistantTypingLabel:

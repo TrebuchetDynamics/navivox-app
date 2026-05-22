@@ -23,6 +23,7 @@ class TranscriptSurface extends StatefulWidget {
     this.onVoiceCaptureFailed,
     this.voiceCaptureTimeout = const Duration(seconds: 30),
     this.voiceUnavailableReason,
+    this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
     this.textToSpeechService,
     this.assistantTypingLabel,
@@ -40,6 +41,7 @@ class TranscriptSurface extends StatefulWidget {
   final ValueChanged<Object>? onVoiceCaptureFailed;
   final Duration voiceCaptureTimeout;
   final String? voiceUnavailableReason;
+  final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
   final TextToSpeechService? textToSpeechService;
   final String? assistantTypingLabel;
@@ -163,6 +165,7 @@ class _TranscriptSurfaceState extends State<TranscriptSurface> {
             onSend: _send,
             voiceService: widget.voiceCaptureService,
             voiceUnavailableReason: widget.voiceUnavailableReason,
+            voiceRecoveryAction: widget.voiceRecoveryAction,
             onOpenVoiceSettings: widget.onOpenVoiceSettings,
             capturing: _capturing,
             onToggleVoice: _toggleVoiceCapture,

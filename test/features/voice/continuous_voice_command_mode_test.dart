@@ -881,6 +881,49 @@ void main() {
     expect(channel.sentTexts, isEmpty);
   });
 
+  testWidgets('STT unavailable mic sheet shows profile recovery action', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts([
+        const NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          workspaceRootCount: 1,
+          micAvailable: true,
+          voiceCapability: NavivoxVoiceCapability(
+            deviceStt: 'unavailable',
+            recoveryAction: 'Enable device speech recognition',
+          ),
+        ),
+      ], selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mineru'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byTooltip('Voice unavailable: device STT unavailable'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(find.text('Enable device speech recognition'), findsOneWidget);
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('continuous voice banner opens a control sheet', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
     final voiceService = FakeVoiceCaptureService(

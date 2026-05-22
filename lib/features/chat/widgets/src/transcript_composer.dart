@@ -6,6 +6,7 @@ class _InputBar extends StatefulWidget {
     required this.onSend,
     this.voiceService,
     this.voiceUnavailableReason,
+    this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
     this.capturing = false,
     this.onToggleVoice,
@@ -15,6 +16,7 @@ class _InputBar extends StatefulWidget {
   final ValueChanged<String> onSend;
   final VoiceCaptureService? voiceService;
   final String? voiceUnavailableReason;
+  final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
   final bool capturing;
   final VoidCallback? onToggleVoice;
@@ -52,15 +54,15 @@ class _InputBarState extends State<_InputBar> {
     final helpText = reason == 'device STT unavailable'
         ? 'Install or enable device speech recognition, then reopen Navivox.'
         : 'Check microphone permissions and Settings.';
+    final recoveryAction = widget.voiceRecoveryAction?.trim();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            shrinkWrap: true,
             children: [
               Text(
                 'Voice unavailable',
@@ -77,6 +79,13 @@ class _InputBarState extends State<_InputBar> {
                 ),
                 subtitle: Text(helpText),
               ),
+              if (recoveryAction?.isNotEmpty == true)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.tips_and_updates_outlined),
+                  title: const Text('Recovery action'),
+                  subtitle: Text(recoveryAction!),
+                ),
               if (widget.onOpenVoiceSettings != null)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
