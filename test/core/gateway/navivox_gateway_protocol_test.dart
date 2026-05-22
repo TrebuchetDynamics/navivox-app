@@ -215,6 +215,45 @@ void main() {
     expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
   });
 
+  test('client decodes authenticated profile routing report', () async {
+    final seen = <Uri, Map<String, String>>{};
+    final client = NavivoxGatewayClient(
+      config: NavivoxGatewayConfig.fromBaseUrl(
+        'http://127.0.0.1:8765',
+        token: 'nvbx_test_token',
+      ),
+      get: (uri, headers) async {
+        seen[uri] = headers;
+        return jsonEncode({
+          'profiles': [
+            {
+              'profile_id': 'mineru',
+              'display_name': 'Mineru Ops',
+              'workspaces': ['/srv/gormes', '/srv/navivox'],
+              'providers': ['openai-codex', 'ollama'],
+              'channels': ['navivox', 'telegram'],
+            },
+          ],
+        });
+      },
+    );
+
+    final routing = await client.profileRouting();
+
+    expect(routing.profiles, hasLength(1));
+    final profile = routing.profiles.single;
+    expect(profile.profileId, 'mineru');
+    expect(profile.displayName, 'Mineru Ops');
+    expect(profile.workspaces, ['/srv/gormes', '/srv/navivox']);
+    expect(profile.providers, ['openai-codex', 'ollama']);
+    expect(profile.channels, ['navivox', 'telegram']);
+    expect(
+      seen.keys.single.toString(),
+      'http://127.0.0.1:8765/v1/navivox/profile-routing',
+    );
+    expect(seen.values.single['Authorization'], 'Bearer nvbx_test_token');
+  });
+
   test(
     'client decodes authenticated memory overview with safe DB label',
     () async {

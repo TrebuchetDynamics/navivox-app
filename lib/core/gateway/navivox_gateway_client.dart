@@ -127,6 +127,12 @@ class NavivoxGatewayClient {
         .toList(growable: false);
   }
 
+  Future<NavivoxProfileRoutingReport> profileRouting() async {
+    return NavivoxProfileRoutingReport.fromJson(
+      await _getJson(config.profileRoutingUri),
+    );
+  }
+
   Future<NavivoxGatewaySocket> connectStream() {
     return _connectWebSocket(config.streamUri, config.headers);
   }

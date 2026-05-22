@@ -46,6 +46,56 @@ List<String> _stringListFromJson(Object? value) {
       .toList(growable: false);
 }
 
+class NavivoxProfileRoutingReport {
+  const NavivoxProfileRoutingReport({this.profiles = const []});
+
+  factory NavivoxProfileRoutingReport.fromJson(Map<String, Object?> json) {
+    final profiles = json['profiles'];
+    return NavivoxProfileRoutingReport(
+      profiles: profiles is List
+          ? profiles
+                .whereType<Map>()
+                .map(
+                  (profile) => NavivoxProfileRoute.fromJson(
+                    Map<String, Object?>.from(profile),
+                  ),
+                )
+                .where((profile) => profile.profileId.isNotEmpty)
+                .toList(growable: false)
+          : const [],
+    );
+  }
+
+  final List<NavivoxProfileRoute> profiles;
+}
+
+class NavivoxProfileRoute {
+  const NavivoxProfileRoute({
+    required this.profileId,
+    required this.displayName,
+    this.workspaces = const [],
+    this.providers = const [],
+    this.channels = const [],
+  });
+
+  factory NavivoxProfileRoute.fromJson(Map<String, Object?> json) {
+    final profileId = _stringFromJson(json['profile_id'], fallback: '');
+    return NavivoxProfileRoute(
+      profileId: profileId,
+      displayName: _stringFromJson(json['display_name'], fallback: profileId),
+      workspaces: _stringListFromJson(json['workspaces']),
+      providers: _stringListFromJson(json['providers']),
+      channels: _stringListFromJson(json['channels']),
+    );
+  }
+
+  final String profileId;
+  final String displayName;
+  final List<String> workspaces;
+  final List<String> providers;
+  final List<String> channels;
+}
+
 class NavivoxGatewayConfig {
   const NavivoxGatewayConfig({required this.baseUri, this.token});
 
@@ -59,6 +109,7 @@ class NavivoxGatewayConfig {
   Uri get healthUri => _withPath('/healthz');
   Uri get statusUri => _withPath('/v1/navivox/status');
   Uri get profileContactsUri => _withPath('/v1/navivox/profile-contacts');
+  Uri get profileRoutingUri => _withPath('/v1/navivox/profile-routing');
   Uri get memoryActionUri => _withPath('/v1/navivox/memory/action');
   Uri memoryOverviewUri({String? serverId, String? profileId}) {
     final query = <String, String>{
