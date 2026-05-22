@@ -581,7 +581,9 @@ void main() {
 
     expect(find.text('Open voice settings'), findsOneWidget);
     expect(
-      find.text('Review continuous voice and trust settings'),
+      find.text(
+        'Review continuous voice after enabling device speech recognition.',
+      ),
       findsOneWidget,
     );
 

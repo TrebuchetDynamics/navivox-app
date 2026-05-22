@@ -764,6 +764,9 @@ class _VoiceModeBanner extends StatelessWidget {
         : ready
         ? 'Ready for ${profileName ?? 'chat'}'
         : 'Voice standby';
+    final voiceSettingsSubtitle = disabledReason == 'device STT unavailable'
+        ? 'Review continuous voice after enabling device speech recognition.'
+        : 'Review continuous voice and trust settings';
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -808,9 +811,7 @@ class _VoiceModeBanner extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.settings_voice_outlined),
                 title: const Text('Open voice settings'),
-                subtitle: const Text(
-                  'Review continuous voice and trust settings',
-                ),
+                subtitle: Text(voiceSettingsSubtitle),
                 onTap: () {
                   Navigator.of(context).pop();
                   GoRouter.maybeOf(context)?.go(AppRoutes.settings);
