@@ -72,4 +72,27 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('disabled STT mic shows supplied recovery action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SimpleChatAdapter(
+            messages: const <NavivoxChatMessage>[],
+            onSend: (_) {},
+            voiceUnavailableReason: 'device STT unavailable',
+            voiceRecoveryAction: 'Enable device speech recognition',
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic_off));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(find.text('Enable device speech recognition'), findsOneWidget);
+  });
 }

@@ -16,6 +16,7 @@ class SimpleChatAdapter extends StatefulWidget {
     this.onVoice,
     this.voiceCaptureTimeout = const Duration(seconds: 30),
     this.voiceUnavailableReason,
+    this.voiceRecoveryAction,
     this.textToSpeechService,
     this.assistantTypingLabel,
     this.forwardTargets = const [],
@@ -29,6 +30,7 @@ class SimpleChatAdapter extends StatefulWidget {
   final ValueChanged<VoiceCapture>? onVoice;
   final Duration voiceCaptureTimeout;
   final String? voiceUnavailableReason;
+  final String? voiceRecoveryAction;
   final TextToSpeechService? textToSpeechService;
   final String? assistantTypingLabel;
   final List<NavivoxProfileContact> forwardTargets;
@@ -147,6 +149,7 @@ class _SimpleChatAdapterState extends State<SimpleChatAdapter> {
             onSend: _send,
             voiceService: widget.voiceCaptureService,
             voiceUnavailableReason: widget.voiceUnavailableReason,
+            voiceRecoveryAction: widget.voiceRecoveryAction,
             capturing: _capturing,
             onToggleVoice: _toggleVoiceCapture,
           ),
@@ -760,6 +763,7 @@ class _InputBar extends StatefulWidget {
     required this.onSend,
     this.voiceService,
     this.voiceUnavailableReason,
+    this.voiceRecoveryAction,
     this.capturing = false,
     this.onToggleVoice,
   });
@@ -768,6 +772,7 @@ class _InputBar extends StatefulWidget {
   final ValueChanged<String> onSend;
   final VoiceCaptureService? voiceService;
   final String? voiceUnavailableReason;
+  final String? voiceRecoveryAction;
   final bool capturing;
   final VoidCallback? onToggleVoice;
 
@@ -796,15 +801,15 @@ class _InputBarState extends State<_InputBar> {
     final helpText = reason == 'device STT unavailable'
         ? 'Install or enable device speech recognition, then reopen Navivox.'
         : 'Check microphone permissions and Settings.';
+    final recoveryAction = widget.voiceRecoveryAction?.trim();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            shrinkWrap: true,
             children: [
               Text(
                 'Voice unavailable',
@@ -821,6 +826,13 @@ class _InputBarState extends State<_InputBar> {
                 ),
                 subtitle: Text(helpText),
               ),
+              if (recoveryAction?.isNotEmpty == true)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.tips_and_updates_outlined),
+                  title: const Text('Recovery action'),
+                  subtitle: Text(recoveryAction!),
+                ),
             ],
           ),
         ),
