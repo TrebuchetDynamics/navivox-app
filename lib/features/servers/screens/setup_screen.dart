@@ -10,13 +10,15 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
 
-const termuxGormesBootstrapCommands = '''
-pkg upgrade
-pkg install git curl
-curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh
-less install.sh
-bash install.sh
-gormes navivox connect-info
+const termuxGormesBootstrapCommands = r'''
+printf '%s\n' 'This is one pasted Termux command for Navivox setup.' && \
+pkg upgrade -y && \
+pkg install -y git curl && \
+curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh && \
+printf '%s\n' 'Review install.sh in the pager. Press q to continue install, or Ctrl-C to abort.' && \
+less install.sh && \
+GORMES_SKIP_SETUP=1 bash install.sh && \
+(gormes navivox pair || gormes navivox connect-info)
 ''';
 
 const termuxDownloadLinks = '''
@@ -271,10 +273,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           Text(
                             'Run Gormes on this Android device with Termux: '
                             'install Termux from F-Droid or official GitHub '
-                            'Releases, then run `pkg upgrade`, '
-                            '`pkg install git curl`, download and inspect '
-                            '`install.sh`, and run `bash install.sh`. After '
-                            'Gormes installs, choose Navivox (recommended) '
+                            'Releases, then paste one command from Navivox. '
+                            'The command updates packages, installs git/curl, '
+                            'downloads and pauses for `install.sh` review, '
+                            'then installs Gormes. After Gormes installs, '
+                            'choose Navivox (recommended) '
                             'and run `gormes navivox pair` to continue setup '
                             'in Navivox. Navivox cannot silently install '
                             'Gormes; if pair is not available in this Gormes '
@@ -286,7 +289,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           OutlinedButton.icon(
                             onPressed: _copyTermuxCommands,
                             icon: const Icon(Icons.content_copy),
-                            label: const Text('Copy Termux commands'),
+                            label: const Text('Copy one-paste bootstrap'),
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
@@ -414,11 +417,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         const ClipboardData(text: termuxGormesBootstrapCommands),
       );
       if (mounted) {
-        setState(() => _status = 'Copied Termux bootstrap commands.');
+        setState(() => _status = 'Copied one-paste Termux bootstrap.');
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Could not copy Termux commands.');
+        setState(() => _error = 'Could not copy one-paste bootstrap.');
       }
     }
   }

@@ -81,20 +81,24 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('Termux'), findsWidgets);
-    expect(find.textContaining('pkg upgrade'), findsOneWidget);
-    expect(find.textContaining('pkg install git curl'), findsOneWidget);
-    expect(find.textContaining('bash install.sh'), findsOneWidget);
+    expect(find.textContaining('updates packages'), findsOneWidget);
+    expect(find.textContaining('installs git/curl'), findsOneWidget);
+    expect(
+      find.textContaining('downloads and pauses for `install.sh` review'),
+      findsOneWidget,
+    );
     expect(
       find.textContaining('Navivox cannot silently install Gormes'),
       findsOneWidget,
     );
     expect(find.textContaining('Navivox (recommended)'), findsOneWidget);
+    expect(find.textContaining('paste one command'), findsOneWidget);
     expect(find.textContaining('gormes navivox pair'), findsOneWidget);
     expect(find.textContaining('connect-info fallback'), findsOneWidget);
     expect(_caseInsensitiveText('curl | sh'), findsNothing);
   });
 
-  testWidgets('copy Termux commands stores safe inspect-first bootstrap', (
+  testWidgets('copy one-paste bootstrap stays safe and inspect-first', (
     tester,
   ) async {
     final copied = <String>[];
@@ -127,25 +131,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Copy Termux commands'));
-    await tester.tap(find.text('Copy Termux commands'));
+    await tester.ensureVisible(find.text('Copy one-paste bootstrap'));
+    await tester.tap(find.text('Copy one-paste bootstrap'));
     await tester.pumpAndSettle();
 
     expect(copied, hasLength(1));
-    expect(copied.single, contains('pkg upgrade'));
-    expect(copied.single, contains('pkg install git curl'));
+    expect(copied.single, contains('one pasted Termux command'));
+    expect(copied.single, contains('pkg upgrade -y'));
+    expect(copied.single, contains('pkg install -y git curl'));
     expect(
       copied.single,
       contains(
         'curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh',
       ),
     );
+    expect(
+      copied.single,
+      contains('Press q to continue install, or Ctrl-C to abort'),
+    );
     expect(copied.single, contains('less install.sh'));
-    expect(copied.single, contains('bash install.sh'));
-    expect(copied.single, contains('gormes navivox connect-info'));
+    expect(copied.single, contains('GORMES_SKIP_SETUP=1 bash install.sh'));
+    expect(
+      copied.single,
+      contains('(gormes navivox pair || gormes navivox connect-info)'),
+    );
     expect(copied.single.toLowerCase(), isNot(contains('curl | sh')));
     expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
-    expect(find.text('Copied Termux bootstrap commands.'), findsOneWidget);
+    expect(find.text('Copied one-paste Termux bootstrap.'), findsOneWidget);
   });
 
   testWidgets('copy Termux download links stores official sources only', (
