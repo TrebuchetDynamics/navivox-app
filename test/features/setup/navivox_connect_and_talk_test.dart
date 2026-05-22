@@ -242,6 +242,54 @@ void main() {
     expect(find.text('Copied same-device connection hint.'), findsOneWidget);
   });
 
+  testWidgets('copy post-install Termux checks keeps tokens out', (
+    tester,
+  ) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Copy post-install checks'));
+    await tester.tap(find.text('Copy post-install checks'));
+    await tester.pumpAndSettle();
+
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('After bash install.sh'));
+    expect(copied.single, contains('gormes version'));
+    expect(copied.single, contains('gormes doctor --offline'));
+    expect(copied.single, contains('gormes navivox connect-info'));
+    expect(copied.single, contains('paste it only into Navivox'));
+    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+    expect(copied.single.toLowerCase(), isNot(contains('curl -fsslo')));
+    expect(find.text('Copied post-install Termux checks.'), findsOneWidget);
+  });
+
   testWidgets('copy optional Termux storage command stays permission-scoped', (
     tester,
   ) async {

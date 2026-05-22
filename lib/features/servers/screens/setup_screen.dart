@@ -28,6 +28,16 @@ Termux install sources:
 Use one signing source for Termux and plugins. Do not mix F-Droid, GitHub, or other APK sources on the same install.
 ''';
 
+const termuxPostInstallChecks = '''
+After bash install.sh finishes in Termux, run these checks:
+
+gormes version
+gormes doctor --offline
+gormes navivox connect-info
+
+If connect-info prints a pairing token, paste it only into Navivox. Do not share tokens in logs, screenshots, issues, or chat transcripts.
+''';
+
 const termuxSameDeviceConnectionHint = '''
 Navivox connection hints:
 - Same Android device (Gormes in Termux): use the loopback URL printed by `gormes navivox connect-info`, usually http://127.0.0.1:<port>.
@@ -239,6 +249,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           ),
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
+                            onPressed: _copyTermuxPostInstallChecks,
+                            icon: const Icon(Icons.checklist),
+                            label: const Text('Copy post-install checks'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
                             onPressed: _copyTermuxConnectionHint,
                             icon: const Icon(Icons.device_hub),
                             label: const Text(
@@ -355,6 +371,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Could not copy Termux download links.');
+      }
+    }
+  }
+
+  Future<void> _copyTermuxPostInstallChecks() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: termuxPostInstallChecks),
+      );
+      if (mounted) {
+        setState(() => _status = 'Copied post-install Termux checks.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy post-install checks.');
       }
     }
   }
