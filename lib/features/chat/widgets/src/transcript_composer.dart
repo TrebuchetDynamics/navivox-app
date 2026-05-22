@@ -6,6 +6,7 @@ class _InputBar extends StatefulWidget {
     required this.onSend,
     this.voiceService,
     this.voiceUnavailableReason,
+    this.onOpenVoiceSettings,
     this.capturing = false,
     this.onToggleVoice,
   });
@@ -14,6 +15,7 @@ class _InputBar extends StatefulWidget {
   final ValueChanged<String> onSend;
   final VoiceCaptureService? voiceService;
   final String? voiceUnavailableReason;
+  final VoidCallback? onOpenVoiceSettings;
   final bool capturing;
   final VoidCallback? onToggleVoice;
 
@@ -33,6 +35,14 @@ class _InputBarState extends State<_InputBar> {
       return 'device STT unavailable';
     }
     return trimmed;
+  }
+
+  String _voiceSettingsSubtitle(String? reason) {
+    return reason == 'device STT unavailable'
+        ? 'Review continuous voice after enabling device speech recognition.'
+        : reason == 'select a profile contact'
+        ? 'Select a profile contact before reviewing continuous voice settings.'
+        : 'Review continuous voice and trust settings';
   }
 
   void _showVoiceUnavailable(BuildContext context) {
@@ -67,6 +77,17 @@ class _InputBarState extends State<_InputBar> {
                 ),
                 subtitle: Text(helpText),
               ),
+              if (widget.onOpenVoiceSettings != null)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.settings_voice_outlined),
+                  title: const Text('Open voice settings'),
+                  subtitle: Text(_voiceSettingsSubtitle(reason)),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onOpenVoiceSettings?.call();
+                  },
+                ),
             ],
           ),
         ),

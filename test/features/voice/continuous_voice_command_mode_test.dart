@@ -844,6 +844,43 @@ void main() {
     expect(channel.sentTexts, isEmpty);
   });
 
+  testWidgets('STT unavailable mic sheet opens voice settings', (tester) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mineru'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byTooltip('Voice unavailable: device STT unavailable'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Voice unavailable'), findsOneWidget);
+    expect(find.text('device STT unavailable'), findsOneWidget);
+    expect(find.text('Open voice settings'), findsOneWidget);
+    expect(
+      find.text(
+        'Review continuous voice after enabling device speech recognition.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Open voice settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Voice settings'), findsOneWidget);
+    expect(find.text('Continuous voice'), findsOneWidget);
+    expect(channel.sentTexts, isEmpty);
+  });
+
   testWidgets('continuous voice banner opens a control sheet', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
     final voiceService = FakeVoiceCaptureService(

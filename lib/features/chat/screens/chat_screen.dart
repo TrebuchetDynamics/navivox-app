@@ -199,6 +199,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? voiceService
                   : null,
               voiceUnavailableReason: voiceDisabledReason,
+              onOpenVoiceSettings: () => context.go(AppRoutes.settings),
               textToSpeechService: textToSpeechService,
               assistantTypingLabel:
                   activeProfile?.activeTurnState == 'streaming'
