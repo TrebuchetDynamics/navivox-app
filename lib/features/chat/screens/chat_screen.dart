@@ -91,7 +91,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       activeProfile: activeProfile,
       settings: voiceSettings,
     );
-    final voiceRecoveryAction = _voiceRecoveryAction(activeProfile);
+    final voiceRecoveryAction = _voiceRecoveryAction(
+      activeProfile,
+      voiceDisabledReason,
+    );
     final activeVoiceRun = state.activeVoiceRun;
     final pendingVoiceRun =
         activeVoiceRun?.status == NavivoxVoiceRunStatus.pendingSend
@@ -350,12 +353,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return null;
   }
 
-  String? _voiceRecoveryAction(NavivoxProfileContact? activeProfile) {
-    final disabledReason = activeProfile?.voiceCapability.disabledReason.trim();
-    if (disabledReason == null || disabledReason.isEmpty) return null;
-    final recoveryAction = activeProfile?.voiceCapability.recoveryAction.trim();
-    if (recoveryAction == null || recoveryAction.isEmpty) return null;
-    return recoveryAction;
+  String? _voiceRecoveryAction(
+    NavivoxProfileContact? activeProfile,
+    String? voiceDisabledReason,
+  ) {
+    if (activeProfile == null || voiceDisabledReason == null) return null;
+    final recoveryAction = activeProfile.voiceCapability.recoveryAction.trim();
+    if (recoveryAction.isEmpty) return null;
+    final disabledReason = activeProfile.voiceCapability.disabledReason.trim();
+    if (disabledReason.isNotEmpty && voiceDisabledReason == disabledReason) {
+      return recoveryAction;
+    }
+    if (voiceDisabledReason == 'device STT unavailable' &&
+        activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
+            'unavailable') {
+      return recoveryAction;
+    }
+    return null;
   }
 
   void _handleTextSubmit(NavivoxChannel channel, String text) {
