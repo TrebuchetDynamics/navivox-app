@@ -337,10 +337,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final profileVoiceReason = activeProfile.voiceCapability.disabledReason
         .trim();
     if (profileVoiceReason.isNotEmpty) {
-      if (profileVoiceReason.toLowerCase() == 'device stt unavailable') {
-        return 'device STT unavailable';
-      }
-      return profileVoiceReason;
+      return _canonicalVoiceDisabledReason(profileVoiceReason);
     }
     if (activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
             'unavailable' &&
@@ -357,6 +354,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return null;
   }
 
+  String _canonicalVoiceDisabledReason(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.toLowerCase() == 'device stt unavailable') {
+      return 'device STT unavailable';
+    }
+    return trimmed;
+  }
+
   String? _voiceRecoveryAction(
     NavivoxProfileContact? activeProfile,
     String? voiceDisabledReason,
@@ -366,7 +371,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (recoveryAction != null && recoveryAction.isNotEmpty) {
       final disabledReason = activeProfile!.voiceCapability.disabledReason
           .trim();
-      if (disabledReason.isNotEmpty && voiceDisabledReason == disabledReason) {
+      if (disabledReason.isNotEmpty &&
+          voiceDisabledReason ==
+              _canonicalVoiceDisabledReason(disabledReason)) {
         return recoveryAction;
       }
       if (voiceDisabledReason == 'device STT unavailable' &&

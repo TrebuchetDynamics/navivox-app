@@ -580,6 +580,55 @@ void main() {
     expect(channel.sentVoiceTranscripts, isEmpty);
   });
 
+  testWidgets('profile STT canonical reason keeps recovery action', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts([
+        const NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          workspaceRootCount: 1,
+          micAvailable: true,
+          voiceCapability: NavivoxVoiceCapability(
+            deviceStt: 'available',
+            disabledReason: ' Device STT unavailable ',
+            recoveryAction: 'Enable device speech recognition',
+          ),
+        ),
+      ], selectedKey: 'local::mineru');
+    final voiceService = FakeVoiceCaptureService(
+      audio: Uint8List.fromList([1]),
+      transcript: 'should not capture',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.9,
+    );
+
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(find.text('Enable device speech recognition'), findsOneWidget);
+    expect(
+      find.text(
+        'Install or enable device speech recognition, then reopen Navivox.',
+      ),
+      findsNothing,
+    );
+    expect(channel.sentVoiceTranscripts, isEmpty);
+  });
+
   testWidgets('profile STT unavailable beats trust prompt', (tester) async {
     final channel = TestNavivoxChannel()
       ..seedServers(_servers, activeServerId: 'local')
