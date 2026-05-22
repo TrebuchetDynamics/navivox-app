@@ -194,6 +194,54 @@ void main() {
     expect(find.text('Copied Termux download links.'), findsOneWidget);
   });
 
+  testWidgets('copy same-device Termux connection hint keeps tokens out', (
+    tester,
+  ) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Copy same-device connection hint'));
+    await tester.tap(find.text('Copy same-device connection hint'));
+    await tester.pumpAndSettle();
+
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('Same Android device'));
+    expect(copied.single, contains('Gormes in Termux'));
+    expect(copied.single, contains('http://127.0.0.1:<port>'));
+    expect(copied.single, contains('http://10.0.2.2:<port>'));
+    expect(copied.single, contains('LAN, VPN, or Tailscale'));
+    expect(copied.single, contains('gormes navivox connect-info'));
+    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+    expect(find.text('Copied same-device connection hint.'), findsOneWidget);
+  });
+
   testWidgets(
     'connect failure gives connect-info guidance without token leak',
     (tester) async {

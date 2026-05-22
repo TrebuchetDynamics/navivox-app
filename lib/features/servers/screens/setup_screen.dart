@@ -28,6 +28,15 @@ Termux install sources:
 Use one signing source for Termux and plugins. Do not mix F-Droid, GitHub, or other APK sources on the same install.
 ''';
 
+const termuxSameDeviceConnectionHint = '''
+Navivox connection hints:
+- Same Android device (Gormes in Termux): use the loopback URL printed by `gormes navivox connect-info`, usually http://127.0.0.1:<port>.
+- Android emulator to host Gormes: use http://10.0.2.2:<port>.
+- Physical Android device to separate host Gormes: use the LAN, VPN, or Tailscale URL from `gormes navivox connect-info`.
+
+Paste pairing tokens only into Navivox. Do not share tokens in logs, screenshots, issues, or chat transcripts.
+''';
+
 typedef SetupQrImageImporter = Future<SetupQrImageImport?> Function();
 
 class SetupQrImageImport {
@@ -218,6 +227,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             icon: const Icon(Icons.link),
                             label: const Text('Copy Termux download links'),
                           ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _copyTermuxConnectionHint,
+                            icon: const Icon(Icons.device_hub),
+                            label: const Text(
+                              'Copy same-device connection hint',
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -322,6 +339,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Could not copy Termux download links.');
+      }
+    }
+  }
+
+  Future<void> _copyTermuxConnectionHint() async {
+    setState(() {
+      _error = null;
+      _status = null;
+    });
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: termuxSameDeviceConnectionHint),
+      );
+      if (mounted) {
+        setState(() => _status = 'Copied same-device connection hint.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not copy connection hint.');
       }
     }
   }
