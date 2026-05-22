@@ -2,6 +2,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 
 void main() {
+  group('NavivoxVoiceCapability.captureUnavailableReason', () {
+    test('reports canonical device STT unavailable for blocked capture', () {
+      const capability = NavivoxVoiceCapability(
+        deviceStt: 'unavailable',
+        isReported: true,
+      );
+
+      expect(capability.captureUnavailableReason, 'device STT unavailable');
+    });
+
+    test('returns canonical trimmed disabled reason', () {
+      const capability = NavivoxVoiceCapability(
+        disabledReason: ' Device STT unavailable ',
+      );
+
+      expect(capability.captureUnavailableReason, 'device STT unavailable');
+    });
+
+    test('keeps unreported fallback unavailable values available', () {
+      const capability = NavivoxVoiceCapability(deviceStt: 'unavailable');
+
+      expect(capability.captureUnavailableReason, isNull);
+    });
+  });
+
   group('NavivoxVoiceCapability.enabled', () {
     test('is false when reported unavailable device STT blocks capture', () {
       const capability = NavivoxVoiceCapability(

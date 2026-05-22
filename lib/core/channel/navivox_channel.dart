@@ -63,11 +63,26 @@ class NavivoxVoiceCapability {
   final String recoveryAction;
   final bool isReported;
 
-  bool get enabled => disabledReason.trim().isEmpty && !blocksDeviceCapture;
+  bool get enabled => captureUnavailableReason == null;
+
+  String? get captureUnavailableReason {
+    final reason = disabledReason.trim();
+    if (reason.isNotEmpty) return _canonicalUnavailableReason(reason);
+    if (blocksDeviceCapture) return 'device STT unavailable';
+    return null;
+  }
 
   bool get blocksDeviceCapture =>
       deviceStt.trim().toLowerCase() == 'unavailable' &&
       (isReported || recoveryAction.trim().isNotEmpty);
+
+  static String _canonicalUnavailableReason(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.toLowerCase() == 'device stt unavailable') {
+      return 'device STT unavailable';
+    }
+    return trimmed;
+  }
 }
 
 class NavivoxProfileContact {

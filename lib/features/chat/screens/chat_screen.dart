@@ -336,14 +336,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
     if (activeProfile == null) return 'select a profile contact';
     if (voiceService == null) return 'device STT unavailable';
-    final profileVoiceReason = activeProfile.voiceCapability.disabledReason
-        .trim();
-    if (profileVoiceReason.isNotEmpty) {
-      return _canonicalVoiceDisabledReason(profileVoiceReason);
-    }
-    if (activeProfile.voiceCapability.blocksDeviceCapture) {
-      return 'device STT unavailable';
-    }
+    final profileVoiceReason =
+        activeProfile.voiceCapability.captureUnavailableReason;
+    if (profileVoiceReason != null) return profileVoiceReason;
     if (!settings.isTrusted(activeProfile.serverId)) {
       return 'trust ${activeProfile.serverLabel}';
     }
@@ -354,33 +349,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return null;
   }
 
-  String _canonicalVoiceDisabledReason(String reason) {
-    final trimmed = reason.trim();
-    if (trimmed.toLowerCase() == 'device stt unavailable') {
-      return 'device STT unavailable';
-    }
-    return trimmed;
-  }
-
   String? _voiceRecoveryAction(
     NavivoxProfileContact? activeProfile,
     String? voiceDisabledReason,
   ) {
     if (voiceDisabledReason == null) return null;
-    final recoveryAction = activeProfile?.voiceCapability.recoveryAction.trim();
-    if (recoveryAction != null && recoveryAction.isNotEmpty) {
-      final disabledReason = activeProfile!.voiceCapability.disabledReason
-          .trim();
-      if (disabledReason.isNotEmpty &&
-          voiceDisabledReason ==
-              _canonicalVoiceDisabledReason(disabledReason)) {
-        return recoveryAction;
-      }
-      if (voiceDisabledReason == 'device STT unavailable' &&
-          activeProfile.voiceCapability.deviceStt.trim().toLowerCase() ==
-              'unavailable') {
-        return recoveryAction;
-      }
+    final capability = activeProfile?.voiceCapability;
+    final recoveryAction = capability?.recoveryAction.trim();
+    if (capability != null &&
+        recoveryAction != null &&
+        recoveryAction.isNotEmpty &&
+        voiceDisabledReason == capability.captureUnavailableReason) {
+      return recoveryAction;
     }
     if (voiceDisabledReason == 'device STT unavailable') {
       return 'Install or enable device speech recognition, then reopen Navivox.';
