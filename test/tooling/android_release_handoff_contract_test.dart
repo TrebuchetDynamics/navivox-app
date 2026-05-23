@@ -28,6 +28,18 @@ void main() {
     );
     expect(text, contains('microphone permission'));
     expect(text, contains('Continuous voice ready'));
+    expect(text, contains('## Continuous voice blocker handoff'));
+    expect(text, contains('Run id: `dl-mphjm06r-b0c512`'));
+    expect(text, contains('Latest local debug APK'));
+    expect(text, contains('emulator-5554'));
+    expect(text, contains('exit code `124`'));
+    expect(
+      text,
+      contains(
+        'Android recognizer, microphone permission, and gateway profile STT are separate checks',
+      ),
+    );
+    expect(text, contains('physical USB-debuggable Android device'));
     expect(text, isNot(contains('nvbx_')));
   });
 }

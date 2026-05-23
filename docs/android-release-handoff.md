@@ -74,3 +74,25 @@ Open the active profile chat, tap the mic, grant the microphone permission promp
 3. The recognized text appears as the pending voice turn before it is sent.
 
 If the app shows `Continuous voice unavailable: device STT unavailable`, verify microphone permission and the Android speech recognizer service before changing Gormes gateway settings.
+
+## Continuous voice blocker handoff
+
+Run id: `dl-mphjm06r-b0c512`.
+
+Latest local debug APK:
+
+```text
+build/app/outputs/flutter-apk/app-debug.apk
+```
+
+Current host blocker: ADB lists `emulator-5554`, but `timeout 5s adb -s emulator-5554 shell true` exits with exit code `124`. Do not treat that emulator as valid evidence for microphone permission prompts, Android speech recognizer availability, or real STT capture.
+
+What is already covered in the app:
+
+- Android uses local `speech_to_text` capture when the platform is Android.
+- Bare gateway-reported `device STT unavailable` is advisory unless paired with an explicit disabled reason.
+- Runtime local STT failures switch continuous voice into an actionable unavailable state.
+- Permission failures show `microphone permission denied` and tell the tester to grant microphone permission in Android App info.
+- The continuous voice sheet explains that Android recognizer, microphone permission, and gateway profile STT are separate checks.
+
+Final smoke requirement: use a responsive emulator or physical USB-debuggable Android device, install the latest local debug APK, run `adb shell true`, run the speech-recognition service query, grant microphone permission, then capture one short phrase from the active profile chat.
