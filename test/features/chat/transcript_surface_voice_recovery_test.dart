@@ -3,17 +3,17 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/widgets/simple_chat_adapter.dart';
+import 'package:navivox/features/chat/widgets/transcript_surface.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 
 void main() {
-  testWidgets('disabled STT mic explains recovery in simple chat adapter', (
+  testWidgets('disabled STT mic explains recovery in Transcript surface', (
     tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceUnavailableReason: 'device STT unavailable',
@@ -47,7 +47,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceUnavailableReason: 'microphone permission denied',
@@ -77,7 +77,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceUnavailableReason: ' Device STT unavailable ',
@@ -114,7 +114,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceUnavailableReason: 'device STT unavailable',
@@ -137,7 +137,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceUnavailableReason: 'device STT unavailable',
@@ -178,7 +178,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SimpleChatAdapter(
+          body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
             voiceCaptureService: service,

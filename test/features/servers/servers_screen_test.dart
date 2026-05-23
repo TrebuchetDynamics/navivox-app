@@ -163,11 +163,11 @@ void main() {
     );
     await tester.enterText(
       find.byKey(const ValueKey('register-gateway-base-url')),
-      'http://127.0.0.1:7319',
+      '  http://127.0.0.1:7319  ',
     );
     await tester.enterText(
       find.byKey(const ValueKey('register-gateway-token')),
-      'secret-token',
+      '  secret-token  ',
     );
 
     await tester.tap(find.byKey(const ValueKey('register-gateway-test')));

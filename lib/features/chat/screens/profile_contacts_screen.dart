@@ -6,6 +6,11 @@ import 'package:intl/intl.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
+import '../../profile_contacts/profile_contact_avatar.dart';
+import '../../profile_contacts/profile_contact_list_presentation.dart';
+import '../../profile_contacts/profile_contact_presentation.dart';
+
+const _profileContactsPresentation = ProfileContactsScreenPresentation();
 
 class ProfileContactsScreen extends ConsumerStatefulWidget {
   const ProfileContactsScreen({super.key});
@@ -42,10 +47,12 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
       _subscribed = channel;
     }
 
-    final servers = channel.state.servers;
-    final allContacts = [...channel.state.profileContacts]
-      ..sort((a, b) => a.displayName.compareTo(b.displayName));
-    final contacts = _filterContacts(allContacts);
+    final presentation = ProfileContactListPresentation.fromContacts(
+      servers: channel.state.servers,
+      contacts: channel.state.profileContacts,
+      selectedServerId: _selectedServerId,
+      query: _query,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -54,35 +61,39 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                 key: const ValueKey('profile-search-field'),
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Search',
+                decoration: InputDecoration(
+                  hintText: _profileContactsPresentation.searchHint,
                   border: InputBorder.none,
                 ),
                 onChanged: (value) => setState(() => _query = value),
               )
-            : const Text('Navivox'),
+            : Text(_profileContactsPresentation.title),
         actions: [
           IconButton(
-            tooltip: _searching ? 'Close search' : 'Search profiles',
+            tooltip: _searching
+                ? _profileContactsPresentation.closeSearchTooltip
+                : _profileContactsPresentation.searchTooltip,
             onPressed: _toggleSearch,
             icon: Icon(_searching ? Icons.close : Icons.search),
           ),
           IconButton(
-            tooltip: 'Manage gateways',
-            onPressed: () => context.go('/servers'),
+            tooltip: _profileContactsPresentation.manageGatewaysTooltip,
+            onPressed: () => context.go(AppRoutes.servers),
             icon: const Icon(Icons.dns),
           ),
         ],
       ),
-      body: allContacts.isEmpty
-          ? const Center(child: Text('No profiles loaded'))
+      body: !presentation.hasContacts
+          ? Center(child: Text(_profileContactsPresentation.noProfilesMessage))
           : Column(
               children: [
-                if (servers.length > 1) ...[
+                if (presentation.showServerFilter) ...[
                   _ServerFilterBar(
-                    servers: servers,
-                    selectedServerId: _selectedServerId,
-                    visibleCount: contacts.length,
+                    servers: presentation.servers,
+                    selectedServerId: presentation.selectedServerId,
+                    visibleCountLabel: presentation.visibleCountLabel,
+                    allServersLabel:
+                        _profileContactsPresentation.allServersLabel,
                     onSelected: (serverId) => setState(() {
                       _selectedServerId = serverId;
                     }),
@@ -90,14 +101,18 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                   const Divider(height: 1),
                 ],
                 Expanded(
-                  child: contacts.isEmpty
-                      ? const Center(child: Text('No chats found'))
+                  child: !presentation.hasVisibleContacts
+                      ? Center(
+                          child: Text(
+                            _profileContactsPresentation.noVisibleChatsMessage,
+                          ),
+                        )
                       : ListView.separated(
-                          itemCount: contacts.length,
+                          itemCount: presentation.visibleContacts.length,
                           separatorBuilder: (context, index) =>
                               const Divider(height: 1),
                           itemBuilder: (context, index) {
-                            final contact = contacts[index];
+                            final contact = presentation.visibleContacts[index];
                             return _ProfileContactTile(
                               contact: contact,
                               onTap: () {
@@ -106,7 +121,10 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                                   profileId: contact.profileId,
                                 );
                                 context.go(
-                                  '/chats/${contact.serverId}/${contact.profileId}',
+                                  AppRoutes.chatLocation(
+                                    serverId: contact.serverId,
+                                    profileId: contact.profileId,
+                                  ),
                                 );
                               },
                               onLongPress: () =>
@@ -118,41 +136,11 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
               ],
             ),
       floatingActionButton: FloatingActionButton.small(
-        tooltip: 'Add profile',
+        tooltip: _profileContactsPresentation.addProfileTooltip,
         onPressed: () => _showAddProfilePlaceholder(context),
         child: const Icon(Icons.add),
       ),
     );
-  }
-
-  List<NavivoxProfileContact> _filterContacts(
-    List<NavivoxProfileContact> contacts,
-  ) {
-    final query = _query.trim().toLowerCase();
-    return contacts
-        .where(
-          (contact) =>
-              _selectedServerId == null ||
-              contact.serverId == _selectedServerId,
-        )
-        .where(
-          (contact) =>
-              query.isEmpty ||
-              [
-                contact.displayName,
-                contact.profileId,
-                contact.serverId,
-                contact.serverLabel,
-                contact.latestPreview,
-                _profileHealthLabel(contact.health),
-                _profileWorkspaceLabel(contact),
-                _profileVoiceLabel(contact),
-                _profileLatestLabel(contact),
-                contact.activeTurnState,
-                ...contact.attentionBadges,
-              ].any((field) => field.toLowerCase().contains(query)),
-        )
-        .toList(growable: false);
   }
 
   void _toggleSearch() {
@@ -172,17 +160,13 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
-          children: const [
-            ListTile(
-              leading: Icon(Icons.person_add_alt),
-              title: Text('New profile'),
-              subtitle: Text('Server-validated profile creation is next.'),
-            ),
-            ListTile(
-              leading: Icon(Icons.dns),
-              title: Text('Add server'),
-              subtitle: Text('Import connect-info from Gormes.'),
-            ),
+          children: [
+            for (final row in _profileContactsPresentation.addProfileRows)
+              ListTile(
+                leading: Icon(_addProfileRowIcon(row.kind)),
+                title: Text(row.title),
+                subtitle: Text(row.subtitle),
+              ),
           ],
         ),
       ),
@@ -194,6 +178,7 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     NavivoxProfileContact contact,
   ) {
     final channel = ref.read(navivoxChannelProvider);
+    final summary = ProfileContactPresentation(contact);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -202,94 +187,107 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
           shrinkWrap: true,
           children: [
             ListTile(
-              leading: _ProfileAvatar(contact: contact),
-              title: const Text('Profile details'),
-              subtitle: Text('${contact.displayName}\n${contact.profileId}'),
+              leading: ProfileContactAvatar(contact: contact),
+              title: Text(summary.detailsTitle),
+              subtitle: Text(summary.detailsSubtitle),
             ),
             const Divider(height: 1),
-            const ListTile(
-              leading: Icon(Icons.monitor_heart_outlined),
-              title: Text('Profile diagnostics'),
+            ListTile(
+              leading: const Icon(Icons.monitor_heart_outlined),
+              title: Text(summary.diagnosticsTitle),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 72, right: 16, bottom: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Health: ${_profileHealthLabel(contact.health)}'),
-                  Text('Workspace: ${_profileWorkspaceLabel(contact)}'),
-                  Text('Voice: ${_profileVoiceLabel(contact)}'),
-                  Text('Latest: ${_profileLatestLabel(contact)}'),
-                  Text('Server: ${contact.serverLabel}'),
+                  for (final line in summary.diagnosticLines) Text(line),
                 ],
               ),
             ),
             const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.chat_bubble_outline),
-              title: const Text('Open chat'),
-              subtitle: const Text('Use this profile for the next turn.'),
-              onTap: () {
-                final router = GoRouter.of(context);
-                Navigator.of(context).pop();
-                channel.selectProfileContact(
-                  serverId: contact.serverId,
-                  profileId: contact.profileId,
-                );
-                router.go(
-                  '/chats/${Uri.encodeComponent(contact.serverId)}/'
-                  '${Uri.encodeComponent(contact.profileId)}',
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.psychology_alt_outlined),
-              title: const Text('Open memory'),
-              subtitle: const Text('Inspect memory scoped to this profile.'),
-              onTap: () {
-                final router = GoRouter.of(context);
-                Navigator.of(context).pop();
-                channel.selectProfileContact(
-                  serverId: contact.serverId,
-                  profileId: contact.profileId,
-                );
-                router.go(AppRoutes.memory);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit profile'),
-              subtitle: const Text('Schema-driven editor placeholder.'),
-              onTap: () => Navigator.of(context).pop(),
-            ),
+            for (final section in summary.detailSections)
+              _ProfileDetailSection(
+                icon: _detailSectionIcon(section.kind),
+                title: section.title,
+                lines: section.lines,
+              ),
+            const Divider(height: 1),
+            for (final action in summary.detailActions)
+              ListTile(
+                leading: Icon(_detailActionIcon(action.kind)),
+                title: Text(action.title),
+                subtitle: Text(action.subtitle),
+                onTap: () => _handleProfileDetailAction(
+                  context,
+                  channel,
+                  contact,
+                  action.kind,
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  String _profileHealthLabel(NavivoxProfileHealth health) => switch (health) {
-    NavivoxProfileHealth.online => 'online',
-    NavivoxProfileHealth.offline => 'offline',
-    NavivoxProfileHealth.needsAuth => 'auth required',
-    NavivoxProfileHealth.warning => 'warning',
-  };
-
-  String _profileWorkspaceLabel(NavivoxProfileContact contact) {
-    if (!contact.workspaceRootsOk) return 'workspace issue';
-    if (contact.workspaceRootCount == 1) return '1 root';
-    return '${contact.workspaceRootCount} roots';
+  void _handleProfileDetailAction(
+    BuildContext context,
+    NavivoxChannel channel,
+    NavivoxProfileContact contact,
+    ProfileContactDetailActionKind kind,
+  ) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    switch (kind) {
+      case ProfileContactDetailActionKind.openChat:
+        channel.selectProfileContact(
+          serverId: contact.serverId,
+          profileId: contact.profileId,
+        );
+        router.go(
+          AppRoutes.chatLocation(
+            serverId: contact.serverId,
+            profileId: contact.profileId,
+          ),
+        );
+      case ProfileContactDetailActionKind.openMemory:
+        channel.selectProfileContact(
+          serverId: contact.serverId,
+          profileId: contact.profileId,
+        );
+        router.go(AppRoutes.memory);
+      case ProfileContactDetailActionKind.editProfile:
+        break;
+    }
   }
+}
 
-  String _profileVoiceLabel(NavivoxProfileContact contact) {
-    if (!contact.micAvailable) return 'mic unavailable';
-    return 'mic available';
-  }
+class _ProfileDetailSection extends StatelessWidget {
+  const _ProfileDetailSection({
+    required this.icon,
+    required this.title,
+    required this.lines,
+  });
 
-  String _profileLatestLabel(NavivoxProfileContact contact) {
-    if (contact.activeTurnState == 'streaming') return 'typing…';
-    final preview = contact.latestPreview.trim();
-    return preview.isEmpty ? 'no recent activity' : preview;
+  final IconData icon;
+  final String title;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          for (final line in lines) Text(line),
+        ],
+      ),
+    );
   }
 }
 
@@ -297,20 +295,19 @@ class _ServerFilterBar extends StatelessWidget {
   const _ServerFilterBar({
     required this.servers,
     required this.selectedServerId,
-    required this.visibleCount,
+    required this.visibleCountLabel,
+    required this.allServersLabel,
     required this.onSelected,
   });
 
   final List<NavivoxServer> servers;
   final String? selectedServerId;
-  final int visibleCount;
+  final String visibleCountLabel;
+  final String allServersLabel;
   final ValueChanged<String?> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final countLabel = visibleCount == 1
-        ? '1 profile'
-        : '$visibleCount profiles';
     return SizedBox(
       height: 56,
       child: ListView(
@@ -319,7 +316,7 @@ class _ServerFilterBar extends StatelessWidget {
         children: [
           ChoiceChip(
             key: const ValueKey('server-filter-all'),
-            label: const Text('All'),
+            label: Text(allServersLabel),
             selected: selectedServerId == null,
             onSelected: (_) => onSelected(null),
           ),
@@ -335,7 +332,7 @@ class _ServerFilterBar extends StatelessWidget {
           ],
           Center(
             child: Text(
-              countLabel,
+              visibleCountLabel,
               style: Theme.of(context).textTheme.labelMedium,
             ),
           ),
@@ -358,9 +355,10 @@ class _ProfileContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final summary = ProfileContactPresentation(contact);
     return ListTile(
       key: ValueKey('profile-contact-${contact.serverId}-${contact.profileId}'),
-      leading: _ProfileAvatar(contact: contact),
+      leading: ProfileContactAvatar(contact: contact),
       title: Row(
         children: [
           Expanded(child: Text(contact.displayName)),
@@ -374,7 +372,7 @@ class _ProfileContactTile extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  _previewLabel(contact),
+                  summary.latestLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: contact.activeTurnState == 'streaming'
@@ -406,9 +404,9 @@ class _ProfileContactTile extends StatelessWidget {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _HealthChip(health: contact.health),
+              _HealthChip(summary: summary),
               Text(
-                _workspaceLabel(contact),
+                summary.workspaceLabel,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               for (final badge in contact.attentionBadges)
@@ -439,38 +437,33 @@ class _ProfileContactTile extends StatelessWidget {
       onLongPress: onLongPress,
     );
   }
-
-  String _previewLabel(NavivoxProfileContact contact) {
-    if (contact.activeTurnState == 'streaming') return 'typing…';
-    return contact.latestPreview;
-  }
-
-  String _workspaceLabel(NavivoxProfileContact contact) {
-    if (!contact.workspaceRootsOk) return 'workspace issue';
-    if (contact.workspaceRootCount == 1) return '1 root';
-    return '${contact.workspaceRootCount} roots';
-  }
 }
 
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.contact});
+IconData _addProfileRowIcon(ProfileContactsAddRowKind kind) {
+  return switch (kind) {
+    ProfileContactsAddRowKind.newProfile => Icons.person_add_alt,
+    ProfileContactsAddRowKind.addServer => Icons.dns,
+  };
+}
 
-  final NavivoxProfileContact contact;
+IconData _detailSectionIcon(ProfileContactDetailSectionKind kind) {
+  return switch (kind) {
+    ProfileContactDetailSectionKind.identity => Icons.badge_outlined,
+    ProfileContactDetailSectionKind.channels => Icons.forum_outlined,
+    ProfileContactDetailSectionKind.memory => Icons.psychology_alt_outlined,
+    ProfileContactDetailSectionKind.skills => Icons.extension_outlined,
+    ProfileContactDetailSectionKind.config =>
+      Icons.settings_applications_outlined,
+    ProfileContactDetailSectionKind.logs => Icons.article_outlined,
+  };
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final color =
-        Colors.primaries[contact.avatarSeed.codeUnits.fold<int>(
-              0,
-              (a, b) => a + b,
-            ) %
-            Colors.primaries.length];
-    return CircleAvatar(
-      backgroundColor: color.shade700,
-      foregroundColor: Colors.white,
-      child: Text(contact.displayName.characters.first.toUpperCase()),
-    );
-  }
+IconData _detailActionIcon(ProfileContactDetailActionKind kind) {
+  return switch (kind) {
+    ProfileContactDetailActionKind.openChat => Icons.chat_bubble_outline,
+    ProfileContactDetailActionKind.openMemory => Icons.psychology_alt_outlined,
+    ProfileContactDetailActionKind.editProfile => Icons.edit,
+  };
 }
 
 class _ServerChip extends StatelessWidget {
@@ -485,18 +478,15 @@ class _ServerChip extends StatelessWidget {
 }
 
 class _HealthChip extends StatelessWidget {
-  const _HealthChip({required this.health});
+  const _HealthChip({required this.summary});
 
-  final NavivoxProfileHealth health;
+  final ProfileContactPresentation summary;
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth',
-      NavivoxProfileHealth.warning => 'warning',
-    };
-    return Text(label, style: Theme.of(context).textTheme.labelSmall);
+    return Text(
+      summary.compactHealthLabel,
+      style: Theme.of(context).textTheme.labelSmall,
+    );
   }
 }

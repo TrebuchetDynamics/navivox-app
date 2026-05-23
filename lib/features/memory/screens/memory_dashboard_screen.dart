@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_memory.dart';
+import '../memory_dashboard_presentation.dart';
+
+const _memoryPresentation = MemoryDashboardPresentation();
 
 final memoryOverviewProvider =
     FutureProvider.autoDispose<NavivoxMemoryOverview>((ref) {
@@ -25,19 +27,20 @@ class MemoryDashboardScreen extends ConsumerWidget {
     final overview = ref.watch(memoryOverviewProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Memory')),
+      appBar: AppBar(title: Text(_memoryPresentation.title)),
       body: overview.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => _MemoryError(
-          profileLabel: _profileLabel(activeProfile, fallback: 'default'),
-          message: 'Gormes memory API is unavailable.',
+          presentation: _memoryPresentation.errorFor(
+            activeProfile,
+            message: 'Gormes memory API is unavailable.',
+          ),
         ),
         data: (overview) => _MemoryOverviewBody(
           overview: overview,
-          serverLabel: _serverLabel(activeProfile, fallback: 'default'),
-          profileLabel: _profileLabel(
-            activeProfile,
-            fallback: overview.profileId,
+          presentation: _memoryPresentation.overviewFor(
+            overview,
+            activeProfile: activeProfile,
           ),
         ),
       ),
@@ -48,13 +51,11 @@ class MemoryDashboardScreen extends ConsumerWidget {
 class _MemoryOverviewBody extends StatelessWidget {
   const _MemoryOverviewBody({
     required this.overview,
-    required this.serverLabel,
-    required this.profileLabel,
+    required this.presentation,
   });
 
   final NavivoxMemoryOverview overview;
-  final String serverLabel;
-  final String profileLabel;
+  final MemoryOverviewPresentation presentation;
 
   @override
   Widget build(BuildContext context) {
@@ -78,27 +79,25 @@ class _MemoryOverviewBody extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        overview.healthLabel,
+                        presentation.healthLabel,
                         style: theme.textTheme.titleLarge,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Server: $serverLabel'),
-                Text('Profile: $profileLabel'),
-                if (overview.workspaceId.isNotEmpty)
-                  Text('Workspace: ${overview.workspaceId}'),
-                const Text('Database'),
-                SelectableText(overview.databaseLabel),
-                if (overview.lastUpdatedAt != null)
-                  Text(
-                    'Last updated: ${overview.lastUpdatedAt!.toUtc().toIso8601String()}',
-                  ),
-                if (overview.degradedReason.isNotEmpty) ...[
+                Text(presentation.serverLine),
+                Text(presentation.profileLine),
+                if (presentation.workspaceLine != null)
+                  Text(presentation.workspaceLine!),
+                Text(presentation.databaseTitle),
+                SelectableText(presentation.databaseLabel),
+                if (presentation.lastUpdatedLine != null)
+                  Text(presentation.lastUpdatedLine!),
+                if (presentation.degradedReason.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    overview.degradedReason,
+                    presentation.degradedReason,
                     style: TextStyle(color: theme.colorScheme.error),
                   ),
                 ],
@@ -111,25 +110,8 @@ class _MemoryOverviewBody extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _MemoryCountCard(label: 'Turns', count: overview.totalTurns),
-            _MemoryCountCard(
-              label: 'Active memory items',
-              count: overview.activeMemoryItems,
-            ),
-            _MemoryCountCard(
-              label: 'Observations',
-              count: overview.observations,
-            ),
-            _MemoryCountCard(label: 'Conclusions', count: overview.conclusions),
-            _MemoryCountCard(
-              label: 'Session summaries',
-              count: overview.sessionSummaries,
-            ),
-            _MemoryCountCard(label: 'Entities', count: overview.entities),
-            _MemoryCountCard(
-              label: 'Relationships',
-              count: overview.relationships,
-            ),
+            for (final count in presentation.counts)
+              _MemoryCountCard(label: count.label, count: count.count),
           ],
         ),
         const SizedBox(height: 16),
@@ -204,15 +186,15 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Search & Browse',
+              _memoryPresentation.searchTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
             TextField(
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Search memories',
-                prefixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: _memoryPresentation.searchFieldLabel,
+                prefixIcon: const Icon(Icons.search),
               ),
               onChanged: (value) => _refresh(query: value),
             ),
@@ -237,15 +219,15 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return const _MemorySearchMessage(
+                  return _MemorySearchMessage(
                     icon: Icons.warning_amber_outlined,
-                    message: 'Gormes memory search API is unavailable.',
+                    message: _memoryPresentation.searchUnavailableMessage,
                   );
                 }
                 final result =
                     snapshot.data ??
-                    const NavivoxMemorySearchResult.degraded(
-                      reason: 'Gormes memory search API is unavailable.',
+                    NavivoxMemorySearchResult.degraded(
+                      reason: _memoryPresentation.searchUnavailableMessage,
                     );
                 if (result.isDegraded) {
                   return _MemorySearchMessage(
@@ -254,16 +236,16 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
                   );
                 }
                 if (result.items.isEmpty) {
-                  return const _MemorySearchMessage(
+                  return _MemorySearchMessage(
                     icon: Icons.manage_search,
-                    message: 'No memories found.',
+                    message: _memoryPresentation.emptySearchMessage,
                   );
                 }
                 return Column(
                   children: [
                     for (final item in result.items)
                       _MemoryItemCard(
-                        item: item,
+                        presentation: _memoryPresentation.itemFor(item),
                         onTap: () => _showMemoryDetail(context, item),
                       ),
                   ],
@@ -278,37 +260,32 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
 }
 
 class _MemoryItemCard extends StatelessWidget {
-  const _MemoryItemCard({required this.item, required this.onTap});
+  const _MemoryItemCard({required this.presentation, required this.onTap});
 
-  final NavivoxMemoryItem item;
+  final MemoryItemPresentation presentation;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final metadata = [
-      item.type.wireValue,
-      item.status,
-      item.sessionId,
-      item.peerId,
-    ].where((value) => value.trim().isNotEmpty).join(' · ');
     return Card.outlined(
-      key: ValueKey('memory-item-${item.type.wireValue}-${item.id}'),
+      key: ValueKey(presentation.keyValue),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
         onTap: onTap,
-        title: Text(item.snippet),
+        title: Text(presentation.title),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (metadata.isNotEmpty) Text(metadata),
-            if (item.tags.isNotEmpty) ...[
+            if (presentation.metadataLine != null)
+              Text(presentation.metadataLine!),
+            if (presentation.tags.isNotEmpty) ...[
               const SizedBox(height: 6),
               Wrap(
                 spacing: 6,
                 runSpacing: 4,
                 children: [
-                  for (final tag in item.tags)
+                  for (final tag in presentation.tags)
                     Chip(
                       visualDensity: VisualDensity.compact,
                       label: Text(tag),
@@ -346,11 +323,10 @@ class _MemoryDetailSheet extends ConsumerWidget {
       correction: correction,
     );
     if (!context.mounted) return;
-    final message = result.isDegraded
-        ? result.degradedReason
-        : result.message.trim().isEmpty
-        ? '${action.label} requested.'
-        : result.message;
+    final message = _memoryPresentation.actionMessageFor(
+      result,
+      requestedAction: action,
+    );
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
@@ -365,12 +341,12 @@ class _MemoryDetailSheet extends ConsumerWidget {
     final correction = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add correction'),
+        title: Text(_memoryPresentation.correctionDialogTitle),
         content: TextField(
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Correction note',
-            helperText: 'Adds a superseding note; raw source is preserved.',
+          decoration: InputDecoration(
+            labelText: _memoryPresentation.correctionFieldLabel,
+            helperText: _memoryPresentation.correctionFieldHelperText,
           ),
           maxLines: 3,
           onChanged: (value) => note = value,
@@ -378,11 +354,11 @@ class _MemoryDetailSheet extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(_memoryPresentation.cancelLabel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(note),
-            child: const Text('Save correction'),
+            child: Text(_memoryPresentation.saveCorrectionLabel),
           ),
         ],
       ),
@@ -416,90 +392,63 @@ class _MemoryDetailSheet extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Text(
                 item?.degradedReason ??
-                    'Gormes memory detail API is unavailable.',
+                    _memoryPresentation.detailUnavailableMessage,
               ),
             );
           }
+          final presentation = _memoryPresentation.detailFor(item);
           return ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             children: [
               Text(
-                'Memory detail',
+                presentation.title,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
-              SelectableText(item.content),
+              SelectableText(presentation.content),
               const SizedBox(height: 12),
-              _DetailLine(label: 'Type', value: item.type.wireValue),
-              _DetailLine(label: 'Source', value: item.source),
-              _DetailLine(label: 'Session', value: item.sessionId),
-              _DetailLine(label: 'Peer', value: item.peerId),
-              _DetailLine(label: 'Status', value: item.status),
-              _DetailLine(label: 'Created', value: item.createdAt),
-              if (item.provenance.isNotEmpty) ...[
+              for (final row in presentation.rows) _DetailLine(row: row),
+              if (presentation.provenance.isNotEmpty) ...[
                 const Divider(),
                 Text(
-                  'Provenance',
+                  presentation.provenanceTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                SelectableText(item.provenance),
+                SelectableText(presentation.provenance),
               ],
-              if (item.linkedEntities.isNotEmpty) ...[
+              if (presentation.linkedEntities.isNotEmpty) ...[
                 const Divider(),
                 Text(
-                  'Linked entities',
+                  presentation.linkedEntitiesTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                for (final entity in item.linkedEntities) Text(entity),
+                for (final entity in presentation.linkedEntities) Text(entity),
               ],
-              if (item.linkedRelationships.isNotEmpty) ...[
+              if (presentation.linkedRelationships.isNotEmpty) ...[
                 const Divider(),
                 Text(
-                  'Linked relationships',
+                  presentation.linkedRelationshipsTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                for (final relationship in item.linkedRelationships)
+                for (final relationship in presentation.linkedRelationships)
                   Text(relationship),
               ],
               const Divider(),
-              const Text('Raw source preserved'),
+              Text(presentation.rawSourcePreservedLabel),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  OutlinedButton(
-                    onPressed: () => _requestAction(
-                      context,
-                      ref,
-                      item,
-                      NavivoxMemoryActionType.pin,
+                  for (final action in presentation.actions)
+                    OutlinedButton(
+                      onPressed: action.requiresCorrection
+                          ? () => _requestCorrection(context, ref, item)
+                          : () =>
+                                _requestAction(context, ref, item, action.type),
+                      child: Text(action.label),
                     ),
-                    child: const Text('Pin'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => _requestAction(
-                      context,
-                      ref,
-                      item,
-                      NavivoxMemoryActionType.archive,
-                    ),
-                    child: const Text('Archive'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => _requestAction(
-                      context,
-                      ref,
-                      item,
-                      NavivoxMemoryActionType.markStale,
-                    ),
-                    child: const Text('Mark stale'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => _requestCorrection(context, ref, item),
-                    child: const Text('Add correction'),
-                  ),
                 ],
               ),
             ],
@@ -511,15 +460,13 @@ class _MemoryDetailSheet extends ConsumerWidget {
 }
 
 class _DetailLine extends StatelessWidget {
-  const _DetailLine({required this.label, required this.value});
+  const _DetailLine({required this.row});
 
-  final String label;
-  final String value;
+  final MemoryDetailLinePresentation row;
 
   @override
   Widget build(BuildContext context) {
-    if (value.trim().isEmpty) return const SizedBox.shrink();
-    return Text('$label: $value');
+    return Text(row.line);
   }
 }
 
@@ -575,10 +522,9 @@ class _MemoryCountCard extends StatelessWidget {
 }
 
 class _MemoryError extends StatelessWidget {
-  const _MemoryError({required this.profileLabel, required this.message});
+  const _MemoryError({required this.presentation});
 
-  final String profileLabel;
-  final String message;
+  final MemoryErrorPresentation presentation;
 
   @override
   Widget build(BuildContext context) {
@@ -591,34 +537,16 @@ class _MemoryError extends StatelessWidget {
             const Icon(Icons.warning_amber_outlined, size: 40),
             const SizedBox(height: 12),
             Text(
-              'Goncho degraded',
+              presentation.title,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            Text('Profile: $profileLabel'),
+            Text(presentation.profileLine),
             const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center),
+            Text(presentation.message, textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
-}
-
-String _profileLabel(
-  NavivoxProfileContact? contact, {
-  required String fallback,
-}) {
-  final displayName = contact?.displayName.trim();
-  if (displayName != null && displayName.isNotEmpty) return displayName;
-  return fallback;
-}
-
-String _serverLabel(
-  NavivoxProfileContact? contact, {
-  required String fallback,
-}) {
-  final serverLabel = contact?.serverLabel.trim();
-  if (serverLabel != null && serverLabel.isNotEmpty) return serverLabel;
-  return fallback;
 }

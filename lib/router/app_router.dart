@@ -22,7 +22,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: channel,
     redirect: (context, state) {
       final hasServers = channel.state.servers.isNotEmpty;
-      final isSetup = state.matchedLocation.startsWith(AppRoutes.setup);
+      final isSetup = AppRoutes.isSetupLocation(state.matchedLocation);
 
       if (!hasServers && !isSetup) {
         return AppRoutes.setup;
@@ -67,6 +67,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.config,
             builder: (context, state) => const ConfigScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.configSection,
+            builder: (context, state) =>
+                ConfigScreen(sectionId: state.pathParameters['section']),
           ),
           GoRoute(
             path: AppRoutes.settings,

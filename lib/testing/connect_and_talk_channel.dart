@@ -5,6 +5,7 @@ import '../core/protocol/navivox_event.dart';
 class ConnectAndTalkChannel extends GatewayNavivoxChannel {
   NavivoxChannelState _state = const NavivoxChannelState();
   String? connectedBaseUrl;
+  String? connectedToken;
   final List<String> sentTexts = [];
 
   @override
@@ -13,6 +14,7 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
   @override
   Future<void> connect({required String baseUrl, String? token}) async {
     connectedBaseUrl = baseUrl;
+    connectedToken = token;
     const server = NavivoxServer(
       id: 'navivox-gateway',
       name: 'Gormes Gateway',

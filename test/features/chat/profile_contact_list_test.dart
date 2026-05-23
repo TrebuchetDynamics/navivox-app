@@ -281,6 +281,61 @@ void main() {
     ));
   });
 
+  testWidgets('selecting a profile encodes chat route path segments', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'office team', name: 'Office Team', status: 'online'),
+      ], activeServerId: 'office team')
+      ..seedProfileContacts([
+        NavivoxProfileContact(
+          serverId: 'office team',
+          profileId: 'support/desk',
+          displayName: 'Support Escalation',
+          serverLabel: 'office team',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Watching escalations',
+          latestAt: DateTime(2026, 5, 16, 10, 12),
+          workspaceRootCount: 1,
+          micAvailable: true,
+        ),
+      ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('profile-contact-office team-support/desk')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Route not found'), findsNothing);
+    expect(channel.selectedProfileScope, (
+      serverId: 'office team',
+      profileId: 'support/desk',
+    ));
+    expect(find.text('Support Escalation'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Message Gormes'),
+      'triage escalation',
+    );
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    expect(channel.sentTextCalls.last, (
+      text: 'triage escalation',
+      serverId: 'office team',
+      profileId: 'support/desk',
+    ));
+  });
+
   testWidgets('chat back button returns to profile contacts', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -351,6 +406,33 @@ void main() {
     expect(find.text('Workspace: 2 roots'), findsOneWidget);
     expect(find.text('Voice: mic available'), findsOneWidget);
     expect(find.text('Latest: Ready to work on mineru'), findsOneWidget);
+    expect(find.text('Identity / system prompt'), findsOneWidget);
+    expect(find.text('Profile path: mineru'), findsOneWidget);
+    expect(find.text('Connected channels'), findsOneWidget);
+    expect(find.text('Local/web chat: enabled'), findsOneWidget);
+    expect(find.text('Memory settings'), findsOneWidget);
+    expect(find.text('Goncho status: available'), findsOneWidget);
+    expect(find.text('Skills list'), findsOneWidget);
+    expect(find.text('Skills: not reported by API'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Config/environment summary'),
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Config/environment summary'), findsOneWidget);
+    expect(find.text('Config: profile scoped'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Logs/status'),
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Logs/status'), findsOneWidget);
+    expect(find.text('Status: online'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Open chat'),
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Open chat'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Open memory'),

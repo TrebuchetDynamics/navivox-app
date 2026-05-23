@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import '../../support/test_navivox_channel.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
@@ -19,6 +20,43 @@ void main() {
     );
 
     expect(find.text('No config available'), findsOneWidget);
+  });
+
+  testWidgets('shows active server and profile scope above config fields', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(const [
+        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+      ], activeServerId: 'local')
+      ..seedProfileContacts(const [
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'mineru',
+          displayName: 'Mineru Builder',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Goncho memory active',
+        ),
+      ], selectedKey: 'local::mineru')
+      ..emitConfigSchema(const {
+        'fields': [
+          {'name': 'provider', 'type': 'string', 'required': true},
+        ],
+      })
+      ..emitConfigValues(const {'provider': 'openai'});
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen()),
+      ),
+    );
+
+    expect(find.text('Profile config scope'), findsOneWidget);
+    expect(find.text('Server: Local Gormes'), findsOneWidget);
+    expect(find.text('Profile: Mineru Builder'), findsOneWidget);
+    expect(find.text('Profile ID: mineru'), findsOneWidget);
   });
 
   testWidgets('renders each schema field with its current value', (
@@ -46,16 +84,157 @@ void main() {
     expect(find.text('0.4'), findsOneWidget);
   });
 
+  testWidgets('renders server-provided config sections', (tester) async {
+    final channel = TestNavivoxChannel()
+      ..emitConfigSchema(const {
+        'sections': [
+          {
+            'id': 'providers',
+            'label': 'Provider and Models',
+            'description': 'Model and provider defaults.',
+            'fields': ['providers.default', 'model.temperature'],
+          },
+          {
+            'id': 'gateway',
+            'label': 'Navivox Gateway',
+            'description': 'Gateway exposure and auth.',
+            'fields': ['navivox.exposure_mode'],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+          {
+            'path': 'model.temperature',
+            'label': 'Temperature',
+            'type': 'number',
+          },
+          {'path': 'navivox.exposure_mode', 'label': 'Exposure mode'},
+          {'path': 'tools.allow_shell', 'label': 'Allow shell tools'},
+        ],
+      })
+      ..emitConfigValues(const {
+        'providers.default': 'openai',
+        'model.temperature': 0.4,
+        'navivox.exposure_mode': 'local',
+        'tools.allow_shell': false,
+      });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen()),
+      ),
+    );
+
+    expect(find.text('Provider and Models'), findsOneWidget);
+    expect(find.text('Model and provider defaults.'), findsOneWidget);
+    expect(find.text('Default provider'), findsOneWidget);
+    expect(find.text('Temperature'), findsOneWidget);
+    expect(find.text('Navivox Gateway'), findsOneWidget);
+    expect(find.text('Gateway exposure and auth.'), findsOneWidget);
+    expect(find.text('Exposure mode'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Other config'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Other config'), findsOneWidget);
+    expect(find.text('Allow shell tools'), findsOneWidget);
+  });
+
   testWidgets(
-    'editing a number field calls sendConfigSet through the channel',
+    'section-scoped config screen renders only the requested section',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..emitConfigSchema(const {
+          'sections': [
+            {
+              'id': 'providers',
+              'label': 'Provider and Models',
+              'fields': ['providers.default'],
+            },
+            {
+              'id': 'gateway',
+              'label': 'Navivox Gateway',
+              'fields': ['navivox.exposure_mode'],
+            },
+          ],
+          'fields': [
+            {'path': 'providers.default', 'label': 'Default provider'},
+            {'path': 'navivox.exposure_mode', 'label': 'Exposure mode'},
+          ],
+        })
+        ..emitConfigValues(const {
+          'providers.default': 'openai',
+          'navivox.exposure_mode': 'local',
+        });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const MaterialApp(home: ConfigScreen(sectionId: 'providers')),
+        ),
+      );
+
+      expect(find.text('Provider and Models'), findsOneWidget);
+      expect(find.text('Default provider'), findsOneWidget);
+      expect(find.text('Navivox Gateway'), findsNothing);
+      expect(find.text('Exposure mode'), findsNothing);
+    },
+  );
+
+  testWidgets('unknown config section shows a safe missing-section state', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..emitConfigSchema(const {
+        'sections': [
+          {
+            'id': 'providers',
+            'label': 'Provider and Models',
+            'fields': ['providers.default'],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      })
+      ..emitConfigValues(const {'providers.default': 'openai'});
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen(sectionId: 'missing')),
+      ),
+    );
+
+    expect(find.text('Config section not found: missing'), findsOneWidget);
+    expect(find.text('Provider and Models'), findsNothing);
+    expect(find.text('Default provider'), findsNothing);
+  });
+
+  testWidgets(
+    'secret fields render redacted and save through sendConfigSecretSet',
     (tester) async {
       final channel = TestNavivoxChannel()
         ..emitConfigSchema(const {
           'fields': [
-            {'name': 'temperature', 'type': 'number', 'required': false},
+            {
+              'path': 'providers.openai.api_key',
+              'label': 'OpenAI API key',
+              'type': 'secret',
+              'secret': true,
+            },
           ],
         })
-        ..emitConfigValues(const {'temperature': 0.4});
+        ..emitConfigValues(const {
+          'providers.openai.api_key': {
+            'secret_status': 'configured',
+            'value': 'nvbx_secret_should_not_render',
+          },
+        });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -64,20 +243,204 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(const ValueKey('config-edit-temperature')));
+      expect(find.text('OpenAI API key'), findsOneWidget);
+      expect(find.text('Secret configured'), findsOneWidget);
+      expect(
+        find.textContaining('nvbx_secret_should_not_render'),
+        findsNothing,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('config-edit-providers.openai.api_key')),
+      );
       await tester.pump();
 
       await tester.enterText(
-        find.byKey(const ValueKey('config-input-temperature')),
-        '0.7',
+        find.byKey(const ValueKey('config-input-providers.openai.api_key')),
+        'new-secret',
       );
-      await tester.tap(find.byKey(const ValueKey('config-save-temperature')));
+      await tester.tap(
+        find.byKey(const ValueKey('config-save-providers.openai.api_key')),
+      );
       await tester.pump();
 
-      expect(channel.configSetCalls, isNotEmpty);
-      final last = channel.configSetCalls.last;
-      expect(last.field, 'temperature');
-      expect(last.value, 0.7);
+      expect(channel.configSetCalls, isEmpty);
+      expect(channel.configSecretSetCalls, isEmpty);
+      expect(find.text('Pending config changes'), findsOneWidget);
+      expect(
+        find.text(
+          'OpenAI API key: Secret configured -> Secret will be updated',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('new-secret'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await tester.pump();
+
+      expect(channel.configSetCalls, isEmpty);
+      expect(channel.configSecretSetCalls, [
+        (name: 'providers.openai.api_key', secret: 'new-secret'),
+      ]);
     },
   );
+
+  testWidgets('validation errors render at fields and disable apply', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..emitConfigSchema(const {
+        'fields': [
+          {
+            'path': 'navivox.exposure_mode',
+            'label': 'Exposure mode',
+            'type': 'string',
+          },
+        ],
+      })
+      ..emitConfigValues(const {'navivox.exposure_mode': 'local'})
+      ..emitConfigDiff(const {
+        'validation_errors': [
+          {
+            'path': 'navivox.exposure_mode',
+            'message': 'Public exposure requires explicit server confirmation.',
+          },
+        ],
+      });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen()),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('config-edit-navivox.exposure_mode')),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('config-input-navivox.exposure_mode')),
+      'public',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('config-save-navivox.exposure_mode')),
+    );
+    await tester.pump();
+
+    expect(
+      find.text('Public exposure requires explicit server confirmation.'),
+      findsWidgets,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Apply pending changes'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(channel.configSetCalls, isEmpty);
+  });
+
+  testWidgets(
+    'high-risk pending config changes require confirmation before apply',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..emitConfigSchema(const {
+          'fields': [
+            {
+              'path': 'navivox.exposure_mode',
+              'label': 'Exposure mode',
+              'type': 'string',
+              'risk_level': 'high',
+              'restart_required': true,
+            },
+          ],
+        })
+        ..emitConfigValues(const {'navivox.exposure_mode': 'local'});
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const MaterialApp(home: ConfigScreen()),
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('config-edit-navivox.exposure_mode')),
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('config-input-navivox.exposure_mode')),
+        'public',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('config-save-navivox.exposure_mode')),
+      );
+      await tester.pump();
+
+      expect(find.text('Pending config changes'), findsOneWidget);
+      expect(find.text('Exposure mode: local -> public'), findsOneWidget);
+      expect(find.text('Restart required'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirm high-risk config changes'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Exposure mode: local -> public'),
+        ),
+        findsOneWidget,
+      );
+      expect(channel.configSetCalls, isEmpty);
+
+      await tester.tap(find.text('Confirm apply'));
+      await tester.pumpAndSettle();
+
+      expect(channel.configSetCalls, [
+        (field: 'navivox.exposure_mode', value: 'public'),
+      ]);
+    },
+  );
+
+  testWidgets('editing a number field stages a draft before apply', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..emitConfigSchema(const {
+        'fields': [
+          {'name': 'temperature', 'type': 'number', 'required': false},
+        ],
+      })
+      ..emitConfigValues(const {'temperature': 0.4});
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen()),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('config-edit-temperature')));
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('config-input-temperature')),
+      '0.7',
+    );
+    await tester.tap(find.byKey(const ValueKey('config-save-temperature')));
+    await tester.pump();
+
+    expect(channel.configSetCalls, isEmpty);
+    expect(find.text('Pending config changes'), findsOneWidget);
+    expect(find.text('temperature: 0.4 -> 0.7'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+    await tester.pump();
+
+    expect(channel.configSetCalls, [(field: 'temperature', value: 0.7)]);
+  });
 }

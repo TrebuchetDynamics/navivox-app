@@ -15,9 +15,10 @@ first useful screen is chat.
 abstract final class AppRoutes {
   static const setup = '/setup';
   static const chats = '/chats';
-  static const chatThread = '/chats/:serverId/:threadId';
+  static const chatThread = '/chats/:serverId/:profileId';
   static const servers = '/servers';
   static const serverDetail = '/servers/:id';
+  static const memory = '/memory';
   static const agents = '/agents';
   static const agentEditor = '/agents/:id/edit';
   static const agentCreate = '/agents/create';
@@ -27,12 +28,31 @@ abstract final class AppRoutes {
   static const terminal = '/terminal';
   static const terminalSession = '/terminal/:serverId';
   static const settings = '/settings';
+
+  static String chatLocation({
+    required String serverId,
+    required String profileId,
+  }) => '/chats/<encoded server>/<encoded profile>';
+
+  static String configSectionLocation(String sectionId) =>
+      '/config/<encoded section>';
+
+  static bool isSetupLocation(String location) =>
+      location == setup || location.startsWith('$setup/');
+
+  static bool isChatThreadLocation(String location) =>
+      location.startsWith('$chats/');
 }
 ```
 
-Only setup, chats, servers, agents, and config are currently mounted in the
-router. Detail routes, terminal, and settings constants remain future surfaces
-until their screens have current gateway-backed behavior.
+Setup, chats, chat thread, servers, agents, memory, config, config section,
+and settings are currently mounted in the router. Server detail, agent editor,
+agent create, secret editor, terminal, and terminal session constants remain
+future surfaces until their screens have current gateway-backed behavior.
+
+Profile contact chat locations must be built through `AppRoutes.chatLocation`
+so `server_id` and `profile_id` values with spaces or slashes are encoded as
+route path segments before GoRouter matching.
 
 ## 2. Current Route Table
 
@@ -55,7 +75,8 @@ The shell route wraps the primary authenticated surfaces with app navigation.
 | Chats | `/chats` | `ChatScreen` | Connected gateway |
 | Servers | `/servers` | `ServersScreen` | Connected gateway |
 | Agents | `/agents` | `AgentsScreen` | Connected gateway |
-| Config | `/config` | `ConfigScreen` | Connected gateway; mutation controls require server role evidence |
+| Memory | `/memory` | `MemoryDashboardScreen` | Connected gateway |
+| Config | `/config`, `/config/:section` | `ConfigScreen` | Connected gateway; mutation controls require server role evidence |
 
 ### 2.3 Planned Detail Routes
 
@@ -65,7 +86,7 @@ The shell route wraps the primary authenticated surfaces with app navigation.
 | `/servers/:id` | `ServerDetailScreen` | Connected gateway | Show base URL, health, exposure mode, auth mode, and redacted token status. |
 | `/agents/:id/edit` | `AgentEditorScreen` | Admin role | Edit generated agent/profile/tool/voice settings after a seed flow. |
 | `/agents/create` | `AgentCreateScreen` | Admin role | Natural-language seed such as "screen inbound leads". |
-| `/config/:section` | `ConfigSectionScreen` | Admin role | Schema-driven section editor. |
+| `/config/:section` | `ConfigScreen` with section context | Connected gateway; mutation controls require server role evidence | Mounted; filters schema sections by id and shows a safe missing-section state for unknown ids. |
 | `/config/secrets/:key` | `SecretEditorScreen` | Admin role + local unlock | Set, rotate, delete, and test a secret without reading its value. |
 | `/settings` | `SettingsScreen` | Local app | Theme, local voice defaults, cache controls, and app lock. |
 | `/terminal` | Future terminal surface | Explicit opt-in | Deferred; not part of the connect-and-talk loop. |
@@ -99,10 +120,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) =>
             AppShell(location: state.matchedLocation, child: child),
         routes: [
-          GoRoute(path: AppRoutes.chats, builder: (_, __) => const ChatScreen()),
+          GoRoute(path: AppRoutes.chats, builder: (_, __) => const ProfileContactsScreen()),
+          GoRoute(
+            path: AppRoutes.chatThread,
+            builder: (_, state) => ChatScreen(
+              serverId: state.pathParameters['serverId'],
+              profileId: state.pathParameters['profileId'],
+            ),
+          ),
           GoRoute(path: AppRoutes.servers, builder: (_, __) => const ServersScreen()),
           GoRoute(path: AppRoutes.agents, builder: (_, __) => const AgentsScreen()),
+          GoRoute(path: AppRoutes.memory, builder: (_, __) => const MemoryDashboardScreen()),
           GoRoute(path: AppRoutes.config, builder: (_, __) => const ConfigScreen()),
+          GoRoute(
+            path: AppRoutes.configSection,
+            builder: (_, state) => ConfigScreen(
+              sectionId: state.pathParameters['section'],
+            ),
+          ),
         ],
       ),
     ],

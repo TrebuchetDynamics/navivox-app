@@ -14,4 +14,24 @@ abstract final class AppRoutes {
   static const terminal = '/terminal';
   static const terminalSession = '/terminal/:serverId';
   static const settings = '/settings';
+
+  static String chatLocation({
+    required String serverId,
+    required String profileId,
+  }) {
+    return '$chats/${Uri.encodeComponent(serverId)}/'
+        '${Uri.encodeComponent(profileId)}';
+  }
+
+  static String configSectionLocation(String sectionId) {
+    return '$config/${Uri.encodeComponent(sectionId)}';
+  }
+
+  static bool isSetupLocation(String location) {
+    return location == setup || location.startsWith('$setup/');
+  }
+
+  static bool isChatThreadLocation(String location) {
+    return location.startsWith('$chats/');
+  }
 }

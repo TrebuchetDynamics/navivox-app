@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
+import '../approval_banner_presentation.dart';
 
 /// Listens to [NavivoxChannel.approvalRequests] and renders the most recent
 /// pending approval as an Allow/Deny banner. Tapping a button resolves the
@@ -50,6 +51,8 @@ class _ApprovalBannerState extends State<ApprovalBanner> {
     final pending = _pending;
     if (pending == null) return const SizedBox.shrink();
 
+    final presentation = ApprovalBannerPresentation.fromRequest(pending);
+
     return Material(
       color: Theme.of(context).colorScheme.errorContainer,
       child: Padding(
@@ -57,19 +60,19 @@ class _ApprovalBannerState extends State<ApprovalBanner> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Approval requested',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              presentation.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(pending.prompt),
-            if (_riskLabel(pending.risk) != null)
+            Text(presentation.prompt),
+            if (presentation.showRiskBadge)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: _RiskBadge(
                   key: const ValueKey('approval-risk-badge'),
-                  risk: pending.risk!,
-                  label: _riskLabel(pending.risk)!,
+                  showWarningIcon: presentation.showHighRiskWarning,
+                  label: presentation.riskLabel!,
                 ),
               ),
             const SizedBox(height: 8),
@@ -78,12 +81,12 @@ class _ApprovalBannerState extends State<ApprovalBanner> {
               children: [
                 TextButton(
                   onPressed: () => _resolve(false),
-                  child: const Text('Deny'),
+                  child: Text(presentation.denyLabel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
                   onPressed: () => _resolve(true),
-                  child: const Text('Allow'),
+                  child: Text(presentation.allowLabel),
                 ),
               ],
             ),
@@ -94,33 +97,23 @@ class _ApprovalBannerState extends State<ApprovalBanner> {
   }
 }
 
-String? _riskLabel(String? risk) {
-  switch (risk?.toLowerCase()) {
-    case 'high':
-      return 'High risk';
-    case 'medium':
-      return 'Medium risk';
-    case 'low':
-      return 'Low risk';
-    default:
-      return null;
-  }
-}
-
 class _RiskBadge extends StatelessWidget {
-  const _RiskBadge({required this.risk, required this.label, super.key});
+  const _RiskBadge({
+    required this.showWarningIcon,
+    required this.label,
+    super.key,
+  });
 
-  final String risk;
+  final bool showWarningIcon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    final isHigh = risk.toLowerCase() == 'high';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (isHigh) const Icon(Icons.warning, size: 16),
-        if (isHigh) const SizedBox(width: 4),
+        if (showWarningIcon) const Icon(Icons.warning, size: 16),
+        if (showWarningIcon) const SizedBox(width: 4),
         Text(label, style: Theme.of(context).textTheme.labelMedium),
       ],
     );

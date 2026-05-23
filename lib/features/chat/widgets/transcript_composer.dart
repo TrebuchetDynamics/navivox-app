@@ -1,20 +1,23 @@
-part of '../transcript_surface.dart';
+import 'package:flutter/material.dart';
 
-class _InputBar extends StatefulWidget {
-  const _InputBar({
+import '../transcript_composer_presentation.dart';
+
+class TranscriptComposer extends StatefulWidget {
+  const TranscriptComposer({
     required this.controller,
     required this.onSend,
-    this.voiceService,
+    this.voiceCaptureAvailable = false,
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
     this.capturing = false,
     this.onToggleVoice,
+    super.key,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onSend;
-  final VoiceCaptureService? voiceService;
+  final bool voiceCaptureAvailable;
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
@@ -22,47 +25,25 @@ class _InputBar extends StatefulWidget {
   final VoidCallback? onToggleVoice;
 
   @override
-  State<_InputBar> createState() => _InputBarState();
+  State<TranscriptComposer> createState() => _TranscriptComposerState();
 }
 
-class _InputBarState extends State<_InputBar> {
+class _TranscriptComposerState extends State<TranscriptComposer> {
   bool _showEmoji = false;
 
-  static const _quickEmoji = ['😀', '👍', '🙏', '🔥', '✅', '👀'];
-
-  String? _canonicalVoiceUnavailableReason(String? reason) {
-    final trimmed = reason?.trim();
-    if (trimmed == null || trimmed.isEmpty) return trimmed;
-    final normalized = trimmed.toLowerCase();
-    if (normalized == 'device stt unavailable') {
-      return 'device STT unavailable';
-    }
-    if (normalized == 'microphone permission denied') {
-      return 'microphone permission denied';
-    }
-    return trimmed;
-  }
-
-  String _voiceSettingsSubtitle(String? reason) {
-    return reason == 'device STT unavailable'
-        ? 'Review continuous voice after enabling device speech recognition.'
-        : reason == 'microphone permission denied'
-        ? 'Review continuous voice after granting microphone permission.'
-        : reason == 'select a profile contact'
-        ? 'Select a profile contact before reviewing continuous voice settings.'
-        : 'Review continuous voice and trust settings';
+  TranscriptComposerPresentation _presentation() {
+    return TranscriptComposerPresentation.fromState(
+      voiceCaptureAvailable: widget.voiceCaptureAvailable,
+      voiceUnavailableReason: widget.voiceUnavailableReason,
+      voiceRecoveryAction: widget.voiceRecoveryAction,
+      canOpenVoiceSettings: widget.onOpenVoiceSettings != null,
+      capturing: widget.capturing,
+      emojiOpen: _showEmoji,
+    );
   }
 
   void _showVoiceUnavailable(BuildContext context) {
-    final reason = _canonicalVoiceUnavailableReason(
-      widget.voiceUnavailableReason,
-    );
-    final helpText = reason == 'device STT unavailable'
-        ? 'Install or enable device speech recognition, then reopen Navivox.'
-        : reason == 'microphone permission denied'
-        ? 'Grant microphone permission in Android App info, then reopen Navivox.'
-        : 'Check microphone permissions and Settings.';
-    final recoveryAction = widget.voiceRecoveryAction?.trim();
+    final presentation = _presentation();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -73,37 +54,17 @@ class _InputBarState extends State<_InputBar> {
             shrinkWrap: true,
             children: [
               Text(
-                'Voice unavailable',
+                presentation.voiceSheetTitle,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.mic_off),
-                title: Text(
-                  reason?.isNotEmpty == true
-                      ? reason!
-                      : 'device STT unavailable',
-                ),
-                subtitle: Text(helpText),
-              ),
-              if (recoveryAction?.isNotEmpty == true)
+              for (final row in presentation.voiceSheetRows)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.tips_and_updates_outlined),
-                  title: const Text('Recovery action'),
-                  subtitle: Text(recoveryAction!),
-                ),
-              if (widget.onOpenVoiceSettings != null)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.settings_voice_outlined),
-                  title: const Text('Open voice settings'),
-                  subtitle: Text(_voiceSettingsSubtitle(reason)),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    widget.onOpenVoiceSettings?.call();
-                  },
+                  leading: Icon(_voiceSheetIcon(row.kind)),
+                  title: Text(row.title),
+                  subtitle: Text(row.subtitle),
+                  onTap: _voiceSheetTap(context, row.actionKind),
                 ),
             ],
           ),
@@ -113,6 +74,7 @@ class _InputBarState extends State<_InputBar> {
   }
 
   void _showShareSheet(BuildContext context) {
+    final presentation = _presentation();
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -120,28 +82,51 @@ class _InputBarState extends State<_InputBar> {
         child: ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: const [
-            Text('Share'),
-            SizedBox(height: 12),
-            ListTile(
-              leading: Icon(Icons.upload_file),
-              title: Text('Upload file'),
-              subtitle: Text('Attach a local file when upload wiring lands.'),
-            ),
-            ListTile(
-              leading: Icon(Icons.photo_library_outlined),
-              title: Text('Photo or video'),
-              subtitle: Text('Media picker placeholder.'),
-            ),
-            ListTile(
-              leading: Icon(Icons.folder_open),
-              title: Text('Workspace file'),
-              subtitle: Text('Share a file from the active Gormes workspace.'),
-            ),
+          children: [
+            Text(presentation.shareTitle),
+            const SizedBox(height: 12),
+            for (final option in presentation.shareOptions)
+              ListTile(
+                leading: Icon(_shareIcon(option.kind)),
+                title: Text(option.title),
+                subtitle: Text(option.subtitle),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  IconData _shareIcon(TranscriptComposerShareOptionKind kind) {
+    return switch (kind) {
+      TranscriptComposerShareOptionKind.uploadFile => Icons.upload_file,
+      TranscriptComposerShareOptionKind.photoOrVideo =>
+        Icons.photo_library_outlined,
+      TranscriptComposerShareOptionKind.workspaceFile => Icons.folder_open,
+    };
+  }
+
+  IconData _voiceSheetIcon(TranscriptComposerVoiceSheetRowKind kind) {
+    return switch (kind) {
+      TranscriptComposerVoiceSheetRowKind.status => Icons.mic_off,
+      TranscriptComposerVoiceSheetRowKind.recoveryAction =>
+        Icons.tips_and_updates_outlined,
+      TranscriptComposerVoiceSheetRowKind.openVoiceSettings =>
+        Icons.settings_voice_outlined,
+    };
+  }
+
+  VoidCallback? _voiceSheetTap(
+    BuildContext context,
+    TranscriptComposerVoiceSheetActionKind? actionKind,
+  ) {
+    return switch (actionKind) {
+      TranscriptComposerVoiceSheetActionKind.openVoiceSettings => () {
+        Navigator.of(context).pop();
+        widget.onOpenVoiceSettings?.call();
+      },
+      null => null,
+    };
   }
 
   void _insertEmoji(String emoji) {
@@ -160,14 +145,7 @@ class _InputBarState extends State<_InputBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unavailableReason = _canonicalVoiceUnavailableReason(
-      widget.voiceUnavailableReason,
-    );
-    final unavailableTooltip = unavailableReason?.isNotEmpty == true
-        ? 'Voice unavailable: $unavailableReason'
-        : 'Voice unavailable';
-    final voiceAvailable =
-        widget.voiceService != null && unavailableReason?.isNotEmpty != true;
+    final presentation = _presentation();
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       decoration: BoxDecoration(
@@ -179,15 +157,15 @@ class _InputBarState extends State<_InputBar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_showEmoji)
+          if (presentation.showEmoji)
             SizedBox(
               height: 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: _quickEmoji.length,
+                itemCount: presentation.quickEmoji.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 4),
                 itemBuilder: (context, index) {
-                  final emoji = _quickEmoji[index];
+                  final emoji = presentation.quickEmoji[index];
                   return TextButton(
                     onPressed: () => _insertEmoji(emoji),
                     child: Text(emoji, style: const TextStyle(fontSize: 22)),
@@ -199,7 +177,7 @@ class _InputBarState extends State<_InputBar> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               IconButton(
-                tooltip: 'Emoji',
+                tooltip: presentation.emojiTooltip,
                 onPressed: () => setState(() => _showEmoji = !_showEmoji),
                 icon: Icon(
                   _showEmoji ? Icons.keyboard : Icons.emoji_emotions_outlined,
@@ -211,7 +189,7 @@ class _InputBarState extends State<_InputBar> {
                   maxLines: null,
                   textInputAction: TextInputAction.send,
                   decoration: InputDecoration(
-                    hintText: 'Message Gormes',
+                    hintText: presentation.messageHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
@@ -227,23 +205,30 @@ class _InputBarState extends State<_InputBar> {
                 ),
               ),
               IconButton(
-                tooltip: 'Attach',
+                tooltip: presentation.attachTooltip,
                 onPressed: () => _showShareSheet(context),
                 icon: const Icon(Icons.attach_file),
               ),
-              if (voiceAvailable)
+              if (presentation.voiceAvailable)
                 IconButton.filledTonal(
                   onPressed: widget.onToggleVoice,
-                  icon: Icon(widget.capturing ? Icons.stop : Icons.mic),
+                  icon: Icon(
+                    presentation.voiceButtonState ==
+                            TranscriptComposerVoiceButtonState.stop
+                        ? Icons.stop
+                        : Icons.mic,
+                  ),
                   style: IconButton.styleFrom(
-                    backgroundColor: widget.capturing
+                    backgroundColor:
+                        presentation.voiceButtonState ==
+                            TranscriptComposerVoiceButtonState.stop
                         ? theme.colorScheme.errorContainer
                         : null,
                   ),
                 )
               else
                 IconButton.outlined(
-                  tooltip: unavailableTooltip,
+                  tooltip: presentation.voiceTooltip,
                   onPressed: () => _showVoiceUnavailable(context),
                   icon: const Icon(Icons.mic_off),
                 ),

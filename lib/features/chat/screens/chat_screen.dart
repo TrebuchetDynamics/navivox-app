@@ -7,13 +7,16 @@ import 'package:go_router/go_router.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_event.dart';
-import '../../../core/protocol/navivox_voice_run.dart';
 import '../../../router/app_routes.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../../voice/services/default_voice_capture_service.dart';
-import '../../voice/services/speech_to_text_voice_capture_service.dart';
 import '../../voice/services/text_to_speech_service.dart';
 import '../../voice/services/voice_capture_service.dart';
+import '../chat_screen_presentation.dart';
+import '../forward_message_intent.dart';
+import '../local_command_dispatcher.dart';
+import '../local_command_intent.dart';
+import '../voice_run_controller.dart';
 import '../widgets/approval_banner.dart';
 import '../widgets/transcript_surface.dart';
 
@@ -49,14 +52,18 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   NavivoxChannel? _subscribed;
-  String? _pendingVoiceRunId;
+  final ForwardMessageIntent _forwardMessageIntent =
+      const ForwardMessageIntent();
+  final LocalCommandResolver _localCommandResolver =
+      const LocalCommandResolver();
+  final LocalCommandDispatcher _localCommandDispatcher =
+      const LocalCommandDispatcher();
+  final VoiceRunController _voiceRunController = VoiceRunController();
   Timer? _pendingVoiceTimer;
   Timer? _commandModeTimer;
   bool _commandMode = false;
   bool _routeProfileSynced = false;
   String? _lastRouteProfileKey;
-  String? _runtimeVoiceDisabledReason;
-  String? _voiceNotice;
 
   void _onChannelChanged() {
     if (mounted) setState(() {});
@@ -81,49 +88,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _syncRouteProfile(channel);
 
     final state = channel.state;
-    final server = state.activeServer;
-    final activeProfile = state.activeProfileContact;
     final voiceService =
         widget.voiceCaptureServiceOverride ??
         ref.watch(chatVoiceCaptureServiceProvider);
     final textToSpeechService = ref.watch(chatTextToSpeechServiceProvider);
     final voiceSettings = ref.watch(navivoxVoiceSettingsProvider);
-    final voiceDisabledReason = _voiceDisabledReason(
-      voiceService: voiceService,
-      activeProfile: activeProfile,
-      settings: voiceSettings,
+    final presentation = ChatScreenPresentation.fromState(
+      state: state,
+      voiceSettings: voiceSettings,
+      localVoiceCaptureAvailable: voiceService != null,
+      runtimeVoiceDisabledReason:
+          _voiceRunController.runtimeVoiceDisabledReason,
+      notice: _voiceRunController.notice,
+      commandMode: _commandMode,
     );
-    final voiceRecoveryAction = _voiceRecoveryAction(
-      activeProfile,
-      voiceDisabledReason,
-    );
-    final activeVoiceRun = state.activeVoiceRun;
-    final pendingVoiceRun =
-        activeVoiceRun?.status == NavivoxVoiceRunStatus.pendingSend
-        ? activeVoiceRun
-        : null;
-    final adapterMessages = [
-      ...state.messagesList,
-      if (pendingVoiceRun != null)
-        NavivoxChatMessage(
-          id: 'pending-${pendingVoiceRun.id}',
-          author: NavivoxMessageAuthor.user,
-          kind: NavivoxMessageKind.voice,
-          createdAt: pendingVoiceRun.createdAt,
-          voice: NavivoxVoiceMessage(
-            voiceRunId: pendingVoiceRun.id,
-            duration: pendingVoiceRun.duration ?? Duration.zero,
-            transcript: pendingVoiceRun.transcript ?? '',
-            confidence: pendingVoiceRun.confidence ?? 1,
-            status: pendingVoiceRun.status,
-          ),
-        ),
-    ];
-    final selectedAgent = state.selectedAgentId == null
-        ? null
-        : state.agents
-              .where((agent) => agent.id == state.selectedAgentId)
-              .firstOrNull;
+    final activeProfile = presentation.activeProfile;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,15 +119,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(activeProfile?.displayName ?? server?.name ?? 'Chats'),
-            if (activeProfile != null)
+            Text(presentation.appBarTitle),
+            if (presentation.appBarSubtitle != null)
               Text(
-                '${activeProfile.serverLabel} • ${_profileHealthLabel(activeProfile.health)}',
-                style: Theme.of(context).textTheme.labelMedium,
-              )
-            else if (server != null)
-              Text(
-                server.status,
+                presentation.appBarSubtitle!,
                 style: Theme.of(context).textTheme.labelMedium,
               ),
           ],
@@ -156,13 +130,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         actions: [
           IconButton(
             key: const ValueKey('chat-context-action'),
-            tooltip: 'Chat info',
-            onPressed: () => _showChatInfo(
-              context,
-              profile: activeProfile,
-              server: server,
-              agent: selectedAgent,
-            ),
+            tooltip: presentation.chatInfoTooltip,
+            onPressed: () => _showChatInfo(context, presentation),
             icon: const Icon(Icons.more_vert),
           ),
         ],
@@ -171,22 +140,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           ApprovalBanner(channel: channel),
           _VoiceModeBanner(
-            commandMode: _commandMode,
-            commandWord: voiceSettings.commandWord,
-            disabledReason: voiceDisabledReason,
-            notice: _voiceNotice,
-            pending: pendingVoiceRun != null,
-            pendingTranscript: pendingVoiceRun?.transcript,
-            profileName: activeProfile?.displayName,
-            recoveryAction: voiceRecoveryAction,
-            localVoiceCaptureAvailable: voiceService != null,
-            ready:
-                voiceService != null &&
-                activeProfile != null &&
-                voiceDisabledReason == null,
-            canTrustServer:
-                activeProfile != null &&
-                voiceDisabledReason == 'trust ${activeProfile.serverLabel}',
+            presentation: presentation.voiceMode,
             onTrustServer: activeProfile == null
                 ? null
                 : () => ref
@@ -196,42 +150,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           Expanded(
             child: TranscriptSurface(
-              messages: adapterMessages,
+              messages: presentation.transcriptMessages,
               onSend: (text) => _handleTextSubmit(channel, text),
-              voiceCaptureService: voiceDisabledReason == null
+              voiceCaptureService: presentation.voiceMode.disabledReason == null
                   ? voiceService
                   : null,
-              voiceUnavailableReason: voiceDisabledReason,
-              voiceRecoveryAction: voiceRecoveryAction,
+              voiceUnavailableReason: presentation.voiceMode.disabledReason,
+              voiceRecoveryAction: presentation.voiceMode.recoveryAction,
               onOpenVoiceSettings: () => context.go(AppRoutes.settings),
               textToSpeechService: textToSpeechService,
-              assistantTypingLabel:
-                  activeProfile?.activeTurnState == 'streaming'
-                  ? '${activeProfile!.displayName} is typing…'
-                  : null,
-              onCancelActiveTurn: activeProfile?.activeTurnState == 'streaming'
+              assistantTypingLabel: presentation.assistantTypingLabel,
+              onCancelActiveTurn: presentation.assistantTypingLabel != null
                   ? () => channel.cancelActiveTurn()
                   : null,
               onVoice: (capture) => _handleVoiceCapture(channel, capture),
               onVoiceCaptureStarted: () {
-                _pendingVoiceRunId = channel.startVoiceRun();
+                _voiceRunController.startCapture(channel);
               },
               onVoiceCaptureFailed: (error) {
-                final reason = _voiceCaptureFailureReason(error);
-                final id = _pendingVoiceRunId;
-                if (id != null) {
-                  channel.failVoiceRun(id, reason: reason);
-                }
-                setState(() {
-                  _pendingVoiceRunId = null;
-                  if (error is DeviceSpeechUnavailable) {
-                    _runtimeVoiceDisabledReason = reason;
-                  }
-                });
+                _voiceRunController.captureFailed(channel, error);
+                setState(() {});
               },
-              forwardTargets: state.profileContacts
-                  .where((contact) => contact.key != activeProfile?.key)
-                  .toList(growable: false),
+              forwardTargets: presentation.forwardTargets,
               onForward: (message, target) =>
                   _handleForward(channel, message: message, target: target),
             ),
@@ -242,11 +182,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _showChatInfo(
-    BuildContext context, {
-    required NavivoxProfileContact? profile,
-    required NavivoxServer? server,
-    required NavivoxAgent? agent,
-  }) {
+    BuildContext context,
+    ChatScreenPresentation presentation,
+  ) {
     final theme = Theme.of(context);
     return showModalBottomSheet<void>(
       context: context,
@@ -257,57 +195,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text('Chat info', style: theme.textTheme.titleLarge),
+              Text(
+                presentation.chatInfoTitle,
+                style: theme.textTheme.titleLarge,
+              ),
               const SizedBox(height: 12),
-              if (profile != null) ...[
+              for (final row in presentation.infoRows)
                 _ChatInfoRow(
-                  icon: Icons.person,
-                  label: 'Profile',
-                  value: profile.displayName,
-                ),
-                _ChatInfoRow(
-                  icon: Icons.badge_outlined,
-                  label: 'Profile ID',
-                  value: profile.profileId,
-                ),
-                _ChatInfoRow(
-                  icon: Icons.dns,
-                  label: 'Server',
-                  value: profile.serverLabel,
-                ),
-                if (profile.serverId.trim() != profile.serverLabel.trim())
-                  _ChatInfoRow(
-                    icon: Icons.tag,
-                    label: 'Server ID',
-                    value: profile.serverId,
-                  ),
-                _ChatInfoRow(
-                  icon: Icons.circle,
-                  label: 'Status',
-                  value: _profileHealthLabel(profile.health),
-                ),
-              ] else if (server != null) ...[
-                _ChatInfoRow(
-                  icon: Icons.dns,
-                  label: 'Server',
-                  value: server.name,
-                ),
-                _ChatInfoRow(
-                  icon: Icons.circle,
-                  label: 'Status',
-                  value: server.status,
-                ),
-              ] else
-                const _ChatInfoRow(
-                  icon: Icons.chat_bubble_outline,
-                  label: 'Profile',
-                  value: 'Select a chat',
-                ),
-              if (agent != null)
-                _ChatInfoRow(
-                  icon: Icons.smart_toy,
-                  label: 'Agent',
-                  value: agent.name,
+                  icon: _chatInfoIcon(row.kind),
+                  label: row.label,
+                  value: row.value,
                 ),
             ],
           ),
@@ -316,82 +213,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  String _profileHealthLabel(NavivoxProfileHealth health) {
-    return switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth required',
-      NavivoxProfileHealth.warning => 'warning',
+  IconData _chatInfoIcon(ChatInfoRowKind kind) {
+    return switch (kind) {
+      ChatInfoRowKind.profile => Icons.person,
+      ChatInfoRowKind.profileId => Icons.badge_outlined,
+      ChatInfoRowKind.server => Icons.dns,
+      ChatInfoRowKind.serverId => Icons.tag,
+      ChatInfoRowKind.status => Icons.circle,
+      ChatInfoRowKind.agent => Icons.smart_toy,
+      ChatInfoRowKind.selectProfile => Icons.chat_bubble_outline,
     };
-  }
-
-  String _voiceCaptureFailureReason(Object error) {
-    if (error is VoiceCaptureTimeout) return 'Voice capture timed out.';
-    if (error is DeviceSpeechUnavailable) {
-      return _canonicalDeviceSpeechUnavailableReason(error.message);
-    }
-    return 'Voice capture failed.';
-  }
-
-  String _canonicalDeviceSpeechUnavailableReason(String reason) {
-    final trimmed = reason.trim();
-    if (trimmed.isEmpty) return 'device STT unavailable';
-    final normalized = trimmed.toLowerCase();
-    if (normalized == 'device stt unavailable') return 'device STT unavailable';
-    if (normalized == 'microphone permission denied') {
-      return 'microphone permission denied';
-    }
-    return trimmed;
   }
 
   NavivoxVoiceSettings _voiceSettings(WidgetRef ref) {
     return ref.read(navivoxVoiceSettingsProvider);
-  }
-
-  String? _voiceDisabledReason({
-    required VoiceCaptureService? voiceService,
-    required NavivoxProfileContact? activeProfile,
-    required NavivoxVoiceSettings settings,
-  }) {
-    if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
-    if (activeProfile == null) return 'select a profile contact';
-    if (voiceService == null) return 'device STT unavailable';
-    final runtimeVoiceReason = _runtimeVoiceDisabledReason;
-    if (runtimeVoiceReason != null) return runtimeVoiceReason;
-    final profileVoiceReason =
-        activeProfile.voiceCapability.captureUnavailableReason;
-    if (profileVoiceReason != null) return profileVoiceReason;
-    if (!settings.isTrusted(activeProfile.serverId)) {
-      return 'trust ${activeProfile.serverLabel}';
-    }
-    if (activeProfile.health != NavivoxProfileHealth.online) {
-      return _profileHealthLabel(activeProfile.health);
-    }
-    if (!activeProfile.micAvailable) return 'mic unavailable';
-    return null;
-  }
-
-  String? _voiceRecoveryAction(
-    NavivoxProfileContact? activeProfile,
-    String? voiceDisabledReason,
-  ) {
-    if (voiceDisabledReason == null) return null;
-    final capability = activeProfile?.voiceCapability;
-    final recoveryAction = capability?.recoveryAction.trim();
-    if (capability != null &&
-        recoveryAction != null &&
-        recoveryAction.isNotEmpty &&
-        (voiceDisabledReason == capability.captureUnavailableReason ||
-            voiceDisabledReason == 'device STT unavailable')) {
-      return recoveryAction;
-    }
-    if (voiceDisabledReason == 'device STT unavailable') {
-      return 'Install or enable device speech recognition, then reopen Navivox.';
-    }
-    if (voiceDisabledReason == 'microphone permission denied') {
-      return 'Grant microphone permission in Android App info, then reopen Navivox.';
-    }
-    return null;
   }
 
   void _handleTextSubmit(NavivoxChannel channel, String text) {
@@ -404,83 +239,50 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     required NavivoxChatMessage message,
     required NavivoxProfileContact target,
   }) {
-    final text = _forwardText(message);
-    if (text.isEmpty) return;
-    channel.selectProfileContact(
-      serverId: target.serverId,
-      profileId: target.profileId,
+    final result = _forwardMessageIntent.forward(
+      channel,
+      message: message,
+      target: target,
     );
-    GoRouter.maybeOf(context)?.go(
-      '/chats/${Uri.encodeComponent(target.serverId)}/'
-      '${Uri.encodeComponent(target.profileId)}',
-    );
-    channel.sendText(text);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Forwarded to ${target.displayName}')),
-    );
-  }
-
-  String _forwardText(NavivoxChatMessage message) {
-    return switch (message.kind) {
-      NavivoxMessageKind.text => message.text ?? '',
-      NavivoxMessageKind.voice => message.voice?.transcript ?? '',
-      NavivoxMessageKind.toolCall => [
-        message.toolCall?.name,
-        message.toolCall?.status,
-        message.toolCall?.summary,
-      ].whereType<String>().where((part) => part.isNotEmpty).join('\n'),
-      NavivoxMessageKind.safetyWarning ||
-      NavivoxMessageKind.approvalRequest => [
-        message.safetyNotice?.message,
-        message.safetyNotice?.risk,
-      ].whereType<String>().where((part) => part.isNotEmpty).join('\n'),
-    };
+    if (!result.forwarded) return;
+    final routeLocation = result.routeLocation;
+    if (routeLocation != null) {
+      GoRouter.maybeOf(context)?.go(routeLocation);
+    }
+    final snackbarMessage = result.snackbarMessage;
+    if (snackbarMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(snackbarMessage)));
+    }
   }
 
   void _handleVoiceCapture(NavivoxChannel channel, VoiceCapture capture) {
-    if (_handleLocalCommand(channel, capture.transcript, fromVoice: true)) {
-      final id = _pendingVoiceRunId;
-      if (id != null) {
-        channel.cancelVoiceRun(id, reason: 'local voice command');
-        _pendingVoiceRunId = null;
-      }
+    _pendingVoiceTimer?.cancel();
+    final result = _voiceRunController.captureSucceeded(
+      channel,
+      capture,
+      handleLocalCommand: (transcript) =>
+          _handleLocalCommand(channel, transcript, fromVoice: true),
+    );
+    final voiceRunId = result.scheduleAutoSendFor;
+    if (voiceRunId == null) {
+      if (result.handledLocalCommand) setState(() {});
       return;
     }
-    _pendingVoiceTimer?.cancel();
-    final voiceRunId = _pendingVoiceRunId ?? channel.startVoiceRun();
-    _pendingVoiceRunId = voiceRunId;
-    channel.stageVoiceRunTranscript(
-      voiceRunId: voiceRunId,
-      transcript: capture.transcript,
-      duration: capture.duration,
-      confidence: capture.confidence,
-    );
-    setState(() {
-      _voiceNotice = 'Sending...';
-    });
+
+    setState(() {});
     _pendingVoiceTimer = Timer(widget.voiceAutoSendGrace, () {
-      if (!mounted || _pendingVoiceRunId != voiceRunId) return;
-      final run = channel.state.voiceRuns[voiceRunId];
-      if (run?.status != NavivoxVoiceRunStatus.pendingSend) return;
-      setState(() {
-        _pendingVoiceRunId = null;
-        _voiceNotice = null;
-      });
-      channel.submitVoiceRun(voiceRunId);
+      if (!mounted) return;
+      final result = _voiceRunController.autoSendIfPending(channel, voiceRunId);
+      if (result.submitted) setState(() {});
     });
   }
 
   void _cancelPendingVoice() {
     _pendingVoiceTimer?.cancel();
-    final channel = _subscribed;
-    final voiceRunId = _pendingVoiceRunId ?? channel?.state.activeVoiceRun?.id;
-    if (channel != null && voiceRunId != null) {
-      channel.cancelVoiceRun(voiceRunId);
-    }
-    setState(() {
-      _pendingVoiceRunId = null;
-      _voiceNotice = 'Voice turn cancelled before server commit.';
-    });
+    _voiceRunController.cancelPending(_subscribed);
+    setState(() {});
   }
 
   bool _handleLocalCommand(
@@ -488,48 +290,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     String raw, {
     required bool fromVoice,
   }) {
-    final body = _commandBody(raw, fromVoice: fromVoice);
-    if (body == null) return false;
-    if (body.isEmpty) {
-      _enterCommandMode();
-      return true;
-    }
-    _exitCommandMode(clearNotice: false);
-    return _runCommandBody(channel, body);
-  }
-
-  String? _commandBody(String raw, {required bool fromVoice}) {
-    final text = raw.trim();
-    if (text.isEmpty) return null;
-    final commandWord = _voiceSettings(ref).commandWord.toLowerCase();
-    final lower = text.toLowerCase();
-    if (_commandMode &&
-        fromVoice &&
-        !_startsWithCommandWord(lower, commandWord)) {
-      return text;
-    }
-    if (!_startsWithCommandWord(lower, commandWord)) return null;
-    return text.length == commandWord.length
-        ? ''
-        : text.substring(commandWord.length).trim();
-  }
-
-  bool _startsWithCommandWord(String lower, String commandWord) {
-    if (lower == commandWord) return true;
-    return lower.startsWith('$commandWord ');
+    final settings = _voiceSettings(ref);
+    final intent = _localCommandResolver.resolve(
+      raw: raw,
+      commandWord: settings.commandWord,
+      commandMode: _commandMode,
+      fromVoice: fromVoice,
+      profileSwitchingEnabled: settings.profileSwitchingEnabled,
+      contacts: channel.state.profileContacts,
+    );
+    if (!intent.consumesInput) return false;
+    final result = _localCommandDispatcher.dispatch(channel, intent);
+    return _applyLocalCommandDispatchResult(result);
   }
 
   void _enterCommandMode() {
     _commandModeTimer?.cancel();
     setState(() {
       _commandMode = true;
-      _voiceNotice = 'Command mode';
+      _voiceRunController.notice = 'Command mode';
     });
     _commandModeTimer = Timer(widget.voiceCommandTimeout, () {
       if (!mounted) return;
       setState(() {
         _commandMode = false;
-        _voiceNotice = 'Command mode timed out.';
+        _voiceRunController.notice = 'Command mode timed out.';
       });
     });
   }
@@ -539,94 +324,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!_commandMode && !clearNotice) return;
     setState(() {
       _commandMode = false;
-      if (clearNotice) _voiceNotice = null;
+      if (clearNotice) _voiceRunController.notice = null;
     });
   }
 
-  bool _runCommandBody(NavivoxChannel channel, String body) {
-    final normalized = _normalizeCommand(body);
-    switch (normalized) {
-      case 'cancel':
-        if (channel.state.activeVoiceRun?.status ==
-            NavivoxVoiceRunStatus.pendingSend) {
-          _cancelPendingVoice();
-        } else {
-          channel.cancelActiveTurn();
-          _showCommandMessage(
-            'Cancel requested. Started side effects may still exist.',
-          );
-        }
-        return true;
-      case 'stop':
-        channel.stopActiveTurn();
-        _showCommandMessage(
-          'Stop requested. Started side effects may still exist.',
-        );
-        return true;
-      case 'settings':
-        context.go(AppRoutes.settings);
-        return true;
-      case 'help':
-        _showCommandMessage(
-          'Voice commands: navi <profile>, cancel, stop, settings, help.',
-        );
-        return true;
-    }
-    return _switchProfileFromCommand(channel, body, normalized);
-  }
-
-  bool _switchProfileFromCommand(
-    NavivoxChannel channel,
-    String rawBody,
-    String normalized,
-  ) {
-    final settings = _voiceSettings(ref);
-    if (!settings.profileSwitchingEnabled) {
-      _showCommandMessage('Voice profile switching is disabled.');
+  bool _applyLocalCommandDispatchResult(LocalCommandDispatchResult result) {
+    if (!result.consumed) return false;
+    if (result.enterCommandMode) {
+      _enterCommandMode();
       return true;
     }
-    final matches = channel.state.profileContacts
-        .where((contact) => _contactCommandNames(contact).contains(normalized))
-        .toList(growable: false);
-    if (matches.length == 1) {
-      final contact = matches.single;
-      channel.selectProfileContact(
-        serverId: contact.serverId,
-        profileId: contact.profileId,
-      );
-      GoRouter.maybeOf(context)?.go(
-        '/chats/${Uri.encodeComponent(contact.serverId)}/'
-        '${Uri.encodeComponent(contact.profileId)}',
-      );
-      _showCommandMessage('Switched to ${contact.displayName}.');
-      return true;
+    _exitCommandMode(clearNotice: false);
+    if (result.cancelPendingVoice) {
+      _cancelPendingVoice();
     }
-    if (matches.length > 1) {
-      _showCommandMessage('Choose one profile named ${rawBody.trim()}.');
-      return true;
+    final routeLocation = result.routeLocation;
+    if (routeLocation != null) {
+      GoRouter.maybeOf(context)?.go(routeLocation);
     }
-    _showCommandMessage('Voice command not recognized: ${rawBody.trim()}.');
+    final message = result.message;
+    if (message != null) {
+      _showCommandMessage(message);
+    }
     return true;
   }
 
-  Set<String> _contactCommandNames(NavivoxProfileContact contact) {
-    return {
-      _normalizeCommand(contact.profileId),
-      _normalizeCommand(contact.displayName),
-    };
-  }
-
-  String _normalizeCommand(String value) {
-    return value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ');
-  }
-
   void _showCommandMessage(String message) {
-    setState(() => _voiceNotice = message);
+    setState(() => _voiceRunController.notice = message);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
@@ -640,7 +364,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final key = '$serverId::$profileId';
     if (_lastRouteProfileKey != key) {
       _lastRouteProfileKey = key;
-      _runtimeVoiceDisabledReason = null;
+      _voiceRunController.runtimeVoiceDisabledReason = null;
       _routeProfileSynced = false;
     }
     if (_routeProfileSynced) return;
@@ -697,46 +421,18 @@ class _ChatInfoRow extends StatelessWidget {
 
 class _VoiceModeBanner extends StatelessWidget {
   const _VoiceModeBanner({
-    required this.commandMode,
-    required this.commandWord,
-    required this.disabledReason,
-    required this.notice,
-    required this.pending,
-    required this.pendingTranscript,
-    required this.profileName,
-    required this.recoveryAction,
-    required this.localVoiceCaptureAvailable,
-    required this.ready,
-    required this.canTrustServer,
+    required this.presentation,
     required this.onTrustServer,
     required this.onCancelPending,
   });
 
-  final bool commandMode;
-  final String commandWord;
-  final String? disabledReason;
-  final String? notice;
-  final bool pending;
-  final String? pendingTranscript;
-  final String? profileName;
-  final String? recoveryAction;
-  final bool localVoiceCaptureAvailable;
-  final bool ready;
-  final bool canTrustServer;
+  final VoiceModePresentation presentation;
   final VoidCallback? onTrustServer;
   final VoidCallback onCancelPending;
 
   @override
   Widget build(BuildContext context) {
-    final text = pending
-        ? 'Sending...'
-        : commandMode
-        ? 'Command mode'
-        : disabledReason != null
-        ? 'Continuous voice unavailable: $disabledReason'
-        : ready
-        ? 'Continuous voice ready'
-        : notice;
+    final text = presentation.bannerText;
     if (text == null) return const SizedBox.shrink();
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -746,27 +442,29 @@ class _VoiceModeBanner extends StatelessWidget {
         child: Semantics(
           button: true,
           enabled: true,
-          hint: 'Open continuous voice controls',
+          hint: presentation.controlsSemanticsHint,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 Icon(
-                  disabledReason == null ? Icons.keyboard_voice : Icons.mic_off,
+                  presentation.disabledReason == null
+                      ? Icons.keyboard_voice
+                      : Icons.mic_off,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(text)),
                 const Icon(Icons.tune, size: 18),
-                if (pending)
+                if (presentation.pending)
                   TextButton(
                     onPressed: onCancelPending,
-                    child: const Text('Cancel'),
+                    child: Text(presentation.cancelPendingButtonLabel),
                   ),
-                if (!pending && canTrustServer)
+                if (!presentation.pending && presentation.canTrustServer)
                   TextButton(
                     onPressed: onTrustServer,
-                    child: const Text('Trust server'),
+                    child: Text(presentation.trustServerButtonLabel),
                   ),
               ],
             ),
@@ -777,23 +475,6 @@ class _VoiceModeBanner extends StatelessWidget {
   }
 
   void _showVoiceControls(BuildContext context) {
-    final status = pending
-        ? 'Pending voice turn'
-        : disabledReason != null
-        ? 'Continuous voice unavailable'
-        : ready
-        ? 'Ready for ${profileName ?? 'chat'}'
-        : 'Voice standby';
-    final voiceSettingsSubtitle = disabledReason == 'device STT unavailable'
-        ? 'Review continuous voice after enabling device speech recognition.'
-        : disabledReason == 'microphone permission denied'
-        ? 'Review continuous voice after granting microphone permission.'
-        : disabledReason == 'select a profile contact'
-        ? 'Select a profile contact before reviewing continuous voice settings.'
-        : 'Review continuous voice and trust settings';
-    final showSttDiagnostics =
-        disabledReason == 'device STT unavailable' ||
-        disabledReason == 'microphone permission denied';
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -803,109 +484,61 @@ class _VoiceModeBanner extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             Text(
-              'Continuous voice',
+              presentation.sheetTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
-            ListTile(
-              leading: Icon(
-                disabledReason == null ? Icons.keyboard_voice : Icons.mic_off,
-              ),
-              title: Text(status),
-              subtitle: Text(
-                pendingTranscript?.isNotEmpty == true
-                    ? pendingTranscript!
-                    : disabledReason ??
-                          'Tap the mic to speak. Say “$commandWord” for command mode.',
-              ),
-            ),
-            if (pending)
+            for (final row in presentation.sheetRows)
               ListTile(
-                leading: const Icon(Icons.cancel_outlined),
-                title: const Text('Cancel pending voice'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onCancelPending();
-                },
-              ),
-            if (disabledReason != null && recoveryAction != null)
-              ListTile(
-                leading: const Icon(Icons.tips_and_updates_outlined),
-                title: const Text('Recovery action'),
-                subtitle: Text(recoveryAction!),
-              ),
-            if (disabledReason != null)
-              ListTile(
-                leading: const Icon(Icons.settings_voice_outlined),
-                title: const Text('Open voice settings'),
-                subtitle: Text(voiceSettingsSubtitle),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  GoRouter.maybeOf(context)?.go(AppRoutes.settings);
-                },
-              ),
-            if (showSttDiagnostics) ...[
-              const ListTile(
-                leading: Icon(Icons.fact_check_outlined),
-                title: Text('Voice diagnostics'),
-                subtitle: Text(
-                  'Android recognizer, microphone permission, and gateway profile STT are separate checks.',
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.android),
-                title: const Text('Android recognizer'),
-                subtitle: Text(
-                  localVoiceCaptureAvailable
-                      ? 'Ready in Navivox; gateway STT status is separate.'
-                      : 'No local speech recognizer is active in Navivox.',
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.mic_external_on_outlined),
-                title: const Text('Microphone permission'),
-                subtitle: Text(
-                  disabledReason == 'microphone permission denied'
-                      ? 'Denied by Android. Grant microphone permission in App info.'
-                      : 'Not denied by Android in this session; checked when capture starts.',
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.cloud_outlined),
-                title: const Text('Gateway profile STT'),
-                subtitle: Text(
-                  disabledReason == 'device STT unavailable'
-                      ? 'Gateway reported device STT unavailable for this profile.'
-                      : 'Gateway profile STT is not the current blocker.',
-                ),
-              ),
-            ],
-            ListTile(
-              leading: const Icon(Icons.short_text),
-              title: const Text('Command word'),
-              subtitle: Text(commandWord),
-            ),
-            ListTile(
-              leading: const Icon(Icons.record_voice_over),
-              title: const Text('How it works'),
-              subtitle: Text(
-                disabledReason == null
-                    ? 'Tap once to capture a turn. Use command mode for local actions like switching profiles, stop, cancel, help, or settings.'
-                    : 'Reason: $disabledReason. Continuous voice stays off until resolved.',
-              ),
-            ),
-            if (!pending && canTrustServer)
-              ListTile(
-                leading: const Icon(Icons.verified_user_outlined),
-                title: const Text('Trust server'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onTrustServer?.call();
-                },
+                leading: Icon(_voiceControlRowIcon(row.kind)),
+                title: Text(row.title),
+                subtitle: row.subtitle == null ? null : Text(row.subtitle!),
+                onTap: _voiceControlRowTap(context, row.action),
               ),
           ],
         ),
       ),
     );
+  }
+
+  IconData _voiceControlRowIcon(VoiceControlRowKind kind) {
+    return switch (kind) {
+      VoiceControlRowKind.status =>
+        presentation.disabledReason == null
+            ? Icons.keyboard_voice
+            : Icons.mic_off,
+      VoiceControlRowKind.cancelPending => Icons.cancel_outlined,
+      VoiceControlRowKind.recoveryAction => Icons.tips_and_updates_outlined,
+      VoiceControlRowKind.openVoiceSettings => Icons.settings_voice_outlined,
+      VoiceControlRowKind.diagnostics => Icons.fact_check_outlined,
+      VoiceControlRowKind.androidRecognizer => Icons.android,
+      VoiceControlRowKind.microphonePermission =>
+        Icons.mic_external_on_outlined,
+      VoiceControlRowKind.gatewayProfileStt => Icons.cloud_outlined,
+      VoiceControlRowKind.commandWord => Icons.short_text,
+      VoiceControlRowKind.howItWorks => Icons.record_voice_over,
+      VoiceControlRowKind.trustServer => Icons.verified_user_outlined,
+    };
+  }
+
+  VoidCallback? _voiceControlRowTap(
+    BuildContext context,
+    VoiceControlActionKind action,
+  ) {
+    return switch (action) {
+      VoiceControlActionKind.none => null,
+      VoiceControlActionKind.cancelPending => () {
+        Navigator.of(context).pop();
+        onCancelPending();
+      },
+      VoiceControlActionKind.openVoiceSettings => () {
+        Navigator.of(context).pop();
+        GoRouter.maybeOf(context)?.go(AppRoutes.settings);
+      },
+      VoiceControlActionKind.trustServer => () {
+        Navigator.of(context).pop();
+        onTrustServer?.call();
+      },
+    };
   }
 }

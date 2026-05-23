@@ -12,6 +12,36 @@ const _seedAgents = [
   NavivoxAgent(id: 'arch', name: 'Architect', status: 'ready'),
 ];
 
+const _seedServers = [
+  NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
+  NavivoxServer(id: 'office', name: 'Office', status: 'offline'),
+];
+
+final _seedProfiles = [
+  NavivoxProfileContact(
+    serverId: 'local',
+    profileId: 'mineru',
+    displayName: 'Mineru Builder',
+    serverLabel: 'local',
+    health: NavivoxProfileHealth.online,
+    latestPreview: 'Goncho memory active',
+    latestAt: DateTime(2026, 5, 16, 9, 41),
+    workspaceRootCount: 2,
+    micAvailable: true,
+  ),
+  NavivoxProfileContact(
+    serverId: 'office',
+    profileId: 'support',
+    displayName: 'Support Triage',
+    serverLabel: 'office',
+    health: NavivoxProfileHealth.needsAuth,
+    latestPreview: 'Waiting for token',
+    workspaceRootCount: 1,
+    attentionBadges: ['auth'],
+    micAvailable: false,
+  ),
+];
+
 void main() {
   testWidgets(
     'shows empty-state and Refresh button when no agents are known yet',
@@ -25,12 +55,12 @@ void main() {
         ),
       );
 
-      expect(find.text('No agents loaded'), findsOneWidget);
-      expect(find.text('Refresh'), findsOneWidget);
+      expect(find.text('No profiles found on this server'), findsOneWidget);
+      expect(find.text('Refresh profiles'), findsOneWidget);
 
       // The screen calls requestAgentList(); our test mock records that and
       // we simulate the server response by seeding agents directly.
-      await tester.tap(find.text('Refresh'));
+      await tester.tap(find.text('Refresh profiles'));
       channel.seedAgents(_seedAgents);
       await tester.pump();
 
@@ -38,6 +68,42 @@ void main() {
       expect(channel.state.agents, hasLength(2));
       expect(find.text('Default'), findsOneWidget);
       expect(find.text('Architect'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows Gormes profiles from the active server when agent list is empty',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..seedServers(_seedServers, activeServerId: 'local')
+        ..seedProfileContacts(_seedProfiles);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const MaterialApp(home: AgentsScreen()),
+        ),
+      );
+
+      expect(find.text('No agents loaded'), findsNothing);
+      expect(find.text('Profiles on Local Gormes'), findsOneWidget);
+      expect(find.text('Mineru Builder'), findsOneWidget);
+      expect(find.text('mineru'), findsOneWidget);
+      expect(find.text('Support Triage'), findsNothing);
+      expect(find.text('Status: online'), findsOneWidget);
+      expect(find.text('Channels: local/web chat, voice'), findsOneWidget);
+      expect(find.text('Memory: Goncho available'), findsOneWidget);
+      expect(find.text('Skills: profile skills pending API'), findsOneWidget);
+      expect(find.text('Config: profile scoped'), findsOneWidget);
+
+      await tester.tap(find.text('Mineru Builder'));
+      await tester.pump();
+
+      expect(channel.selectedProfileScope, (
+        serverId: 'local',
+        profileId: 'mineru',
+      ));
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     },
   );
 

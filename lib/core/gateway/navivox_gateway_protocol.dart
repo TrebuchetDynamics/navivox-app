@@ -220,11 +220,16 @@ class NavivoxPairingDescriptor {
     if (tokenRequired && token == null) {
       throw FormatException('Pairing descriptor requires rest_token', value);
     }
+    final webSocketUri = Uri.parse(
+      _requiredPairingParam(query, 'websocket_url', value),
+    );
+    final baseUri = Uri.parse(
+      _optionalPairingParam(query['base_url']) ??
+          _baseUrlFromWebSocketUri(webSocketUri, value),
+    );
     return NavivoxPairingDescriptor(
-      baseUri: Uri.parse(_requiredPairingParam(query, 'base_url', value)),
-      webSocketUri: Uri.parse(
-        _requiredPairingParam(query, 'websocket_url', value),
-      ),
+      baseUri: baseUri,
+      webSocketUri: webSocketUri,
       authMode: _optionalPairingParam(query['auth_mode']) ?? '',
       exposureMode: _optionalPairingParam(query['exposure_mode']) ?? '',
       tokenRequired: tokenRequired,
@@ -270,6 +275,28 @@ String? _optionalPairingParam(String? value) {
   final trimmed = value?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;
   return trimmed;
+}
+
+String _baseUrlFromWebSocketUri(Uri uri, String descriptor) {
+  final scheme = switch (uri.scheme.toLowerCase()) {
+    'ws' => 'http',
+    'wss' => 'https',
+    'http' => 'http',
+    'https' => 'https',
+    _ => throw FormatException(
+      'Pairing descriptor invalid websocket_url',
+      descriptor,
+    ),
+  };
+  if (uri.host.isEmpty) {
+    throw FormatException(
+      'Pairing descriptor invalid websocket_url',
+      descriptor,
+    );
+  }
+  final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
+  final port = uri.hasPort ? ':${uri.port}' : '';
+  return '$scheme://$host$port';
 }
 
 bool _boolFromPairingParam(String? value) {

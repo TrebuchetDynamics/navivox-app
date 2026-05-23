@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../../router/app_routes.dart';
 import '../providers/voice_settings_provider.dart';
+import '../settings_screen_presentation.dart';
+
+const _settingsPresentation = SettingsScreenPresentation();
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,105 +18,91 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(navivoxVoiceSettingsProvider.notifier);
     final activeServer = channel.state.activeServer;
     final activeProfile = channel.state.activeProfileContact;
-    final serverCount = channel.state.servers.length;
-    final profileContactCount = channel.state.profileContacts.length;
-    final activeServerTrusted =
-        activeServer != null && settings.isTrusted(activeServer.id);
+    final managementOverview = _settingsPresentation.managementOverview(
+      serverCount: channel.state.servers.length,
+      profileContactCount: channel.state.profileContacts.length,
+    );
+    final activeServerTrust = activeServer == null
+        ? null
+        : _settingsPresentation.trustRowFor(activeServer, settings: settings);
+    final currentScope = _settingsPresentation.currentScopeFor(
+      activeServer: activeServer,
+      activeProfile: activeProfile,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Voice settings')),
+      appBar: AppBar(title: Text(_settingsPresentation.title)),
       body: ListView(
         children: [
-          const ListTile(
-            leading: Icon(Icons.settings_applications),
-            title: Text('Global app settings'),
-            subtitle: Text(
-              'Voice controls stay local to this app. Gateway and profile settings live in their own screens.',
-            ),
-          ),
           ListTile(
-            key: const ValueKey('settings-manage-gateways'),
-            leading: const Icon(Icons.dns_outlined),
-            title: const Text('Manage gateways'),
-            subtitle: const Text(
-              'Add, test, edit, and remove Gormes gateway connections.',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go(AppRoutes.servers),
+            leading: const Icon(Icons.settings_applications),
+            title: Text(_settingsPresentation.globalTitle),
+            subtitle: Text(_settingsPresentation.globalSubtitle),
           ),
-          ListTile(
-            key: const ValueKey('settings-manage-profiles'),
-            leading: const Icon(Icons.badge_outlined),
-            title: const Text('Manage profile contacts'),
-            subtitle: const Text(
-              'Create, refresh, edit, or select profiles from the Agents tab.',
+          for (final row in _settingsPresentation.managementRows)
+            ListTile(
+              key: ValueKey(row.keyValue),
+              leading: Icon(_managementRouteIcon(row)),
+              title: Text(row.title),
+              subtitle: Text(row.subtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go(row.route),
             ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go(AppRoutes.agents),
-          ),
           const Divider(),
           SwitchListTile(
             key: const ValueKey('voice-continuous-enabled'),
-            title: const Text('Continuous voice'),
-            subtitle: const Text('Use local device STT for the active profile'),
+            title: Text(_settingsPresentation.continuousVoiceTitle),
+            subtitle: Text(_settingsPresentation.continuousVoiceSubtitle),
             value: settings.continuousVoiceEnabled,
             onChanged: controller.setContinuousVoiceEnabled,
           ),
           ListTile(
-            title: const Text('Command word'),
+            title: Text(_settingsPresentation.commandWordTitle),
             subtitle: Text(settings.commandWord),
             trailing: const Icon(Icons.keyboard_voice),
           ),
           SwitchListTile(
             key: const ValueKey('voice-profile-switching-enabled'),
-            title: const Text('Voice profile switching'),
-            subtitle: const Text('Allow local command-word profile switches'),
+            title: Text(_settingsPresentation.profileSwitchingTitle),
+            subtitle: Text(_settingsPresentation.profileSwitchingSubtitle),
             value: settings.profileSwitchingEnabled,
             onChanged: controller.setProfileSwitchingEnabled,
           ),
-          if (activeServer != null)
+          if (activeServer != null && activeServerTrust != null)
             SwitchListTile(
-              key: ValueKey('voice-trust-${activeServer.id}'),
-              title: Text('Trust ${activeServer.name} for voice'),
-              subtitle: const Text('Local-only trust, not server config'),
-              value: activeServerTrusted,
+              key: ValueKey(activeServerTrust.keyValue),
+              title: Text(activeServerTrust.title),
+              subtitle: Text(activeServerTrust.subtitle),
+              value: activeServerTrust.trusted,
               onChanged: (trusted) =>
                   controller.setServerTrusted(activeServer.id, trusted),
             ),
           ListTile(
-            key: const ValueKey('settings-management-overview'),
+            key: ValueKey(managementOverview.keyValue),
             leading: const Icon(Icons.inventory_2_outlined),
-            title: const Text('Management overview'),
-            subtitle: Text(
-              '${_countLabel(serverCount, 'Gormes gateway')} · ${_countLabel(profileContactCount, 'profile contact')}',
-            ),
+            title: Text(managementOverview.title),
+            subtitle: Text(managementOverview.subtitle),
           ),
-          if (activeServer != null || activeProfile != null) ...[
+          if (currentScope != null) ...[
             const Divider(),
-            const ListTile(
-              leading: Icon(Icons.route_outlined),
-              title: Text('Current session scope'),
-              subtitle: Text(
-                'Local settings apply to the currently selected gateway and profile contact.',
-              ),
+            ListTile(
+              leading: const Icon(Icons.route_outlined),
+              title: Text(currentScope.title),
+              subtitle: Text(currentScope.subtitle),
             ),
-            if (activeServer != null)
+            if (currentScope.gateway != null)
               ListTile(
-                key: const ValueKey('settings-current-gateway'),
+                key: ValueKey(currentScope.gateway!.keyValue),
                 leading: const Icon(Icons.dns_outlined),
-                title: const Text('Active Gormes gateway'),
-                subtitle: Text(
-                  '${activeServer.name} · ${activeServer.id} · ${activeServer.status}',
-                ),
+                title: Text(currentScope.gateway!.title),
+                subtitle: Text(currentScope.gateway!.subtitle),
               ),
-            if (activeProfile != null)
+            if (currentScope.profile != null)
               ListTile(
-                key: const ValueKey('settings-current-profile'),
+                key: ValueKey(currentScope.profile!.keyValue),
                 leading: const Icon(Icons.badge_outlined),
-                title: const Text('Active profile contact'),
-                subtitle: Text(
-                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId} · ${_healthLabel(activeProfile.health)}',
-                ),
+                title: Text(currentScope.profile!.title),
+                subtitle: Text(currentScope.profile!.subtitle),
               ),
           ],
         ],
@@ -124,16 +111,10 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-String _countLabel(int count, String singular) {
-  final plural = count == 1 ? singular : '${singular}s';
-  return '$count $plural';
-}
-
-String _healthLabel(NavivoxProfileHealth health) {
-  return switch (health) {
-    NavivoxProfileHealth.online => 'online',
-    NavivoxProfileHealth.offline => 'offline',
-    NavivoxProfileHealth.needsAuth => 'auth',
-    NavivoxProfileHealth.warning => 'warning',
+IconData _managementRouteIcon(SettingsManagementRoutePresentation row) {
+  return switch (row.keyValue) {
+    'settings-manage-gateways' => Icons.dns_outlined,
+    'settings-manage-profiles' => Icons.badge_outlined,
+    _ => Icons.chevron_right,
   };
 }

@@ -119,6 +119,26 @@ void main() {
     expect(descriptor.channelIds, ['telegram', 'navivox', 'discord']);
   });
 
+  test('derives base URI from websocket-only pairing descriptor', () {
+    final descriptor = NavivoxPairingDescriptor.parse(
+      'navivox://connect?'
+      'websocket_url=wss%3A%2F%2Fgateway.example%3A8765%2Fv1%2Fnavivox%2Fstream&'
+      'auth_mode=pairing_token&'
+      'token_required=true&'
+      'rest_token=setup-secret-token',
+    );
+
+    expect(descriptor.baseUri.toString(), 'https://gateway.example:8765');
+    expect(
+      descriptor.webSocketUri.toString(),
+      'wss://gateway.example:8765/v1/navivox/stream',
+    );
+    expect(
+      descriptor.toGatewayConfig().baseUri.toString(),
+      'https://gateway.example:8765',
+    );
+  });
+
   test('builds typed gateway messages', () {
     final start = NavivoxGatewayMessage.startTurn(
       requestId: 'req-1',

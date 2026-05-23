@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../profile_contacts/profile_contact_avatar.dart';
+import '../register_gateway_presentation.dart';
+import '../servers_screen_presentation.dart';
 
 class ServersScreen extends ConsumerWidget {
   const ServersScreen({super.key});
@@ -10,36 +13,24 @@ class ServersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(navivoxChannelProvider).state;
-    final servers = [...state.servers]
-      ..sort((a, b) => a.name.compareTo(b.name));
-    final contactsByServer = <String, List<NavivoxProfileContact>>{};
-    for (final contact in state.profileContacts) {
-      contactsByServer.putIfAbsent(contact.serverId, () => []).add(contact);
-    }
+    final presentation = ServersScreenPresentation.fromState(state);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Gateways')),
-      body: servers.isEmpty
+      body: !presentation.hasGateways
           ? const Center(child: Text('No gateways registered'))
           : ListView.separated(
               padding: const EdgeInsets.all(12),
-              itemCount: servers.length,
+              itemCount: presentation.gateways.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
-                final server = servers[index];
-                final contacts = contactsByServer[server.id] ?? const [];
-                final active = server.id == state.activeServerId;
+                final gateway = presentation.gateways[index];
                 return _ServerCard(
-                  server: server,
-                  contacts: contacts,
-                  active: active,
+                  gateway: gateway,
                   onManage: () => _showManageGateway(
                     context,
                     ref.read(navivoxChannelProvider),
-                    server,
-                    contacts,
-                    active: active,
-                    activeProfile: state.activeProfileContact,
+                    gateway,
                   ),
                 );
               },
@@ -57,15 +48,9 @@ class ServersScreen extends ConsumerWidget {
   void _showManageGateway(
     BuildContext context,
     NavivoxChannel channel,
-    NavivoxServer server,
-    List<NavivoxProfileContact> contacts, {
-    required bool active,
-    NavivoxProfileContact? activeProfile,
-  }) {
-    final activeProfileOnGateway =
-        activeProfile != null && activeProfile.serverId == server.id
-        ? activeProfile
-        : null;
+    ServerGatewayPresentation gateway,
+  ) {
+    final server = gateway.server;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -75,7 +60,7 @@ class ServersScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             Text(
-              'Manage gateway',
+              gateway.manageTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
@@ -85,63 +70,55 @@ class ServersScreen extends ConsumerWidget {
               title: Text(server.name),
               subtitle: Text(server.status),
             ),
-            const ListTile(
+            ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.tag),
-              title: Text('Server ID'),
+              leading: const Icon(Icons.tag),
+              title: Text(gateway.serverIdTitle),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 56, bottom: 12),
               child: SelectableText(server.id),
             ),
-            if (activeProfileOnGateway != null) ...[
+            if (gateway.activeProfileLabel != null) ...[
               const Divider(),
               ListTile(
                 key: ValueKey('server-active-profile-${server.id}'),
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.badge_outlined),
-                title: const Text('Active profile contact'),
-                subtitle: Text(
-                  '${activeProfileOnGateway.displayName} · ${activeProfileOnGateway.profileId}',
-                ),
+                title: Text(gateway.activeProfileTitle),
+                subtitle: Text(gateway.activeProfileLabel!),
               ),
             ],
-            if (active) ...[
+            if (gateway.showDisconnectAction) ...[
               const Divider(),
               ListTile(
                 key: const ValueKey('server-disconnect-current'),
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.link_off),
-                title: const Text('Disconnect current session'),
-                subtitle: const Text(
-                  'Close the active Gormes gateway connection for this app session.',
-                ),
-                onTap: () => _confirmDisconnect(context, channel, server),
+                title: Text(gateway.disconnectActionTitle),
+                subtitle: Text(gateway.disconnectActionSubtitle),
+                onTap: () => _confirmDisconnect(context, channel, gateway),
               ),
             ],
             const Divider(),
-            const ListTile(
+            ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.people_alt_outlined),
-              title: Text('Profiles on this gateway'),
+              leading: const Icon(Icons.people_alt_outlined),
+              title: Text(gateway.profilesSectionTitle),
             ),
-            if (contacts.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(left: 56),
-                child: Text('No profiles reported by this gateway yet.'),
+            if (gateway.profileContacts.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 56),
+                child: Text(gateway.emptyProfilesLabel),
               )
             else
-              for (final contact in contacts)
+              for (final profile in gateway.profileContacts)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    child: Text(
-                      contact.displayName.characters.first.toUpperCase(),
-                    ),
-                  ),
-                  title: Text(contact.displayName),
-                  subtitle: Text(contact.profileId),
-                  trailing: _HealthPill(health: contact.health),
+                  leading: ProfileContactAvatar(contact: profile.contact),
+                  title: Text(profile.contact.displayName),
+                  subtitle: Text(profile.contact.profileId),
+                  trailing: _HealthPill(label: profile.compactHealthLabel),
                 ),
           ],
         ),
@@ -152,24 +129,22 @@ class ServersScreen extends ConsumerWidget {
   Future<void> _confirmDisconnect(
     BuildContext context,
     NavivoxChannel channel,
-    NavivoxServer server,
+    ServerGatewayPresentation gateway,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Disconnect ${server.name}?'),
-        content: const Text(
-          'Navivox will close the active gateway session. Stored app settings stay on this device.',
-        ),
+        title: Text(gateway.disconnectDialogTitle),
+        content: Text(gateway.disconnectDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(gateway.disconnectCancelLabel),
           ),
           FilledButton(
             key: const ValueKey('server-disconnect-confirm'),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Disconnect'),
+            child: Text(gateway.disconnectConfirmLabel),
           ),
         ],
       ),
@@ -183,12 +158,14 @@ class ServersScreen extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('Disconnected ${server.name}')));
+        ..showSnackBar(SnackBar(content: Text(gateway.disconnectedMessage)));
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('Disconnect failed: $error')));
+        ..showSnackBar(
+          SnackBar(content: Text(gateway.disconnectFailedMessage(error))),
+        );
     }
   }
 
@@ -229,6 +206,7 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final presentation = RegisterGatewayPresentation(testing: _testing);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
@@ -238,20 +216,18 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
-              const ListTile(
+              ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.add_link),
-                title: Text('Register gateway'),
-                subtitle: Text(
-                  'Run `gormes navivox connect-info --json` on the server, then enter its base URL and auth token here.',
-                ),
+                leading: const Icon(Icons.add_link),
+                title: Text(presentation.title),
+                subtitle: Text(presentation.instructions),
               ),
               TextFormField(
                 key: const ValueKey('register-gateway-label'),
                 controller: _labelController,
-                decoration: const InputDecoration(
-                  labelText: 'Gateway label',
-                  helperText: 'Screen-reader friendly name for this device.',
+                decoration: InputDecoration(
+                  labelText: presentation.gatewayLabelFieldLabel,
+                  helperText: presentation.gatewayLabelHelperText,
                 ),
                 textInputAction: TextInputAction.next,
               ),
@@ -259,21 +235,21 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
               TextFormField(
                 key: const ValueKey('register-gateway-base-url'),
                 controller: _baseUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Base URL',
-                  hintText: 'http://127.0.0.1:7319',
+                decoration: InputDecoration(
+                  labelText: presentation.baseUrlFieldLabel,
+                  hintText: presentation.baseUrlHintText,
                 ),
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.next,
-                validator: _validateBaseUrl,
+                validator: presentation.validateBaseUrl,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 key: const ValueKey('register-gateway-token'),
                 controller: _tokenController,
-                decoration: const InputDecoration(
-                  labelText: 'Auth token (optional)',
-                  helperText: 'Stored by the gateway connection layer only.',
+                decoration: InputDecoration(
+                  labelText: presentation.tokenFieldLabel,
+                  helperText: presentation.tokenHelperText,
                 ),
                 obscureText: true,
                 textInputAction: TextInputAction.done,
@@ -290,17 +266,15 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.network_check),
-                  label: Text(_testing ? 'Testing' : 'Test connection'),
+                  label: Text(presentation.testButtonLabel),
                 ),
               ),
               const SizedBox(height: 12),
-              const ListTile(
+              ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.info_outline),
-                title: Text('Current boundary'),
-                subtitle: Text(
-                  'This test connects the current session now; persistent multi-gateway connection storage is the next protocol slice.',
-                ),
+                leading: const Icon(Icons.info_outline),
+                title: Text(presentation.boundaryTitle),
+                subtitle: Text(presentation.boundarySubtitle),
               ),
             ],
           ),
@@ -309,34 +283,24 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
     );
   }
 
-  String? _validateBaseUrl(String? value) {
-    final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) return 'Enter the Gormes gateway base URL.';
-    final uri = Uri.tryParse(trimmed);
-    if (uri == null || uri.host.isEmpty) {
-      return 'Enter a valid Gormes gateway URL.';
-    }
-    if (!{'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
-      return 'Use http, https, ws, or wss.';
-    }
-    return null;
-  }
-
   Future<void> _testConnection() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final baseUrl = _baseUrlController.text.trim();
-    final token = _tokenController.text.trim();
+    const presentation = RegisterGatewayPresentation();
+    final request = presentation.connectRequest(
+      baseUrl: _baseUrlController.text,
+      token: _tokenController.text,
+    );
     setState(() => _testing = true);
     try {
       await widget.channel.connect(
-        baseUrl: baseUrl,
-        token: token.isEmpty ? null : token,
+        baseUrl: request.baseUrl,
+        token: request.token,
       );
       if (!mounted) return;
-      _showSnackBar('Connection test passed for $baseUrl');
+      _showSnackBar(presentation.connectionPassedMessage(request));
     } catch (error) {
       if (!mounted) return;
-      _showSnackBar('Connection test failed: $error');
+      _showSnackBar(presentation.connectionFailedMessage(error));
     } finally {
       if (mounted) setState(() => _testing = false);
     }
@@ -352,33 +316,14 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
 }
 
 class _ServerCard extends StatelessWidget {
-  const _ServerCard({
-    required this.server,
-    required this.contacts,
-    required this.active,
-    required this.onManage,
-  });
+  const _ServerCard({required this.gateway, required this.onManage});
 
-  final NavivoxServer server;
-  final List<NavivoxProfileContact> contacts;
-  final bool active;
+  final ServerGatewayPresentation gateway;
   final VoidCallback onManage;
 
   @override
   Widget build(BuildContext context) {
-    final warningCount = contacts
-        .where(
-          (c) =>
-              !c.workspaceRootsOk || c.health == NavivoxProfileHealth.warning,
-        )
-        .length;
-    final authCount = contacts
-        .where((c) => c.health == NavivoxProfileHealth.needsAuth)
-        .length;
-    final activeTurns = contacts
-        .where((c) => c.activeTurnState != 'idle')
-        .length;
-
+    final server = gateway.server;
     return Card(
       key: ValueKey('server-card-${server.id}'),
       child: Padding(
@@ -388,7 +333,7 @@ class _ServerCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(active ? Icons.hub : Icons.dns),
+                Icon(gateway.active ? Icons.hub : Icons.dns),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -399,7 +344,7 @@ class _ServerCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        '${active ? 'Active session gateway' : 'Registered gateway'} · ${server.status}',
+                        gateway.statusSubtitle,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -418,24 +363,14 @@ class _ServerCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 6,
               children: [
-                _CountChip(label: _plural(contacts.length, 'profile')),
-                if (warningCount > 0)
-                  _CountChip(label: _plural(warningCount, 'warning')),
-                if (authCount > 0)
-                  _CountChip(label: _plural(authCount, 'auth')),
-                if (activeTurns > 0)
-                  _CountChip(label: _plural(activeTurns, 'active turn')),
+                for (final label in gateway.countLabels)
+                  _CountChip(label: label),
               ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  String _plural(int count, String noun) {
-    if (count == 1) return '1 $noun';
-    return '$count ${noun}s';
   }
 }
 
@@ -451,18 +386,12 @@ class _CountChip extends StatelessWidget {
 }
 
 class _HealthPill extends StatelessWidget {
-  const _HealthPill({required this.health});
+  const _HealthPill({required this.label});
 
-  final NavivoxProfileHealth health;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth',
-      NavivoxProfileHealth.warning => 'warning',
-    };
     return Text(label, style: Theme.of(context).textTheme.labelSmall);
   }
 }

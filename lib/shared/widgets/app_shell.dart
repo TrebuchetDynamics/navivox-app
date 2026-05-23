@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../router/app_routes.dart';
+import 'app_shell_presentation.dart';
+
+const _appShellPresentation = AppShellPresentation();
 
 class AppShell extends StatelessWidget {
   const AppShell({required this.location, required this.child, super.key});
@@ -11,39 +13,28 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final destinations = [
-      _Destination(AppRoutes.chats, Icons.chat_bubble_outlined, 'Chats'),
-      _Destination(AppRoutes.servers, Icons.dns_outlined, 'Servers'),
-      _Destination(AppRoutes.agents, Icons.smart_toy_outlined, 'Agents'),
-      _Destination(AppRoutes.memory, Icons.psychology_alt_outlined, 'Memory'),
-      _Destination(AppRoutes.config, Icons.settings_outlined, 'Config'),
-      _Destination(
-        AppRoutes.settings,
-        Icons.keyboard_voice_outlined,
-        'Settings',
-      ),
-    ];
-    final selectedIndex = destinations.indexWhere(
-      (destination) => location.startsWith(destination.path),
-    );
-    final selected = selectedIndex < 0 ? 0 : selectedIndex;
-    final isChatThread = location.startsWith('${AppRoutes.chats}/');
+    final presentation = _appShellPresentation.stateForLocation(location);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 600) {
           return _DesktopShell(
-            destinations: destinations,
-            selectedIndex: selected,
-            onSelected: (index) => context.go(destinations[index].path),
+            destinations: presentation.destinations,
+            selectedIndex: presentation.selectedIndex,
+            onSelected: (index) =>
+                context.go(presentation.destinations[index].path),
             child: child,
           );
         }
         return _MobileShell(
-          destinations: destinations,
-          selectedIndex: selected,
-          showNavigationMenu: !isChatThread,
-          onSelected: (index) => context.go(destinations[index].path),
+          destinations: presentation.destinations,
+          selectedIndex: presentation.selectedIndex,
+          showNavigationMenu: presentation.showNavigationMenu,
+          navigationMenuTooltip: _appShellPresentation.navigationMenuTooltip,
+          drawerHeaderTitle: _appShellPresentation.drawerHeaderTitle,
+          drawerHeaderSubtitle: _appShellPresentation.drawerHeaderSubtitle,
+          onSelected: (index) =>
+              context.go(presentation.destinations[index].path),
           child: child,
         );
       },
@@ -57,13 +48,19 @@ class _MobileShell extends StatelessWidget {
     required this.destinations,
     required this.selectedIndex,
     required this.showNavigationMenu,
+    required this.navigationMenuTooltip,
+    required this.drawerHeaderTitle,
+    required this.drawerHeaderSubtitle,
     required this.onSelected,
   });
 
   final Widget child;
-  final List<_Destination> destinations;
+  final List<AppShellDestination> destinations;
   final int selectedIndex;
   final bool showNavigationMenu;
+  final String navigationMenuTooltip;
+  final String drawerHeaderTitle;
+  final String drawerHeaderSubtitle;
   final ValueChanged<int> onSelected;
 
   @override
@@ -75,6 +72,8 @@ class _MobileShell extends StatelessWidget {
           ? _AppNavigationDrawer(
               destinations: destinations,
               selectedIndex: selectedIndex,
+              drawerHeaderTitle: drawerHeaderTitle,
+              drawerHeaderSubtitle: drawerHeaderSubtitle,
               onSelected: onSelected,
             )
           : null,
@@ -82,7 +81,7 @@ class _MobileShell extends StatelessWidget {
           ? Builder(
               builder: (context) => FloatingActionButton.small(
                 heroTag: 'navivox-navigation-menu',
-                tooltip: 'Open navigation menu',
+                tooltip: navigationMenuTooltip,
                 backgroundColor: colorScheme.surface,
                 foregroundColor: colorScheme.primary,
                 elevation: 0,
@@ -103,11 +102,15 @@ class _AppNavigationDrawer extends StatelessWidget {
   const _AppNavigationDrawer({
     required this.destinations,
     required this.selectedIndex,
+    required this.drawerHeaderTitle,
+    required this.drawerHeaderSubtitle,
     required this.onSelected,
   });
 
-  final List<_Destination> destinations;
+  final List<AppShellDestination> destinations;
   final int selectedIndex;
+  final String drawerHeaderTitle;
+  final String drawerHeaderSubtitle;
   final ValueChanged<int> onSelected;
 
   @override
@@ -137,14 +140,14 @@ class _AppNavigationDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Navivox',
+                    drawerHeaderTitle,
                     style: textTheme.titleLarge?.copyWith(
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
-                    'Gormes operator console',
+                    drawerHeaderSubtitle,
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onPrimary,
                     ),
@@ -179,7 +182,7 @@ class _DesktopShell extends StatelessWidget {
   });
 
   final Widget child;
-  final List<_Destination> destinations;
+  final List<AppShellDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
@@ -212,12 +215,4 @@ class _DesktopShell extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Destination {
-  const _Destination(this.path, this.icon, this.label);
-
-  final String path;
-  final IconData icon;
-  final String label;
 }
