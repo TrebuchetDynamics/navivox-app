@@ -70,6 +70,38 @@ void main() {
     );
   });
 
+  testWidgets('permission-denied mic explains Android permission recovery', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptSurface(
+            messages: const <NavivoxChatMessage>[],
+            onSend: (_) {},
+            voiceUnavailableReason: 'microphone permission denied',
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byTooltip('Voice unavailable: microphone permission denied'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byIcon(Icons.mic_off));
+    await tester.pumpAndSettle();
+
+    expect(find.text('microphone permission denied'), findsOneWidget);
+    expect(
+      find.text(
+        'Grant microphone permission in Android App info, then reopen Navivox.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

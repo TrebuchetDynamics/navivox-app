@@ -33,8 +33,12 @@ class _InputBarState extends State<_InputBar> {
   String? _canonicalVoiceUnavailableReason(String? reason) {
     final trimmed = reason?.trim();
     if (trimmed == null || trimmed.isEmpty) return trimmed;
-    if (trimmed.toLowerCase() == 'device stt unavailable') {
+    final normalized = trimmed.toLowerCase();
+    if (normalized == 'device stt unavailable') {
       return 'device STT unavailable';
+    }
+    if (normalized == 'microphone permission denied') {
+      return 'microphone permission denied';
     }
     return trimmed;
   }
@@ -42,6 +46,8 @@ class _InputBarState extends State<_InputBar> {
   String _voiceSettingsSubtitle(String? reason) {
     return reason == 'device STT unavailable'
         ? 'Review continuous voice after enabling device speech recognition.'
+        : reason == 'microphone permission denied'
+        ? 'Review continuous voice after granting microphone permission.'
         : reason == 'select a profile contact'
         ? 'Select a profile contact before reviewing continuous voice settings.'
         : 'Review continuous voice and trust settings';
@@ -53,6 +59,8 @@ class _InputBarState extends State<_InputBar> {
     );
     final helpText = reason == 'device STT unavailable'
         ? 'Install or enable device speech recognition, then reopen Navivox.'
+        : reason == 'microphone permission denied'
+        ? 'Grant microphone permission in Android App info, then reopen Navivox.'
         : 'Check microphone permissions and Settings.';
     final recoveryAction = widget.voiceRecoveryAction?.trim();
     showModalBottomSheet<void>(
