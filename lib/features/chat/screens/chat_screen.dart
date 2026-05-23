@@ -55,6 +55,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _commandMode = false;
   bool _routeProfileSynced = false;
   String? _lastRouteProfileKey;
+  String? _runtimeVoiceDisabledReason;
   String? _voiceNotice;
 
   void _onChannelChanged() {
@@ -215,14 +216,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _pendingVoiceRunId = channel.startVoiceRun();
               },
               onVoiceCaptureFailed: (error) {
+                final reason = _voiceCaptureFailureReason(error);
                 final id = _pendingVoiceRunId;
                 if (id != null) {
-                  channel.failVoiceRun(
-                    id,
-                    reason: _voiceCaptureFailureReason(error),
-                  );
+                  channel.failVoiceRun(id, reason: reason);
                 }
-                _pendingVoiceRunId = null;
+                setState(() {
+                  _pendingVoiceRunId = null;
+                  if (error is DeviceSpeechUnavailable) {
+                    _runtimeVoiceDisabledReason = reason;
+                  }
+                });
               },
               forwardTargets: state.profileContacts
                   .where((contact) => contact.key != activeProfile?.key)
@@ -338,6 +342,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
     if (activeProfile == null) return 'select a profile contact';
     if (voiceService == null) return 'device STT unavailable';
+    final runtimeVoiceReason = _runtimeVoiceDisabledReason;
+    if (runtimeVoiceReason != null) return runtimeVoiceReason;
     final profileVoiceReason =
         activeProfile.voiceCapability.captureUnavailableReason;
     if (profileVoiceReason != null) return profileVoiceReason;
@@ -617,6 +623,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final key = '$serverId::$profileId';
     if (_lastRouteProfileKey != key) {
       _lastRouteProfileKey = key;
+      _runtimeVoiceDisabledReason = null;
       _routeProfileSynced = false;
     }
     if (_routeProfileSynced) return;

@@ -8,6 +8,7 @@ import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 import 'package:navivox/router/app_router.dart';
 
@@ -1133,6 +1134,47 @@ void main() {
     expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
     expect(channel.state.activeVoiceRun?.reason, 'Voice capture timed out.');
     expect(find.text('Voice capture timed out.'), findsOneWidget);
+  });
+
+  testWidgets('runtime device STT failure disables continuous voice', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+    final voiceService = _ThrowingVoiceCaptureService(
+      const DeviceSpeechUnavailable(),
+    );
+
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
+    );
+
+    expect(find.text('Continuous voice ready'), findsOneWidget);
+
+    await _tapMic(tester);
+    await tester.pumpAndSettle();
+
+    expect(channel.sentVoiceTranscripts, isEmpty);
+    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(channel.state.activeVoiceRun?.reason, 'device STT unavailable');
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.mic), findsNothing);
+    expect(find.byIcon(Icons.mic_off), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(
+      find.text(
+        'Install or enable device speech recognition, then reopen Navivox.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('trusted voice capture auto-sends after grace', (tester) async {
