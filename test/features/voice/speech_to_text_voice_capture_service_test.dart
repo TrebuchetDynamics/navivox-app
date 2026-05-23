@@ -35,6 +35,30 @@ void main() {
     expect(engine.cancelCalls, 0);
   });
 
+  test('uses the latest partial transcript when the engine finishes', () async {
+    final engine = _FakeSpeechToTextEngine();
+    final service = SpeechToTextVoiceCaptureService(engine: engine);
+
+    final future = service.capture(timeout: const Duration(seconds: 5));
+    await Future<void>.delayed(Duration.zero);
+
+    engine.emit(
+      const SpeechToTextSnapshot(
+        words: 'hello mineru',
+        confidence: 0.64,
+        finalResult: false,
+      ),
+    );
+    engine.emitStatus('done');
+
+    final capture = await future;
+
+    expect(capture.transcript, 'hello mineru');
+    expect(capture.confidence, 0.64);
+    expect(engine.stopCalls, 1);
+    expect(engine.cancelCalls, 0);
+  });
+
   test('reports device STT unavailable when initialization is unavailable', () {
     final engine = _FakeSpeechToTextEngine()..available = false;
     final service = SpeechToTextVoiceCaptureService(engine: engine);
@@ -65,6 +89,7 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
   int stopCalls = 0;
   int cancelCalls = 0;
   void Function(SpeechToTextSnapshot result)? _onResult;
+  void Function(String status)? _onStatus;
 
   @override
   Future<bool> initialize({
@@ -72,6 +97,7 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
     required void Function(String status) onStatus,
   }) async {
     initializeCalls++;
+    _onStatus = onStatus;
     return available;
   }
 
@@ -97,5 +123,9 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
 
   void emit(SpeechToTextSnapshot result) {
     _onResult?.call(result);
+  }
+
+  void emitStatus(String status) {
+    _onStatus?.call(status);
   }
 }

@@ -118,6 +118,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
   Future<VoiceCapture> capture({required Duration timeout}) async {
     final startedAt = _clock();
     final completion = Completer<SpeechToTextSnapshot>();
+    SpeechToTextSnapshot? latestTranscript;
     var listening = false;
 
     void completeWithError(Object error) {
@@ -133,6 +134,11 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
           final normalized = status.trim().toLowerCase();
           if ((normalized == 'done' || normalized == 'notlistening') &&
               !completion.isCompleted) {
+            final snapshot = latestTranscript;
+            if (snapshot != null) {
+              completion.complete(snapshot);
+              return;
+            }
             completion.completeError(
               const SpeechToTextCaptureFailure('no transcript'),
             );
@@ -145,6 +151,9 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
         listenFor: timeout,
         pauseFor: pauseFor,
         onResult: (snapshot) {
+          if (snapshot.words.trim().isNotEmpty) {
+            latestTranscript = snapshot;
+          }
           if (snapshot.finalResult && !completion.isCompleted) {
             completion.complete(snapshot);
           }
