@@ -1,5 +1,21 @@
 # Navivox TODO
 
+[BUG] Web setup accessibility blocks keyboard/screen-reader connect flow — 2026-05-22 18:55 CST
+  blocker: Flutter web setup visually shows `Gateway base URL`, `Pairing token`, and `Connect and talk`, but the accessible tree exposes unlabeled textboxes and generic `Submit` controls; `Connect and talk` is not reachable by accessible text/button lookup.
+  evidence: `flutter build web` passed; `agent-browser find text "Connect and talk" click` returned `Element not found`; after two Tabs the snapshot was `textbox http://127.0.0.1:8765`, `button Submit`, `textbox`, `button Submit`; pressing Enter in the token field left the URL at `#/setup` and fired no gateway/API request.
+  unblocks when: setup controls have explicit semantics labels/hints and keyboard activation for the visible `Connect and talk` action.
+  owner: Navivox app owner.
+  workaround/pivot: web QA report saved at `docs/web-qa-dl-mphmcspi-bb46a2.md`; implement a focused semantics/keyboard regression slice, then rerun web setup QA.
+  next check: next web accessibility fix iteration.
+
+[BLOCKED] Android continuous voice live phrase capture — 2026-05-22 18:39 CST
+  blocker: connected emulator `emulator-5554` is listed by ADB but shell commands still time out, so this host cannot install the APK, query Android speech recognizers, grant microphone permission, or capture a real voice phrase.
+  evidence: `build/app/outputs/flutter-apk/app-debug.apk` exists at 184870689 bytes; `adb devices -l` lists `emulator-5554`; `timeout 5s adb -s emulator-5554 shell true` exits 124 on the second retry; `timeout 8s adb -s emulator-5554 shell cmd package query-services -a android.speech.RecognitionService` exits 124 on the second retry.
+  unblocks when: a responsive physical USB-debuggable Android device or healthy emulator is available for `adb shell`, APK install, speech-recognizer query, microphone permission grant, and one short active-profile chat phrase capture.
+  owner: local Android test environment / Juan.
+  workaround/pivot: keep the release handoff/checklist as the source of truth and rerun the same smoke sequence on a responsive Android target; preserve unrelated profile-management WIP.
+  next check: next development-loop iteration with a responsive Android target.
+
 [BLOCKED] Android continuous voice device smoke validation — 2026-05-22 17:55 CST
   blocker: connected emulator `emulator-5554` is listed by ADB but shell commands time out, so this host cannot validate microphone permission or real device STT capture.
   evidence: `adb devices -l` lists `emulator-5554`; `timeout 5s adb -s emulator-5554 shell true` exits 124; `timeout 5s adb -s emulator-5554 shell getprop sys.boot_completed` exits 124.
