@@ -18,29 +18,32 @@ void main() {
     TextField tokenField() => tester.widget<TextField>(tokenFieldFinder);
 
     expect(tokenField().obscureText, isTrue);
-    expect(find.byTooltip('Show pairing token'), findsOneWidget);
+    expect(_tokenVisibilityButton('Show pairing token'), findsOneWidget);
 
     await tester.enterText(tokenFieldFinder, 'nvbx_visible_when_requested');
-    await tester.ensureVisible(_tokenVisibilityButton('Show pairing token'));
-    await tester.tap(_tokenVisibilityButton('Show pairing token'));
+    _pressTokenVisibilityButton(tester);
     await tester.pump();
 
     expect(tokenField().obscureText, isFalse);
-    expect(find.byTooltip('Hide pairing token'), findsOneWidget);
+    expect(_tokenVisibilityButton('Hide pairing token'), findsOneWidget);
     expect(tokenField().controller?.text, 'nvbx_visible_when_requested');
 
-    await tester.ensureVisible(_tokenVisibilityButton('Hide pairing token'));
-    await tester.tap(_tokenVisibilityButton('Hide pairing token'));
+    _pressTokenVisibilityButton(tester);
     await tester.pump();
 
     expect(tokenField().obscureText, isTrue);
-    expect(find.byTooltip('Show pairing token'), findsOneWidget);
+    expect(_tokenVisibilityButton('Show pairing token'), findsOneWidget);
     expect(tokenField().controller?.text, 'nvbx_visible_when_requested');
   });
 }
 
-Finder _tokenVisibilityButton(String tooltip) {
-  return find.byWidgetPredicate(
-    (widget) => widget is IconButton && widget.tooltip == tooltip,
+Finder _tokenVisibilityButton(String _) {
+  return find.byKey(const ValueKey('setup-token-visibility-button'));
+}
+
+void _pressTokenVisibilityButton(WidgetTester tester) {
+  final button = tester.widget<TextButton>(
+    _tokenVisibilityButton('setup-token-visibility-button'),
   );
+  button.onPressed!();
 }

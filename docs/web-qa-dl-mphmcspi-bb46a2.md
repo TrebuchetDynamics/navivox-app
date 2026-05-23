@@ -62,6 +62,10 @@ Add explicit Flutter semantics and keyboard activation for the setup controls:
 - `Connect and talk` button semantic label and keyboard action.
 - A focused widget regression test that asserts the semantics labels exist and keyboard/button activation triggers the connect action.
 
+## Resolution follow-up
+
+Resolved on 2026-05-22 19:25 CST by adding explicit setup semantics, visible text-labeled QR/token actions, and token-field keyboard submission. Follow-up browser QA confirmed that `Connect and talk`, `Import pairing QR image`, and `Show pairing token` are reachable through agent-browser text lookup after Flutter semantics activation, and pressing Enter in the token field fires the gateway status request.
+
 ## Temporary QA artifacts
 
-The run captured screenshots and video under `/tmp/navivox-web-qa-dl-mphmcspi-bb46a2-iter1/`. These are not committed and may be cleaned by the host.
+The original run captured screenshots and video under `/tmp/navivox-web-qa-dl-mphmcspi-bb46a2-iter1/`. The resolution run captured screenshots under `/tmp/navivox-web-qa-setup-semantics-fix-final/`. These are not committed and may be cleaned by the host.

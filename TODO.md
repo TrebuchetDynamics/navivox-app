@@ -1,12 +1,10 @@
 # Navivox TODO
 
-[BUG] Web setup accessibility blocks keyboard/screen-reader connect flow — 2026-05-22 18:55 CST
-  blocker: Flutter web setup visually shows `Gateway base URL`, `Pairing token`, and `Connect and talk`, but the accessible tree exposes unlabeled textboxes and generic `Submit` controls; `Connect and talk` is not reachable by accessible text/button lookup.
-  evidence: `flutter build web` passed; `agent-browser find text "Connect and talk" click` returned `Element not found`; after two Tabs the snapshot was `textbox http://127.0.0.1:8765`, `button Submit`, `textbox`, `button Submit`; pressing Enter in the token field left the URL at `#/setup` and fired no gateway/API request.
-  unblocks when: setup controls have explicit semantics labels/hints and keyboard activation for the visible `Connect and talk` action.
-  owner: Navivox app owner.
-  workaround/pivot: web QA report saved at `docs/web-qa-dl-mphmcspi-bb46a2.md`; implement a focused semantics/keyboard regression slice, then rerun web setup QA.
-  next check: next web accessibility fix iteration.
+[RESOLVED] Web setup accessibility blocks keyboard/screen-reader connect flow — 2026-05-22 18:55 CST
+  resolved: 2026-05-22 19:25 CST
+  evidence: setup now exposes `Gateway base URL field`, `Pairing token field`, `Import pairing QR image`, `Show pairing token`, and `Connect and talk` in the Flutter web accessibility tree after semantics activation; `agent-browser find text "Connect and talk" click`, `find text "Import pairing QR image" click`, and `find text "Show pairing token" click` all exited 0; pressing Enter in the token field fired `/v1/navivox/status`.
+  validation: `flutter analyze`, `flutter test`, `flutter build web`, and browser QA against `http://127.0.0.1:8765/#/setup` passed for this slice.
+  owner: Navivox app owner / Mineru
 
 [BLOCKED] Android continuous voice live phrase capture — 2026-05-22 18:39 CST
   blocker: connected emulator `emulator-5554` is listed by ADB but shell commands still time out, so this host cannot install the APK, query Android speech recognizers, grant microphone permission, or capture a real voice phrase.

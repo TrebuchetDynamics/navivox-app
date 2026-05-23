@@ -20,7 +20,9 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Import QR image'));
+      final importButton = find.bySemanticsLabel('Import pairing QR image');
+      await tester.ensureVisible(importButton);
+      await tester.tap(importButton);
       await tester.pumpAndSettle();
 
       final baseUrlField = tester.widget<TextField>(

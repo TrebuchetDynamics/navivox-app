@@ -186,54 +186,73 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  TextField(
-                    controller: _baseUrlController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Gateway base URL',
+                  Semantics(
+                    label: 'Gateway base URL field',
+                    hint: 'Enter the Gormes gateway base URL.',
+                    textField: true,
+                    child: TextField(
+                      controller: _baseUrlController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Gateway base URL',
+                      ),
+                      keyboardType: TextInputType.url,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                     ),
-                    keyboardType: TextInputType.url,
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _tokenController,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: 'Pairing token',
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'Import QR image',
-                            icon: _importingQr
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.qr_code_scanner),
-                            onPressed: _connecting || _importingQr
-                                ? null
-                                : _importQrImage,
-                          ),
-                          IconButton(
-                            tooltip: _showToken
-                                ? 'Hide pairing token'
-                                : 'Show pairing token',
-                            icon: Icon(
-                              _showToken
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                            onPressed: () {
-                              setState(() => _showToken = !_showToken);
-                            },
-                          ),
-                        ],
+                  Semantics(
+                    label: 'Pairing token field',
+                    hint: 'Enter the pairing token printed by Gormes.',
+                    textField: true,
+                    obscured: !_showToken,
+                    child: TextField(
+                      controller: _tokenController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Pairing token',
                       ),
+                      obscureText: !_showToken,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: _connecting ? null : (_) => _connectGateway(),
                     ),
-                    obscureText: !_showToken,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    children: [
+                      TextButton.icon(
+                        key: const ValueKey('setup-import-qr-button'),
+                        onPressed: _connecting || _importingQr
+                            ? null
+                            : _importQrImage,
+                        icon: _importingQr
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.qr_code_scanner),
+                        label: const Text('Import pairing QR image'),
+                      ),
+                      TextButton.icon(
+                        key: const ValueKey('setup-token-visibility-button'),
+                        onPressed: () {
+                          setState(() => _showToken = !_showToken);
+                        },
+                        icon: Icon(
+                          _showToken ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        label: Text(
+                          _showToken
+                              ? 'Hide pairing token'
+                              : 'Show pairing token',
+                        ),
+                      ),
+                    ],
                   ),
                   if (_status != null) ...[
                     const SizedBox(height: 8),
@@ -245,15 +264,26 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: _connecting ? null : _connectGateway,
-                    icon: _connecting
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.hub),
-                    label: const Text('Connect and talk'),
+                  Semantics(
+                    label: 'Connect and talk',
+                    hint: 'Connect to Gormes and open chat.',
+                    button: true,
+                    enabled: !_connecting,
+                    onTap: _connecting ? null : _connectGateway,
+                    child: ExcludeSemantics(
+                      child: FilledButton.icon(
+                        onPressed: _connecting ? null : _connectGateway,
+                        icon: _connecting
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.hub),
+                        label: const Text('Connect and talk'),
+                      ),
+                    ),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 8),

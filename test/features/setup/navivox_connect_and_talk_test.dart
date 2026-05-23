@@ -63,6 +63,57 @@ void main() {
     expect(_caseInsensitiveText('telephony'), findsNothing);
   });
 
+  testWidgets('setup exposes web accessibility labels for connection controls', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Gateway base URL field'), findsOneWidget);
+    expect(find.bySemanticsLabel('Pairing token field'), findsOneWidget);
+    expect(find.bySemanticsLabel('Import pairing QR image'), findsOneWidget);
+    expect(find.bySemanticsLabel('Show pairing token'), findsOneWidget);
+    expect(find.bySemanticsLabel('Connect and talk'), findsOneWidget);
+  });
+
+  testWidgets('pressing done in the token field connects to Gormes', (
+    tester,
+  ) async {
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Gateway base URL'),
+      'http://127.0.0.1:8765',
+    );
+    final tokenField = find.widgetWithText(TextField, 'Pairing token');
+    await tester.enterText(tokenField, 'nvbx_test_token');
+    await tester.showKeyboard(tokenField);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
+  });
+
   testWidgets('setup screen shows Termux same-device bootstrap guidance', (
     tester,
   ) async {
