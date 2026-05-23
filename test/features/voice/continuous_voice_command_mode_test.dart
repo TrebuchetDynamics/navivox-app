@@ -1177,6 +1177,46 @@ void main() {
     );
   });
 
+  testWidgets('runtime microphone permission failure gives permission recovery', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+    final voiceService = _ThrowingVoiceCaptureService(
+      const DeviceSpeechUnavailable('microphone permission denied'),
+    );
+
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
+    );
+
+    await _tapMic(tester);
+    await tester.pumpAndSettle();
+
+    expect(channel.sentVoiceTranscripts, isEmpty);
+    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(
+      channel.state.activeVoiceRun?.reason,
+      'microphone permission denied',
+    );
+    expect(
+      find.text('Continuous voice unavailable: microphone permission denied'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Recovery action'), findsOneWidget);
+    expect(
+      find.text(
+        'Grant microphone permission in Android App info, then reopen Navivox.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('trusted voice capture auto-sends after grace', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
     final voiceService = FakeVoiceCaptureService(

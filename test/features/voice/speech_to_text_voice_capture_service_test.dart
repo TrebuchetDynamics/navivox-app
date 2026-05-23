@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 
@@ -69,6 +70,31 @@ void main() {
     );
   });
 
+  test(
+    'maps permanent permission errors to microphone permission copy',
+    () async {
+      final engine = _FakeSpeechToTextEngine();
+      final service = SpeechToTextVoiceCaptureService(engine: engine);
+
+      final future = service.capture(timeout: const Duration(seconds: 5));
+      await Future<void>.delayed(Duration.zero);
+
+      engine.emitError(SpeechRecognitionError('error_permission', true));
+
+      await expectLater(
+        future,
+        throwsA(
+          isA<DeviceSpeechUnavailable>().having(
+            (error) => error.message,
+            'message',
+            'microphone permission denied',
+          ),
+        ),
+      );
+      expect(engine.cancelCalls, 1);
+    },
+  );
+
   test('cancels the platform speech engine on timeout', () async {
     final engine = _FakeSpeechToTextEngine();
     final service = SpeechToTextVoiceCaptureService(engine: engine);
@@ -89,6 +115,7 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
   int stopCalls = 0;
   int cancelCalls = 0;
   void Function(SpeechToTextSnapshot result)? _onResult;
+  void Function(Object error)? _onError;
   void Function(String status)? _onStatus;
 
   @override
@@ -97,6 +124,7 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
     required void Function(String status) onStatus,
   }) async {
     initializeCalls++;
+    _onError = onError;
     _onStatus = onStatus;
     return available;
   }
@@ -127,5 +155,9 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
 
   void emitStatus(String status) {
     _onStatus?.call(status);
+  }
+
+  void emitError(Object error) {
+    _onError?.call(error);
   }
 }

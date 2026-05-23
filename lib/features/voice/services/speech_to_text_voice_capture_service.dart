@@ -197,8 +197,21 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
 
   Object _normalizeError(Object error) {
     if (error is SpeechRecognitionError && error.permanent) {
-      return DeviceSpeechUnavailable(error.errorMsg);
+      return DeviceSpeechUnavailable(
+        _deviceSpeechUnavailableMessage(error.errorMsg),
+      );
     }
     return SpeechToTextCaptureFailure(error);
+  }
+
+  String _deviceSpeechUnavailableMessage(String message) {
+    final normalized = message.trim().toLowerCase();
+    if (normalized.contains('permission') ||
+        normalized.contains('denied') ||
+        normalized.contains('not_allowed') ||
+        normalized.contains('not allowed')) {
+      return 'microphone permission denied';
+    }
+    return 'device STT unavailable';
   }
 }

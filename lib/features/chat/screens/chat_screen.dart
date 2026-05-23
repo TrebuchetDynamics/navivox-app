@@ -326,8 +326,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   String _voiceCaptureFailureReason(Object error) {
     if (error is VoiceCaptureTimeout) return 'Voice capture timed out.';
-    if (error is DeviceSpeechUnavailable) return 'device STT unavailable';
+    if (error is DeviceSpeechUnavailable) {
+      return _canonicalDeviceSpeechUnavailableReason(error.message);
+    }
     return 'Voice capture failed.';
+  }
+
+  String _canonicalDeviceSpeechUnavailableReason(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.isEmpty) return 'device STT unavailable';
+    final normalized = trimmed.toLowerCase();
+    if (normalized == 'device stt unavailable') return 'device STT unavailable';
+    if (normalized == 'microphone permission denied') {
+      return 'microphone permission denied';
+    }
+    return trimmed;
   }
 
   NavivoxVoiceSettings _voiceSettings(WidgetRef ref) {
@@ -373,6 +386,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     if (voiceDisabledReason == 'device STT unavailable') {
       return 'Install or enable device speech recognition, then reopen Navivox.';
+    }
+    if (voiceDisabledReason == 'microphone permission denied') {
+      return 'Grant microphone permission in Android App info, then reopen Navivox.';
     }
     return null;
   }
@@ -767,6 +783,8 @@ class _VoiceModeBanner extends StatelessWidget {
         : 'Voice standby';
     final voiceSettingsSubtitle = disabledReason == 'device STT unavailable'
         ? 'Review continuous voice after enabling device speech recognition.'
+        : disabledReason == 'microphone permission denied'
+        ? 'Review continuous voice after granting microphone permission.'
         : disabledReason == 'select a profile contact'
         ? 'Select a profile contact before reviewing continuous voice settings.'
         : 'Review continuous voice and trust settings';
