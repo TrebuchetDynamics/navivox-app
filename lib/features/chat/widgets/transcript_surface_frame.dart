@@ -49,32 +49,73 @@ class TranscriptSurfaceFrame extends StatefulWidget {
 }
 
 class _TranscriptSurfaceFrameState extends State<TranscriptSurfaceFrame> {
+  static const _jumpToBottomThreshold = 80.0;
+
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  bool _showJumpToBottom = false;
+  int _newMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
   }
 
   @override
   void didUpdateWidget(TranscriptSurfaceFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.messages.length > oldWidget.messages.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
+    final appendedCount = widget.messages.length - oldWidget.messages.length;
+    if (appendedCount > 0) {
+      if (_isNearBottom) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
+      } else {
+        _newMessageCount += appendedCount;
+        _showJumpToBottom = true;
+      }
+    } else if (appendedCount < 0) {
+      _newMessageCount = 0;
+      _showJumpToBottom = false;
     }
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScroll);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  bool get _isNearBottom {
+    if (!_scrollController.hasClients) return true;
+    return _distanceFromBottom <= _jumpToBottomThreshold;
+  }
+
+  double get _distanceFromBottom =>
+      _scrollController.position.maxScrollExtent -
+      _scrollController.position.pixels;
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) return;
+    final shouldShow = !_isNearBottom;
+    final shouldResetNewMessages = _isNearBottom && _newMessageCount > 0;
+    if (shouldShow == _showJumpToBottom && !shouldResetNewMessages) return;
+    setState(() {
+      _showJumpToBottom = shouldShow;
+      if (_isNearBottom) _newMessageCount = 0;
+    });
+  }
+
   void _scrollToEnd() {
     if (_scrollController.hasClients) {
+      if (_showJumpToBottom || _newMessageCount > 0) {
+        setState(() {
+          _showJumpToBottom = false;
+          _newMessageCount = 0;
+        });
+      }
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 200),
@@ -88,14 +129,31 @@ class _TranscriptSurfaceFrameState extends State<TranscriptSurfaceFrame> {
     return Column(
       children: [
         Expanded(
-          child: TranscriptThread(
-            messages: widget.messages,
-            scrollController: _scrollController,
-            assistantTypingLabel: widget.assistantTypingLabel,
-            forwardTargets: widget.forwardTargets,
-            onForward: widget.onForward,
-            textToSpeechService: widget.textToSpeechService,
-            onCancelActiveTurn: widget.onCancelActiveTurn,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: TranscriptThread(
+                  messages: widget.messages,
+                  scrollController: _scrollController,
+                  assistantTypingLabel: widget.assistantTypingLabel,
+                  forwardTargets: widget.forwardTargets,
+                  onForward: widget.onForward,
+                  textToSpeechService: widget.textToSpeechService,
+                  onCancelActiveTurn: widget.onCancelActiveTurn,
+                ),
+              ),
+              if (_showJumpToBottom)
+                Positioned(
+                  right: 16,
+                  bottom: 12,
+                  child: FloatingActionButton.small(
+                    key: const ValueKey('transcript-jump-to-bottom'),
+                    tooltip: 'Jump to latest message',
+                    onPressed: _scrollToEnd,
+                    child: _JumpToBottomIcon(newMessageCount: _newMessageCount),
+                  ),
+                ),
+            ],
           ),
         ),
         TranscriptInputPanel(
@@ -110,6 +168,54 @@ class _TranscriptSurfaceFrameState extends State<TranscriptSurfaceFrame> {
           voiceRecoveryAction: widget.voiceRecoveryAction,
           onOpenVoiceSettings: widget.onOpenVoiceSettings,
         ),
+      ],
+    );
+  }
+}
+
+class _JumpToBottomIcon extends StatelessWidget {
+  const _JumpToBottomIcon({required this.newMessageCount});
+
+  final int newMessageCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final badgeLabel = newMessageCount > 99 ? '99+' : '$newMessageCount';
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        const Icon(Icons.keyboard_arrow_down),
+        if (newMessageCount > 0)
+          Positioned(
+            key: const ValueKey('transcript-jump-to-bottom-badge'),
+            right: -12,
+            top: -12,
+            child: Semantics(
+              label: '$newMessageCount new messages',
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: theme.colorScheme.surface,
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badgeLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onError,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

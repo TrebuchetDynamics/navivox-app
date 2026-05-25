@@ -51,6 +51,33 @@ void main() {
     expect(paused, isTrue);
   });
 
+  testWidgets('renders Telegram-style link preview for URL text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'link-1',
+              text: 'Review https://docs.navivox.dev/setup?tab=android.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('transcript-link-preview')),
+      findsOneWidget,
+    );
+    expect(find.text('docs.navivox.dev'), findsOneWidget);
+    expect(find.text('/setup?tab=android'), findsOneWidget);
+  });
+
   testWidgets('renders Telegram-style sent tick for user messages', (
     tester,
   ) async {

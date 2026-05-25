@@ -67,8 +67,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Chat info'), findsOneWidget);
+    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Architect'), findsOneWidget);
+  });
+
+  testWidgets('chat AppBar shows active profile avatar like Telegram header', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_seedServers, activeServerId: 'srv1')
+      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ChatScreen()),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('chat-active-profile-avatar')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('chat-active-profile-avatar')),
+        matching: find.text('M'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Mineru Builder'), findsOneWidget);
   });
 
   testWidgets('chat info exposes active server and profile scope', (
@@ -89,6 +118,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Chat info'), findsOneWidget);
+    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
     expect(find.text('Profile ID'), findsOneWidget);
     expect(find.text('mineru'), findsOneWidget);
     expect(find.text('Server ID'), findsOneWidget);

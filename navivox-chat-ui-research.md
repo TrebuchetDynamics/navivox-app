@@ -158,6 +158,46 @@ adapter proves `VBubbleStyle.telegram` can wrap the existing state model,
 transcripts remain performant on mobile and web. Until then, the package is a
 visual reference, not a dependency.
 
+### 3.2.2 Reference Feature Scan — Current Local Adoptions
+
+Studying the cloned Telegram/chat references under `/tmp/navivox-telegram-ui-refs`
+identified several safe UI affordances that fit Navivox without importing a
+Telegram backend or third-party chat state manager:
+
+- Telware-style chat header density: show the active profile avatar beside the
+  chat title while keeping server/profile diagnostics behind the compact info
+  action.
+- `chat_bubbles` / Telegram-style typing affordance: use a compact three-dot
+  typing bubble instead of a generic spinner so active Gormes turns read like a
+  chat participant composing a response.
+- `v_chat_bubbles` context-menu vocabulary: keep local message actions focused
+  on copy, read aloud, pause stream, and forward until reply/pin have durable
+  Navivox semantics.
+- `chat_bubbles` / `v_chat_bubbles` link-preview cards: detect URLs in local
+  text turns and render a compact host/path preview without network metadata or
+  a new dependency.
+- Telegram-style draggable sheets: use Flutter `DraggableScrollableSheet` for
+  chat info and message actions so diagnostics and actions can expand without
+  taking over the transcript.
+- Telware/v_chat_bubbles-style transcript navigation: when the operator scrolls
+  away from the latest turn, preserve their reading position, badge newly
+  appended messages, and show a compact jump-to-latest affordance instead of
+  forcing them to manually drag back to the composer edge.
+- `chat_bubbles` date-chip wording: date separators use Telegram-style relative
+  labels for Today and Yesterday while retaining compact month/day labels for
+  older transcript history.
+- Telegram service-message chips: plain system status messages render as centered
+  transcript chips rather than assistant-side participant bubbles.
+
+Deferred reference features:
+
+- Swipe-to-reply and pinned messages require message relationships and local
+  persistence rules before UI controls should appear.
+- Package-provided bubble replacement remains gated by the custom ToolCallCard,
+  safety notice, approval, and voice transcript renderers.
+- Telegram/MTProto network features from `teleflutter` remain out of scope for
+  Gormes-owned Navivox chat.
+
 ### 3.3 Text Streaming Renderer
 
 Use a streaming text renderer for `assistant_delta` events only after the

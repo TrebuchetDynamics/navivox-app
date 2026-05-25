@@ -40,6 +40,7 @@ void main() {
     await tester.pumpWidget(
       _ThreadHost(
         scrollController: scrollController,
+        dateLabelNow: DateTime.utc(2026, 6, 1),
         messages: [
           _textMessage(
             id: 'day-one-a',
@@ -65,6 +66,66 @@ void main() {
 
     expect(find.text('May 22'), findsOneWidget);
     expect(find.text('May 23'), findsOneWidget);
+  });
+
+  testWidgets('renders system text as a Telegram-style service chip', (
+    tester,
+  ) async {
+    final scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      _ThreadHost(
+        scrollController: scrollController,
+        messages: [
+          _textMessage(
+            id: 'system-status',
+            text: 'Connected to office / support',
+            author: NavivoxMessageAuthor.system,
+          ),
+        ],
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('transcript-system-service-message')),
+      findsOneWidget,
+    );
+    expect(find.text('Connected to office / support'), findsOneWidget);
+  });
+
+  testWidgets('uses Telegram-style Today and Yesterday date chip labels', (
+    tester,
+  ) async {
+    final scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+    final now = DateTime.utc(2026, 5, 23, 14);
+
+    await tester.pumpWidget(
+      _ThreadHost(
+        scrollController: scrollController,
+        dateLabelNow: now,
+        messages: [
+          _textMessage(
+            id: 'yesterday',
+            text: 'Yesterday update',
+            author: NavivoxMessageAuthor.assistant,
+            createdAt: DateTime.utc(2026, 5, 22, 9),
+          ),
+          _textMessage(
+            id: 'today',
+            text: 'Today update',
+            author: NavivoxMessageAuthor.user,
+            createdAt: DateTime.utc(2026, 5, 23, 10),
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Yesterday'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('May 22'), findsNothing);
+    expect(find.text('May 23'), findsNothing);
   });
 
   testWidgets('renders typing indicator and exposes pause for active stream', (
@@ -94,6 +155,19 @@ void main() {
       find.byKey(const ValueKey('assistant-typing-indicator')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('assistant-typing-dot-0')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('assistant-typing-dot-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('assistant-typing-dot-2')),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
 
     await tester.longPress(find.text('Drafting the deployment plan.'));
     await tester.pump();
@@ -147,6 +221,7 @@ class _ThreadHost extends StatelessWidget {
     required this.scrollController,
     required this.messages,
     this.assistantTypingLabel,
+    this.dateLabelNow,
     this.forwardTargets = const [],
     this.onForward,
     this.onCancelActiveTurn,
@@ -155,6 +230,7 @@ class _ThreadHost extends StatelessWidget {
   final ScrollController scrollController;
   final List<NavivoxChatMessage> messages;
   final String? assistantTypingLabel;
+  final DateTime? dateLabelNow;
   final List<NavivoxProfileContact> forwardTargets;
   final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward;
@@ -168,6 +244,7 @@ class _ThreadHost extends StatelessWidget {
           messages: messages,
           scrollController: scrollController,
           assistantTypingLabel: assistantTypingLabel,
+          dateLabelNow: dateLabelNow,
           forwardTargets: forwardTargets,
           onForward: onForward,
           onCancelActiveTurn: onCancelActiveTurn,

@@ -44,6 +44,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Message actions'), findsOneWidget);
+    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
     expect(find.byType(SelectableText), findsOneWidget);
     expect(find.text('Copy text'), findsOneWidget);
 

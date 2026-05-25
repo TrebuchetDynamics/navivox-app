@@ -12,6 +12,7 @@ class TranscriptMessageActionSheet extends StatelessWidget {
     this.onCopyText,
     this.onReadAloud,
     this.onForward,
+    this.scrollController,
     super.key,
   });
 
@@ -20,11 +21,13 @@ class TranscriptMessageActionSheet extends StatelessWidget {
   final FutureOr<void> Function()? onCopyText;
   final FutureOr<void> Function()? onReadAloud;
   final void Function(NavivoxProfileContact target)? onForward;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: ListView(
+        controller: scrollController,
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [

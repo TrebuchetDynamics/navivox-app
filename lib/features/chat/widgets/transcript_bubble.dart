@@ -164,40 +164,49 @@ class TranscriptBubble extends StatelessWidget {
     );
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) => TranscriptMessageActionSheet(
-        presentation: presentation,
-        onPauseStream: !canCancel
-            ? null
-            : () {
-                Navigator.of(sheetContext).pop();
-                onCancelActiveTurn?.call();
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  SnackBar(content: Text(presentation.pauseSnackbar)),
-                );
-              },
-        onCopyText: () async {
-          await Clipboard.setData(ClipboardData(text: presentation.text));
-          if (!sheetContext.mounted) return;
-          Navigator.of(sheetContext).pop();
-          ScaffoldMessenger.maybeOf(
-            context,
-          )?.showSnackBar(SnackBar(content: Text(presentation.copySnackbar)));
-        },
-        onReadAloud: tts == null
-            ? null
-            : () async {
-                await tts.speak(presentation.text);
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.52,
+        minChildSize: 0.28,
+        maxChildSize: 0.92,
+        builder: (sheetContext, scrollController) =>
+            TranscriptMessageActionSheet(
+              presentation: presentation,
+              scrollController: scrollController,
+              onPauseStream: !canCancel
+                  ? null
+                  : () {
+                      Navigator.of(sheetContext).pop();
+                      onCancelActiveTurn?.call();
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        SnackBar(content: Text(presentation.pauseSnackbar)),
+                      );
+                    },
+              onCopyText: () async {
+                await Clipboard.setData(ClipboardData(text: presentation.text));
                 if (!sheetContext.mounted) return;
                 Navigator.of(sheetContext).pop();
                 ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                  SnackBar(content: Text(presentation.readAloudSnackbar)),
+                  SnackBar(content: Text(presentation.copySnackbar)),
                 );
               },
-        onForward: (target) {
-          Navigator.of(sheetContext).pop();
-          onForward?.call(message, target);
-        },
+              onReadAloud: tts == null
+                  ? null
+                  : () async {
+                      await tts.speak(presentation.text);
+                      if (!sheetContext.mounted) return;
+                      Navigator.of(sheetContext).pop();
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        SnackBar(content: Text(presentation.readAloudSnackbar)),
+                      );
+                    },
+              onForward: (target) {
+                Navigator.of(sheetContext).pop();
+                onForward?.call(message, target);
+              },
+            ),
       ),
     );
   }
@@ -275,9 +284,106 @@ class _TextBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final presentation = TranscriptTextMessagePresentation.fromMessage(message);
-    return Text(
-      presentation.text,
-      style: TextStyle(color: textColor, fontSize: 15),
+    final linkPreview = _TranscriptLinkPreview.maybeFrom(presentation.text);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          presentation.text,
+          style: TextStyle(color: textColor, fontSize: 15),
+        ),
+        if (linkPreview != null) ...[
+          const SizedBox(height: 8),
+          _TelegramLinkPreview(linkPreview: linkPreview, textColor: textColor),
+        ],
+      ],
+    );
+  }
+}
+
+class _TranscriptLinkPreview {
+  const _TranscriptLinkPreview({
+    required this.url,
+    required this.host,
+    required this.summary,
+  });
+
+  static final _urlPattern = RegExp(
+    r'https?:\/\/[^\s<>()]+',
+    caseSensitive: false,
+  );
+
+  final String url;
+  final String host;
+  final String summary;
+
+  static _TranscriptLinkPreview? maybeFrom(String text) {
+    final match = _urlPattern.firstMatch(text);
+    if (match == null) return null;
+    final url = match.group(0)!.replaceFirst(RegExp(r'[\],.!?;:]+$'), '');
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+    final pathAndQuery = [
+      if (uri.path.isNotEmpty) uri.path,
+      if (uri.query.isNotEmpty) '?${uri.query}',
+    ].join();
+    return _TranscriptLinkPreview(
+      url: url,
+      host: uri.host,
+      summary: pathAndQuery.isEmpty ? url : pathAndQuery,
+    );
+  }
+}
+
+class _TelegramLinkPreview extends StatelessWidget {
+  const _TelegramLinkPreview({required this.linkPreview, this.textColor});
+
+  final _TranscriptLinkPreview linkPreview;
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final foreground = textColor ?? theme.colorScheme.onSurface;
+    return Semantics(
+      label: 'Link preview for ${linkPreview.host}',
+      child: Container(
+        key: const ValueKey('transcript-link-preview'),
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        decoration: BoxDecoration(
+          color: foreground.withValues(alpha: 0.06),
+          border: Border(left: BorderSide(color: accent, width: 3)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              linkPreview.host,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              linkPreview.summary,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: foreground.withValues(alpha: 0.72),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

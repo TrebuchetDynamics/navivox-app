@@ -8,6 +8,7 @@ import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_event.dart';
 import '../../../router/app_routes.dart';
+import '../../profile_contacts/profile_contact_avatar.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../../voice/services/default_voice_capture_service.dart';
 import '../../voice/services/text_to_speech_service.dart';
@@ -116,17 +117,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Navigator.of(context).maybePop();
           },
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(presentation.appBarTitle),
-            if (presentation.appBarSubtitle != null)
-              Text(
-                presentation.appBarSubtitle!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium,
+            if (activeProfile != null) ...[
+              ProfileContactAvatar(
+                key: const ValueKey('chat-active-profile-avatar'),
+                contact: activeProfile,
+                radius: 18,
               ),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    presentation.appBarTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (presentation.appBarSubtitle != null)
+                    Text(
+                      presentation.appBarSubtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -190,12 +209,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final theme = Theme.of(context);
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: ListView(
-            shrinkWrap: true,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.64,
+          minChildSize: 0.24,
+          maxChildSize: 0.90,
+          builder: (context, scrollController) => ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
               Text(
                 presentation.chatInfoTitle,

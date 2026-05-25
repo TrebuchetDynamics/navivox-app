@@ -40,6 +40,76 @@ void main() {
     },
   );
 
+  testWidgets('shows a Telegram-style jump-to-latest button when scrolled up', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_FrameHost(messages: _messages(60)));
+    await tester.pumpAndSettle();
+
+    final position = _threadScrollPosition(tester);
+    expect(position.pixels, position.maxScrollExtent);
+    expect(
+      find.byKey(const ValueKey('transcript-jump-to-bottom')),
+      findsNothing,
+    );
+
+    position.jumpTo(position.maxScrollExtent - 240);
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('transcript-jump-to-bottom')),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Jump to latest message'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('transcript-jump-to-bottom')));
+    await tester.pumpAndSettle();
+
+    expect(position.pixels, position.maxScrollExtent);
+    expect(
+      find.byKey(const ValueKey('transcript-jump-to-bottom')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'keeps reader position and badges new messages when scrolled up',
+    (tester) async {
+      await tester.pumpWidget(const _UpdatingFrameHost());
+      await tester.pumpAndSettle();
+
+      final position = _threadScrollPosition(tester);
+      position.jumpTo(position.maxScrollExtent - 240);
+      await tester.pump();
+      final readerPosition = position.pixels;
+
+      await tester.tap(find.text('Append message'));
+      await tester.pumpAndSettle();
+
+      final updatedPosition = _threadScrollPosition(tester);
+      expect(updatedPosition.pixels, readerPosition);
+      expect(updatedPosition.pixels, lessThan(updatedPosition.maxScrollExtent));
+      expect(
+        find.byKey(const ValueKey('transcript-jump-to-bottom')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('transcript-jump-to-bottom-badge')),
+        findsOneWidget,
+      );
+      expect(find.text('1'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('transcript-jump-to-bottom')));
+      await tester.pumpAndSettle();
+
+      expect(updatedPosition.pixels, updatedPosition.maxScrollExtent);
+      expect(
+        find.byKey(const ValueKey('transcript-jump-to-bottom-badge')),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('owns composer controller lifecycle and sends typed text', (
     tester,
   ) async {
