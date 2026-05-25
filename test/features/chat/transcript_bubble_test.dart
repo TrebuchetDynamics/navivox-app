@@ -78,6 +78,123 @@ void main() {
     expect(find.text('/setup?tab=android'), findsOneWidget);
   });
 
+  testWidgets('renders Telegram-style inline text formatting', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'inline-format-1',
+              text: 'Use *bold*, _italic_, and `code` safely.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    final formatted = tester.widget<Text>(
+      find.byKey(const ValueKey('transcript-formatted-inline-text')),
+    );
+    final rootSpan = formatted.textSpan!;
+
+    expect(rootSpan.toPlainText(), 'Use bold, italic, and code safely.');
+    expect(_spanFor(rootSpan, 'bold')?.style?.fontWeight, FontWeight.w700);
+    expect(_spanFor(rootSpan, 'italic')?.style?.fontStyle, FontStyle.italic);
+    expect(_spanFor(rootSpan, 'code')?.style?.fontFamily, 'monospace');
+  });
+
+  testWidgets('renders Telegram-style blockquotes in text bubbles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'quote-1',
+              text: 'Context:\n> Keep the deployment reversible\nNext step.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Context:'), findsOneWidget);
+    expect(find.text('Next step.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('transcript-blockquote')), findsOneWidget);
+    expect(find.text('Keep the deployment reversible'), findsOneWidget);
+  });
+
+  testWidgets('renders Telegram-style bullet lists in text bubbles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'list-1',
+              text: 'Checklist:\n- Back up config\n- Restart service\nDone.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Checklist:'), findsOneWidget);
+    expect(find.text('Done.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transcript-bullet-list')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('transcript-bullet-marker')),
+      findsNWidgets(2),
+    );
+    expect(find.text('Back up config'), findsOneWidget);
+    expect(find.text('Restart service'), findsOneWidget);
+  });
+
+  testWidgets('renders Telegram-style numbered lists in text bubbles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'numbered-list-1',
+              text: 'Plan:\n1. Back up config\n2. Restart service\nDone.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Plan:'), findsOneWidget);
+    expect(find.text('Done.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transcript-numbered-list')),
+      findsOneWidget,
+    );
+    expect(find.text('1.'), findsOneWidget);
+    expect(find.text('2.'), findsOneWidget);
+    expect(find.text('Back up config'), findsOneWidget);
+    expect(find.text('Restart service'), findsOneWidget);
+  });
+
   testWidgets('renders Telegram-style fenced code blocks in text bubbles', (
     tester,
   ) async {
@@ -236,6 +353,17 @@ void main() {
 
     expect(forwardedTo, _support);
   });
+}
+
+TextSpan? _spanFor(InlineSpan root, String text) {
+  if (root is TextSpan) {
+    if (root.text == text) return root;
+    for (final child in root.children ?? const <InlineSpan>[]) {
+      final match = _spanFor(child, text);
+      if (match != null) return match;
+    }
+  }
+  return null;
 }
 
 NavivoxChatMessage _textMessage({

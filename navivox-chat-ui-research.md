@@ -181,7 +181,10 @@ Telegram backend or third-party chat state manager:
   dominate the visible transcript.
 - `v_chat_bubbles` block formatting: fenced code in text turns renders as a
   Telegram-style code card with language header, monospace body, and copy
-  affordance.
+  affordance; quoted `>` lines render as compact blockquote cards with an
+  accent rail; bullet and numbered lists render with Telegram-style compact
+  markers; inline `*bold*`, `_italic_`, and `` `code` `` markers render as
+  styled spans without exposing markup characters in the transcript.
 - Telegram-style draggable sheets: use Flutter `DraggableScrollableSheet` for
   chat info and message actions so diagnostics and actions can expand without
   taking over the transcript.
