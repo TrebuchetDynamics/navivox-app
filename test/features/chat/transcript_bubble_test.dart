@@ -51,6 +51,35 @@ void main() {
     expect(paused, isTrue);
   });
 
+  testWidgets('renders Telegram-style sent tick for user messages', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TranscriptBubble(
+              message: _textMessage(
+                id: 'user-sent-1',
+                text: 'sent text',
+                author: NavivoxMessageAuthor.user,
+              ),
+              isUser: true,
+              showTail: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('sent text'), findsOneWidget);
+      expect(find.byIcon(Icons.done_all), findsOneWidget);
+      expect(find.bySemanticsLabel('Sent'), findsOneWidget);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('does not show pause action for user messages', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

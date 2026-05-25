@@ -58,7 +58,7 @@ class ChatScreenPresentation {
       selectedAgent: selectedAgent,
       appBarTitle: activeProfile?.displayName ?? activeServer?.name ?? 'Chats',
       appBarSubtitle: activeProfile != null
-          ? '${activeProfile.serverLabel} • ${profileHealthLabel(activeProfile.health)}'
+          ? _profileStatusBar(activeProfile)
           : activeServer?.status,
       infoRows: _infoRows(
         profile: activeProfile,
@@ -117,6 +117,45 @@ class ChatScreenPresentation {
       NavivoxProfileHealth.needsAuth => 'auth required',
       NavivoxProfileHealth.warning => 'warning',
     };
+  }
+
+  static String _profileStatusBar(NavivoxProfileContact profile) {
+    return [
+      profile.serverLabel,
+      profileHealthLabel(profile.health),
+      ..._projectStatusSegments(profile),
+    ].join(' • ');
+  }
+
+  static List<String> _projectStatusSegments(NavivoxProfileContact profile) {
+    final segments = <String>[];
+    if (profile.workspaceRootCount > 0) {
+      segments.add(
+        '${profile.workspaceRootCount} ${_plural(profile.workspaceRootCount, 'project', 'projects')}',
+      );
+    }
+    if (profile.workspaceRootsError > 0) {
+      segments.add(
+        '${profile.workspaceRootsError} ${_plural(profile.workspaceRootsError, 'error', 'errors')}',
+      );
+    }
+    if (profile.workspaceRootsWarning > 0) {
+      segments.add(
+        '${profile.workspaceRootsWarning} ${_plural(profile.workspaceRootsWarning, 'warning', 'warnings')}',
+      );
+    }
+    if (segments.isEmpty && !profile.workspaceRootsOk) {
+      segments.add('project attention needed');
+    }
+    return segments;
+  }
+
+  static String _projectStatusLabel(NavivoxProfileContact profile) {
+    return _projectStatusSegments(profile).join(' • ');
+  }
+
+  static String _plural(int count, String one, String many) {
+    return count == 1 ? one : many;
   }
 
   static String? _voiceDisabledReason({
@@ -215,6 +254,12 @@ class ChatScreenPresentation {
           label: 'Status',
           value: profileHealthLabel(profile.health),
         ),
+        if (_projectStatusSegments(profile).isNotEmpty)
+          ChatInfoRowPresentation(
+            kind: ChatInfoRowKind.projects,
+            label: 'Projects',
+            value: _projectStatusLabel(profile),
+          ),
       ]);
     } else if (server != null) {
       rows.addAll([
@@ -257,6 +302,7 @@ enum ChatInfoRowKind {
   server,
   serverId,
   status,
+  projects,
   agent,
   selectProfile,
 }

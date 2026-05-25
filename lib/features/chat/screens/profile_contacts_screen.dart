@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
@@ -419,18 +418,33 @@ class _ProfileContactTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            contact.micAvailable ? Icons.mic : Icons.mic_off,
-            size: 18,
-            color: contact.micAvailable
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).disabledColor,
-          ),
-          if (contact.latestAt != null)
+          if (summary.latestTimeLabel.isNotEmpty)
             Text(
-              DateFormat.Hm().format(contact.latestAt!),
+              summary.latestTimeLabel,
               style: Theme.of(context).textTheme.labelSmall,
             ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                contact.micAvailable ? Icons.mic : Icons.mic_off,
+                size: 16,
+                color: contact.micAvailable
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).disabledColor,
+              ),
+              if (summary.attentionCount > 0) ...[
+                const SizedBox(width: 4),
+                _AttentionCountBadge(
+                  key: ValueKey(
+                    'profile-attention-${contact.serverId}-${contact.profileId}',
+                  ),
+                  count: summary.attentionCount,
+                ),
+              ],
+            ],
+          ),
         ],
       ),
       onTap: onTap,
@@ -464,6 +478,36 @@ IconData _detailActionIcon(ProfileContactDetailActionKind kind) {
     ProfileContactDetailActionKind.openMemory => Icons.psychology_alt_outlined,
     ProfileContactDetailActionKind.editProfile => Icons.edit,
   };
+}
+
+class _AttentionCountBadge extends StatelessWidget {
+  const _AttentionCountBadge({required this.count, super.key});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: '$count attention ${count == 1 ? 'item' : 'items'}',
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.error,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          count.toString(),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onError,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ServerChip extends StatelessWidget {

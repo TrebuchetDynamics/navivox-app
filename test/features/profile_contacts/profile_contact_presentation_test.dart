@@ -143,6 +143,53 @@ void main() {
     },
   );
 
+  test('formats contact list timestamps like Telegram chat rows', () {
+    final now = DateTime.now();
+
+    expect(
+      ProfileContactPresentation(
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'today',
+          displayName: 'Today',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          latestAt: DateTime(now.year, now.month, now.day, 9, 7),
+        ),
+      ).latestTimeLabel,
+      '09:07',
+    );
+    expect(
+      ProfileContactPresentation(
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'older',
+          displayName: 'Older',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          latestAt: DateTime(now.year, 1, 2, 9, 7),
+        ),
+      ).latestTimeLabel,
+      'Jan 2',
+    );
+    expect(
+      ProfileContactPresentation(
+        NavivoxProfileContact(
+          serverId: 'local',
+          profileId: 'last-year',
+          displayName: 'Last Year',
+          serverLabel: 'local',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+          latestAt: DateTime(now.year - 1, 12, 31, 9, 7),
+        ),
+      ).latestTimeLabel,
+      '12/31/${now.year - 1}',
+    );
+  });
+
   test('summarizes auth and workspace problems with Goncho wording', () {
     const contact = NavivoxProfileContact(
       serverId: 'office',

@@ -13,13 +13,13 @@ class TranscriptThreadPresentation {
     final rows = <TranscriptThreadMessageRowPresentation>[];
     for (var index = 0; index < messages.length; index += 1) {
       final message = messages[index];
-      final previous = index > 0 ? messages[index - 1] : null;
+      final next = index < messages.length - 1 ? messages[index + 1] : null;
       final isUser = message.author == NavivoxMessageAuthor.user;
       rows.add(
         TranscriptThreadMessageRowPresentation(
           message: message,
           isUser: isUser,
-          showTail: previous == null || previous.author != message.author,
+          showTail: next == null || next.author != message.author,
           canCancelActiveTurn:
               assistantTypingLabel != null &&
               message.author == NavivoxMessageAuthor.assistant,

@@ -79,6 +79,10 @@ void main() {
     expect(find.text('office'), findsOneWidget);
     expect(find.text('2 roots'), findsOneWidget);
     expect(find.text('auth'), findsWidgets);
+    expect(find.byKey(const ValueKey('profile-attention-office-support')), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
+    expect(find.text('May 16'), findsWidgets);
+    expect(find.text('May 15'), findsOneWidget);
     expect(find.byTooltip('Add profile'), findsOneWidget);
   });
 

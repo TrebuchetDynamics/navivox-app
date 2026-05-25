@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/protocol/navivox_event.dart';
@@ -65,18 +66,67 @@ class TranscriptThread extends StatelessWidget {
           return _TypingIndicator(label: presentation.typingIndicatorLabel!);
         }
         final row = presentation.rows[index];
-        return TranscriptBubble(
-          message: row.message,
-          isUser: row.isUser,
-          showTail: row.showTail,
-          forwardTargets: forwardTargets,
-          onForward: onForward,
-          textToSpeechService: textToSpeechService,
-          onCancelActiveTurn: row.canCancelActiveTurn
-              ? onCancelActiveTurn
-              : null,
+        final previousMessage = index > 0
+            ? presentation.rows[index - 1].message
+            : null;
+        final showDateSeparator =
+            previousMessage == null ||
+            !_sameCalendarDay(previousMessage.createdAt, row.message.createdAt);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showDateSeparator) _DateSeparator(date: row.message.createdAt),
+            TranscriptBubble(
+              message: row.message,
+              isUser: row.isUser,
+              showTail: row.showTail,
+              forwardTargets: forwardTargets,
+              onForward: onForward,
+              textToSpeechService: textToSpeechService,
+              onCancelActiveTurn: row.canCancelActiveTurn
+                  ? onCancelActiveTurn
+                  : null,
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+bool _sameCalendarDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class _DateSeparator extends StatelessWidget {
+  const _DateSeparator({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Container(
+        key: ValueKey(
+          'transcript-date-separator-${date.year}-${date.month}-${date.day}',
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.86,
+          ),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          DateFormat.MMMd().format(date),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

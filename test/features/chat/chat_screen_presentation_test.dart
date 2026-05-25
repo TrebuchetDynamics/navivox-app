@@ -16,6 +16,8 @@ void main() {
     serverLabel: 'Local',
     health: NavivoxProfileHealth.online,
     latestPreview: 'Ready',
+    workspaceRootCount: 3,
+    workspaceRootsWarning: 1,
     micAvailable: true,
     activeTurnState: 'streaming',
   );
@@ -75,7 +77,10 @@ void main() {
     );
 
     expect(presentation.appBarTitle, 'Mineru Builder');
-    expect(presentation.appBarSubtitle, 'Local • online');
+    expect(
+      presentation.appBarSubtitle,
+      'Local • online • 3 projects • 1 warning',
+    );
     expect(presentation.chatInfoTooltip, 'Chat info');
     expect(presentation.chatInfoTitle, 'Chat info');
     expect(presentation.activeProfile, activeProfile);
@@ -102,6 +107,7 @@ void main() {
         'Server:Local',
         'Server ID:srv1',
         'Status:online',
+        'Projects:3 projects • 1 warning',
         'Agent:Architect',
       ]),
     );
@@ -118,6 +124,41 @@ void main() {
       'commandWord:Command word:navi:none',
       'howItWorks:How it works:Tap once to capture a turn. Use command mode for local actions like switching profiles, stop, cancel, help, or settings.:none',
     ]);
+  });
+
+  test('summarizes project errors before warnings in status copy', () {
+    const profile = NavivoxProfileContact(
+      serverId: 'srv1',
+      profileId: 'mineru',
+      displayName: 'Mineru Builder',
+      serverLabel: 'Local',
+      health: NavivoxProfileHealth.warning,
+      latestPreview: 'Ready',
+      workspaceRootCount: 4,
+      workspaceRootsWarning: 2,
+      workspaceRootsError: 1,
+      micAvailable: true,
+    );
+
+    final presentation = ChatScreenPresentation.fromState(
+      state: const NavivoxChannelState(
+        servers: [local],
+        activeServerId: 'srv1',
+        profileContacts: [profile],
+        selectedProfileContactKey: 'srv1::mineru',
+      ),
+      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      localVoiceCaptureAvailable: true,
+    );
+
+    expect(
+      presentation.appBarSubtitle,
+      'Local • warning • 4 projects • 1 error • 2 warnings',
+    );
+    expect(
+      presentation.infoRows.map((row) => '${row.label}:${row.value}'),
+      contains('Projects:4 projects • 1 error • 2 warnings'),
+    );
   });
 
   test('derives continuous voice availability and recovery copy', () {

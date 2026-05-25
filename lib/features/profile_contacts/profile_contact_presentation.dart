@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../../core/channel/navivox_channel.dart';
 
 const _avatarColorSlots = 18;
@@ -52,6 +54,19 @@ class ProfileContactPresentation {
     final preview = contact.latestPreview.trim();
     return preview.isEmpty ? 'no recent activity' : preview;
   }
+
+  String get latestTimeLabel {
+    final latestAt = contact.latestAt;
+    if (latestAt == null) return '';
+    final now = DateTime.now();
+    final latestDay = DateTime(latestAt.year, latestAt.month, latestAt.day);
+    final today = DateTime(now.year, now.month, now.day);
+    if (latestDay == today) return DateFormat.Hm().format(latestAt);
+    if (latestAt.year == now.year) return DateFormat.MMMd().format(latestAt);
+    return DateFormat.yMd().format(latestAt);
+  }
+
+  int get attentionCount => contact.attentionBadges.length;
 
   String get avatarInitial {
     final runes = _avatarLabel.runes;

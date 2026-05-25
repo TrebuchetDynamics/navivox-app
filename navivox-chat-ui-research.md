@@ -38,14 +38,21 @@ Use these as current, source-backed references:
 - `babakcode/flutter_chat`: lightweight visual reference for a Telegram-like
   Flutter chat app, useful for layout study but not a production architecture
   donor.
+- `TelwareSW/telware_cross_platform`: verified as the reachable Telware
+  Cross-Platform source. Useful as a visual/reference donor for message status
+  ticks, chat timestamp formatting, media/message type breadth, and dense chat
+  navigation; do not adopt its persistence or Telegram-domain architecture into
+  Navivox.
+- `WandsonDev/teleflutter`: verified as a Dart/Flutter MTProto client lead.
+  Defer unless Navivox explicitly chooses Telegram network interoperability;
+  current product chat remains Gormes-owned.
 
 ### 2.2 User-Supplied References To Verify Before Use
 
-The operator also named Telware Cross-Platform, telega2,
-`telegram_ios_ui_kit`, and `teleflutter`. Treat these as research leads until a
-builder can verify source URL, license, maintenance state, platform support, and
-API shape. Do not add them as dependencies or cite their behavior in product
-contracts without that evidence.
+The operator also named telega2 and `telegram_ios_ui_kit`. Treat these as
+research leads until a builder can verify source URL, license, maintenance
+state, platform support, and API shape. Do not add them as dependencies or cite
+their behavior in product contracts without that evidence.
 
 ### 2.3 Product Translation
 
@@ -127,6 +134,29 @@ The package must allow:
 Fallback: if package behavior, license, accessibility, performance, or theming
 is unsuitable, keep the current simple adapter and implement local Telegram-like
 widgets directly.
+
+### 3.2.1 Package Gate — `v_chat_bubbles`
+
+Decision: defer adoption and keep local widgets for the current polish slice.
+
+Evidence from the current app:
+
+- `TranscriptBubble` already owns local user/assistant alignment, grouped tails,
+  compact timestamps, long-press actions, forward targets, TTS/read-aloud, and
+  pause-stream affordances without a third-party chat state manager.
+- `TranscriptThread` already updates a single assistant row plus a typing
+  indicator, preserving Gormes gateway event ownership and stable message keys.
+- Tool calls, safety notices, approvals, and voice transcript bubbles are
+  custom Navivox/Gormes event surfaces; forcing them through a package before a
+  dedicated adapter would risk rendering tool evidence as generic chat prose.
+- The focused suite covers the current local path:
+  `flutter test test/features/chat test/features/servers test/router/app_router_test.dart`.
+
+Adoption gate for a future builder: only add `v_chat_bubbles` after a small
+adapter proves `VBubbleStyle.telegram` can wrap the existing state model,
+`VCustomBubble` can host ToolCallCard/safety/voice widgets accessibly, and long
+transcripts remain performant on mobile and web. Until then, the package is a
+visual reference, not a dependency.
 
 ### 3.3 Text Streaming Renderer
 

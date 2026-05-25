@@ -30,10 +30,10 @@ void main() {
     expect(presentation.typingIndicatorLabel, 'Mineru is typing…');
     expect(presentation.itemCount, 6);
     expect(_rowSummary(presentation.rows), [
-      'assistant-1:user=false:tail=true:cancel=true',
-      'assistant-2:user=false:tail=false:cancel=true',
-      'user-1:user=true:tail=true:cancel=false',
-      'user-2:user=true:tail=false:cancel=false',
+      'assistant-1:user=false:tail=false:cancel=true',
+      'assistant-2:user=false:tail=true:cancel=true',
+      'user-1:user=true:tail=false:cancel=false',
+      'user-2:user=true:tail=true:cancel=false',
       'assistant-3:user=false:tail=true:cancel=true',
     ]);
   });

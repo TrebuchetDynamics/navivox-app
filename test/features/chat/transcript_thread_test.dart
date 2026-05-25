@@ -31,6 +31,42 @@ void main() {
     expect(find.text('Start a conversation'), findsOneWidget);
   });
 
+  testWidgets('adds Telegram-style date chips at calendar boundaries', (
+    tester,
+  ) async {
+    final scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      _ThreadHost(
+        scrollController: scrollController,
+        messages: [
+          _textMessage(
+            id: 'day-one-a',
+            text: 'First day',
+            author: NavivoxMessageAuthor.assistant,
+            createdAt: DateTime.utc(2026, 5, 22, 9),
+          ),
+          _textMessage(
+            id: 'day-one-b',
+            text: 'Same day',
+            author: NavivoxMessageAuthor.user,
+            createdAt: DateTime.utc(2026, 5, 22, 10),
+          ),
+          _textMessage(
+            id: 'day-two',
+            text: 'Next day',
+            author: NavivoxMessageAuthor.assistant,
+            createdAt: DateTime.utc(2026, 5, 23, 8),
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('May 22'), findsOneWidget);
+    expect(find.text('May 23'), findsOneWidget);
+  });
+
   testWidgets('renders typing indicator and exposes pause for active stream', (
     tester,
   ) async {
@@ -145,12 +181,13 @@ NavivoxChatMessage _textMessage({
   required String id,
   required String text,
   required NavivoxMessageAuthor author,
+  DateTime? createdAt,
 }) {
   return NavivoxChatMessage(
     id: id,
     author: author,
     kind: NavivoxMessageKind.text,
-    createdAt: DateTime.utc(2026, 5, 23, 11, 15),
+    createdAt: createdAt ?? DateTime.utc(2026, 5, 23, 11, 15),
     text: text,
   );
 }

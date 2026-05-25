@@ -123,6 +123,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             if (presentation.appBarSubtitle != null)
               Text(
                 presentation.appBarSubtitle!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium,
               ),
           ],
@@ -220,6 +222,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ChatInfoRowKind.server => Icons.dns,
       ChatInfoRowKind.serverId => Icons.tag,
       ChatInfoRowKind.status => Icons.circle,
+      ChatInfoRowKind.projects => Icons.folder_open,
       ChatInfoRowKind.agent => Icons.smart_toy,
       ChatInfoRowKind.selectProfile => Icons.chat_bubble_outline,
     };

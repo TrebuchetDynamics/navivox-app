@@ -80,13 +80,13 @@ class TranscriptBubble extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(12),
-                        topRight: const Radius.circular(12),
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
                         bottomLeft: Radius.circular(
-                          isUser ? 12 : (showTail ? 4 : 12),
+                          isUser ? 16 : (showTail ? 4 : 16),
                         ),
                         bottomRight: Radius.circular(
-                          isUser ? (showTail ? 4 : 12) : 12,
+                          isUser ? (showTail ? 4 : 16) : 16,
                         ),
                       ),
                     ),
@@ -99,9 +99,31 @@ class TranscriptBubble extends StatelessWidget {
                           alignment: Alignment.bottomRight,
                           child: Padding(
                             padding: const EdgeInsets.only(left: 8, top: 2),
-                            child: Text(
-                              DateFormat.Hm().format(message.createdAt),
-                              style: TextStyle(color: timeColor, fontSize: 11),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  DateFormat.Hm().format(message.createdAt),
+                                  style: TextStyle(
+                                    color: timeColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                if (isUser) ...[
+                                  const SizedBox(width: 3),
+                                  Semantics(
+                                    container: true,
+                                    label: 'Sent',
+                                    child: ExcludeSemantics(
+                                      child: Icon(
+                                        Icons.done_all,
+                                        size: 14,
+                                        color: timeColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
