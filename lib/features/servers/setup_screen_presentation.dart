@@ -6,19 +6,26 @@ class SetupScreenPresentation {
   String get title => 'Connect to Gormes';
 
   String get pairingInstructions =>
-      'Scan/import the QR from `gormes navivox pair`; use '
-      '`gormes navivox connect-info` only as fallback.';
+      'Run `gormes navivox pair`. On Android, Gormes can open Navivox '
+      'directly; QR/import and `gormes navivox connect-info` are fallbacks.';
 
   String get networkHint =>
       'Android emulator: use http://10.0.2.2:<port> for a host gateway. '
       'On a physical Android device, use the host LAN, VPN, or Tailscale '
       'URL from connect-info.';
 
-  String get baseUrlFieldLabel => 'Gateway base URL';
+  String get addressFieldLabel => 'Gateway address';
 
-  String get baseUrlFieldSemanticLabel => 'Gateway base URL field';
+  String get addressFieldSemanticLabel => 'Gateway address field';
 
-  String get baseUrlFieldSemanticHint => 'Enter the Gormes gateway base URL.';
+  String get addressFieldSemanticHint =>
+      'Enter the Gormes gateway host or address.';
+
+  String get portFieldLabel => 'Port';
+
+  String get portFieldSemanticLabel => 'Gateway port field';
+
+  String get portFieldSemanticHint => 'Enter the Gormes gateway port.';
 
   String get tokenFieldLabel => 'Pairing token';
 
@@ -43,6 +50,9 @@ class SetupScreenPresentation {
     }
     return const SetupScreenNotice.info('Imported QR connection details.');
   }
+
+  SetupScreenNotice get connectIntentImportNotice =>
+      const SetupScreenNotice.info('Imported Navivox connection link.');
 
   SetupScreenNotice qrImportFailureNotice([String? detail]) {
     return SetupScreenNotice.error(

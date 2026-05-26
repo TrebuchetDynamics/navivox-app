@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:navivox/core/channel/navivox_channel.dart';
+import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
@@ -26,10 +27,22 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   final List<({String approvalId, bool approved})> approvalResponses = [];
   final List<({String field, Object? value})> configSetCalls = [];
   final List<({String name, String secret})> configSecretSetCalls = [];
+  final List<List<NavivoxConfigAdminChange>> configAdminValidateCalls = [];
+  final List<List<NavivoxConfigAdminChange>> configAdminDiffCalls = [];
+  final List<List<NavivoxConfigAdminChange>> configAdminApplyCalls = [];
+  bool _configAdminAvailable = false;
+  NavivoxConfigAdminResponse? _configAdminValidate;
+  NavivoxConfigAdminResponse? _configAdminDiff;
+  NavivoxConfigAdminResponse? _configAdminApply;
   String? lastSelectedAgentId;
   ({String serverId, String profileId})? selectedProfileScope;
   int agentListRequests = 0;
   NavivoxMemoryOverview? _memoryOverview;
+  NavivoxProfileSeedResult? _profileSeedDraft;
+  NavivoxProfileSeedResult? _profileSeedApply;
+  NavivoxVoiceProfilesResponse? _voiceProfiles;
+  NavivoxVoiceProfileValidationResponse? _voiceProfileValidation;
+  NavivoxRunRecordSnapshot? _runRecord;
   NavivoxMemorySearchResult? _memorySearch;
   NavivoxMemoryDetail? _memoryDetail;
   NavivoxMemoryActionResult? _memoryActionResult;
@@ -59,6 +72,12 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     })
   >
   memoryActionCalls = [];
+  final List<({String seed, bool apply, List<String> workspaceRoots})>
+  profileSeedCalls = [];
+  int voiceProfileRequests = 0;
+  final List<({String profileId, NavivoxProfileVoiceProfile voiceProfile})>
+  voiceProfileValidateCalls = [];
+  final List<String> runRecordCalls = [];
 
   @override
   NavivoxChannelState get state => _state;
@@ -101,6 +120,17 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     state = _state.copyWith(messages: map);
   }
 
+  void seedVoiceRuns(List<NavivoxVoiceRun> runs) {
+    final map = <String, NavivoxVoiceRun>{};
+    for (final run in runs) {
+      map[run.id] = run;
+    }
+    state = _state.copyWith(
+      voiceRuns: map,
+      activeVoiceRunId: runs.isEmpty ? null : runs.last.id,
+    );
+  }
+
   void emitApprovalRequest(NavivoxApprovalRequest request) {
     _approvals.add(request);
   }
@@ -121,6 +151,39 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _memoryOverview = overview;
   }
 
+  void seedProfileSeedResults({
+    required NavivoxProfileSeedResult draft,
+    required NavivoxProfileSeedResult apply,
+  }) {
+    _profileSeedDraft = draft;
+    _profileSeedApply = apply;
+  }
+
+  void seedVoiceProfiles(NavivoxVoiceProfilesResponse response) {
+    _voiceProfiles = response;
+  }
+
+  void seedVoiceProfileValidation(
+    NavivoxVoiceProfileValidationResponse response,
+  ) {
+    _voiceProfileValidation = response;
+  }
+
+  void seedRunRecord(NavivoxRunRecordSnapshot record) {
+    _runRecord = record;
+  }
+
+  void seedConfigAdminResponses({
+    required NavivoxConfigAdminResponse validate,
+    required NavivoxConfigAdminResponse diff,
+    required NavivoxConfigAdminResponse apply,
+  }) {
+    _configAdminAvailable = true;
+    _configAdminValidate = validate;
+    _configAdminDiff = diff;
+    _configAdminApply = apply;
+  }
+
   void seedMemorySearch(NavivoxMemorySearchResult result) {
     _memorySearch = result;
   }
@@ -137,7 +200,11 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   Stream<NavivoxApprovalRequest> get approvalRequests => _approvals.stream;
 
   @override
-  Future<void> connect({required String baseUrl, String? token}) async {}
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  }) async {}
 
   @override
   Future<void> disconnect() async {}
@@ -259,6 +326,95 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   void requestAgentList() => agentListRequests += 1;
 
   @override
+  Future<NavivoxProfileSeedResult> profileSeed({
+    required String seed,
+    bool apply = false,
+    List<String> workspaceRoots = const [],
+  }) async {
+    final normalizedRoots = workspaceRoots
+        .map((root) => root.trim())
+        .where((root) => root.isNotEmpty)
+        .toList(growable: false);
+    profileSeedCalls.add((
+      seed: seed.trim(),
+      apply: apply,
+      workspaceRoots: normalizedRoots,
+    ));
+    final result = apply ? _profileSeedApply : _profileSeedDraft;
+    if (result == null) {
+      throw StateError('profile seed result not seeded');
+    }
+    if (apply && result.contact.isNotEmpty) {
+      final contact = _profileContactFromJson(result.contact);
+      final contacts = [..._state.profileContacts];
+      final index = contacts.indexWhere(
+        (existing) => existing.key == contact.key,
+      );
+      if (index >= 0) {
+        contacts[index] = contact;
+      } else {
+        contacts.add(contact);
+      }
+      final servers = _upsertServer(_state.servers, contact);
+      state = _state.copyWith(
+        servers: servers,
+        activeServerId: contact.serverId,
+        profileContacts: contacts,
+        selectedProfileContactKey: contact.key,
+      );
+    }
+    return result;
+  }
+
+  @override
+  Future<NavivoxVoiceProfilesResponse> voiceProfiles() async {
+    voiceProfileRequests += 1;
+    return _voiceProfiles ??
+        const NavivoxVoiceProfilesResponse(
+          action: 'voice_profiles.get',
+          providerMatrix: NavivoxVoiceProviderMatrix(),
+        );
+  }
+
+  @override
+  Future<NavivoxVoiceProfileValidationResponse> validateVoiceProfile({
+    required String profileId,
+    required NavivoxProfileVoiceProfile voiceProfile,
+  }) async {
+    voiceProfileValidateCalls.add((
+      profileId: profileId.trim(),
+      voiceProfile: NavivoxProfileVoiceProfile.fromJson(voiceProfile.toJson()),
+    ));
+    return _voiceProfileValidation ??
+        NavivoxVoiceProfileValidationResponse(
+          action: 'voice_profiles.validate',
+          providerMatrix: const NavivoxVoiceProviderMatrix(),
+          valid: true,
+          validation: NavivoxVoiceProfileValidation(
+            profileId: profileId.trim(),
+            voiceProfile: voiceProfile,
+            valid: true,
+          ),
+        );
+  }
+
+  @override
+  Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
+    final id = runIdOrSessionId.trim();
+    runRecordCalls.add(id);
+    return _runRecord ??
+        NavivoxRunRecordSnapshot(
+          runId: id,
+          sessionId: '',
+          status: 'unavailable',
+          createdAt: null,
+          updatedAt: null,
+          completedAt: null,
+          raw: const {},
+        );
+  }
+
+  @override
   Future<NavivoxMemoryOverview> memoryOverview({
     String? serverId,
     String? profileId,
@@ -374,6 +530,58 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
+  bool get configAdminAvailable => _configAdminAvailable;
+
+  @override
+  Future<void> refreshConfigAdmin() async {}
+
+  @override
+  Future<NavivoxConfigAdminResponse> validateConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final copied = _copyConfigAdminChanges(changes);
+    configAdminValidateCalls.add(copied);
+    final response =
+        _configAdminValidate ??
+        const NavivoxConfigAdminResponse(
+          action: 'config.validate',
+          valid: true,
+        );
+    state = _state.copyWith(configDiff: response.snapshot);
+    return response;
+  }
+
+  @override
+  Future<NavivoxConfigAdminResponse> diffConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final copied = _copyConfigAdminChanges(changes);
+    configAdminDiffCalls.add(copied);
+    final response =
+        _configAdminDiff ??
+        const NavivoxConfigAdminResponse(action: 'config.diff', valid: true);
+    state = _state.copyWith(configDiff: response.snapshot);
+    return response;
+  }
+
+  @override
+  Future<NavivoxConfigAdminResponse> applyConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final copied = _copyConfigAdminChanges(changes);
+    configAdminApplyCalls.add(copied);
+    final response =
+        _configAdminApply ??
+        const NavivoxConfigAdminResponse(
+          action: 'config.apply',
+          valid: true,
+          applied: true,
+        );
+    state = _state.copyWith(configDiff: response.snapshot);
+    return response;
+  }
+
+  @override
   void sendConfigSet({required String field, required Object? value}) {
     configSetCalls.add((field: field, value: value));
   }
@@ -381,6 +589,124 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   void sendConfigSecretSet({required String name, required String secret}) {
     configSecretSetCalls.add((name: name, secret: secret));
+  }
+
+  List<NavivoxConfigAdminChange> _copyConfigAdminChanges(
+    List<NavivoxConfigAdminChange> changes,
+  ) {
+    return changes
+        .map(
+          (change) => NavivoxConfigAdminChange(
+            key: change.key,
+            value: change.value,
+            delete: change.delete,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  NavivoxProfileContact _profileContactFromJson(Map<String, Object?> json) {
+    final serverId = _stringField(json, 'server_id', fallback: 'local');
+    final profileId = _stringField(json, 'profile_id', fallback: 'default');
+    return NavivoxProfileContact(
+      serverId: serverId,
+      profileId: profileId,
+      displayName: _stringField(json, 'display_name', fallback: profileId),
+      serverLabel: _stringField(json, 'server_label', fallback: serverId),
+      health: _profileHealthFromJson(json['health']),
+      latestPreview: _stringField(
+        json,
+        'latest_preview',
+        fallback: 'Profile ready',
+      ),
+      latestPreviewKind: _stringField(
+        json,
+        'latest_preview_kind',
+        fallback: 'status',
+      ),
+      workspaceRootCount: _intField(json, 'workspace_root_count'),
+      workspaceRootsOk: _boolField(json, 'workspace_roots_ok', fallback: true),
+      workspaceRootsWarning: _intField(json, 'workspace_roots_warning'),
+      workspaceRootsError: _intField(json, 'workspace_roots_error'),
+      attentionBadges: _stringListField(json, 'attention_badges'),
+      micAvailable: _boolField(json, 'mic_available'),
+      activeTurnState: _stringField(
+        json,
+        'active_turn_state',
+        fallback: 'idle',
+      ),
+      avatarSeed: _stringField(
+        json,
+        'avatar_seed',
+        fallback: '$serverId:$profileId',
+      ),
+    );
+  }
+
+  List<NavivoxServer> _upsertServer(
+    List<NavivoxServer> servers,
+    NavivoxProfileContact contact,
+  ) {
+    if (servers.any((server) => server.id == contact.serverId)) {
+      return servers;
+    }
+    return [
+      ...servers,
+      NavivoxServer(
+        id: contact.serverId,
+        name: contact.serverLabel,
+        status: 'online',
+      ),
+    ];
+  }
+
+  NavivoxProfileHealth _profileHealthFromJson(Object? value) {
+    return switch (value?.toString().trim().toLowerCase()) {
+      'offline' => NavivoxProfileHealth.offline,
+      'needs_auth' ||
+      'needs-auth' ||
+      'needsauth' => NavivoxProfileHealth.needsAuth,
+      'warning' => NavivoxProfileHealth.warning,
+      _ => NavivoxProfileHealth.online,
+    };
+  }
+
+  String _stringField(
+    Map<String, Object?> json,
+    String key, {
+    required String fallback,
+  }) {
+    final text = json[key]?.toString().trim();
+    if (text == null || text.isEmpty) return fallback;
+    return text;
+  }
+
+  int _intField(Map<String, Object?> json, String key) {
+    final value = json[key];
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  bool _boolField(
+    Map<String, Object?> json,
+    String key, {
+    bool fallback = false,
+  }) {
+    final value = json[key];
+    if (value is bool) return value;
+    final text = value?.toString().trim().toLowerCase();
+    if (text == 'true') return true;
+    if (text == 'false') return false;
+    return fallback;
+  }
+
+  List<String> _stringListField(Map<String, Object?> json, String key) {
+    final value = json[key];
+    if (value is! List) return const [];
+    return value
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
   }
 
   @override

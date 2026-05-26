@@ -47,8 +47,8 @@ class TranscriptBubble extends StatelessWidget {
         ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.6)
         : theme.colorScheme.onSurfaceVariant;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
+    return _TelegramReactionSurface(
+      isUser: isUser,
       onLongPress: () => _showMessageActions(context),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 2),
@@ -207,6 +207,93 @@ class TranscriptBubble extends StatelessWidget {
                 onForward?.call(message, target);
               },
             ),
+      ),
+    );
+  }
+}
+
+class _TelegramReactionSurface extends StatefulWidget {
+  const _TelegramReactionSurface({
+    required this.child,
+    required this.isUser,
+    required this.onLongPress,
+  });
+
+  final Widget child;
+  final bool isUser;
+  final VoidCallback onLongPress;
+
+  @override
+  State<_TelegramReactionSurface> createState() =>
+      _TelegramReactionSurfaceState();
+}
+
+class _TelegramReactionSurfaceState extends State<_TelegramReactionSurface> {
+  static const _doubleTapWindow = Duration(milliseconds: 320);
+  static const _doubleTapSlop = 48.0;
+
+  bool _hearted = false;
+  DateTime? _lastTapAt;
+  Offset? _lastTapPosition;
+
+  void _handlePointerUp(Offset position) {
+    final now = DateTime.now();
+    final lastTapAt = _lastTapAt;
+    final lastTapPosition = _lastTapPosition;
+    final isDoubleTap =
+        lastTapAt != null &&
+        now.difference(lastTapAt) <= _doubleTapWindow &&
+        lastTapPosition != null &&
+        (position - lastTapPosition).distance <= _doubleTapSlop;
+
+    _lastTapAt = now;
+    _lastTapPosition = position;
+
+    if (isDoubleTap) {
+      _lastTapAt = null;
+      _lastTapPosition = null;
+      setState(() => _hearted = !_hearted);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerUp: (event) => _handlePointerUp(event.position),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: widget.onLongPress,
+        child: Column(
+          crossAxisAlignment: widget.isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            widget.child,
+            if (_hearted)
+              Container(
+                key: const ValueKey('transcript-local-reaction'),
+                margin: EdgeInsets.only(
+                  left: widget.isUser ? 0 : 24,
+                  right: widget.isUser ? 24 : 0,
+                  bottom: 2,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.6,
+                    ),
+                  ),
+                ),
+                child: const Text('❤️', style: TextStyle(fontSize: 13)),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -507,14 +594,9 @@ class _TelegramBlockquote extends StatelessWidget {
           bottomRight: Radius.circular(8),
         ),
       ),
-      child: Text(
-        segment.text,
-        style: TextStyle(
-          color: foreground.withValues(alpha: 0.82),
-          fontStyle: FontStyle.italic,
-          fontSize: 14,
-          height: 1.35,
-        ),
+      child: _TelegramInlineText(
+        text: segment.text,
+        textColor: foreground.withValues(alpha: 0.82),
       ),
     );
   }
@@ -556,14 +638,7 @@ class _TelegramBulletList extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      color: foreground,
-                      fontSize: 15,
-                      height: 1.35,
-                    ),
-                  ),
+                  child: _TelegramInlineText(text: item, textColor: foreground),
                 ),
               ],
             ),
@@ -611,13 +686,9 @@ class _TelegramNumberedList extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    items[index],
-                    style: TextStyle(
-                      color: foreground,
-                      fontSize: 15,
-                      height: 1.35,
-                    ),
+                  child: _TelegramInlineText(
+                    text: items[index],
+                    textColor: foreground,
                   ),
                 ),
               ],
@@ -715,7 +786,9 @@ class _TelegramInlineText extends StatelessWidget {
     this.overflow,
   });
 
-  static final _inlinePattern = RegExp(r'(`[^`]+`|\*[^*]+\*|_[^_]+_)');
+  static final _inlinePattern = RegExp(
+    r'(\[(@[^:]+):([^\]]+)\]|`[^`]+`|https?:\/\/[^\s<>()]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+?[0-9][0-9 .()-]{6,}[0-9]|\*[^*]+\*|_[^_]+_|~[^~]+~|(?<!\w)[@#][A-Za-z0-9_]+)',
+  );
 
   final String text;
   final Color? textColor;
@@ -724,7 +797,7 @@ class _TelegramInlineText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spans = _inlineSpans();
+    final spans = _inlineSpans(context);
     if (spans == null) {
       return Text(
         text,
@@ -743,7 +816,7 @@ class _TelegramInlineText extends StatelessWidget {
     );
   }
 
-  List<InlineSpan>? _inlineSpans() {
+  List<InlineSpan>? _inlineSpans(BuildContext context) {
     final matches = _inlinePattern.allMatches(text).toList();
     if (matches.isEmpty) return null;
     final spans = <InlineSpan>[];
@@ -752,17 +825,42 @@ class _TelegramInlineText extends StatelessWidget {
       if (match.start > cursor) {
         spans.add(TextSpan(text: text.substring(cursor, match.start)));
       }
-      final raw = match.group(0)!;
-      spans.add(_formattedSpan(raw));
-      cursor = match.end;
+      final raw = _trimTrailingPunctuation(match.group(0)!);
+      spans.add(_formattedSpan(raw, Theme.of(context).colorScheme.primary));
+      cursor = match.start + raw.length;
     }
     if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor)));
     return spans;
   }
 
-  TextSpan _formattedSpan(String raw) {
+  String _trimTrailingPunctuation(String raw) {
+    if (raw.startsWith('http') || raw.contains('@')) {
+      return raw.replaceFirst(RegExp(r'[,.;:!?]+$'), '');
+    }
+    return raw;
+  }
+
+  TextSpan _accentSpan(String text, Color accent) => TextSpan(
+    text: text,
+    style: TextStyle(color: accent, fontSize: 15, fontWeight: FontWeight.w700),
+  );
+
+  bool _isDetectionPattern(String raw) =>
+      raw.startsWith('http://') ||
+      raw.startsWith('https://') ||
+      raw.contains('@') ||
+      RegExp(r'^\+?[0-9][0-9 .()-]{6,}[0-9]$').hasMatch(raw);
+
+  TextSpan _formattedSpan(String raw, Color accent) {
+    final mentionWithId = RegExp(r'^\[(@[^:]+):([^\]]+)\]$').firstMatch(raw);
+    if (mentionWithId != null) {
+      return _accentSpan(mentionWithId.group(1)!, accent);
+    }
+    if (_isDetectionPattern(raw)) return _accentSpan(raw, accent);
     final marker = raw.characters.first;
-    final inner = raw.substring(1, raw.length - 1);
+    final inner = marker == '@' || marker == '#'
+        ? raw
+        : raw.substring(1, raw.length - 1);
     final baseStyle = TextStyle(color: textColor, fontSize: 15);
     return switch (marker) {
       '*' => TextSpan(
@@ -779,6 +877,17 @@ class _TelegramInlineText extends StatelessWidget {
           fontFamily: 'monospace',
           backgroundColor: (textColor ?? Colors.black).withValues(alpha: 0.10),
         ),
+      ),
+      '~' => TextSpan(
+        text: inner,
+        style: baseStyle.copyWith(
+          decoration: TextDecoration.lineThrough,
+          decorationColor: textColor,
+        ),
+      ),
+      '@' || '#' => TextSpan(
+        text: inner,
+        style: baseStyle.copyWith(color: accent, fontWeight: FontWeight.w700),
       ),
       _ => TextSpan(text: raw, style: baseStyle),
     };
@@ -993,6 +1102,47 @@ class _ToolCallBody extends StatelessWidget {
             ),
           ),
         ],
+        if (presentation.showApproval) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  presentation.approvalLabel!,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                if (presentation.approvalPrompt?.isNotEmpty == true)
+                  Text(
+                    presentation.approvalPrompt!,
+                    style: TextStyle(
+                      color: textColor?.withValues(alpha: 0.75),
+                      fontSize: 12,
+                    ),
+                  ),
+                if (presentation.approvalRisk?.isNotEmpty == true)
+                  Text(
+                    presentation.approvalRisk!,
+                    style: TextStyle(
+                      color: textColor?.withValues(alpha: 0.65),
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
         for (final artifact in presentation.artifacts) ...[
           const SizedBox(height: 4),
           Row(
@@ -1035,6 +1185,14 @@ class _ToolCallBody extends StatelessWidget {
                         style: TextStyle(
                           color: textColor?.withValues(alpha: 0.65),
                           fontSize: 12,
+                        ),
+                      ),
+                    if (artifact.showRef)
+                      Text(
+                        artifact.ref!,
+                        style: TextStyle(
+                          color: textColor?.withValues(alpha: 0.55),
+                          fontSize: 11,
                         ),
                       ),
                   ],
@@ -1179,6 +1337,13 @@ class _VoiceBody extends StatelessWidget {
                 fontSize: 13,
               ),
             ),
+            const SizedBox(height: 4),
+            _TelegramVoiceWaveform(
+              duration: voice.duration,
+              confidence: voice.confidence,
+              color: textColor,
+            ),
+            const SizedBox(height: 3),
             Text(
               presentation.durationLabel,
               style: TextStyle(
@@ -1201,4 +1366,82 @@ class _VoiceBody extends StatelessWidget {
       ],
     );
   }
+}
+
+class _TelegramVoiceWaveform extends StatelessWidget {
+  const _TelegramVoiceWaveform({
+    required this.duration,
+    required this.confidence,
+    this.color,
+  });
+
+  final Duration duration;
+  final double confidence;
+  final Color? color;
+
+  List<double> get _bars {
+    final seed =
+        duration.inMilliseconds + (confidence.clamp(0.0, 1.0) * 100).round();
+    return List<double>.generate(22, (index) {
+      final wave = ((seed + index * 37) % 11) / 10;
+      final pulse = index.isEven ? 0.18 : 0.0;
+      return (0.22 + wave * 0.62 + pulse).clamp(0.18, 1.0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = color ?? Theme.of(context).colorScheme.onSurface;
+    return SizedBox(
+      key: const ValueKey('transcript-voice-waveform'),
+      width: 116,
+      height: 24,
+      child: CustomPaint(
+        painter: _VoiceWaveformPainter(
+          bars: _bars,
+          color: foreground.withValues(alpha: 0.48),
+          accent: Theme.of(context).colorScheme.primary.withValues(alpha: 0.72),
+        ),
+      ),
+    );
+  }
+}
+
+class _VoiceWaveformPainter extends CustomPainter {
+  const _VoiceWaveformPainter({
+    required this.bars,
+    required this.color,
+    required this.accent,
+  });
+
+  final List<double> bars;
+  final Color color;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (bars.isEmpty) return;
+    final unit = size.width / bars.length;
+    final barWidth = unit * 0.56;
+    final activeBars = (bars.length * 0.28).round();
+    for (var index = 0; index < bars.length; index += 1) {
+      final barHeight = size.height * bars[index].clamp(0.18, 1.0);
+      final left = index * unit + (unit - barWidth) / 2;
+      final top = (size.height - barHeight) / 2;
+      final rect = Rect.fromLTWH(left, top, barWidth, barHeight);
+      final paint = Paint()
+        ..color = index < activeBars ? accent : color
+        ..style = PaintingStyle.fill;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_VoiceWaveformPainter oldDelegate) =>
+      bars != oldDelegate.bars ||
+      color != oldDelegate.color ||
+      accent != oldDelegate.accent;
 }

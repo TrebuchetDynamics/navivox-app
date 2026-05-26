@@ -25,14 +25,18 @@ void main() {
       await tester.tap(importButton);
       await tester.pumpAndSettle();
 
-      final baseUrlField = tester.widget<TextField>(
-        find.widgetWithText(TextField, 'Gateway base URL'),
+      final addressField = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Gateway address'),
+      );
+      final portField = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Port'),
       );
       final tokenField = tester.widget<TextField>(
         find.widgetWithText(TextField, 'Pairing token'),
       );
 
-      expect(baseUrlField.controller?.text, 'http://10.0.2.2:8765');
+      expect(addressField.controller?.text, '10.0.2.2');
+      expect(portField.controller?.text, '8765');
       expect(tokenField.controller?.text, 'nvbx_from_qr_picture');
       expect(tokenField.obscureText, isTrue);
       expect(find.text('Imported QR connection details.'), findsOneWidget);

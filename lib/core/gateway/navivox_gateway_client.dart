@@ -36,6 +36,12 @@ class NavivoxGatewayClient {
 
   Future<Map<String, Object?>> health() => _getJson(config.healthUri);
   Future<Map<String, Object?>> status() => _getJson(config.statusUri);
+  Future<NavivoxCapabilityDocument> capabilities() async {
+    return NavivoxCapabilityDocument.fromJson(
+      await _getJson(config.capabilitiesUri),
+    );
+  }
+
   Future<NavivoxGatewayStatus> gatewayStatus() async {
     return NavivoxGatewayStatus.fromJson(await status());
   }
@@ -133,6 +139,107 @@ class NavivoxGatewayClient {
     );
   }
 
+  Future<List<NavivoxGatewaySessionSnapshot>> sessions() async {
+    final body = await _getJson(config.sessionsUri);
+    final sessions = body['sessions'];
+    if (sessions is! List) return const [];
+    return sessions
+        .whereType<Map>()
+        .map(
+          (session) => NavivoxGatewaySessionSnapshot.fromJson(
+            Map<String, Object?>.from(session),
+          ),
+        )
+        .where((session) => session.sessionId.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<NavivoxGatewaySessionSnapshot> session(String sessionId) async {
+    final body = await _getJson(config.sessionUri(sessionId));
+    return NavivoxGatewaySessionSnapshot.fromJson(
+      _objectField(body, 'session'),
+    );
+  }
+
+  Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
+    final body = await _getJson(config.runRecordUri(runIdOrSessionId));
+    return NavivoxRunRecordSnapshot.fromJson(_objectField(body, 'run_record'));
+  }
+
+  Future<NavivoxProfileSeedResult> profileSeed({
+    required String seed,
+    bool apply = false,
+    List<String> workspaceRoots = const [],
+  }) async {
+    final trimmedWorkspaceRoots = workspaceRoots
+        .map((root) => root.trim())
+        .where((root) => root.isNotEmpty)
+        .toList(growable: false);
+    final body = <String, Object?>{
+      'seed': seed.trim(),
+      if (apply) 'apply': true,
+      if (trimmedWorkspaceRoots.isNotEmpty)
+        'workspace_roots': trimmedWorkspaceRoots,
+    };
+    return NavivoxProfileSeedResult.fromJson(
+      await _postJson(config.profileSeedUri, body),
+    );
+  }
+
+  Future<NavivoxConfigAdminSchemaResponse> configAdminSchema() async {
+    return NavivoxConfigAdminSchemaResponse.fromJson(
+      await _getJson(config.configAdminSchemaUri),
+    );
+  }
+
+  Future<NavivoxConfigAdminGetResponse> configAdminValues() async {
+    return NavivoxConfigAdminGetResponse.fromJson(
+      await _getJson(config.configAdminUri),
+    );
+  }
+
+  Future<NavivoxConfigAdminResponse> diffConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    return NavivoxConfigAdminResponse.fromJson(
+      await _postJson(config.configAdminDiffUri, _configAdminBody(changes)),
+    );
+  }
+
+  Future<NavivoxConfigAdminResponse> validateConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    return NavivoxConfigAdminResponse.fromJson(
+      await _postJson(config.configAdminValidateUri, _configAdminBody(changes)),
+    );
+  }
+
+  Future<NavivoxConfigAdminResponse> applyConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    return NavivoxConfigAdminResponse.fromJson(
+      await _postJson(config.configAdminApplyUri, _configAdminBody(changes)),
+    );
+  }
+
+  Future<NavivoxVoiceProfilesResponse> voiceProfiles() async {
+    return NavivoxVoiceProfilesResponse.fromJson(
+      await _getJson(config.voiceProfilesUri),
+    );
+  }
+
+  Future<NavivoxVoiceProfileValidationResponse> validateVoiceProfile({
+    required String profileId,
+    required NavivoxProfileVoiceProfile voiceProfile,
+  }) async {
+    return NavivoxVoiceProfileValidationResponse.fromJson(
+      await _postJson(config.voiceProfilesValidateUri, {
+        'profile_id': profileId.trim(),
+        'voice_profile': voiceProfile.toJson(),
+      }),
+    );
+  }
+
   Future<NavivoxGatewaySocket> connectStream() {
     return _connectWebSocket(config.streamUri, config.headers);
   }
@@ -154,6 +261,19 @@ class NavivoxGatewayClient {
       }
       return NavivoxGatewayEvent.fromJson(Map<String, Object?>.from(decoded));
     });
+  }
+
+  Map<String, Object?> _configAdminBody(
+    List<NavivoxConfigAdminChange> changes,
+  ) {
+    return {
+      'changes': changes
+          .map((change) => change.toJson())
+          .where(
+            (change) => (change['key']?.toString().trim() ?? '').isNotEmpty,
+          )
+          .toList(growable: false),
+    };
   }
 
   Future<Map<String, Object?>> _getJson(Uri uri) async {
@@ -178,6 +298,14 @@ class NavivoxGatewayClient {
       throw const FormatException('expected JSON object');
     }
     return Map<String, Object?>.from(decoded);
+  }
+
+  Map<String, Object?> _objectField(Map<String, Object?> body, String key) {
+    final value = body[key];
+    if (value is! Map) {
+      throw FormatException('expected JSON object field $key');
+    }
+    return Map<String, Object?>.from(value);
   }
 
   static Future<String> _defaultGet(Uri uri, Map<String, String> headers) {

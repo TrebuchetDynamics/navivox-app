@@ -79,12 +79,77 @@ void main() {
     expect(find.text('office'), findsOneWidget);
     expect(find.text('2 roots'), findsOneWidget);
     expect(find.text('auth'), findsWidgets);
-    expect(find.byKey(const ValueKey('profile-attention-office-support')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('profile-attention-office-support')),
+      findsOneWidget,
+    );
     expect(find.text('1'), findsWidgets);
     expect(find.text('May 16'), findsWidgets);
     expect(find.text('May 15'), findsOneWidget);
     expect(find.byTooltip('Add profile'), findsOneWidget);
   });
+
+  testWidgets('selected contact is highlighted like the active Telegram chat', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts, selectedKey: 'local::mineru');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final selectedTile = tester.widget<ListTile>(
+      find.byKey(const ValueKey('profile-contact-local-mineru')),
+    );
+    final otherTile = tester.widget<ListTile>(
+      find.byKey(const ValueKey('profile-contact-office-support')),
+    );
+
+    expect(selectedTile.selected, isTrue);
+    expect(otherTile.selected, isFalse);
+  });
+
+  testWidgets(
+    'contacts show Telegram-style presence and voice readiness badges',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..seedServers(_servers, activeServerId: 'local')
+        ..seedProfileContacts(_contacts);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const _RouterTestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('profile-contact-presence-local-mineru')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('profile-contact-voice-ready-local-mineru')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('profile-contact-presence-office-support')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('profile-contact-voice-ready-office-support'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('server filter chips narrow contacts by gateway', (tester) async {
     final channel = TestNavivoxChannel()
@@ -110,6 +175,42 @@ void main() {
     expect(find.text('Mineru Builder'), findsNothing);
     expect(find.text('Personal'), findsNothing);
     expect(find.text('1 profile'), findsOneWidget);
+  });
+
+  testWidgets('search highlights matching contact title text like Telegram', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Search profiles'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('profile-search-field')),
+      'mineru',
+    );
+    await tester.pumpAndSettle();
+
+    final highlighted = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('profile-contact-title-local-mineru')),
+        matching: find.byType(Text),
+      ),
+    );
+    final span = highlighted.textSpan! as TextSpan;
+
+    expect(span.toPlainText(), 'Mineru Builder');
+    expect(_spanFor(span, 'Mineru')?.style?.fontWeight, FontWeight.w700);
+    expect(_spanFor(span, 'Mineru')?.style?.color, isNotNull);
   });
 
   testWidgets('search filters profile contacts like Telegram chat search', (
@@ -238,6 +339,18 @@ void main() {
     expect(find.text('typing…'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('profile-active-turn-local-mineru')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-typing-dot-local-mineru-0')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-typing-dot-local-mineru-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-typing-dot-local-mineru-2')),
       findsOneWidget,
     );
   });
@@ -457,6 +570,46 @@ void main() {
     expect(find.text('Profile: Mineru Builder'), findsOneWidget);
   });
 
+  testWidgets('profile edit action opens profile-scoped config', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(
+      find.byKey(const ValueKey('profile-contact-office-support')),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Edit profile'),
+      80,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -180));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit profile'));
+    await tester.pumpAndSettle();
+
+    expect(channel.selectedProfileScope, (
+      serverId: 'office',
+      profileId: 'support',
+    ));
+    expect(find.text('Config'), findsWidgets);
+    expect(find.text('Profile: Support Triage'), findsOneWidget);
+  });
+
   testWidgets('deep-linked chat route selects the profile scope', (
     tester,
   ) async {
@@ -490,6 +643,17 @@ void main() {
     expect(find.text('Support Triage'), findsWidgets);
     expect(find.text('office'), findsOneWidget);
   });
+}
+
+TextSpan? _spanFor(InlineSpan root, String text) {
+  if (root is TextSpan) {
+    if (root.text == text) return root;
+    for (final child in root.children ?? const <InlineSpan>[]) {
+      final match = _spanFor(child, text);
+      if (match != null) return match;
+    }
+  }
+  return null;
 }
 
 class _RouterTestApp extends ConsumerWidget {

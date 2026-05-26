@@ -85,7 +85,7 @@ void main() {
           body: TranscriptBubble(
             message: _textMessage(
               id: 'inline-format-1',
-              text: 'Use *bold*, _italic_, and `code` safely.',
+              text: 'Use *bold*, _italic_, `code`, and ~old~ safely.',
               author: NavivoxMessageAuthor.assistant,
             ),
             isUser: false,
@@ -100,10 +100,116 @@ void main() {
     );
     final rootSpan = formatted.textSpan!;
 
-    expect(rootSpan.toPlainText(), 'Use bold, italic, and code safely.');
+    expect(rootSpan.toPlainText(), 'Use bold, italic, code, and old safely.');
     expect(_spanFor(rootSpan, 'bold')?.style?.fontWeight, FontWeight.w700);
     expect(_spanFor(rootSpan, 'italic')?.style?.fontStyle, FontStyle.italic);
     expect(_spanFor(rootSpan, 'code')?.style?.fontFamily, 'monospace');
+    expect(
+      _spanFor(rootSpan, 'old')?.style?.decoration,
+      TextDecoration.lineThrough,
+    );
+  });
+
+  testWidgets('renders Telegram-style URL email and phone highlights', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'contact-patterns-1',
+              text:
+                  'Open https://navivox.dev, mail ops@navivox.dev, or call +1 555 010 1212.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    final formatted = tester.widget<Text>(
+      find.byKey(const ValueKey('transcript-formatted-inline-text')),
+    );
+    final rootSpan = formatted.textSpan!;
+
+    expect(
+      rootSpan.toPlainText(),
+      'Open https://navivox.dev, mail ops@navivox.dev, or call +1 555 010 1212.',
+    );
+    expect(
+      _spanFor(rootSpan, 'https://navivox.dev')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(
+      _spanFor(rootSpan, 'ops@navivox.dev')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(
+      _spanFor(rootSpan, '+1 555 010 1212')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+  });
+
+  testWidgets('renders Telegram-style mention-with-id highlights', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'mention-id-1',
+              text: 'Route this to [@Mineru:profile_mineru] now.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    final formatted = tester.widget<Text>(
+      find.byKey(const ValueKey('transcript-formatted-inline-text')),
+    );
+    final rootSpan = formatted.textSpan!;
+
+    expect(rootSpan.toPlainText(), 'Route this to @Mineru now.');
+    expect(_spanFor(rootSpan, '@Mineru')?.style?.fontWeight, FontWeight.w700);
+    expect(_spanFor(rootSpan, '@Mineru')?.style?.color, isNotNull);
+  });
+
+  testWidgets('renders Telegram-style mention and hashtag highlights', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'mention-tag-1',
+              text: 'Route this to @mineru for #deploy review.',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    final formatted = tester.widget<Text>(
+      find.byKey(const ValueKey('transcript-formatted-inline-text')),
+    );
+    final rootSpan = formatted.textSpan!;
+
+    expect(rootSpan.toPlainText(), 'Route this to @mineru for #deploy review.');
+    expect(_spanFor(rootSpan, '@mineru')?.style?.fontWeight, FontWeight.w700);
+    expect(_spanFor(rootSpan, '#deploy')?.style?.fontWeight, FontWeight.w700);
+    expect(_spanFor(rootSpan, '@mineru')?.style?.color, isNotNull);
   });
 
   testWidgets('renders Telegram-style blockquotes in text bubbles', (
@@ -115,7 +221,7 @@ void main() {
           body: TranscriptBubble(
             message: _textMessage(
               id: 'quote-1',
-              text: 'Context:\n> Keep the deployment reversible\nNext step.',
+              text: 'Context:\n> Keep *deployment* reversible\nNext step.',
               author: NavivoxMessageAuthor.assistant,
             ),
             isUser: false,
@@ -128,7 +234,20 @@ void main() {
     expect(find.text('Context:'), findsOneWidget);
     expect(find.text('Next step.'), findsOneWidget);
     expect(find.byKey(const ValueKey('transcript-blockquote')), findsOneWidget);
-    expect(find.text('Keep the deployment reversible'), findsOneWidget);
+    final quoteText = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('transcript-blockquote')),
+        matching: find.byKey(
+          const ValueKey('transcript-formatted-inline-text'),
+        ),
+      ),
+    );
+    final quoteSpan = quoteText.textSpan!;
+    expect(quoteSpan.toPlainText(), 'Keep deployment reversible');
+    expect(
+      _spanFor(quoteSpan, 'deployment')?.style?.fontWeight,
+      FontWeight.w700,
+    );
   });
 
   testWidgets('renders Telegram-style bullet lists in text bubbles', (
@@ -140,7 +259,7 @@ void main() {
           body: TranscriptBubble(
             message: _textMessage(
               id: 'list-1',
-              text: 'Checklist:\n- Back up config\n- Restart service\nDone.',
+              text: 'Checklist:\n- Back up `config`\n- Restart service\nDone.',
               author: NavivoxMessageAuthor.assistant,
             ),
             isUser: false,
@@ -160,7 +279,17 @@ void main() {
       find.byKey(const ValueKey('transcript-bullet-marker')),
       findsNWidgets(2),
     );
-    expect(find.text('Back up config'), findsOneWidget);
+    final listText = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('transcript-bullet-list')),
+        matching: find.byKey(
+          const ValueKey('transcript-formatted-inline-text'),
+        ),
+      ),
+    );
+    final listSpan = listText.textSpan!;
+    expect(listSpan.toPlainText(), 'Back up config');
+    expect(_spanFor(listSpan, 'config')?.style?.fontFamily, 'monospace');
     expect(find.text('Restart service'), findsOneWidget);
   });
 
@@ -263,6 +392,79 @@ void main() {
     final expandedText = tester.widget<Text>(find.text(longText));
     expect(expandedText.maxLines, isNull);
     expect(find.text('Show less'), findsOneWidget);
+  });
+
+  testWidgets('renders Telegram-style voice waveform affordance', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _voiceMessage(
+              id: 'voice-wave-1',
+              transcript: 'ship the voice note',
+            ),
+            isUser: true,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Voice message'), findsOneWidget);
+    expect(find.text('3s'), findsOneWidget);
+    expect(find.text('ship the voice note'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transcript-voice-waveform')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('double tap toggles a local Telegram-style heart reaction', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TranscriptBubble(
+            message: _textMessage(
+              id: 'reaction-1',
+              text: 'react locally',
+              author: NavivoxMessageAuthor.assistant,
+            ),
+            isUser: false,
+            showTail: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('transcript-local-reaction')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('react locally'));
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.text('react locally'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transcript-local-reaction')),
+      findsOneWidget,
+    );
+    expect(find.text('❤️'), findsOneWidget);
+
+    await tester.tap(find.text('react locally'));
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.text('react locally'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transcript-local-reaction')),
+      findsNothing,
+    );
   });
 
   testWidgets('renders Telegram-style sent tick for user messages', (
@@ -377,5 +579,22 @@ NavivoxChatMessage _textMessage({
     kind: NavivoxMessageKind.text,
     createdAt: DateTime.utc(2026, 5, 23, 11, 15),
     text: text,
+  );
+}
+
+NavivoxChatMessage _voiceMessage({
+  required String id,
+  required String transcript,
+}) {
+  return NavivoxChatMessage(
+    id: id,
+    author: NavivoxMessageAuthor.user,
+    kind: NavivoxMessageKind.voice,
+    createdAt: DateTime.utc(2026, 5, 23, 11, 15),
+    voice: NavivoxVoiceMessage(
+      duration: const Duration(milliseconds: 3200),
+      transcript: transcript,
+      confidence: 0.86,
+    ),
   );
 }

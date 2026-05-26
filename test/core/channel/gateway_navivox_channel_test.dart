@@ -44,6 +44,40 @@ void main() {
     expect(messages.where((m) => m.text == 'hello from gateway'), hasLength(1));
   });
 
+  test(
+    'keeps diagnostics visible and gates feature endpoints when capabilities fail',
+    () async {
+      final server = await _FakeGatewayServer.start(
+        capabilitiesUnavailable: true,
+      );
+      addTearDown(server.close);
+
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
+
+      await channel.connect(
+        baseUrl: server.baseUrl,
+        token: _FakeGatewayServer.token,
+      );
+
+      expect(server.profileContactsRequests, 0);
+      expect(server.streamRequests, 0);
+      expect(
+        channel.state.activeServer?.status,
+        contains('Capabilities unavailable'),
+      );
+      expect(
+        channel.state.profileContacts.single.health,
+        NavivoxProfileHealth.warning,
+      );
+      expect(channel.state.profileContacts.single.micAvailable, isFalse);
+
+      channel.sendText('hello closed gate');
+
+      expect(channel.state.messagesList.last.text, 'Gateway is not connected.');
+    },
+  );
+
   test('selected profile scope is included in gateway turn metadata', () async {
     final server = await _FakeGatewayServer.start();
     addTearDown(server.close);
@@ -250,24 +284,27 @@ void main() {
     expect(contact.workspaceRootsOk, isFalse);
   });
 
-  test('requestAgentList does not repeat unavailable refresh guidance', () async {
-    final channel = GatewayNavivoxChannel();
-    addTearDown(channel.dispose);
+  test(
+    'requestAgentList does not repeat unavailable refresh guidance',
+    () async {
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
 
-    channel.requestAgentList();
-    channel.requestAgentList();
-    await Future<void>.delayed(Duration.zero);
+      channel.requestAgentList();
+      channel.requestAgentList();
+      await Future<void>.delayed(Duration.zero);
 
-    final refreshMessages = channel.state.messagesList
-        .where(
-          (message) =>
-              message.author == NavivoxMessageAuthor.system &&
-              message.text == 'Connect to Gormes to refresh profiles.',
-        )
-        .toList();
+      final refreshMessages = channel.state.messagesList
+          .where(
+            (message) =>
+                message.author == NavivoxMessageAuthor.system &&
+                message.text == 'Connect to Gormes to refresh profiles.',
+          )
+          .toList();
 
-    expect(refreshMessages, hasLength(1));
-  });
+      expect(refreshMessages, hasLength(1));
+    },
+  );
 
   test(
     'voice transcript renders locally and submits as a gateway turn',
@@ -473,6 +510,32 @@ void main() {
           'message': 'browser_navigate started',
         },
         {
+          'type': 'tool_call_updated',
+          'request_id': requestId,
+          'session_id': 's-test',
+          'tool_call_id': 'req-tool-browser-1',
+          'tool_name': 'browser_navigate',
+          'status': 'updated',
+          'message': 'browser_navigate opened dashboard with an artifact',
+          'metadata': {
+            'artifact_id': 'browser-state',
+            'artifact_kind': 'page',
+            'artifact_title': 'Browser state',
+            'artifact_summary': 'Dashboard title and safe URL',
+            'artifact_ref': 'artifact://browser-state',
+            'secret_token': 'must-not-render',
+          },
+        },
+        {
+          'type': 'approval_required',
+          'request_id': requestId,
+          'session_id': 's-test',
+          'approval_id': 'approval-browser',
+          'tool_call_id': 'req-tool-browser-1',
+          'message': 'Approve browser interaction?',
+          'risk': 'Navigates the active browser session',
+        },
+        {
           'type': 'tool_call_finished',
           'request_id': requestId,
           'session_id': 's-test',
@@ -480,6 +543,17 @@ void main() {
           'tool_name': 'browser_navigate',
           'status': 'finished',
           'message': 'browser_navigate finished',
+          'metadata': {
+            'artifacts': [
+              {
+                'id': 'browser-state',
+                'kind': 'page',
+                'title': 'Browser state',
+                'summary': 'Dashboard title and safe URL',
+                'ref': 'artifact://browser-state',
+              },
+            ],
+          },
         },
         {'type': 'done', 'request_id': requestId, 'session_id': 's-test'},
       ],
@@ -501,6 +575,7 @@ void main() {
           .toList();
       if (cards.length == 1 &&
           cards.single.toolCall?.status == 'finished' &&
+          cards.single.toolCall?.artifacts.length == 1 &&
           !completed.isCompleted) {
         completed.complete();
       }
@@ -514,10 +589,102 @@ void main() {
         .where((message) => message.kind == NavivoxMessageKind.toolCall)
         .toList();
     expect(cards, hasLength(1));
-    expect(cards.single.toolCall?.name, 'browser_navigate');
-    expect(cards.single.toolCall?.status, 'finished');
-    expect(cards.single.toolCall?.summary, 'browser_navigate finished');
+    final tool = cards.single.toolCall!;
+    expect(tool.name, 'browser_navigate');
+    expect(tool.status, 'finished');
+    expect(tool.summary, 'browser_navigate finished');
+    expect(tool.approval?.id, 'approval-browser');
+    expect(tool.approval?.status, 'approval_required');
+    expect(tool.approval?.prompt, 'Approve browser interaction?');
+    expect(tool.approval?.risk, 'Navigates the active browser session');
+    expect(tool.artifacts, hasLength(1));
+    expect(tool.artifacts.single.id, 'browser-state');
+    expect(tool.artifacts.single.kind, 'page');
+    expect(tool.artifacts.single.title, 'Browser state');
+    expect(tool.artifacts.single.summary, 'Dashboard title and safe URL');
+    expect(tool.artifacts.single.ref, 'artifact://browser-state');
+    expect(
+      channel.state.messagesList
+          .where((message) => message.author == NavivoxMessageAuthor.assistant)
+          .map((message) => message.text ?? message.toolCall?.summary ?? '')
+          .join('\n'),
+      isNot(contains('must-not-render')),
+    );
   });
+
+  test(
+    'malformed tool metadata is bounded and redacted inside the card',
+    () async {
+      final longMetadata = 'x' * 600;
+      final server = await _FakeGatewayServer.start(
+        streamEvents: (requestId) => [
+          {
+            'type': 'session_started',
+            'request_id': requestId,
+            'session_id': 's-test',
+          },
+          {
+            'type': 'tool_call_updated',
+            'request_id': requestId,
+            'session_id': 's-test',
+            'tool_call_id': 'call-malformed',
+            'tool_name': 'shell.run',
+            'status': 'updated',
+            'message': longMetadata,
+            'metadata': {
+              'secret_token': 'raw-secret-value',
+              'stdout': longMetadata,
+              'bad_artifact': {'raw_secret': 'raw-secret-value'},
+            },
+          },
+          {'type': 'done', 'request_id': requestId, 'session_id': 's-test'},
+        ],
+      );
+      addTearDown(server.close);
+
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
+
+      await channel.connect(
+        baseUrl: server.baseUrl,
+        token: _FakeGatewayServer.token,
+      );
+
+      final completed = Completer<void>();
+      channel.addListener(() {
+        final card = channel.state.messagesList
+            .where((message) => message.kind == NavivoxMessageKind.toolCall)
+            .firstOrNull;
+        if (card?.toolCall?.artifacts.isNotEmpty == true &&
+            !completed.isCompleted) {
+          completed.complete();
+        }
+      });
+
+      channel.sendText('run malformed tool');
+      await server.nextClientMessage;
+      await completed.future.timeout(const Duration(seconds: 2));
+
+      final tool = channel.state.messagesList
+          .singleWhere((message) => message.kind == NavivoxMessageKind.toolCall)
+          .toolCall!;
+      expect(tool.summary.length, lessThanOrEqualTo(240));
+      expect(tool.artifacts.single.kind, 'metadata');
+      expect(tool.artifacts.single.title, 'Tool metadata');
+      expect(
+        tool.artifacts.single.summary,
+        isNot(contains('raw-secret-value')),
+      );
+      expect(tool.artifacts.single.summary!.length, lessThanOrEqualTo(240));
+      expect(
+        channel.state.messagesList
+            .where((message) => message.kind == NavivoxMessageKind.text)
+            .map((message) => message.text)
+            .join('\n'),
+        isNot(contains('raw-secret-value')),
+      );
+    },
+  );
 }
 
 class _FakeGatewayServer {
@@ -527,6 +694,8 @@ class _FakeGatewayServer {
     this._streamEvents,
     this._contacts,
     this._contactsProvider,
+    this._capabilities,
+    this._capabilitiesUnavailable,
   );
 
   static const token = 'nvbx_test_token';
@@ -536,7 +705,11 @@ class _FakeGatewayServer {
   final List<Map<String, Object?>> Function(String requestId)? _streamEvents;
   final List<Map<String, Object?>>? _contacts;
   final List<Map<String, Object?>> Function()? _contactsProvider;
+  final Map<String, Object?>? _capabilities;
+  final bool _capabilitiesUnavailable;
   final Completer<Map<String, Object?>> _nextClientMessage = Completer();
+  var profileContactsRequests = 0;
+  var streamRequests = 0;
 
   String get baseUrl => 'http://127.0.0.1:$port';
   Future<Map<String, Object?>> get nextClientMessage =>
@@ -546,6 +719,8 @@ class _FakeGatewayServer {
     List<Map<String, Object?>> Function(String requestId)? streamEvents,
     List<Map<String, Object?>>? contacts,
     List<Map<String, Object?>> Function()? contactsProvider,
+    Map<String, Object?>? capabilities,
+    bool capabilitiesUnavailable = false,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final fake = _FakeGatewayServer._(
@@ -554,6 +729,8 @@ class _FakeGatewayServer {
       streamEvents,
       contacts,
       contactsProvider,
+      capabilities,
+      capabilitiesUnavailable,
     );
     server.listen(fake._handle);
     return fake;
@@ -577,11 +754,26 @@ class _FakeGatewayServer {
       _writeJson(request.response, {'enabled': true});
       return;
     }
+    if (request.uri.path == '/v1/navivox/capabilities') {
+      if (_capabilitiesUnavailable) {
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+        return;
+      }
+      _writeJson(request.response, _capabilities ?? _capabilityDocument());
+      return;
+    }
     if (request.uri.path == '/v1/navivox/profile-contacts') {
+      profileContactsRequests++;
       _writeJson(request.response, {'contacts': _profileContacts()});
       return;
     }
+    if (request.uri.path == '/v1/navivox/profile-routing') {
+      _writeJson(request.response, {'profiles': <Object?>[]});
+      return;
+    }
     if (request.uri.path == '/v1/navivox/stream') {
+      streamRequests++;
       final socket = await WebSocketTransformer.upgrade(request);
       socket.listen((raw) {
         final decoded = Map<String, Object?>.from(jsonDecode(raw as String));
@@ -597,6 +789,106 @@ class _FakeGatewayServer {
     }
     request.response.statusCode = HttpStatus.notFound;
     await request.response.close();
+  }
+
+  Map<String, Object?> _capabilityDocument() {
+    return {
+      'object': 'gormes.navivox.capabilities',
+      'protocol_version': 'navivox.v1',
+      'capabilities': [
+        'profile_contacts',
+        'profile_routing',
+        'stream_turns',
+        'turn_control',
+      ],
+      'auth': {
+        'mode': 'pairing_token',
+        'headers': ['Authorization: Bearer <token>'],
+        'websocket_protocols': [
+          'navivox.v1',
+          'gormes.navivox.token.<base64url-token>',
+        ],
+      },
+      'health': {
+        'canonical': '/healthz',
+        'aliases': ['/healthz'],
+        'auth': 'none',
+      },
+      'endpoints': [
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/status',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Runtime status',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/capabilities',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Capability document',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/profile-contacts',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Profile contacts',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/profile-routing',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Profile routing',
+        },
+        {
+          'method': 'WS',
+          'path': '/v1/navivox/stream',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Navivox stream',
+        },
+      ],
+      'profile_management': {
+        'contacts_endpoint': '/v1/navivox/profile-contacts',
+        'routing_endpoint': '/v1/navivox/profile-routing',
+        'create_from_seed_endpoint': '/v1/navivox/profile-seed',
+        'dashboard_api_exposed': false,
+        'supported_actions': ['contact_snapshot'],
+        'unsupported_actions': ['direct_dashboard_api_profiles'],
+        'profile_contract_parts': ['profile_contacts', 'profile_routing'],
+      },
+      'attachments': {
+        'max_request_bytes': 1048576,
+        'opaque_upload_ids': false,
+        'raw_local_paths_accepted': false,
+        'workspace_file_attach': false,
+        'mime_allowlist': <String>[],
+        'retention': 'not_accepted',
+      },
+      'voice': {
+        'device_transcribed_text_turns': true,
+        'raw_audio_upload': false,
+        'voice_profiles_endpoint': '/v1/navivox/voice-profiles',
+        'run_records_endpoint':
+            '/v1/navivox/run-records/{run_id_or_session_id}',
+        'stt_providers': ['device'],
+        'tts_providers': ['server'],
+      },
+      'streams': {
+        'canonical_endpoint': '/v1/navivox/stream',
+        'transport': 'websocket',
+        'event_kinds': [
+          'session_started',
+          'assistant_delta',
+          'assistant_message',
+          'done',
+        ],
+        'openai_runs_bridge': false,
+      },
+    };
   }
 
   List<Map<String, Object?>> _profileContacts() {

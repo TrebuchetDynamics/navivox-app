@@ -14,6 +14,10 @@ void main() {
     );
 
     expect(result?.baseUrl, 'https://gateway.example:8765');
+    expect(
+      result?.webSocketUrl,
+      'wss://gateway.example:8765/v1/navivox/stream',
+    );
     expect(result?.token, 'nvbx_core_descriptor_token');
   });
 
@@ -35,13 +39,14 @@ void main() {
 }
 ''');
     expect(jsonResult?.baseUrl, 'http://127.0.0.1:8765');
+    expect(jsonResult?.webSocketUrl, 'ws://127.0.0.1:8765/v1/navivox/stream');
     expect(jsonResult?.token, 'nvbx_json_entry_token');
 
     final textResult = presentation.parsePayload(
       'Run gormes navivox connect-info, then use http://100.64.1.2:8765 and pairing token: nvbx_text_token.',
     );
     expect(textResult?.baseUrl, 'http://100.64.1.2:8765');
-    expect(textResult?.token, 'nvbx_text_token.');
+    expect(textResult?.token, 'nvbx_text_token');
   });
 
   test('ignores empty or unrelated payloads', () {

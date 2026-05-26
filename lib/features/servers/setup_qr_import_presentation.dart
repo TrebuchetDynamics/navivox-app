@@ -25,6 +25,12 @@ class SetupQrImportPresentation {
         uri.queryParameters['rest_token'],
         uri.queryParameters['restToken'],
       ]);
+      final queryWebSocketUrl = _firstNonEmpty([
+        uri.queryParameters['websocket_url'],
+        uri.queryParameters['websocketUrl'],
+        uri.queryParameters['ws_url'],
+        uri.queryParameters['wsUrl'],
+      ]);
       final queryBaseUrl =
           _normalizeBaseUrl(
             _firstNonEmpty([
@@ -34,17 +40,14 @@ class SetupQrImportPresentation {
               uri.queryParameters['url'],
             ]),
           ) ??
-          _normalizeWebSocketBaseUrl(
-            _firstNonEmpty([
-              uri.queryParameters['websocket_url'],
-              uri.queryParameters['websocketUrl'],
-              uri.queryParameters['ws_url'],
-              uri.queryParameters['wsUrl'],
-            ]),
-          );
+          _normalizeWebSocketBaseUrl(queryWebSocketUrl);
 
       if (queryBaseUrl != null || token != null) {
-        return SetupQrImageImport(baseUrl: queryBaseUrl, token: token);
+        return SetupQrImageImport(
+          baseUrl: queryBaseUrl,
+          token: token,
+          webSocketUrl: _normalizeWebSocketUrl(queryWebSocketUrl),
+        );
       }
       if (uri.scheme == 'http' || uri.scheme == 'https') {
         return SetupQrImageImport(baseUrl: _originFromUri(uri), token: token);
@@ -66,6 +69,7 @@ class SetupQrImportPresentation {
       return SetupQrImageImport(
         baseUrl: descriptor.baseUri.toString(),
         token: descriptor.token,
+        webSocketUrl: descriptor.webSocketUri.toString(),
       );
     } on FormatException {
       return null;
@@ -89,6 +93,12 @@ class SetupQrImportPresentation {
       'rest_token',
       'restToken',
     ]);
+    final topLevelWebSocketUrl = _stringField(decoded, const [
+      'websocket_url',
+      'websocketUrl',
+      'ws_url',
+      'wsUrl',
+    ]);
     final topLevelBaseUrl =
         _normalizeBaseUrl(
           _stringField(decoded, const [
@@ -98,22 +108,25 @@ class SetupQrImportPresentation {
             'url',
           ]),
         ) ??
-        _normalizeWebSocketBaseUrl(
-          _stringField(decoded, const [
-            'websocket_url',
-            'websocketUrl',
-            'ws_url',
-            'wsUrl',
-          ]),
-        );
+        _normalizeWebSocketBaseUrl(topLevelWebSocketUrl);
     if (topLevelBaseUrl != null || topLevelToken != null) {
-      return SetupQrImageImport(baseUrl: topLevelBaseUrl, token: topLevelToken);
+      return SetupQrImageImport(
+        baseUrl: topLevelBaseUrl,
+        token: topLevelToken,
+        webSocketUrl: _normalizeWebSocketUrl(topLevelWebSocketUrl),
+      );
     }
 
     final entries = decoded['entries'];
     if (entries is List) {
       for (final entry in entries) {
         if (entry is! Map) continue;
+        final webSocketUrl = _stringField(entry, const [
+          'websocket_url',
+          'websocketUrl',
+          'ws_url',
+          'wsUrl',
+        ]);
         final baseUrl =
             _normalizeBaseUrl(
               _stringField(entry, const [
@@ -123,14 +136,7 @@ class SetupQrImportPresentation {
                 'url',
               ]),
             ) ??
-            _normalizeWebSocketBaseUrl(
-              _stringField(entry, const [
-                'websocket_url',
-                'websocketUrl',
-                'ws_url',
-                'wsUrl',
-              ]),
-            );
+            _normalizeWebSocketBaseUrl(webSocketUrl);
         final token = _stringField(entry, const [
           'token',
           'pairing_token',
@@ -140,7 +146,11 @@ class SetupQrImportPresentation {
           'restToken',
         ]);
         if (baseUrl != null || token != null) {
-          return SetupQrImageImport(baseUrl: baseUrl, token: token);
+          return SetupQrImageImport(
+            baseUrl: baseUrl,
+            token: token,
+            webSocketUrl: _normalizeWebSocketUrl(webSocketUrl),
+          );
         }
       }
     }
@@ -149,10 +159,11 @@ class SetupQrImportPresentation {
 }
 
 class SetupQrImageImport {
-  const SetupQrImageImport({this.baseUrl, this.token});
+  const SetupQrImageImport({this.baseUrl, this.token, this.webSocketUrl});
 
   final String? baseUrl;
   final String? token;
+  final String? webSocketUrl;
 
   bool get hasValues => baseUrl != null || token != null;
 }
@@ -235,7 +246,15 @@ String? _readTokenAt(String text, int start) {
     index++;
   }
   if (index == tokenStart) return null;
-  return text.substring(tokenStart, index);
+  return _trimTokenTrailingPunctuation(text.substring(tokenStart, index));
+}
+
+String _trimTokenTrailingPunctuation(String token) {
+  var end = token.length;
+  while (end > 0 && '.,;:!?)]}"\''.contains(token[end - 1])) {
+    end--;
+  }
+  return token.substring(0, end);
 }
 
 bool _isTokenChar(int codeUnit) {
@@ -259,6 +278,16 @@ String? _normalizeBaseUrl(String? raw) {
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
   if (uri.scheme != 'http' && uri.scheme != 'https') return value;
   return _originFromUri(uri);
+}
+
+String? _normalizeWebSocketUrl(String? raw) {
+  final value = _asNonEmptyString(raw);
+  if (value == null) return null;
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'ws' && scheme != 'wss') return null;
+  return uri.toString();
 }
 
 String? _normalizeWebSocketBaseUrl(String? raw) {

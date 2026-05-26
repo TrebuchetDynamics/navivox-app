@@ -13,9 +13,12 @@ void main() {
       contains('gormes navivox connect-info'),
     );
     expect(presentation.networkHint, contains('10.0.2.2'));
-    expect(presentation.baseUrlFieldLabel, 'Gateway base URL');
-    expect(presentation.baseUrlFieldSemanticLabel, 'Gateway base URL field');
-    expect(presentation.baseUrlFieldSemanticHint, contains('Gormes gateway'));
+    expect(presentation.addressFieldLabel, 'Gateway address');
+    expect(presentation.addressFieldSemanticLabel, 'Gateway address field');
+    expect(presentation.addressFieldSemanticHint, contains('Gormes gateway'));
+    expect(presentation.portFieldLabel, 'Port');
+    expect(presentation.portFieldSemanticLabel, 'Gateway port field');
+    expect(presentation.portFieldSemanticHint, contains('Gormes gateway port'));
     expect(presentation.tokenFieldLabel, 'Pairing token');
     expect(presentation.tokenFieldSemanticLabel, 'Pairing token field');
     expect(presentation.tokenFieldSemanticHint, contains('printed by Gormes'));

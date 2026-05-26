@@ -175,7 +175,7 @@ class ProfileContactPresentation {
     ProfileContactDetailActionPresentation(
       kind: ProfileContactDetailActionKind.editProfile,
       title: 'Edit profile',
-      subtitle: 'Schema-driven editor placeholder.',
+      subtitle: 'Open profile-scoped config editor.',
     ),
   ];
 

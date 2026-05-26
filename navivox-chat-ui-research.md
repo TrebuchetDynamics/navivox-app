@@ -29,7 +29,7 @@ Use these as current, source-backed references:
 - `v_chat_bubbles` on pub.dev: strong candidate for bubble rendering because it
   supports a Telegram style preset, custom bubble types, selection mode,
   callbacks, text formatting, voice bubbles, and all Flutter target platforms.
-- Flutter Material 3 docs: use current `NavigationBar`/rail patterns instead
+- Flutter Material 3 docs: use current navigation drawer/rail patterns instead
   of legacy bottom navigation when adopting Material 3.
 - Flutter `DraggableScrollableSheet`: use for Telegram-like action panels,
   server/profile switchers, transcript review, and tool detail sheets.
@@ -183,8 +183,27 @@ Telegram backend or third-party chat state manager:
   Telegram-style code card with language header, monospace body, and copy
   affordance; quoted `>` lines render as compact blockquote cards with an
   accent rail; bullet and numbered lists render with Telegram-style compact
-  markers; inline `*bold*`, `_italic_`, and `` `code` `` markers render as
-  styled spans without exposing markup characters in the transcript.
+  markers; inline `*bold*`, `_italic_`, `` `code` ``, and `~strike~` markers
+  render as styled spans without exposing markup characters in the transcript;
+  URLs, emails, phone numbers, `@profile` mentions, mention-with-ID tokens like
+  `[@Mineru:profile_mineru]`, and `#tags` get Telegram-style accent
+  highlighting, including inside quoted and list blocks.
+- `v_chat_bubbles` / `chat_bubbles` reaction chips: double-tapping a transcript
+  bubble toggles a local heart reaction chip without changing the Navivox
+  message model or gateway protocol.
+- `chat_bubbles` audio waveform bubbles: voice transcript bubbles show a
+  deterministic Telegram-style waveform strip derived from local duration and
+  confidence, preserving Navivox voice-run semantics and avoiding playback state.
+- Telware recording LED / slide-to-cancel refs: continuous voice keeps Navivox's
+  tap-to-capture model, but the ready banner now includes a small Telegram-style
+  live dot/wave affordance instead of adopting hold-to-record cancellation; its
+  controls open in a draggable Telegram-style sheet.
+- Telware chat-tile/avatar refs: profile contacts now layer Telegram-style
+  presence and voice-ready badges on avatars, highlight the selected profile
+  like an active Telegram chat row, accent search matches in contact rows, and
+  show compact typing dots for streaming profile turns while preserving
+  Navivox's existing health, workspace, attention, and selected-profile routing
+  semantics.
 - Telegram-style draggable sheets: use Flutter `DraggableScrollableSheet` for
   chat info and message actions so diagnostics and actions can expand without
   taking over the transcript.
@@ -517,8 +536,8 @@ Risk states:
 
 Mobile:
 
-- Material 3 `NavigationBar` with Chats, Servers, Settings.
-- Full-width chat transcript.
+- Telegram-style hamburger drawer with Chats, Servers, Memory, and Settings.
+- Full-width chat transcript and contact list with no bottom navigation.
 - `DraggableScrollableSheet` for profile/server/action switchers.
 - Global voice bar when continuous voice is active outside the current chat.
 - Tool card details as bottom sheet.

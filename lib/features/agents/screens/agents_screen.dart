@@ -73,12 +73,12 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
               createImportLabel: presentation.createImportProfileLabel,
               onRefresh: channel.requestAgentList,
               onCreateImport: () =>
-                  _showCreateImportPlaceholder(context, presentation),
+                  _showCreateImportUnavailableSheet(context, presentation),
             ),
     );
   }
 
-  void _showCreateImportPlaceholder(
+  void _showCreateImportUnavailableSheet(
     BuildContext context,
     AgentsScreenPresentation presentation,
   ) {

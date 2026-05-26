@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
+import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../../support/test_navivox_channel.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
@@ -442,5 +443,199 @@ void main() {
     await tester.pump();
 
     expect(channel.configSetCalls, [(field: 'temperature', value: 0.7)]);
+  });
+
+  testWidgets(
+    'safe config admin validates diffs and applies through backend with reload evidence',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..emitConfigSchema(const {
+          'fields': [
+            {
+              'key': 'navivox.port',
+              'title': 'Port',
+              'type': 'int',
+              'reload': 'restart_or_reload',
+            },
+            {
+              'key': 'navivox.token',
+              'title': 'Pairing/static token',
+              'type': 'secret',
+              'secret': true,
+              'actions': ['set', 'rotate', 'delete', 'test'],
+              'reload': 'restart_or_reload',
+            },
+          ],
+        })
+        ..emitConfigValues(const {
+          'navivox.port': 8765,
+          'navivox.token': {
+            'secret_status': 'set',
+            'source': 'env:GORMES_NAVIVOX_TOKEN',
+            'value': 'nvbx_secret_should_not_render',
+          },
+        })
+        ..seedConfigAdminResponses(
+          validate: const NavivoxConfigAdminResponse(
+            action: 'config.validate',
+            valid: true,
+            changes: [
+              NavivoxConfigAdminDiff(
+                key: 'navivox.port',
+                type: 'int',
+                before: 8765,
+                after: 8766,
+              ),
+            ],
+          ),
+          diff: const NavivoxConfigAdminResponse(
+            action: 'config.diff',
+            valid: true,
+            changes: [
+              NavivoxConfigAdminDiff(
+                key: 'navivox.port',
+                type: 'int',
+                before: 8765,
+                after: 8766,
+              ),
+            ],
+          ),
+          apply: const NavivoxConfigAdminResponse(
+            action: 'config.apply',
+            valid: true,
+            applied: true,
+            reloadApplied: true,
+            pendingRestart: false,
+            changes: [
+              NavivoxConfigAdminDiff(
+                key: 'navivox.port',
+                type: 'int',
+                before: 8765,
+                after: 8766,
+              ),
+            ],
+          ),
+        );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const MaterialApp(home: ConfigScreen()),
+        ),
+      );
+
+      expect(find.text('Port'), findsOneWidget);
+      expect(find.text('8765'), findsOneWidget);
+      expect(find.text('Pairing/static token'), findsOneWidget);
+      expect(
+        find.text('Secret configured (env:GORMES_NAVIVOX_TOKEN)'),
+        findsOneWidget,
+      );
+      expect(find.text('Actions: set, rotate, delete, test'), findsOneWidget);
+      expect(
+        find.textContaining('nvbx_secret_should_not_render'),
+        findsNothing,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('config-edit-navivox.port')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('config-input-navivox.port')),
+        '8766',
+      );
+      await tester.tap(find.byKey(const ValueKey('config-save-navivox.port')));
+      await tester.pump();
+      await tester.drag(find.byType(Scrollable), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await tester.pumpAndSettle();
+
+      expect(channel.configSetCalls, isEmpty);
+      expect(channel.configSecretSetCalls, isEmpty);
+      expect(
+        channel.configAdminValidateCalls.single.single.key,
+        'navivox.port',
+      );
+      expect(
+        channel.configAdminDiffCalls.single.single.toJson()['value'],
+        '8766',
+      );
+      expect(
+        channel.configAdminApplyCalls.single.single.toJson()['value'],
+        '8766',
+      );
+      expect(find.text('Config reload applied by Gormes.'), findsOneWidget);
+      expect(find.text('navivox.port: 8765 -> 8766'), findsOneWidget);
+    },
+  );
+
+  testWidgets('safe config admin validation errors block apply', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..emitConfigSchema(const {
+        'fields': [
+          {
+            'key': 'navivox.exposure_mode',
+            'title': 'Exposure mode',
+            'type': 'enum',
+            'allowed': ['local', 'public'],
+          },
+        ],
+      })
+      ..emitConfigValues(const {'navivox.exposure_mode': 'local'})
+      ..seedConfigAdminResponses(
+        validate: const NavivoxConfigAdminResponse(
+          action: 'config.validate',
+          valid: false,
+          errors: [
+            NavivoxConfigAdminFieldError(
+              key: 'navivox.exposure_mode',
+              code: 'invalid_runtime',
+              message: 'Public exposure requires explicit server confirmation.',
+            ),
+          ],
+        ),
+        diff: const NavivoxConfigAdminResponse(
+          action: 'config.diff',
+          valid: true,
+        ),
+        apply: const NavivoxConfigAdminResponse(
+          action: 'config.apply',
+          valid: true,
+          applied: true,
+        ),
+      );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: ConfigScreen()),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('config-edit-navivox.exposure_mode')),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('config-input-navivox.exposure_mode')),
+      'public',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('config-save-navivox.exposure_mode')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Public exposure requires explicit server confirmation.'),
+      findsWidgets,
+    );
+    expect(channel.configAdminValidateCalls, hasLength(1));
+    expect(channel.configAdminDiffCalls, isEmpty);
+    expect(channel.configAdminApplyCalls, isEmpty);
+    expect(channel.configSetCalls, isEmpty);
   });
 }

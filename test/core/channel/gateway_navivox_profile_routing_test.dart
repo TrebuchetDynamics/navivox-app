@@ -65,7 +65,12 @@ class _ProfileRoutingGateway {
         'protocol_version': 'navivox.v1',
         'websocket_protocols': ['navivox.v1'],
         'capabilities': ['profile_contacts', 'profile_routing'],
+        'capabilities_url': '/v1/navivox/capabilities',
       });
+      return;
+    }
+    if (request.uri.path == '/v1/navivox/capabilities') {
+      _writeJson(request.response, _capabilityDocument());
       return;
     }
     if (request.uri.path == '/v1/navivox/profile-contacts') {
@@ -112,6 +117,86 @@ class _ProfileRoutingGateway {
     }
     request.response.statusCode = HttpStatus.notFound;
     await request.response.close();
+  }
+
+  Map<String, Object?> _capabilityDocument() {
+    return {
+      'object': 'gormes.navivox.capabilities',
+      'protocol_version': 'navivox.v1',
+      'capabilities': ['profile_contacts', 'profile_routing', 'stream_turns'],
+      'auth': {
+        'mode': 'pairing_token',
+        'headers': ['Authorization: Bearer <token>'],
+        'websocket_protocols': ['navivox.v1'],
+      },
+      'health': {
+        'canonical': '/healthz',
+        'aliases': ['/healthz'],
+        'auth': 'none',
+      },
+      'endpoints': [
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/capabilities',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Capability document',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/profile-contacts',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Profile contacts',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/profile-routing',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Profile routing',
+        },
+        {
+          'method': 'WS',
+          'path': '/v1/navivox/stream',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Navivox stream',
+        },
+      ],
+      'profile_management': {
+        'contacts_endpoint': '/v1/navivox/profile-contacts',
+        'routing_endpoint': '/v1/navivox/profile-routing',
+        'create_from_seed_endpoint': '/v1/navivox/profile-seed',
+        'dashboard_api_exposed': false,
+        'supported_actions': ['contact_snapshot'],
+        'unsupported_actions': ['direct_dashboard_api_profiles'],
+        'profile_contract_parts': ['profile_contacts', 'profile_routing'],
+      },
+      'attachments': {
+        'max_request_bytes': 1048576,
+        'opaque_upload_ids': false,
+        'raw_local_paths_accepted': false,
+        'workspace_file_attach': false,
+        'mime_allowlist': <String>[],
+        'retention': 'not_accepted',
+      },
+      'voice': {
+        'device_transcribed_text_turns': true,
+        'raw_audio_upload': false,
+        'voice_profiles_endpoint': '/v1/navivox/voice-profiles',
+        'run_records_endpoint':
+            '/v1/navivox/run-records/{run_id_or_session_id}',
+        'stt_providers': ['device'],
+        'tts_providers': ['server'],
+      },
+      'streams': {
+        'canonical_endpoint': '/v1/navivox/stream',
+        'transport': 'websocket',
+        'event_kinds': ['session_started', 'assistant_message', 'done'],
+        'openai_runs_bridge': false,
+      },
+    };
   }
 
   bool _authorized(HttpRequest request) {

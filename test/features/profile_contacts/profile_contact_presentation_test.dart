@@ -128,7 +128,7 @@ void main() {
         [
           'openChat:Open chat:Use this profile for the next turn.',
           'openMemory:Open memory:Inspect memory scoped to this profile.',
-          'editProfile:Edit profile:Schema-driven editor placeholder.',
+          'editProfile:Edit profile:Open profile-scoped config editor.',
         ],
       );
       expect(summary.agentFallbackSummaryLines, [

@@ -26,8 +26,8 @@ class VoiceCaptureTimeout implements Exception {
   String toString() => 'VoiceCaptureTimeout';
 }
 
-/// In-memory capture service used by tests and the offline fake-channel mode.
-/// Real microphone integration ships in a later slice.
+/// In-memory capture adapter used by tests and the offline fake-channel mode.
+/// Production capture adapters live behind [VoiceCaptureService].
 class FakeVoiceCaptureService implements VoiceCaptureService {
   FakeVoiceCaptureService({
     required this.audio,

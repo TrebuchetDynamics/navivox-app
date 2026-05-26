@@ -418,13 +418,13 @@ Agents screen presentation:
   the legacy agent list, the Profile contact fallback list, and the empty
   Profile contact state.
 - It owns Agents screen chrome, refresh copy, Profile contact fallback heading
-  copy, empty-state copy, and create/import placeholder sheet copy.
+  copy, empty-state copy, and create/import unavailable sheet copy.
 - It reuses `ProfileContactListPresentation` for active Gormes gateway
   filtering and sorted fallback Profile contacts instead of reimplementing list
   rules in the `AgentsScreen` Adapter.
 - `AgentsScreen` keeps icons, card/list layout, channel side effects, selected
   legacy-agent dispatch, selected Profile contact dispatch, refresh, and
-  create/import modal behavior.
+  create/import unavailable-sheet launch behavior.
 
 Profile contact avatar:
 
@@ -613,7 +613,7 @@ Transcript widget retirement hygiene:
   tree instead of kept as comment-only tombstones.
 - Active Transcript widget Modules live directly under `features/chat/widgets/`
   so agents and maintainers navigate to executable Interfaces, not stale
-  placeholders.
+  fragments.
 
 Transcript bubble rendering:
 

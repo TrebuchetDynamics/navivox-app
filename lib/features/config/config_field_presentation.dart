@@ -29,6 +29,15 @@ class ConfigFieldPresentation {
 
   String get displayValue => _row.displayValue;
 
+  List<String> get helperLines {
+    return [
+      if (_row.allowedValues.isNotEmpty)
+        'Allowed: ${_row.allowedValues.join(', ')}',
+      if (_row.actions.isNotEmpty) 'Actions: ${_row.actions.join(', ')}',
+      if (_row.reloadMode.isNotEmpty) 'Reload: ${_row.reloadMode}',
+    ];
+  }
+
   String get editInitialValue => _row.editInitialValue;
 
   ValueKey<String> get editKey => ValueKey('config-edit-$path');

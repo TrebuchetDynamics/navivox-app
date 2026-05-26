@@ -24,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway base URL'),
+      find.widgetWithText(TextField, 'Gateway address'),
       'http://127.0.0.1:8765',
     );
     await tester.enterText(
@@ -68,7 +68,7 @@ void main() {
     expect(_caseInsensitiveText('telephony'), findsNothing);
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway base URL'),
+      find.widgetWithText(TextField, 'Gateway address'),
       'http://127.0.0.1:8765',
     );
     await tester.enterText(

@@ -35,11 +35,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.setup,
-        builder: (context, state) => const SetupScreen(),
+        builder: (context, state) =>
+            _SelectableRoute(child: const SetupScreen()),
       ),
       ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.matchedLocation, child: child),
+        builder: (context, state, child) => _SelectableRoute(
+          child: AppShell(location: state.matchedLocation, child: child),
+        ),
         routes: [
           GoRoute(
             path: AppRoutes.chats,
@@ -80,9 +82,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Navivox')),
-      body: Center(child: Text('Route not found: ${state.uri.path}')),
+    errorBuilder: (context, state) => _SelectableRoute(
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Navivox')),
+        body: Center(child: Text('Route not found: ${state.uri.path}')),
+      ),
     ),
   );
 });
+
+class _SelectableRoute extends StatelessWidget {
+  const _SelectableRoute({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => SelectionArea(child: child);
+}

@@ -275,7 +275,11 @@ String? _routingChoice(List<String> allowed, String? selected) {
 abstract interface class NavivoxChannel implements Listenable {
   NavivoxChannelState get state;
   Stream<NavivoxApprovalRequest> get approvalRequests;
-  Future<void> connect({required String baseUrl, String? token});
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  });
   Future<void> disconnect();
   void sendText(String text);
   void sendVoice({required String transcript});
@@ -294,6 +298,17 @@ abstract interface class NavivoxChannel implements Listenable {
   void stopActiveTurn();
   void respondToApproval({required String approvalId, required bool approved});
   void requestAgentList();
+  Future<NavivoxProfileSeedResult> profileSeed({
+    required String seed,
+    bool apply = false,
+    List<String> workspaceRoots = const [],
+  });
+  Future<NavivoxVoiceProfilesResponse> voiceProfiles();
+  Future<NavivoxVoiceProfileValidationResponse> validateVoiceProfile({
+    required String profileId,
+    required NavivoxProfileVoiceProfile voiceProfile,
+  });
+  Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId);
   Future<NavivoxMemoryOverview> memoryOverview({
     String? serverId,
     String? profileId,
@@ -330,6 +345,17 @@ abstract interface class NavivoxChannel implements Listenable {
     String? provider,
     String? channel,
   });
+  bool get configAdminAvailable;
+  Future<void> refreshConfigAdmin();
+  Future<NavivoxConfigAdminResponse> diffConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  );
+  Future<NavivoxConfigAdminResponse> validateConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  );
+  Future<NavivoxConfigAdminResponse> applyConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  );
   void sendConfigSet({required String field, required Object? value});
   void sendConfigSecretSet({required String name, required String secret});
 }

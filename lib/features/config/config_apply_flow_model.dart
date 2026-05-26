@@ -139,7 +139,9 @@ class ConfigValidationState {
     if (rawErrors is! List) return;
     for (final raw in rawErrors) {
       if (raw is! Map) continue;
-      final path = _pathFrom(raw['path'] ?? raw['field'] ?? raw['name']);
+      final path = _pathFrom(
+        raw['path'] ?? raw['key'] ?? raw['field'] ?? raw['name'],
+      );
       final message = _messageFrom(raw['message'] ?? raw['error']);
       if (path == null || message == null) continue;
       target.putIfAbsent(path, () => []).add(message);

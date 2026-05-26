@@ -1,8 +1,10 @@
 # Navivox App
 
-Navivox is an Android-first Flutter app for talking to local or self-hosted Gormes agents.
+**Private voice/chat for your own Gormes agents.**
 
-It is the mobile operator console for a Gormes agent server: connect to a trusted gateway, chat with profile contacts, send text or device-transcribed voice turns, and watch assistant responses, tool activity, approvals, and recovery states stream back in a phone-friendly UI.
+Navivox is an Android-first Flutter app for talking to trusted local or self-hosted Gormes profiles. It gives each profile a Telegram-style contact surface while keeping the agent control plane in Gormes instead of a third-party chat platform.
+
+It is the mobile operator console for a Gormes gateway: connect to a trusted host, chat with profile contacts, send text or device-transcribed voice turns, and watch assistant responses, tool activity, approvals, and recovery states stream back in a phone-friendly UI.
 
 Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, talk to an agent, and inspect its memory.
 
@@ -17,7 +19,7 @@ Gormes repository: <https://github.com/TrebuchetDynamics/gormes-agent>
 
 ## Status
 
-Planning and early implementation.
+Early implementation. The core connect-and-talk loop has Flutter screens, protocol models, widget/unit tests, generated README screenshots, and an active Gormes `gormes navivox pair` handoff. Treat mobile release polish, app-store packaging, and full voice/TTS loops as in progress.
 
 Current focus:
 
@@ -37,6 +39,24 @@ The screenshots below are generated from real Flutter widgets and checked by the
 
 Navivox is for mobile agent operation: hands-free chat, project briefings, incident checks, voice task capture, agent switching, and screen-reader-friendly control away from a terminal.
 
+## Why It Is Cool
+
+- **Agents become contacts.** Each Gormes profile can feel like a trusted chat contact instead of a terminal session.
+- **Voice first, not telephony first.** Device-transcribed voice can become a normal Gormes turn without phone numbers, campaigns, or call-center setup.
+- **Tool work is visible.** Assistant text, tool cards, approvals, safety notices, and recovery states are UI objects rather than pasted logs.
+- **The control plane stays yours.** Gormes owns sessions, memory, tools, secrets, provider execution, and retention policy; Navivox presents the operator surface.
+
+## Privacy And Control
+
+Navivox is designed to be more private than Telegram bot chat for agent operation because the normal path does not route your agent conversations through Telegram's cloud or bot API. A trusted Gormes gateway owns auth, routing, provider calls, tool policy, memory, and retention; Navivox sends typed HTTP/WebSocket actions over a local, VPN, or tailnet connection.
+
+Privacy still depends on deployment choices:
+
+- Local or self-hosted Gormes plus device/local STT keeps the strongest boundary.
+- Cloud model, STT, or TTS providers may still process submitted text, transcripts, or audio according to their own policies.
+- Public exposure is discouraged and requires explicit server-side confirmation.
+- Pairing tokens, deep links, terminal QRs, and QR PNGs are secret material; never paste them into issues, logs, screenshots, or chat transcripts.
+
 ## Goncho Memory Console
 
 Navivox makes Gormes memory inspectable without becoming a raw database browser. It should show memory health, counts, search results, provenance, and safe management actions such as pin, archive, correction, or mark stale.
@@ -49,12 +69,24 @@ Navivox expects a Gormes host exposing the Navivox channel:
 
 - `GET /healthz` — basic readiness
 - `GET /v1/navivox/status` — authenticated channel readiness
+- `GET /v1/navivox/capabilities` — versioned feature and endpoint contract for capability-gated UI
+- `GET /v1/navivox/profile-contacts` — profile contact snapshot for the chat list
+- `GET /v1/navivox/profile-routing` — server/profile routing snapshot
+- `POST /v1/navivox/profile-seed` — draft or apply a profile from operator text
+- `GET /v1/navivox/config-admin[/schema]` — safe config admin read/schema
+- `POST /v1/navivox/config-admin/{diff,validate,apply}` — safe config admin mutations
+- `GET /v1/navivox/voice-profiles` — per-profile STT/TTS voice profile state
+- `POST /v1/navivox/voice-profiles/validate` — voice profile validation
+- `GET /v1/navivox/run-records/{run_id_or_session_id}` — run-record lookup
 - `GET /v1/navivox/memory/overview` — authenticated Goncho memory health and safe count summary
 - `GET /v1/navivox/sessions` — session listing
+- `GET /v1/navivox/sessions/{session_id}` — session detail
 - `POST /v1/navivox/turn` — submit a user turn
 - `WS /v1/navivox/stream` — stream session and assistant events
 
-On the host side, `gormes navivox pair` is the recommended setup path. It should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection. `gormes navivox connect-info` remains the fallback for older Gormes builds or manual setup.
+Navivox should enable profile creation/import, attachment, voice, and stream affordances from `/v1/navivox/capabilities` instead of assuming unsupported routes exist.
+
+On the host side, `gormes navivox pair` is the recommended setup path. It starts a network-reachable bridge, generates or reuses a pairing token, writes a QR image, prints a compact terminal QR when the screen is wide enough, opens Navivox directly on Android when requested, and waits for Navivox connection. `gormes navivox connect-info` remains the fallback for older Gormes builds or manual setup.
 
 ## Repository Layout
 
@@ -163,6 +195,7 @@ Start with:
 
 - `CONTEXT.md`
 - `docs/termux-gormes-bootstrap.md`
+- [Gormes Navivox CLI docs](https://docs.gormes.ai/cli/navivox/)
 - `navivox-prd.md`
 - `navivox-architecture.md`
 - `navivox-testing-plan.md`

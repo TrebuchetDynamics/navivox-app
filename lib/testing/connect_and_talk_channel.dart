@@ -6,15 +6,21 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
   NavivoxChannelState _state = const NavivoxChannelState();
   String? connectedBaseUrl;
   String? connectedToken;
+  String? connectedWebSocketUrl;
   final List<String> sentTexts = [];
 
   @override
   NavivoxChannelState get state => _state;
 
   @override
-  Future<void> connect({required String baseUrl, String? token}) async {
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  }) async {
     connectedBaseUrl = baseUrl;
     connectedToken = token;
+    connectedWebSocketUrl = webSocketUrl;
     const server = NavivoxServer(
       id: 'navivox-gateway',
       name: 'Gormes Gateway',
@@ -88,7 +94,11 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
 
 class FailingConnectChannel extends GatewayNavivoxChannel {
   @override
-  Future<void> connect({required String baseUrl, String? token}) async {
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  }) async {
     throw StateError('connection failed for $token');
   }
 }

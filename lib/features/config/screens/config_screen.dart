@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
+import '../../profiles/profile_voice_profile_card.dart';
 import '../config_apply_dispatcher.dart';
 import '../config_apply_flow_model.dart';
 import '../config_apply_presentation.dart';
@@ -26,6 +28,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   final ConfigApplyDispatcher _applyDispatcher = const ConfigApplyDispatcher();
   ConfigDraftSession _draftSession = const ConfigDraftSession();
   final TextEditingController _controller = TextEditingController();
+  NavivoxConfigAdminResponse? _lastConfigAdminApply;
+  String? _configAdminError;
 
   void _onChannelChanged() {
     if (mounted) setState(() {});
@@ -46,6 +50,12 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
 
   Future<void> _applyPendingChanges(ConfigApplyFlowModel flow) async {
     if (!flow.canApply) return;
+    final channel = ref.read(navivoxChannelProvider);
+    if (channel.configAdminAvailable) {
+      await _applyConfigAdminChanges(flow, channel);
+      return;
+    }
+
     final presentation = ConfigApplyPresentation.fromFlow(flow);
     if (presentation.requiresConfirmation) {
       final confirmed = await showDialog<bool>(
@@ -56,14 +66,69 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       if (!mounted || confirmed != true) return;
     }
 
-    final result = _applyDispatcher.dispatch(
-      flow: flow,
-      channel: ref.read(navivoxChannelProvider),
-    );
+    final result = _applyDispatcher.dispatch(flow: flow, channel: channel);
     if (!result.wasDispatched) return;
     setState(() {
       _draftSession = _draftSession.clearApplied(flow);
     });
+  }
+
+  Future<void> _applyConfigAdminChanges(
+    ConfigApplyFlowModel flow,
+    NavivoxChannel channel,
+  ) async {
+    final changes = _configAdminChangesFromFlow(flow);
+    if (changes.isEmpty) return;
+    setState(() {
+      _configAdminError = null;
+      _lastConfigAdminApply = null;
+    });
+    try {
+      final validation = await channel.validateConfigAdmin(changes);
+      if (!mounted) return;
+      if (!validation.valid) {
+        setState(() {
+          _configAdminError = 'Config validation failed.';
+        });
+        return;
+      }
+      final diff = await channel.diffConfigAdmin(changes);
+      if (!mounted) return;
+      if (!diff.valid) {
+        setState(() {
+          _configAdminError = 'Config diff failed.';
+        });
+        return;
+      }
+      final presentation = ConfigApplyPresentation.fromFlow(flow);
+      if (presentation.requiresConfirmation) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => _ConfigConfirmationDialog(
+            presentation: presentation,
+            backendDiff: diff,
+          ),
+        );
+        if (!mounted || confirmed != true) return;
+      }
+      final applied = await channel.applyConfigAdmin(changes);
+      if (!mounted) return;
+      if (!applied.applied) {
+        setState(() {
+          _configAdminError = 'Config apply was not accepted by Gormes.';
+        });
+        return;
+      }
+      setState(() {
+        _lastConfigAdminApply = applied;
+        _draftSession = _draftSession.clearApplied(flow);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _configAdminError = 'Config admin request failed.';
+      });
+    }
   }
 
   @override
@@ -86,6 +151,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       body: ListView(
         children: [
           _ConfigScopeCard(scope: screen.scope),
+          if (channel.state.activeProfileContact != null)
+            ProfileVoiceProfileCard(channel: channel),
           if (screen.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24),
@@ -114,10 +181,27 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
               presentation: screen.applyPresentation,
               onApply: () => _applyPendingChanges(screen.applyFlow),
             ),
+          if (_configAdminError != null)
+            _ConfigAdminStatusCard(message: _configAdminError!, isError: true),
+          if (_lastConfigAdminApply != null)
+            _ConfigAdminApplyResultCard(result: _lastConfigAdminApply!),
         ],
       ),
     );
   }
+}
+
+List<NavivoxConfigAdminChange> _configAdminChangesFromFlow(
+  ConfigApplyFlowModel flow,
+) {
+  return flow.changes
+      .map(
+        (change) => NavivoxConfigAdminChange(
+          key: change.path,
+          value: change.applyValue,
+        ),
+      )
+      .toList(growable: false);
 }
 
 class _ConfigScopeCard extends StatelessWidget {
@@ -270,10 +354,73 @@ class _ConfigPendingChangesCard extends StatelessWidget {
   }
 }
 
+class _ConfigAdminStatusCard extends StatelessWidget {
+  const _ConfigAdminStatusCard({required this.message, this.isError = false});
+
+  final String message;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          message,
+          style: isError
+              ? TextStyle(color: Theme.of(context).colorScheme.error)
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfigAdminApplyResultCard extends StatelessWidget {
+  const _ConfigAdminApplyResultCard({required this.result});
+
+  final NavivoxConfigAdminResponse result;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = result.reloadApplied
+        ? 'Config reload applied by Gormes.'
+        : result.pendingRestart
+        ? 'Config changes pending restart.'
+        : 'Config changes applied.';
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(status, style: Theme.of(context).textTheme.titleSmall),
+            if (result.reloadError.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(result.reloadError),
+            ],
+            for (final change in result.changes)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(change.summaryLabel),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ConfigConfirmationDialog extends StatelessWidget {
-  const _ConfigConfirmationDialog({required this.presentation});
+  const _ConfigConfirmationDialog({
+    required this.presentation,
+    this.backendDiff,
+  });
 
   final ConfigApplyPresentation presentation;
+  final NavivoxConfigAdminResponse? backendDiff;
 
   @override
   Widget build(BuildContext context) {
@@ -285,15 +432,19 @@ class _ConfigConfirmationDialog extends StatelessWidget {
         children: [
           Text(presentation.confirmationIntro),
           const SizedBox(height: 12),
-          for (final change in presentation.changes) ...[
-            Text(change.summaryLabel),
-            if (change.hasRestartLabel)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Chip(label: Text(change.restartLabel!)),
-              ),
+          for (final summary in _confirmationSummaries()) ...[
+            Text(summary),
             const SizedBox(height: 8),
           ],
+          if (backendDiff == null)
+            for (final change in presentation.changes) ...[
+              if (change.hasRestartLabel)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Chip(label: Text(change.restartLabel!)),
+                ),
+              const SizedBox(height: 8),
+            ],
         ],
       ),
       actions: [
@@ -307,6 +458,16 @@ class _ConfigConfirmationDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<String> _confirmationSummaries() {
+    final diff = backendDiff;
+    if (diff != null && diff.changes.isNotEmpty) {
+      return diff.changes.map((change) => change.summaryLabel).toList();
+    }
+    return presentation.changes
+        .map((change) => change.summaryLabel)
+        .toList(growable: false);
   }
 }
 
@@ -351,6 +512,11 @@ class _ConfigRow extends StatelessWidget {
                   )
                 else
                   Text(field.displayValue),
+                for (final helper in field.helperLines)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(helper),
+                  ),
                 for (final message in field.validationMessages)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),

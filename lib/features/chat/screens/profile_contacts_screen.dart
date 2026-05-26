@@ -8,6 +8,7 @@ import '../../../router/app_routes.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
 import '../../profile_contacts/profile_contact_list_presentation.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
+import '../../profiles/profile_seed_sheet.dart';
 
 const _profileContactsPresentation = ProfileContactsScreenPresentation();
 
@@ -114,6 +115,10 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                             final contact = presentation.visibleContacts[index];
                             return _ProfileContactTile(
                               contact: contact,
+                              query: _query,
+                              selected:
+                                  contact.key ==
+                                  channel.state.selectedProfileContactKey,
                               onTap: () {
                                 channel.selectProfileContact(
                                   serverId: contact.serverId,
@@ -160,6 +165,18 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
         child: ListView(
           shrinkWrap: true,
           children: [
+            ListTile(
+              key: const ValueKey('profile-create-from-seed'),
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('Create from seed'),
+              subtitle: const Text(
+                'Ask Gormes to draft a profile from natural language.',
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showProfileSeedSheet(context);
+              },
+            ),
             for (final row in _profileContactsPresentation.addProfileRows)
               ListTile(
                 leading: Icon(_addProfileRowIcon(row.kind)),
@@ -169,6 +186,16 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showProfileSeedSheet(BuildContext context) {
+    final channel = ref.read(navivoxChannelProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => ProfileSeedSheet(channel: channel),
     );
   }
 
@@ -257,7 +284,11 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
         );
         router.go(AppRoutes.memory);
       case ProfileContactDetailActionKind.editProfile:
-        break;
+        channel.selectProfileContact(
+          serverId: contact.serverId,
+          profileId: contact.profileId,
+        );
+        router.go(AppRoutes.config);
     }
   }
 }
@@ -341,14 +372,176 @@ class _ServerFilterBar extends StatelessWidget {
   }
 }
 
+class _ProfileSearchHighlightText extends StatelessWidget {
+  const _ProfileSearchHighlightText({
+    required this.text,
+    required this.query,
+    this.style,
+    this.maxLines,
+    this.overflow,
+    super.key,
+  });
+
+  final String text;
+  final String query;
+  final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveStyle = style ?? DefaultTextStyle.of(context).style;
+    final normalizedQuery = query.trim().toLowerCase();
+    final start = normalizedQuery.isEmpty
+        ? -1
+        : text.toLowerCase().indexOf(normalizedQuery);
+    if (start < 0) {
+      return Text(
+        text,
+        style: effectiveStyle,
+        maxLines: maxLines,
+        overflow: overflow,
+      );
+    }
+
+    final end = start + normalizedQuery.length;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Text.rich(
+      TextSpan(
+        style: effectiveStyle,
+        children: [
+          if (start > 0) TextSpan(text: text.substring(0, start)),
+          TextSpan(
+            text: text.substring(start, end),
+            style: effectiveStyle.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (end < text.length) TextSpan(text: text.substring(end)),
+        ],
+      ),
+      maxLines: maxLines,
+      overflow: overflow,
+    );
+  }
+}
+
+class _ProfileContactAvatarStack extends StatelessWidget {
+  const _ProfileContactAvatarStack({required this.contact});
+
+  final NavivoxProfileContact contact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isOnline = contact.health == NavivoxProfileHealth.online;
+    final voiceReady = contact.micAvailable && contact.voiceCapability.enabled;
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(child: ProfileContactAvatar(contact: contact)),
+          if (isOnline)
+            Positioned(
+              key: ValueKey(
+                'profile-contact-presence-${contact.serverId}-${contact.profileId}',
+              ),
+              right: 1,
+              bottom: 1,
+              child: Semantics(
+                label: '${contact.displayName} online',
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade500,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (voiceReady)
+            Positioned(
+              key: ValueKey(
+                'profile-contact-voice-ready-${contact.serverId}-${contact.profileId}',
+              ),
+              right: -2,
+              top: -2,
+              child: Semantics(
+                label: '${contact.displayName} voice ready',
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.mic,
+                    size: 9,
+                    color: theme.colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileTypingDots extends StatelessWidget {
+  const _ProfileTypingDots({required this.contact});
+
+  final NavivoxProfileContact contact;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var index = 0; index < 3; index += 1) ...[
+          Container(
+            key: ValueKey(
+              'profile-typing-dot-${contact.serverId}-${contact.profileId}-$index',
+            ),
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.55 + index * 0.15),
+              shape: BoxShape.circle,
+            ),
+          ),
+          if (index < 2) const SizedBox(width: 2),
+        ],
+      ],
+    );
+  }
+}
+
 class _ProfileContactTile extends StatelessWidget {
   const _ProfileContactTile({
     required this.contact,
+    required this.query,
+    required this.selected,
     required this.onTap,
     required this.onLongPress,
   });
 
   final NavivoxProfileContact contact;
+  final String query;
+  final bool selected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -357,10 +550,23 @@ class _ProfileContactTile extends StatelessWidget {
     final summary = ProfileContactPresentation(contact);
     return ListTile(
       key: ValueKey('profile-contact-${contact.serverId}-${contact.profileId}'),
-      leading: ProfileContactAvatar(contact: contact),
+      selected: selected,
+      selectedTileColor: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.32),
+      leading: _ProfileContactAvatarStack(contact: contact),
       title: Row(
         children: [
-          Expanded(child: Text(contact.displayName)),
+          Expanded(
+            child: _ProfileSearchHighlightText(
+              key: ValueKey(
+                'profile-contact-title-${contact.serverId}-${contact.profileId}',
+              ),
+              text: contact.displayName,
+              query: query,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
           _ServerChip(label: contact.serverLabel),
         ],
       ),
@@ -370,8 +576,12 @@ class _ProfileContactTile extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  summary.latestLabel,
+                child: _ProfileSearchHighlightText(
+                  key: ValueKey(
+                    'profile-contact-preview-${contact.serverId}-${contact.profileId}',
+                  ),
+                  text: summary.latestLabel,
+                  query: query,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: contact.activeTurnState == 'streaming'
@@ -382,7 +592,7 @@ class _ProfileContactTile extends StatelessWidget {
                       : null,
                 ),
               ),
-              if (contact.activeTurnState == 'streaming')
+              if (contact.activeTurnState == 'streaming') ...[
                 Container(
                   key: ValueKey(
                     'profile-active-turn-${contact.serverId}-${contact.profileId}',
@@ -395,6 +605,9 @@ class _ProfileContactTile extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
+                const SizedBox(width: 5),
+                _ProfileTypingDots(contact: contact),
+              ],
             ],
           ),
           const SizedBox(height: 4),

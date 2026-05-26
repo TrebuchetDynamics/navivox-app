@@ -37,27 +37,45 @@ class NavivoxToolCall {
     required this.name,
     required this.status,
     required this.summary,
+    this.approval,
     this.artifacts = const [],
   });
 
   final String name;
   final String status;
   final String summary;
+  final NavivoxToolApproval? approval;
   final List<NavivoxToolArtifact> artifacts;
 
   NavivoxToolCall copyWith({
     String? name,
     String? status,
     String? summary,
+    NavivoxToolApproval? approval,
     List<NavivoxToolArtifact>? artifacts,
   }) {
     return NavivoxToolCall(
       name: name ?? this.name,
       status: status ?? this.status,
       summary: summary ?? this.summary,
+      approval: approval ?? this.approval,
       artifacts: artifacts ?? this.artifacts,
     );
   }
+}
+
+class NavivoxToolApproval {
+  const NavivoxToolApproval({
+    required this.id,
+    required this.status,
+    required this.prompt,
+    this.risk,
+  });
+
+  final String id;
+  final String status;
+  final String prompt;
+  final String? risk;
 }
 
 class NavivoxToolArtifact {

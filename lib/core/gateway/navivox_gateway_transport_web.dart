@@ -5,7 +5,7 @@ import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
-const navivoxWebSocketProtocol = 'gormes.navivox.v1';
+const navivoxWebSocketProtocol = 'navivox.v1';
 const _navivoxWebSocketTokenProtocolPrefix = 'gormes.navivox.token.';
 
 class NavivoxGatewaySocket {
@@ -83,7 +83,10 @@ Future<NavivoxGatewaySocket> defaultConnectWebSocket(
     );
   }
 
-  final socket = web.WebSocket(uri.toString(), protocols.join(' ').toJS);
+  final socket = web.WebSocket(
+    uri.toString(),
+    protocols.map((protocol) => protocol.toJS).toList().toJS,
+  );
   final completer = Completer<NavivoxGatewaySocket>();
 
   socket.onopen = ((web.Event event) {

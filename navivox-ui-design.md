@@ -20,7 +20,8 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
    works.
 7. **Trust boundaries stay visible**: connected host, auth mode, exposure mode,
    and token-required state are shown without leaking secrets.
-8. **Dense, adaptive layout**: mobile uses bottom navigation; desktop uses a
+8. **Dense, adaptive layout**: mobile keeps chat immersive with a
+   Telegram-style navigation drawer for top-level destinations; desktop uses a
    left rail and status bar.
 9. **Telegram-inspired, Gormes-owned**: borrow fast scanning, grouped bubbles,
    status ticks, action sheets, and compact navigation from Telegram-like apps,
@@ -60,9 +61,7 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
 |    Gateway unavailable.                       o|
 |    retry required                              |
 +------------------------------------------------+
-| Chats              Servers              Settings|
-+------------------------------------------------+
-|                          [+]                   |
+| [menu]                                      [+] |
 +------------------------------------------------+
 ```
 
@@ -82,7 +81,7 @@ Chat list rows are profile contacts:
 - Row tap opens the current/latest session for the profile.
 - Row mic opens continuous voice when the server is trusted and healthy.
 - Long press opens profile details/edit.
-- Bottom add button opens an action sheet with New profile, Add server, and
+- Floating add button opens an action sheet with New profile, Add server, and
   Import connect-info.
 
 The list is flat by default. Pinned contacts sort first locally, but pins never
@@ -530,9 +529,9 @@ secret-shaped values.
 
 Mobile:
 
-- Material 3 `NavigationBar`.
+- Telegram-style hamburger drawer for Chats, Servers, Memory, and Settings.
 - Single-column chat.
-- Tabs: Chats, Servers, Settings.
+- No bottom navigation under the active profile thread or contact list.
 - Sheets for server and profile switching.
 - Voice controls as bottom panel.
 

@@ -107,6 +107,30 @@ void main() {
     },
   );
 
+  testWidgets('empty-state creation/import action explains unavailable support', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: AgentsScreen()),
+      ),
+    );
+
+    await tester.tap(find.text('Why creation/import is unavailable'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profile creation/import unavailable'), findsOneWidget);
+    expect(
+      find.text(
+        'Gormes can advertise Navivox create-from-seed support, but this app does not yet wire a durable create/import Operator intent.',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('tapping an agent tile selects it through the channel', (
     tester,
   ) async {

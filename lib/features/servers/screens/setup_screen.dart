@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
 import '../gateway_connection_presentation.dart';
+import '../navivox_connect_intent_source.dart';
 import '../setup_guide_presentation.dart';
 import '../setup_qr_import_presentation.dart';
 import '../setup_screen_presentation.dart';
@@ -30,27 +33,45 @@ class SetupQrImageImportException implements Exception {
 }
 
 class SetupScreen extends ConsumerStatefulWidget {
-  const SetupScreen({this.qrImageImporter, super.key});
+  const SetupScreen({
+    this.qrImageImporter,
+    this.connectIntentSource,
+    super.key,
+  });
 
   final SetupQrImageImporter? qrImageImporter;
+  final NavivoxConnectIntentSource? connectIntentSource;
 
   @override
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
 }
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
-  final _baseUrlController = TextEditingController(
-    text: 'http://127.0.0.1:8765',
-  );
+  final _addressController = TextEditingController(text: '127.0.0.1');
+  final _portController = TextEditingController(text: '8765');
   final _tokenController = TextEditingController();
   bool _connecting = false;
   bool _showToken = false;
   bool _importingQr = false;
+  String _scheme = 'http';
+  String? _webSocketUrl;
   SetupScreenNotice? _notice;
+  late final NavivoxConnectIntentSource _connectIntentSource;
+  StreamSubscription<SetupQrImageImport>? _connectIntentSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectIntentSource =
+        widget.connectIntentSource ?? const NavivoxConnectIntentSource();
+    unawaited(_startConnectIntentHandling());
+  }
 
   @override
   void dispose() {
-    _baseUrlController.dispose();
+    _connectIntentSubscription?.cancel();
+    _addressController.dispose();
+    _portController.dispose();
     _tokenController.dispose();
     super.dispose();
   }
@@ -86,20 +107,58 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Semantics(
-                    label: _setupScreenPresentation.baseUrlFieldSemanticLabel,
-                    hint: _setupScreenPresentation.baseUrlFieldSemanticHint,
-                    textField: true,
-                    child: TextField(
-                      controller: _baseUrlController,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText: _setupScreenPresentation.baseUrlFieldLabel,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Semantics(
+                          label: _setupScreenPresentation
+                              .addressFieldSemanticLabel,
+                          hint:
+                              _setupScreenPresentation.addressFieldSemanticHint,
+                          textField: true,
+                          child: TextField(
+                            controller: _addressController,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText:
+                                  _setupScreenPresentation.addressFieldLabel,
+                            ),
+                            keyboardType: TextInputType.url,
+                            textInputAction: TextInputAction.next,
+                            onChanged: _handleAddressChanged,
+                            onSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
+                          ),
+                        ),
                       ),
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 112,
+                        child: Semantics(
+                          label:
+                              _setupScreenPresentation.portFieldSemanticLabel,
+                          hint: _setupScreenPresentation.portFieldSemanticHint,
+                          textField: true,
+                          child: TextField(
+                            controller: _portController,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              labelText:
+                                  _setupScreenPresentation.portFieldLabel,
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (_) => _webSocketUrl = null,
+                            onSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Semantics(
@@ -210,7 +269,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           ),
                           const SizedBox(height: 12),
                           for (final entry
-                              in _setupGuidePresentation.entries) ...[
+                              in _setupGuidePresentation.visibleEntries) ...[
                             if (entry.id != SetupGuideEntryId.bootstrap)
                               const SizedBox(height: 8),
                             OutlinedButton.icon(
@@ -246,15 +305,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         setState(() => _notice = notice);
         return;
       }
-      setState(() {
-        if (result.baseUrl != null) {
-          _baseUrlController.text = result.baseUrl!;
-        }
-        if (result.token != null) {
-          _tokenController.text = result.token!;
-        }
-        _notice = notice;
-      });
+      _applyConnectionImport(result, notice);
     } on SetupQrImageImportException catch (error) {
       if (mounted) {
         setState(
@@ -274,10 +325,69 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     }
   }
 
+  Future<void> _startConnectIntentHandling() async {
+    final available = await _connectIntentSource.isAvailable();
+    if (!mounted || !available) return;
+    final result = await _connectIntentSource.initialImport();
+    if (result != null && result.hasValues) {
+      _applyConnectIntentImport(result);
+    }
+    if (!mounted) return;
+    _connectIntentSubscription = _connectIntentSource.imports.listen(
+      _applyConnectIntentImport,
+    );
+  }
+
+  void _applyConnectIntentImport(SetupQrImageImport result) {
+    if (!mounted || !result.hasValues) return;
+    _applyConnectionImport(
+      result,
+      _setupScreenPresentation.connectIntentImportNotice,
+    );
+  }
+
+  void _applyConnectionImport(
+    SetupQrImageImport result,
+    SetupScreenNotice notice,
+  ) {
+    setState(() {
+      if (result.baseUrl != null) {
+        const presentation = GatewayConnectionPresentation();
+        final parsed = presentation.splitBaseUrl(result.baseUrl!);
+        if (!parsed.hasError) {
+          _scheme = Uri.tryParse(parsed.baseUrl!)?.scheme ?? 'http';
+          _addressController.text = parsed.address!;
+          _portController.text = parsed.port!;
+        }
+      }
+      if (result.token != null) {
+        _tokenController.text = result.token!;
+      }
+      _webSocketUrl = result.webSocketUrl;
+      _notice = notice;
+    });
+  }
+
+  void _handleAddressChanged(String value) {
+    _webSocketUrl = null;
+    final uri = Uri.tryParse(value.trim());
+    if (uri != null && {'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
+      _scheme = switch (uri.scheme) {
+        'ws' => 'http',
+        'wss' => 'https',
+        _ => uri.scheme,
+      };
+    } else {
+      _scheme = 'http';
+    }
+  }
+
   Future<void> _connectGateway() async {
     const presentation = GatewayConnectionPresentation();
-    final validationError = presentation.validateBaseUrl(
-      _baseUrlController.text,
+    final validationError = presentation.validateAddressAndPort(
+      address: _addressController.text,
+      port: _portController.text,
+      scheme: _scheme,
     );
     if (validationError != null) {
       setState(() {
@@ -287,9 +397,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       });
       return;
     }
-    final request = presentation.connectRequest(
-      baseUrl: _baseUrlController.text,
+    final request = presentation.connectRequestFromParts(
+      address: _addressController.text,
+      port: _portController.text,
       token: _tokenController.text,
+      scheme: _scheme,
+      webSocketUrl: _webSocketUrl,
     );
 
     setState(() {
@@ -299,7 +412,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     try {
       await ref
           .read(gatewayNavivoxChannelProvider)
-          .connect(baseUrl: request.baseUrl, token: request.token);
+          .connect(
+            baseUrl: request.baseUrl,
+            token: request.token,
+            webSocketUrl: request.webSocketUrl,
+          );
       if (mounted) context.go(AppRoutes.chats);
     } catch (_) {
       if (mounted) {
@@ -327,13 +444,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
 IconData _setupGuideIcon(SetupGuideEntryId id) => switch (id) {
   SetupGuideEntryId.bootstrap => Icons.content_copy,
-  SetupGuideEntryId.downloadLinks => Icons.link,
-  SetupGuideEntryId.postInstallChecks => Icons.checklist,
   SetupGuideEntryId.navivoxPairHandoff => Icons.qr_code_2,
-  SetupGuideEntryId.gatewayLifecycle => Icons.terminal,
-  SetupGuideEntryId.bootHelper => Icons.power_settings_new,
-  SetupGuideEntryId.connectionHint => Icons.device_hub,
-  SetupGuideEntryId.storageCommand => Icons.folder_shared,
 };
 
 Future<SetupQrImageImport?> importNavivoxQrImage() async {

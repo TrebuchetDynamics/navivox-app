@@ -46,6 +46,12 @@ void main() {
           name: 'shell.run',
           status: 'completed',
           summary: 'ran git diff',
+          approval: NavivoxToolApproval(
+            id: 'approval-shell',
+            status: 'approval_required',
+            prompt: 'Approve shell.run?',
+            risk: 'Writes files',
+          ),
           artifacts: [
             NavivoxToolArtifact(
               id: 'a-1',
@@ -75,8 +81,12 @@ void main() {
       expect(find.text('diff.patch'), findsOneWidget);
       expect(find.text('14 lines changed'), findsOneWidget);
       expect(find.text('screenshot.png'), findsOneWidget);
+      expect(find.text('artifacts/a-2'), findsOneWidget);
       expect(find.text('image'), findsOneWidget);
       expect(find.text('file'), findsOneWidget);
+      expect(find.text('Approval required'), findsOneWidget);
+      expect(find.text('Approve shell.run?'), findsOneWidget);
+      expect(find.text('Writes files'), findsOneWidget);
     },
   );
 

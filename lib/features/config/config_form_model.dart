@@ -13,7 +13,9 @@ class ConfigFormModel {
     final rows = <ConfigFormRow>[];
     for (final raw in rawFields) {
       if (raw is! Map) continue;
-      final field = (raw['path'] ?? raw['name'])?.toString().trim();
+      final field = (raw['path'] ?? raw['key'] ?? raw['name'])
+          ?.toString()
+          .trim();
       if (field == null || field.isEmpty) continue;
       final type = ConfigFormFieldType.fromWire(raw['type']?.toString());
       final secret =
@@ -21,18 +23,21 @@ class ConfigFormModel {
       rows.add(
         ConfigFormRow(
           field: field,
-          label: raw['label']?.toString().trim().isNotEmpty == true
-              ? raw['label'].toString().trim()
-              : field,
+          label: _fieldLabel(raw, field),
           type: secret ? ConfigFormFieldType.secret : type,
           required: raw['required'] == true,
-          restartRequired: raw['restart_required'] == true,
+          restartRequired:
+              raw['restart_required'] == true ||
+              raw['reload']?.toString().contains('restart') == true,
           riskLevel:
               raw['risk_level']?.toString().trim().toLowerCase() ?? 'low',
           requiresConfirmation:
               raw['requires_confirmation'] == true ||
               raw['risk_level']?.toString().trim().toLowerCase() == 'high',
           rawValue: values[field],
+          allowedValues: _stringList(raw['allowed']),
+          actions: _stringList(raw['actions']),
+          reloadMode: raw['reload']?.toString().trim() ?? '',
         ),
       );
     }
@@ -109,11 +114,27 @@ class ConfigFormModel {
     return sections;
   }
 
+  static String _fieldLabel(Map raw, String fallback) {
+    for (final key in const ['label', 'title']) {
+      final text = raw[key]?.toString().trim();
+      if (text != null && text.isNotEmpty) return text;
+    }
+    return fallback;
+  }
+
+  static List<String> _stringList(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
   static List<String> _sectionFieldRefs(Object? rawFields) {
     if (rawFields is! List) return const [];
     final refs = <String>[];
     for (final raw in rawFields) {
-      final field = raw is Map ? raw['path'] ?? raw['name'] : raw;
+      final field = raw is Map ? raw['path'] ?? raw['key'] ?? raw['name'] : raw;
       final text = field?.toString().trim();
       if (text != null && text.isNotEmpty) refs.add(text);
     }
@@ -176,9 +197,10 @@ enum ConfigFormFieldType {
   factory ConfigFormFieldType.fromWire(String? raw) {
     return switch (raw?.trim().toLowerCase()) {
       'number' => ConfigFormFieldType.number,
-      'integer' => ConfigFormFieldType.integer,
-      'boolean' => ConfigFormFieldType.boolean,
+      'integer' || 'int' => ConfigFormFieldType.integer,
+      'boolean' || 'bool' => ConfigFormFieldType.boolean,
       'secret' => ConfigFormFieldType.secret,
+      'enum' || 'string_list' => ConfigFormFieldType.string,
       _ => ConfigFormFieldType.string,
     };
   }
@@ -197,6 +219,9 @@ class ConfigFormRow {
     required this.riskLevel,
     required this.requiresConfirmation,
     required this.rawValue,
+    this.allowedValues = const [],
+    this.actions = const [],
+    this.reloadMode = '',
   });
 
   final String field;
@@ -207,6 +232,9 @@ class ConfigFormRow {
   final String riskLevel;
   final bool requiresConfirmation;
   final Object? rawValue;
+  final List<String> allowedValues;
+  final List<String> actions;
+  final String reloadMode;
 
   bool get isSecret => type == ConfigFormFieldType.secret;
 
@@ -216,6 +244,7 @@ class ConfigFormRow {
     if (isSecret) return _secretDisplayValue(rawValue);
     final value = _plainValue(rawValue);
     if (value == null) return '—';
+    if (value is Iterable) return value.join(', ');
     return '$value';
   }
 
@@ -229,8 +258,9 @@ class ConfigFormRow {
     final text = raw.trim();
     if (isSecret) return text;
     return switch (type) {
-      ConfigFormFieldType.number ||
-      ConfigFormFieldType.integer => num.tryParse(text) ?? raw,
+      ConfigFormFieldType.number => num.tryParse(text) ?? raw,
+      ConfigFormFieldType.integer =>
+        int.tryParse(text) ?? num.tryParse(text) ?? raw,
       ConfigFormFieldType.boolean => text.toLowerCase() == 'true',
       ConfigFormFieldType.string => raw,
       ConfigFormFieldType.secret => text,
@@ -249,12 +279,18 @@ class ConfigFormRow {
     if (rawValue is Map) {
       final status = rawValue['secret_status']?.toString().trim().toLowerCase();
       return switch (status) {
-        'configured' || 'external' => 'Secret configured',
+        'configured' || 'external' || 'set' => _secretConfiguredLabel(rawValue),
         'unset' => 'Secret not set',
         'unknown' => 'Secret status unknown',
         _ => 'Secret configured',
       };
     }
     return 'Secret configured';
+  }
+
+  static String _secretConfiguredLabel(Map rawValue) {
+    final source = rawValue['source']?.toString().trim();
+    if (source == null || source.isEmpty) return 'Secret configured';
+    return 'Secret configured ($source)';
   }
 }

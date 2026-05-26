@@ -1064,6 +1064,35 @@ void main() {
     expect(channel.sentVoiceTranscripts, isEmpty);
   });
 
+  testWidgets('continuous voice ready banner shows live voice affordance', (
+    tester,
+  ) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+    final voiceService = FakeVoiceCaptureService(
+      audio: Uint8List.fromList([1]),
+      transcript: 'hello',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.9,
+    );
+
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
+    );
+
+    expect(find.text('Continuous voice ready'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('continuous-voice-live-indicator')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('continuous-voice-live-dot')),
+      findsOneWidget,
+    );
+    expect(find.text('Slide to cancel'), findsNothing);
+  });
+
   testWidgets('continuous voice banner opens a control sheet', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
     final voiceService = FakeVoiceCaptureService(
@@ -1083,6 +1112,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Continuous voice'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('continuous-voice-control-sheet')),
+      findsOneWidget,
+    );
+    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
     expect(find.text('Ready for Mineru'), findsOneWidget);
     expect(
       find.text('Tap the mic to speak. Say “navi” for command mode.'),

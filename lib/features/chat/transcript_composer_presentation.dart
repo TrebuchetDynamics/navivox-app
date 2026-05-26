@@ -86,12 +86,12 @@ class TranscriptComposerPresentation {
     TranscriptComposerShareOption(
       kind: TranscriptComposerShareOptionKind.uploadFile,
       title: 'Upload file',
-      subtitle: 'Attach a local file when upload wiring lands.',
+      subtitle: 'Attach a local file after upload support is enabled.',
     ),
     TranscriptComposerShareOption(
       kind: TranscriptComposerShareOptionKind.photoOrVideo,
       title: 'Photo or video',
-      subtitle: 'Media picker placeholder.',
+      subtitle: 'Pick media after upload support is enabled.',
     ),
     TranscriptComposerShareOption(
       kind: TranscriptComposerShareOptionKind.workspaceFile,

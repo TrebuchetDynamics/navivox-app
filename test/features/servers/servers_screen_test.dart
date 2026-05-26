@@ -8,12 +8,21 @@ import 'package:navivox/features/servers/screens/servers_screen.dart';
 import '../../support/test_navivox_channel.dart';
 
 class RecordingConnectChannel extends TestNavivoxChannel {
-  final connectCalls = <({String baseUrl, String? token})>[];
+  final connectCalls =
+      <({String baseUrl, String? token, String? webSocketUrl})>[];
   int disconnectCalls = 0;
 
   @override
-  Future<void> connect({required String baseUrl, String? token}) async {
-    connectCalls.add((baseUrl: baseUrl, token: token));
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  }) async {
+    connectCalls.add((
+      baseUrl: baseUrl,
+      token: token,
+      webSocketUrl: webSocketUrl,
+    ));
   }
 
   @override
@@ -174,7 +183,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.connectCalls, [
-      (baseUrl: 'http://127.0.0.1:7319', token: 'secret-token'),
+      (
+        baseUrl: 'http://127.0.0.1:7319',
+        token: 'secret-token',
+        webSocketUrl: null,
+      ),
     ]);
     expect(
       find.text('Connection test passed for http://127.0.0.1:7319'),

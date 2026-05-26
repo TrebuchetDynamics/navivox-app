@@ -102,7 +102,7 @@ void main() {
     final row = model.rows.single;
 
     expect(row.isSecret, isTrue);
-    expect(row.displayValue, 'Secret configured');
+    expect(row.displayValue, 'Secret configured (env:OPENAI_API_KEY)');
     expect(row.displayValue, isNot(contains('nvbx_secret_should_not_render')));
     expect(row.coerceEditValue('new-secret'), 'new-secret');
   });

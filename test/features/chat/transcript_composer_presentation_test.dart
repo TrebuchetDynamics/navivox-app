@@ -149,8 +149,8 @@ void main() {
         (option) => '${option.kind.name}:${option.title}:${option.subtitle}',
       ),
       [
-        'uploadFile:Upload file:Attach a local file when upload wiring lands.',
-        'photoOrVideo:Photo or video:Media picker placeholder.',
+        'uploadFile:Upload file:Attach a local file after upload support is enabled.',
+        'photoOrVideo:Photo or video:Pick media after upload support is enabled.',
         'workspaceFile:Workspace file:Share a file from the active Gormes workspace.',
       ],
     );

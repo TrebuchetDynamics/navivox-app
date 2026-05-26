@@ -111,4 +111,12 @@ void main() {
     expect(app.theme?.colorScheme.brightness, Brightness.light);
     expect(app.darkTheme?.colorScheme.brightness, Brightness.dark);
   });
+
+  testWidgets('NavivoxApp wraps routed content in a text selection area', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const NavivoxApp());
+
+    expect(find.byType(SelectionArea), findsOneWidget);
+  });
 }

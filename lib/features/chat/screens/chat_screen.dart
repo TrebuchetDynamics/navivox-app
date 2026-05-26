@@ -446,6 +446,43 @@ class _ChatInfoRow extends StatelessWidget {
   }
 }
 
+class _ContinuousVoiceLiveIndicator extends StatelessWidget {
+  const _ContinuousVoiceLiveIndicator({required this.active});
+
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = active ? scheme.error : scheme.primary;
+    return Row(
+      key: const ValueKey('continuous-voice-live-indicator'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          key: const ValueKey('continuous-voice-live-dot'),
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 5),
+        for (final height
+            in active ? const [9.0, 14.0, 11.0] : const [7.0, 10.0, 8.0]) ...[
+          Container(
+            width: 3,
+            height: height,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: active ? 0.9 : 0.55),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 2),
+        ],
+      ],
+    );
+  }
+}
+
 class _VoiceModeBanner extends StatelessWidget {
   const _VoiceModeBanner({
     required this.presentation,
@@ -481,6 +518,10 @@ class _VoiceModeBanner extends StatelessWidget {
                   size: 18,
                 ),
                 const SizedBox(width: 8),
+                if (presentation.disabledReason == null) ...[
+                  _ContinuousVoiceLiveIndicator(active: presentation.pending),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(child: Text(text)),
                 const Icon(Icons.tune, size: 18),
                 if (presentation.pending)
@@ -504,25 +545,34 @@ class _VoiceModeBanner extends StatelessWidget {
   void _showVoiceControls(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [
-            Text(
-              presentation.sheetTitle,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            for (final row in presentation.sheetRows)
-              ListTile(
-                leading: Icon(_voiceControlRowIcon(row.kind)),
-                title: Text(row.title),
-                subtitle: row.subtitle == null ? null : Text(row.subtitle!),
-                onTap: _voiceControlRowTap(context, row.action),
+        child: DraggableScrollableSheet(
+          key: const ValueKey('continuous-voice-control-sheet'),
+          expand: false,
+          initialChildSize: 0.86,
+          minChildSize: 0.32,
+          maxChildSize: 0.86,
+          builder: (context, scrollController) => ListView(
+            controller: scrollController,
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [
+              Text(
+                presentation.sheetTitle,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-          ],
+              const SizedBox(height: 12),
+              for (final row in presentation.sheetRows)
+                ListTile(
+                  leading: Icon(_voiceControlRowIcon(row.kind)),
+                  title: Text(row.title),
+                  subtitle: row.subtitle == null ? null : Text(row.subtitle!),
+                  onTap: _voiceControlRowTap(context, row.action),
+                ),
+            ],
+          ),
         ),
       ),
     );

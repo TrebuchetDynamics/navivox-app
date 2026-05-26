@@ -22,9 +22,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       StreamController<NavivoxApprovalRequest>.broadcast();
 
   NavivoxGatewayClient? _client;
+  NavivoxCapabilityDocument? _capabilities;
   NavivoxGatewaySocket? _socket;
   StreamSubscription<NavivoxGatewayEvent>? _events;
   NavivoxChannelState _state = const NavivoxChannelState();
+  bool _configAdminAvailable = false;
   String? _activeSessionId;
 
   @override
@@ -50,40 +52,79 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   Stream<NavivoxApprovalRequest> get approvalRequests => _approvals.stream;
 
   @override
-  Future<void> connect({required String baseUrl, String? token}) async {
+  Future<void> connect({
+    required String baseUrl,
+    String? token,
+    String? webSocketUrl,
+  }) async {
     await disconnect();
-    final config = NavivoxGatewayConfig.fromBaseUrl(baseUrl, token: token);
+    final config = NavivoxGatewayConfig(
+      baseUri: Uri.parse(baseUrl),
+      token: token,
+      webSocketUri: _optionalUri(webSocketUrl),
+    );
     final client = NavivoxGatewayClient(config: config);
     final status = await client.gatewayStatus();
     _client = client;
-    final contactPayloads = await client.profileContacts();
-    final profileContacts = contactPayloads
-        .map(_profileContactFromJson)
-        .toList(growable: false);
-    final contacts = profileContacts.isEmpty
-        ? [_fallbackProfileContact()]
-        : profileContacts;
-    final profileRouting = status.supports('profile_routing')
+    if (!status.enabled) {
+      _capabilities = null;
+      _enterClosedCapabilityMode(config, status: 'Gateway disabled');
+      return;
+    }
+    final capabilities = await _loadCapabilities(client);
+    _capabilities = capabilities;
+    if (capabilities == null) {
+      _enterClosedCapabilityMode(config, status: 'Capabilities unavailable');
+      return;
+    }
+
+    final contacts =
+        _capabilityAllows(
+          capabilities,
+          'profile_contacts',
+          'GET',
+          '/v1/navivox/profile-contacts',
+        )
+        ? await _loadProfileContacts(client)
+        : [_fallbackProfileContact()];
+    final profileRouting =
+        _capabilityAllows(
+          capabilities,
+          'profile_routing',
+          'GET',
+          '/v1/navivox/profile-routing',
+        )
         ? await client.profileRouting()
         : const NavivoxProfileRoutingReport();
-    final socket = await client.connectStream();
-    _socket = socket;
-    _events = client
-        .decodeEvents(socket.events)
-        .listen(
-          _onEvent,
-          onError: (Object error) =>
-              _appendSystemMessage('Gateway stream error'),
-          onDone: () => _setServerStatus('Gateway disconnected'),
-        );
+    final configAdminState = await _loadConfigAdminState(client, capabilities);
+    _configAdminAvailable = configAdminState != null;
+    final streamAvailable = _streamAvailable(capabilities);
+    if (streamAvailable) {
+      final socket = await client.connectStream();
+      _socket = socket;
+      _events = client
+          .decodeEvents(socket.events)
+          .listen(
+            _onEvent,
+            onError: (Object error) =>
+                _appendSystemMessage('Gateway stream error'),
+            onDone: () => _setServerStatus('Gateway disconnected'),
+          );
+    }
     _state = _state.copyWith(
       servers: _serversFromProfileContacts(contacts, config),
       activeServerId: contacts.first.serverId,
       profileContacts: contacts,
       selectedProfileContactKey: contacts.first.key,
       profileRouting: profileRouting,
+      configSchema: configAdminState?.schema ?? const {},
+      configValues: configAdminState?.values ?? const {},
+      configDiff: const {},
     );
     notifyListeners();
+    if (!streamAvailable) {
+      _appendSystemMessage('Navivox stream is not advertised by this gateway.');
+    }
   }
 
   @override
@@ -93,6 +134,127 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     await _socket?.close();
     _socket = null;
     _client = null;
+    _capabilities = null;
+    _configAdminAvailable = false;
+  }
+
+  Uri? _optionalUri(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return Uri.parse(trimmed);
+  }
+
+  Future<NavivoxCapabilityDocument?> _loadCapabilities(
+    NavivoxGatewayClient client,
+  ) async {
+    try {
+      final capabilities = await client.capabilities();
+      return _capabilityDocumentValid(capabilities) ? capabilities : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _capabilityDocumentValid(NavivoxCapabilityDocument capabilities) {
+    return capabilities.object == 'gormes.navivox.capabilities' &&
+        capabilities.protocolVersion == navivoxWebSocketProtocol &&
+        capabilities.auth.mode.trim().isNotEmpty &&
+        capabilities.advertisesEndpoint('GET', '/v1/navivox/capabilities') &&
+        capabilities.streams.canonicalEndpoint.trim().isNotEmpty;
+  }
+
+  bool _capabilityAllows(
+    NavivoxCapabilityDocument capabilities,
+    String capability,
+    String method,
+    String path,
+  ) {
+    return capabilities.supports(capability) &&
+        capabilities.advertisesEndpoint(method, path);
+  }
+
+  bool _streamAvailable(NavivoxCapabilityDocument capabilities) {
+    return _capabilityAllows(
+          capabilities,
+          'stream_turns',
+          'WS',
+          '/v1/navivox/stream',
+        ) &&
+        capabilities.streams.canonicalEndpoint == '/v1/navivox/stream';
+  }
+
+  bool _configAdminSupported(NavivoxCapabilityDocument capabilities) {
+    return _capabilityAllows(
+          capabilities,
+          'config_admin',
+          'GET',
+          '/v1/navivox/config-admin/schema',
+        ) &&
+        capabilities.advertisesEndpoint('GET', '/v1/navivox/config-admin') &&
+        capabilities.advertisesEndpoint(
+          'POST',
+          '/v1/navivox/config-admin/diff',
+        ) &&
+        capabilities.advertisesEndpoint(
+          'POST',
+          '/v1/navivox/config-admin/validate',
+        ) &&
+        capabilities.advertisesEndpoint(
+          'POST',
+          '/v1/navivox/config-admin/apply',
+        );
+  }
+
+  Future<({Map<String, Object?> schema, Map<String, Object?> values})?>
+  _loadConfigAdminState(
+    NavivoxGatewayClient client,
+    NavivoxCapabilityDocument capabilities,
+  ) async {
+    if (!_configAdminSupported(capabilities)) return null;
+    try {
+      final schema = await client.configAdminSchema();
+      final values = await client.configAdminValues();
+      return (schema: schema.toConfigSchema(), values: values.toConfigValues());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<NavivoxProfileContact>> _loadProfileContacts(
+    NavivoxGatewayClient client,
+  ) async {
+    final contactPayloads = await client.profileContacts();
+    final profileContacts = contactPayloads
+        .map(_profileContactFromJson)
+        .toList(growable: false);
+    return profileContacts.isEmpty
+        ? [_fallbackProfileContact()]
+        : profileContacts;
+  }
+
+  void _enterClosedCapabilityMode(
+    NavivoxGatewayConfig config, {
+    required String status,
+  }) {
+    final contact = _closedCapabilityProfileContact(status);
+    _state = _state.copyWith(
+      servers: [
+        NavivoxServer(
+          id: contact.serverId,
+          name: contact.serverLabel,
+          status: '$status - ${config.baseUri.host}:${config.baseUri.port}',
+        ),
+      ],
+      activeServerId: contact.serverId,
+      profileContacts: [contact],
+      selectedProfileContactKey: contact.key,
+      profileRouting: const NavivoxProfileRoutingReport(),
+      profileRoutingSelections: const {},
+      configSchema: const {},
+      configValues: const {},
+      configDiff: const {},
+    );
+    notifyListeners();
   }
 
   @override
@@ -275,10 +437,115 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     unawaited(_refreshProfileContacts());
   }
 
+  @override
+  Future<NavivoxProfileSeedResult> profileSeed({
+    required String seed,
+    bool apply = false,
+    List<String> workspaceRoots = const [],
+  }) async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Connect to Gormes to create profiles from seed.');
+    }
+    final capabilities = _capabilities;
+    if (capabilities == null ||
+        !_capabilityAllows(
+          capabilities,
+          'profile_seed',
+          'POST',
+          '/v1/navivox/profile-seed',
+        )) {
+      throw StateError('Gormes profile seed is not advertised.');
+    }
+    final result = await client.profileSeed(
+      seed: seed,
+      apply: apply,
+      workspaceRoots: workspaceRoots,
+    );
+    if (result.isApplied) {
+      final contactPayload = result.contact;
+      if (contactPayload.isNotEmpty) {
+        final contact = _profileContactFromJson(contactPayload);
+        _upsertProfileContact(contact);
+        selectProfileContact(
+          serverId: contact.serverId,
+          profileId: contact.profileId,
+        );
+      } else {
+        await _refreshProfileContacts();
+      }
+    }
+    return result;
+  }
+
+  @override
+  Future<NavivoxVoiceProfilesResponse> voiceProfiles() async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Connect to Gormes to load voice profiles.');
+    }
+    final capabilities = _capabilities;
+    if (capabilities == null ||
+        !_capabilityAllows(
+          capabilities,
+          'voice_profiles',
+          'GET',
+          '/v1/navivox/voice-profiles',
+        )) {
+      throw StateError('Gormes voice profiles are not advertised.');
+    }
+    return client.voiceProfiles();
+  }
+
+  @override
+  Future<NavivoxVoiceProfileValidationResponse> validateVoiceProfile({
+    required String profileId,
+    required NavivoxProfileVoiceProfile voiceProfile,
+  }) async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Connect to Gormes to validate voice profiles.');
+    }
+    final capabilities = _capabilities;
+    if (capabilities == null ||
+        !_capabilityAllows(
+          capabilities,
+          'voice_profiles',
+          'POST',
+          '/v1/navivox/voice-profiles/validate',
+        )) {
+      throw StateError('Gormes voice profile validation is not advertised.');
+    }
+    return client.validateVoiceProfile(
+      profileId: profileId,
+      voiceProfile: voiceProfile,
+    );
+  }
+
+  @override
+  Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Connect to Gormes to load voice run records.');
+    }
+    return client.runRecord(runIdOrSessionId);
+  }
+
   Future<void> _refreshProfileContacts() async {
     final client = _client;
     if (client == null) {
       _appendSystemMessage('Connect to Gormes to refresh profiles.');
+      return;
+    }
+    final capabilities = _capabilities;
+    if (capabilities == null ||
+        !_capabilityAllows(
+          capabilities,
+          'profile_contacts',
+          'GET',
+          '/v1/navivox/profile-contacts',
+        )) {
+      _appendSystemMessage('Gormes profile contacts are not advertised.');
       return;
     }
     try {
@@ -461,17 +728,105 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
-  void sendConfigSet({required String field, required Object? value}) {
-    _appendSystemMessage(
-      'Config editing is not available on this channel yet.',
+  bool get configAdminAvailable => _configAdminAvailable;
+
+  @override
+  Future<void> refreshConfigAdmin() async {
+    final client = _requireConfigAdminClient('refresh config admin');
+    final schema = await client.configAdminSchema();
+    final values = await client.configAdminValues();
+    _state = _state.copyWith(
+      configSchema: schema.toConfigSchema(),
+      configValues: values.toConfigValues(),
     );
+    notifyListeners();
+  }
+
+  @override
+  Future<NavivoxConfigAdminResponse> validateConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final client = _requireConfigAdminClient('validate config');
+    final response = await client.validateConfigAdmin(changes);
+    _state = _state.copyWith(configDiff: response.snapshot);
+    notifyListeners();
+    return response;
+  }
+
+  @override
+  Future<NavivoxConfigAdminResponse> diffConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final client = _requireConfigAdminClient('diff config');
+    final response = await client.diffConfigAdmin(changes);
+    _state = _state.copyWith(configDiff: response.snapshot);
+    notifyListeners();
+    return response;
+  }
+
+  @override
+  Future<NavivoxConfigAdminResponse> applyConfigAdmin(
+    List<NavivoxConfigAdminChange> changes,
+  ) async {
+    final client = _requireConfigAdminClient('apply config');
+    final response = await client.applyConfigAdmin(changes);
+    Map<String, Object?>? nextValues;
+    if (response.applied) {
+      try {
+        nextValues = (await client.configAdminValues()).toConfigValues();
+      } catch (_) {
+        nextValues = null;
+      }
+    }
+    _state = _state.copyWith(
+      configValues: nextValues,
+      configDiff: response.snapshot,
+    );
+    notifyListeners();
+    return response;
+  }
+
+  NavivoxGatewayClient _requireConfigAdminClient(String action) {
+    final client = _client;
+    if (client == null || !_configAdminAvailable) {
+      throw StateError('Connect to Gormes to $action.');
+    }
+    return client;
+  }
+
+  @override
+  void sendConfigSet({required String field, required Object? value}) {
+    if (!_configAdminAvailable) {
+      _appendSystemMessage(
+        'Config editing is not available on this channel yet.',
+      );
+      return;
+    }
+    unawaited(_applyConfigSetInBackground(field: field, value: value));
   }
 
   @override
   void sendConfigSecretSet({required String name, required String secret}) {
-    _appendSystemMessage(
-      'Secret editing is not available on this channel yet.',
-    );
+    if (!_configAdminAvailable) {
+      _appendSystemMessage(
+        'Secret editing is not available on this channel yet.',
+      );
+      return;
+    }
+    unawaited(_applyConfigSetInBackground(field: name, value: secret));
+  }
+
+  Future<void> _applyConfigSetInBackground({
+    required String field,
+    required Object? value,
+  }) async {
+    try {
+      await applyConfigAdmin([
+        NavivoxConfigAdminChange(key: field, value: value),
+      ]);
+    } catch (_) {
+      _appendSystemMessage('Config apply failed.');
+    }
   }
 
   @override
@@ -559,7 +914,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   void _upsertToolCall(NavivoxGatewayEvent event, String status) {
     final toolCallId = event.toolCallId ?? 'tool-${_uuid.v4()}';
     final prior = _state.messages[toolCallId]?.toolCall;
-    final summary = event.message ?? event.text ?? prior?.summary ?? '';
+    final summary = _boundedToolText(
+      event.message ?? event.text ?? prior?.summary ?? '',
+    );
     _putMessage(
       NavivoxChatMessage(
         id: toolCallId,
@@ -570,10 +927,122 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           name: event.toolName ?? prior?.name ?? 'tool',
           status: status,
           summary: summary,
-          artifacts: prior?.artifacts ?? const [],
+          approval: prior?.approval,
+          artifacts: _toolArtifactsFromEvent(
+            event,
+            toolCallId: toolCallId,
+            prior: prior?.artifacts ?? const [],
+          ),
         ),
       ),
     );
+  }
+
+  List<NavivoxToolArtifact> _toolArtifactsFromEvent(
+    NavivoxGatewayEvent event, {
+    required String toolCallId,
+    required List<NavivoxToolArtifact> prior,
+  }) {
+    final parsed = _structuredToolArtifacts(event.metadata, toolCallId);
+    if (parsed.isEmpty) return prior;
+    final byId = {for (final artifact in prior) artifact.id: artifact};
+    for (final artifact in parsed) {
+      byId[artifact.id] = artifact;
+    }
+    return byId.values.toList(growable: false);
+  }
+
+  List<NavivoxToolArtifact> _structuredToolArtifacts(
+    Map<String, Object?> metadata,
+    String toolCallId,
+  ) {
+    if (metadata.isEmpty) return const [];
+    final artifacts = <NavivoxToolArtifact>[];
+    final artifactList = metadata['artifacts'];
+    if (artifactList is List) {
+      for (final artifact in artifactList.whereType<Map>()) {
+        final parsed = _toolArtifactFromMap(
+          Map<String, Object?>.from(artifact),
+        );
+        if (parsed != null) artifacts.add(parsed);
+      }
+    }
+    final single = _toolArtifactFromFlatMetadata(metadata);
+    if (single != null) artifacts.add(single);
+    if (artifacts.isNotEmpty) return artifacts;
+    return [
+      NavivoxToolArtifact(
+        id: 'metadata-$toolCallId',
+        kind: 'metadata',
+        title: 'Tool metadata',
+        summary: _boundedToolText(_safeMetadataSummary(metadata)),
+      ),
+    ];
+  }
+
+  NavivoxToolArtifact? _toolArtifactFromMap(Map<String, Object?> json) {
+    final id = _trimmedString(json['id']);
+    final kind = _trimmedString(json['kind']);
+    final title = _trimmedString(json['title']);
+    if (id == null || kind == null || title == null) return null;
+    return NavivoxToolArtifact(
+      id: id,
+      kind: kind,
+      title: title,
+      summary: _trimmedString(json['summary']),
+      ref: _trimmedString(json['ref']),
+    );
+  }
+
+  NavivoxToolArtifact? _toolArtifactFromFlatMetadata(
+    Map<String, Object?> metadata,
+  ) {
+    final id = _trimmedString(metadata['artifact_id']);
+    final kind = _trimmedString(metadata['artifact_kind']);
+    final title = _trimmedString(metadata['artifact_title']);
+    if (id == null || kind == null || title == null) return null;
+    return NavivoxToolArtifact(
+      id: id,
+      kind: kind,
+      title: title,
+      summary: _trimmedString(metadata['artifact_summary']),
+      ref: _trimmedString(metadata['artifact_ref']),
+    );
+  }
+
+  String? _trimmedString(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  String _safeMetadataSummary(Map<String, Object?> metadata) {
+    final parts = <String>[];
+    for (final entry in metadata.entries) {
+      if (_isSensitiveMetadataKey(entry.key)) continue;
+      parts.add('${entry.key}: ${_safeMetadataValue(entry.value)}');
+    }
+    return parts.isEmpty ? 'Metadata unavailable' : parts.join('; ');
+  }
+
+  String _safeMetadataValue(Object? value) {
+    if (value is Map) return '[object]';
+    if (value is List) return '[list]';
+    return value?.toString() ?? '';
+  }
+
+  bool _isSensitiveMetadataKey(String key) {
+    final lower = key.toLowerCase();
+    return lower.contains('token') ||
+        lower.contains('secret') ||
+        lower.contains('password') ||
+        lower.contains('api_key') ||
+        lower.contains('apikey');
+  }
+
+  String _boundedToolText(String text) {
+    final trimmed = text.trim();
+    if (trimmed.length <= 240) return trimmed;
+    return '${trimmed.substring(0, 237)}...';
   }
 
   void _putSafetyWarning(NavivoxGatewayEvent event) {
@@ -599,6 +1068,25 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final toolCallId = event.toolCallId ?? '';
     final prompt = event.message ?? 'Approval required';
     final risk = event.risk;
+    final priorTool = _state.messages[toolCallId]?.toolCall;
+    if (priorTool != null) {
+      _putMessage(
+        NavivoxChatMessage(
+          id: toolCallId,
+          author: NavivoxMessageAuthor.assistant,
+          kind: NavivoxMessageKind.toolCall,
+          createdAt: _state.messages[toolCallId]?.createdAt ?? _clock(),
+          toolCall: priorTool.copyWith(
+            approval: NavivoxToolApproval(
+              id: id,
+              status: 'approval_required',
+              prompt: prompt,
+              risk: risk,
+            ),
+          ),
+        ),
+      );
+    }
     _putMessage(
       NavivoxChatMessage(
         id: id,
@@ -733,6 +1221,25 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       if (routing?.provider != null) 'provider_id': routing!.provider,
       if (routing?.channel != null) 'channel_id': routing!.channel,
     };
+  }
+
+  NavivoxProfileContact _closedCapabilityProfileContact(String status) {
+    return NavivoxProfileContact(
+      serverId: 'navivox-gateway',
+      profileId: 'default',
+      displayName: 'Default profile',
+      serverLabel: 'Gormes Gateway',
+      health: NavivoxProfileHealth.warning,
+      latestPreview: status,
+      latestPreviewKind: 'status',
+      workspaceRootCount: 0,
+      workspaceRootsOk: false,
+      micAvailable: false,
+      voiceCapability: const NavivoxVoiceCapability(
+        disabledReason: 'Navivox capabilities unavailable',
+        isReported: true,
+      ),
+    );
   }
 
   NavivoxProfileContact _fallbackProfileContact() {
