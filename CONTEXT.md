@@ -12,9 +12,17 @@ _Avoid_: generic chat client, server admin panel
 The server-side Navivox endpoint that owns agents, sessions, tools, config, secrets, provider execution, and the HTTP/WebSocket event stream.
 _Avoid_: backend, remote shell
 
+**Pairing handoff**:
+The first-run transfer of Gormes gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway.
+_Avoid_: QR flow, connect-info flow, login
+
 **Profile contact**:
 A flat chat-list identity made from one `server_id` plus one `profile_id`.
 _Avoid_: agent, user account, thread
+
+**Gateway identity**:
+A stable non-secret identity for recognizing the same **Gormes gateway** across changed connection details.
+_Avoid_: Profile contact server_id, base URL, bearer token
 
 **Transcript surface**:
 The chat area that shows user turns, assistant turns, tool activity, safety notices, approval prompts, voice transcript bubbles, the composer, and message action sheets for the active **Profile contact**.
@@ -39,6 +47,8 @@ _Avoid_: audio blob, transcript string, voice message
 ## Relationships
 
 - **Navivox** connects to one or more **Gormes gateways**.
+- A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
+- A **Gormes gateway** has one **Gateway identity**.
 - A **Gormes gateway** reports zero or more **Profile contacts**.
 - A **Profile contact** is the target for chat turns and voice turns.
 - The **Transcript surface** renders the active **Profile contact** conversation, keeps tool activity distinct from ordinary assistant text, and owns composer/action-sheet behavior.
@@ -59,3 +69,5 @@ _Avoid_: audio blob, transcript string, voice message
 - "wake word" can imply always-listening audio. Resolved: use **Command word** for the local prefix active only in Navivox text or voice command mode.
 - "message list" can imply a passive log. Resolved: use **Transcript surface** for the active chat UI area because it renders tool activity, safety notices, approval prompts, and voice transcript bubbles as product state.
 - "voice message" can imply a single rendered bubble. Resolved: use **Voice run** for the full lifecycle and reserve voice bubble wording for Transcript surface rendering.
+- "login", "QR flow", and "connect-info flow" can imply separate setup products. Resolved: use **Pairing handoff** for the first-run transfer of Gormes gateway connection details, with direct Android link as the preferred path and QR/shared text/manual entry as fallbacks. Receiving fields is not completion; successful connection is completion.
+- "server" can mean the **Gormes gateway** or the `server_id` half of a **Profile contact**. Resolved: use **Gateway identity** for recognizing a Gormes gateway; keep Profile contact `server_id` scoped to profile/contact routing.

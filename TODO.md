@@ -1,5 +1,113 @@
 # Navivox TODO
 
+[RESOLVED] Navivox-side Termux-to-Navivox pairing handoff without camera — 2026-05-24
+  resolved: 2026-05-24
+  result: Android now accepts `navivox://connect?...` VIEW intents and text/plain ACTION_SEND payloads, forwards initial and foreground intents into Flutter, fills the setup form through existing connect-info parsing, preserves explicit `websocket_url`, and keeps tokens out of notices/logging. Gormes still needs the Termux `am start ...` command-side launcher.
+
+[PLANNED] Stable Gormes gateway identity for Pairing handoff — 2026-05-25
+  problem: accepted durable gateway metadata semantics require a stable Gateway identity distinct from Profile contact `server_id`, but `/v1/navivox/status` currently reports bind/port and profile routing while `NavivoxGatewayStatus` has no gateway identity field.
+  evidence: Navivox Profile contacts carry `server_id`, but that scopes Profiles inside the gateway and defaults to `navivox-gateway`; Gormes status currently includes `bind_host`, `port`, `exposure_mode`, `auth_mode`, and `profile_routing`, not a stable gateway identity; Navivox durable gateway storage is not implemented yet.
+  acceptance: define and advertise a stable non-secret `gateway_id` (or equivalent clearly named Gateway identity), generated once with randomness and persisted in Gormes config; keep Profile contact `server_id` scoped to profile/contact routing; descriptors may carry Gateway identity only as a non-authoritative hint; Navivox trusts Gateway identity only after authenticated status/capabilities confirms it; Navivox updates existing gateway metadata by authenticated Gateway identity even when base URL/port changes; fallback identity is normalized base URL origin when Gateway identity is absent; tokens, usernames, machine names, and paths are never part of identity.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: durable gateway metadata slice.
+
+[PLANNED] Pairing handoff source trust classification — 2026-05-25
+  problem: accepted Pairing handoff semantics trust package-targeted direct Android VIEW from Gormes more than generic text share, but Navivox currently forwards only raw payload strings from Android and `NavivoxConnectIntentSource` emits `SetupQrImageImport` without source/action metadata.
+  evidence: Android `MainActivity.connectPayloadFrom()` accepts both `Intent.ACTION_VIEW` and `Intent.ACTION_SEND`; Flutter `NavivoxConnectIntentSource.initialImport()` / `.imports` parse both into identical `SetupQrImageImport`; setup currently fills fields for both and has no way to decide auto-connect vs fill-and-wait by source.
+  acceptance: carry handoff source metadata from Android to Flutter; package-targeted `navivox://connect` VIEW may auto-connect under no-active-gateway rules; ACTION_SEND text/plain and QR/image imports always fill fields and wait for operator confirmation; tests cover both paths without leaking tokens.
+  owner: Navivox app owner / Android owner
+  next check: Pairing handoff auto-connect slice.
+
+[PLANNED] Pairing handoff bridge-stopped recovery copy — 2026-05-25
+  problem: accepted Pairing handoff semantics should not retry indefinitely when the local Termux bridge is stopped; recovery should steer the operator to re-run `gormes navivox pair` while keeping imported fields populated and tokens hidden.
+  evidence: current setup connection failure copy says `Run gormes navivox connect-info on the host and retry`; tests assert that connect-info guidance is shown without token leakage; there is no Pairing-handoff-specific failure state yet.
+  acceptance: for direct Pairing handoff auto-connect failure, show retry action/copy to re-run `gormes navivox pair`; do not infinite retry; keep fields populated; keep token obscured and absent from notices/logs/transcripts/screenshots; preserve generic connect-info recovery for manual/register gateway flows where appropriate.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: Pairing handoff auto-connect slice.
+
+[PLANNED] Pairing handoff auto-connect and active-gateway confirmation — 2026-05-25
+  problem: accepted Pairing handoff semantics allow direct Android handoff to auto-connect only when Navivox is still in setup/no-active-gateway; foreground handoffs while connected should ask confirmation before any new gateway probe.
+  evidence: router currently redirects to setup when `channel.state.servers.isEmpty` and away from setup when servers exist; `NavivoxChannelState` exposes `hasServers`, `activeServer`, and selected Profile contact state; setup imports currently fill fields but do not auto-connect or branch foreground handoff confirmation by active gateway.
+  acceptance: initial or foreground Android Pairing handoff auto-connects only when no active gateway/server exists or setup is active without servers; if an active gateway exists and the handoff target is unknown/different, show confirmation before probing; same-gateway refresh may update/reconnect without confirmation only after a successful authenticated probe proves the same Gateway identity; failed proof leaves existing gateway metadata untouched; failed auto-connect leaves fields populated with no token leakage.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: Pairing handoff auto-connect slice.
+
+[PLANNED] Pairing handoff setup-intent routing — 2026-05-25
+  problem: accepted Pairing handoff semantics allow Gormes to suggest a high-level setup landing target, but Navivox currently parses only connection fields in setup import and does not route post-connect based on setup intent.
+  evidence: Gormes `navivox pair` emits `setup_handoff=true`, `setup_sections=provider,model,workspace,channels`, and `setup_entry_screen=setup.provider`; Navivox capability parsing exists and Gormes advertises config-admin endpoints, but `GatewayNavivoxChannel.sendConfigSet()` still reports config editing unavailable and the Config UI is not yet wired to Gormes config-admin.
+  acceptance: carry setup intent through Pairing handoff as a suggestion only; after successful connection, capability-gate any setup/config destination against the Gormes capability document; if unsupported, land on normal Profile contacts/config entry; never enable config mutation from descriptor fields alone.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: config-admin or Pairing handoff routing slice.
+
+[PLANNED] Optional Pairing handoff and reconnect Profile contact routing — 2026-05-25
+  problem: accepted Pairing handoff and durable reconnect semantics allow Navivox to prefer a Profile contact target, but Navivox setup import currently fills connection fields only and does not carry a post-connect route target through setup or reconnect.
+  evidence: `NavivoxPairingDescriptor` already parses optional `server_id` and `profile_id`, but `SetupQrImageImport` drops them; Gormes `navivox pair` currently emits setup handoff fields such as `setup_entry_screen` but no `profile_id`; durable connection metadata/reconnect is not implemented yet.
+  acceptance: if a Pairing handoff includes `server_id`/`profile_id`, Navivox treats them as optional route intent only after successful connection; durable reconnect may remember the last active Profile contact as non-secret metadata; open a requested or last active Profile contact only when the reconnected gateway reports that exact Profile contact, otherwise land on the Profile contact list; never invent a Profile contact from descriptor or persisted metadata; do not block Pairing handoff/reconnect completion on this route target.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: durable Pairing handoff/reconnect routing slice.
+
+[PLANNED] Durable Navivox connection credential storage — 2026-05-25
+  problem: accepted Pairing handoff semantics should create/update durable Gormes gateway metadata after successful connection, but Pairing handoff tokens are bootstrap-only and Navivox currently has no secure device credential storage or gateway-issued durable credential protocol.
+  evidence: setup/connect code keeps tokens in memory; `shared_preferences` is present for non-secret voice settings only; there is no secure storage dependency, token vault abstraction, device credential issuance endpoint, or reconnect proof flow yet.
+  acceptance: keep Pairing handoff tokens short-lived/bootstrap-only; after successful authenticated setup on Android, durable credential issuance happens automatically with clear post-connect notice/settings control; Gormes issues a revocable/rotatable Navivox device credential bound to authenticated Gateway identity and the Navivox app install/device identity, then invalidates the one-time Pairing handoff token or forces it to expire very soon; static-token/admin auth remains separate legacy/non-Pairing semantics; gold-standard credential is a device public/private key challenge with private key kept in platform keystore/secure storage and public key registered with Gormes; first durable persistence slice must include a minimal authenticated Gormes API to list/revoke Navivox device credentials, but a polished management UI can follow later; revocation prevents all future auth immediately and should close active WebSocket streams authenticated by the revoked credential in the same slice when bounded, otherwise active stream closure is an explicit follow-up blocker before claiming full revocation semantics; Android durable reconnect is silent by default after app start, relying on platform keystore protection, with any biometrics/device-unlock requirement reserved for a future explicit high-security setting; a simple bearer device token is allowed only as a bounded first slice if explicitly marked interim and stored only in platform secure storage; Navivox never stores device credentials in `shared_preferences`; persist non-secret Gateway identity/display/base URL/explicit WebSocket URL/last-connected/capability-summary metadata through a small repository abstraction backed initially by `shared_preferences`; reconnect loads metadata plus secure credential, authenticates `/v1/navivox/status`, proves the same Gateway identity before updating metadata, and falls back to a new Pairing handoff if the credential is missing/expired/revoked; Flutter web gets no durable credential issuance or silent durable reconnect initially and may keep only session credentials plus non-secret metadata unless a future explicit opt-in/risk-copy design is accepted; Navivox `forget gateway` tries remote credential revocation when reachable, always deletes local credential and non-secret metadata, and reports when remote revoke is pending/unconfirmed without retaining local secrets; add tests proving secrets are not written to shared preferences, browser local storage, logs, routes, notices, screenshots, or transcript state.
+  owner: Navivox app owner / Gormes gateway owner / security owner
+  next check: durable connection credential protocol slice.
+
+[PLANNED] Android release signing config — 2026-05-24
+  problem: Android release builds still use Flutter's debug signing config, which is acceptable for local smoke runs but not for distributable APK/AAB artifacts.
+  evidence: `android/app/build.gradle.kts` keeps `release.signingConfig = signingConfigs.getByName("debug")` so `flutter run --release` remains easy while no release keystore policy is committed.
+  acceptance: add a non-secret release signing configuration that reads keystore path/passwords from local properties or CI secrets, document local setup, verify `flutter build apk --release` or `flutter build appbundle`, and keep keystore material out of git.
+  owner: Navivox app owner / release owner
+  next check: first Android distribution slice.
+
+[PLANNED] Navivox config-admin channel wiring — 2026-05-24
+  problem: the Config UI can draft and confirm edits, but `GatewayNavivoxChannel.sendConfigSet()` and `.sendConfigSecretSet()` still emit local unavailable messages even though Gormes now advertises stable config-admin endpoints.
+  evidence: updated `../gormes-agent/internal/channels/navivox/capabilities.go` advertises `/v1/navivox/config-admin`, `/schema`, `/diff`, `/validate`, and `/apply`; `../gormes-agent/internal/channels/navivox/config_admin_test.go` proves secrets are redacted and invalid apply is non-mutating, but Navivox app has no low-level config-admin client methods and no channel adapter for the existing `ConfigApplyDispatcher`.
+  acceptance: add typed `NavivoxGatewayClient` methods for schema/get/diff/validate/apply, preserve 422 validation payloads instead of collapsing them into generic transport errors, capability-gate the Config apply affordance, keep secret values out of transcript/log/UI echoes, and add channel + widget tests for valid apply, validation error, pending restart, and reload-applied states.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next config-admin slice.
+
+[PLANNED] Navivox voice-profile settings wiring — 2026-05-24
+  problem: continuous voice uses Profile contact voice health and local command-mode settings, but the app does not yet expose Gormes' profile-scoped voice-profile read/validate surface.
+  evidence: updated `../gormes-agent/internal/channels/navivox/capabilities.go` advertises `/v1/navivox/voice-profiles` and `/v1/navivox/voice-profiles/validate`; `../gormes-agent/internal/channels/navivox/voice_profiles_test.go` proves provider matrices, credential status refs, and validation errors are redacted, but Navivox app only parses capability metadata and does not provide a UI/channel adapter for those endpoints.
+  acceptance: add typed client reads/validation for voice profiles, capability-gate voice settings affordances, surface provider matrix and credential status without secret leakage, keep continuous voice tap-to-capture semantics unchanged, and add tests for valid profile, invalid provider, missing credential fallback, and recovery-copy interactions.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next voice-profile settings slice.
+
+[PLANNED] Navivox approval response protocol — 2026-05-24
+  problem: Navivox renders approval-required events, but `GatewayNavivoxChannel` cannot resolve approve/deny choices durably; current approval actions still report that tool approvals are unavailable.
+  evidence: updated Gormes Navivox capabilities advertise `approval_required` events, and `../gormes-agent/internal/channels/navivox/channel.go` can broadcast approval requests, but no Navivox approve/deny HTTP or stream message surface is advertised for returning the operator decision.
+  acceptance: wait for Gormes to advertise a stable approve/deny action or endpoint, add a typed client/channel adapter only for that advertised surface, preserve risk copy and approval IDs, reject stale approvals safely, and add tests for approve, deny, stale/missing ID, and no-secret logging.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next safety/approval protocol slice.
+
+[PLANNED] Gateway session and run-record UI wiring — 2026-05-24
+  problem: Gormes exposes Navivox session snapshots and voice/turn run records, and Navivox now has low-level typed client reads, but the Chat/Voice UI still relies on local transcript state for run history and diagnostics.
+  evidence: updated `../gormes-agent/internal/channels/navivox/capabilities.go` advertises `/v1/navivox/sessions`, `/v1/navivox/sessions/{session_id}`, and `/v1/navivox/run-records/{run_id_or_session_id}`; `NavivoxGatewayClient.sessions()`, `.session()`, and `.runRecord()` are covered in `test/core/gateway/navivox_gateway_protocol_test.dart`, but no Transcript surface or Voice diagnostics flow consumes them yet.
+  acceptance: capability-gate any history/diagnostics affordance, keep raw transcripts/evidence bounded to Gormes' redacted read model, add UI tests for loading/error/empty states, and preserve local continuous voice behavior when run-record reads fail.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next Voice diagnostics or Transcript history slice.
+
+[PLANNED] Composer attachment upload and media picker wiring — 2026-05-24
+  problem: the Transcript surface exposes Telegram-style attachment rows, but local file upload, photo/video picking, workspace-file selection, and Gormes gateway handoff are not durable product behavior yet.
+  evidence: `lib/features/chat/transcript_composer_presentation.dart` exposes upload/media rows as disabled-copy affordances; current composer tests verify the sheet and row presentation but not upload dispatch. Updated Gormes Navivox capabilities advertise attachments as unavailable until `/v1/navivox/uploads`, with raw local paths rejected.
+  acceptance: wait for Gormes to advertise opaque upload IDs and a non-empty MIME allowlist, keep secrets/local file paths out of logs, add tests for operator intent emission, and wire upload/media rows only when the capability document enables `/v1/navivox/uploads`.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next attachment/upload slice.
+
+[PLANNED] Navivox Profile contact create-from-seed UI wiring — 2026-05-24
+  problem: the Agents empty state can explain missing profile creation/import support, but Navivox app does not yet have a durable Operator intent or channel method for Gormes' advertised create-from-seed flow.
+  evidence: updated `../gormes-agent/internal/channels/navivox/capabilities.go` advertises `/v1/navivox/profile-seed` and supported action `create_from_seed`; Navivox now parses the capability document and `NavivoxGatewayClient.profileSeed()` can call the endpoint, but `NavivoxChannel` still has no create-from-seed method and Agents still shows an unavailable sheet.
+  acceptance: capability-gate the Agents create/import UI on `create_from_seed`, add a local Operator intent or channel method, keep secrets/local paths/connect-info tokens out of logs, invoke the tested `NavivoxGatewayClient.profileSeed()` path, refresh Profile contacts after success, and keep dashboard `/api/profiles` hidden from Navivox clients.
+  owner: Navivox app owner / Gormes gateway owner
+  next check: next profile-management slice.
+
+[RESOLVED] Gormes Navivox API capability contract — 2026-05-24
+  resolved: 2026-05-24
+  evidence: updated `../gormes-agent/internal/channels/navivox/capabilities.go` and `capabilities_test.go` add authenticated `/v1/navivox/capabilities`, link it from `/v1/navivox/status`, advertise `/healthz`, `/v1/navivox/profile-seed`, attachment unavailability, voice profile support, canonical `/v1/navivox/stream`, and dashboard-profile API deprecation.
+  validation: Navivox app now parses `capabilities_url` plus the capability document shape in `test/core/gateway/navivox_gateway_protocol_test.dart`; full app validation remains green.
+  owner: Navivox app owner / Gormes gateway owner
+
 [RESOLVED] Web setup accessibility blocks keyboard/screen-reader connect flow — 2026-05-22 18:55 CST
   resolved: 2026-05-22 19:25 CST
   evidence: setup now exposes `Gateway base URL field`, `Pairing token field`, `Import pairing QR image`, `Show pairing token`, and `Connect and talk` in the Flutter web accessibility tree after semantics activation; `agent-browser find text "Connect and talk" click`, `find text "Import pairing QR image" click`, and `find text "Show pairing token" click` all exited 0; pressing Enter in the token field fired `/v1/navivox/status`.
