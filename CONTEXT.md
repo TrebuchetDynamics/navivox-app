@@ -21,8 +21,8 @@ A flat chat-list identity made from one `server_id` plus one `profile_id`.
 _Avoid_: agent, user account, thread
 
 **Gateway identity**:
-A stable non-secret identity for recognizing the same **Gormes gateway** across changed connection details.
-_Avoid_: Profile contact server_id, base URL, bearer token
+A stable opaque-public identity for recognizing the same **Gormes gateway** across changed connection details.
+_Avoid_: Profile contact server_id, base URL, bearer token, display name
 
 **Transcript surface**:
 The chat area that shows user turns, assistant turns, tool activity, safety notices, approval prompts, voice transcript bubbles, the composer, and message action sheets for the active **Profile contact**.
