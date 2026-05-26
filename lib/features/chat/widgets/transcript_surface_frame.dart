@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
@@ -24,6 +26,7 @@ class TranscriptSurfaceFrame extends StatefulWidget {
     this.onCancelActiveTurn,
     this.forwardTargets = const [],
     this.onForward,
+    this.onInspectRunRecord,
     super.key,
   });
 
@@ -43,6 +46,7 @@ class TranscriptSurfaceFrame extends StatefulWidget {
   final List<NavivoxProfileContact> forwardTargets;
   final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward;
+  final FutureOr<void> Function(NavivoxChatMessage message)? onInspectRunRecord;
 
   @override
   State<TranscriptSurfaceFrame> createState() => _TranscriptSurfaceFrameState();
@@ -138,6 +142,7 @@ class _TranscriptSurfaceFrameState extends State<TranscriptSurfaceFrame> {
                   assistantTypingLabel: widget.assistantTypingLabel,
                   forwardTargets: widget.forwardTargets,
                   onForward: widget.onForward,
+                  onInspectRunRecord: widget.onInspectRunRecord,
                   textToSpeechService: widget.textToSpeechService,
                   onCancelActiveTurn: widget.onCancelActiveTurn,
                 ),

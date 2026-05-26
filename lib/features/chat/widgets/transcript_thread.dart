@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -15,6 +17,7 @@ class TranscriptThread extends StatelessWidget {
     this.dateLabelNow,
     this.forwardTargets = const [],
     this.onForward,
+    this.onInspectRunRecord,
     this.textToSpeechService,
     this.onCancelActiveTurn,
     super.key,
@@ -27,6 +30,7 @@ class TranscriptThread extends StatelessWidget {
   final List<NavivoxProfileContact> forwardTargets;
   final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward;
+  final FutureOr<void> Function(NavivoxChatMessage message)? onInspectRunRecord;
   final TextToSpeechService? textToSpeechService;
   final VoidCallback? onCancelActiveTurn;
 
@@ -92,6 +96,7 @@ class TranscriptThread extends StatelessWidget {
                 showTail: row.showTail,
                 forwardTargets: forwardTargets,
                 onForward: onForward,
+                onInspectRunRecord: onInspectRunRecord,
                 textToSpeechService: textToSpeechService,
                 onCancelActiveTurn: row.canCancelActiveTurn
                     ? onCancelActiveTurn

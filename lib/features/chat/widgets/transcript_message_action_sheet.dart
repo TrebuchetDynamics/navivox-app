@@ -11,6 +11,7 @@ class TranscriptMessageActionSheet extends StatelessWidget {
     this.onPauseStream,
     this.onCopyText,
     this.onReadAloud,
+    this.onInspectRunRecord,
     this.onForward,
     this.scrollController,
     super.key,
@@ -20,6 +21,7 @@ class TranscriptMessageActionSheet extends StatelessWidget {
   final FutureOr<void> Function()? onPauseStream;
   final FutureOr<void> Function()? onCopyText;
   final FutureOr<void> Function()? onReadAloud;
+  final FutureOr<void> Function()? onInspectRunRecord;
   final void Function(NavivoxProfileContact target)? onForward;
   final ScrollController? scrollController;
 
@@ -79,6 +81,13 @@ class TranscriptMessageActionSheet extends StatelessWidget {
                 onTap: () => onForward?.call(target.contact),
               ),
           ],
+          if (presentation.showInspectRunRecord)
+            ListTile(
+              leading: const Icon(Icons.fact_check_outlined),
+              title: Text(presentation.inspectRunRecordLabel),
+              subtitle: Text(presentation.inspectRunRecordSubtitle),
+              onTap: onInspectRunRecord,
+            ),
           if (presentation.showReadAloudUnavailable)
             ListTile(
               enabled: false,

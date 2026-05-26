@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
@@ -23,6 +25,7 @@ class TranscriptSurface extends StatelessWidget {
     this.onCancelActiveTurn,
     this.forwardTargets = const [],
     this.onForward,
+    this.onInspectRunRecord,
     super.key,
   });
 
@@ -42,6 +45,7 @@ class TranscriptSurface extends StatelessWidget {
   final List<NavivoxProfileContact> forwardTargets;
   final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward;
+  final FutureOr<void> Function(NavivoxChatMessage message)? onInspectRunRecord;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +65,7 @@ class TranscriptSurface extends StatelessWidget {
       onCancelActiveTurn: onCancelActiveTurn,
       forwardTargets: forwardTargets,
       onForward: onForward,
+      onInspectRunRecord: onInspectRunRecord,
     );
   }
 }

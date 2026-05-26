@@ -23,6 +23,7 @@ void main() {
       _textMessage('dispatch note'),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
+      runRecordInspectionAvailable: true,
     );
 
     await tester.pumpWidget(
@@ -33,6 +34,7 @@ void main() {
             onPauseStream: () async => actions.add('pause'),
             onCopyText: () async => actions.add('copy:${presentation.text}'),
             onReadAloud: () async => actions.add('read:${presentation.text}'),
+            onInspectRunRecord: () async => actions.add('inspect'),
           ),
         ),
       ),
@@ -45,13 +47,24 @@ void main() {
     expect(find.text('Stop the current assistant response.'), findsOneWidget);
     expect(find.text('Copy text'), findsOneWidget);
     expect(find.text('Read aloud'), findsOneWidget);
+    expect(find.text('Inspect run record'), findsOneWidget);
+    expect(
+      find.text('Load redacted transcript, voice, tool, and usage evidence.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Pause stream'));
     await tester.tap(find.text('Copy text'));
     await tester.tap(find.text('Read aloud'));
+    await tester.tap(find.text('Inspect run record'));
     await tester.pumpAndSettle();
 
-    expect(actions, ['pause', 'copy:dispatch note', 'read:dispatch note']);
+    expect(actions, [
+      'pause',
+      'copy:dispatch note',
+      'read:dispatch note',
+      'inspect',
+    ]);
   });
 
   testWidgets('renders forward targets and invokes selected Profile contact', (

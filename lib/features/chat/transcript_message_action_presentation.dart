@@ -17,6 +17,7 @@ class TranscriptMessageForwardTargetPresentation {
 class TranscriptMessageActionPresentation {
   const TranscriptMessageActionPresentation._({
     required this.text,
+    required this.runRecordId,
     required this.canCancelActiveTurn,
     required this.textToSpeechAvailable,
     required this.forwardTargets,
@@ -29,9 +30,13 @@ class TranscriptMessageActionPresentation {
     bool canCancelActiveTurn = false,
     List<NavivoxProfileContact> forwardTargets = const [],
     bool forwardingAvailable = false,
+    bool runRecordInspectionAvailable = false,
   }) {
     return TranscriptMessageActionPresentation._(
       text: TranscriptMessagePlainTextPresentation.fromMessage(message).text,
+      runRecordId: runRecordInspectionAvailable
+          ? runRecordIdForMessage(message)
+          : null,
       canCancelActiveTurn: canCancelActiveTurn,
       textToSpeechAvailable: textToSpeechAvailable,
       forwardingAvailable: forwardingAvailable,
@@ -47,6 +52,7 @@ class TranscriptMessageActionPresentation {
   }
 
   final String text;
+  final String? runRecordId;
   final bool canCancelActiveTurn;
   final bool textToSpeechAvailable;
   final bool forwardingAvailable;
@@ -68,6 +74,11 @@ class TranscriptMessageActionPresentation {
   String get readAloudLabel => 'Read aloud';
   String get readAloudSnackbar => 'Reading aloud';
 
+  bool get showInspectRunRecord => runRecordId != null;
+  String get inspectRunRecordLabel => 'Inspect run record';
+  String get inspectRunRecordSubtitle =>
+      'Load redacted transcript, voice, tool, and usage evidence.';
+
   bool get showReadAloudUnavailable => hasText && !textToSpeechAvailable;
   String get readAloudUnavailableLabel => 'Read aloud unavailable';
   String get readAloudUnavailableSubtitle => 'Device TTS is not connected.';
@@ -75,4 +86,12 @@ class TranscriptMessageActionPresentation {
   bool get showForwardSection =>
       hasText && forwardingAvailable && forwardTargets.isNotEmpty;
   String get forwardTitle => 'Forward to';
+
+  static String? runRecordIdForMessage(NavivoxChatMessage message) {
+    final id = message.id.trim();
+    if (id.isNotEmpty && !id.startsWith('pending-')) return id;
+    final voiceRunId = message.voice?.voiceRunId?.trim();
+    if (voiceRunId != null && voiceRunId.isNotEmpty) return voiceRunId;
+    return null;
+  }
 }

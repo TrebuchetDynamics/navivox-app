@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +22,7 @@ class TranscriptBubble extends StatelessWidget {
     required this.showTail,
     this.forwardTargets = const [],
     this.onForward,
+    this.onInspectRunRecord,
     this.textToSpeechService,
     this.onCancelActiveTurn,
     super.key,
@@ -31,6 +34,7 @@ class TranscriptBubble extends StatelessWidget {
   final List<NavivoxProfileContact> forwardTargets;
   final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward;
+  final FutureOr<void> Function(NavivoxChatMessage message)? onInspectRunRecord;
   final TextToSpeechService? textToSpeechService;
   final VoidCallback? onCancelActiveTurn;
 
@@ -155,12 +159,14 @@ class TranscriptBubble extends StatelessWidget {
     final canCancel =
         onCancelActiveTurn != null &&
         message.author == NavivoxMessageAuthor.assistant;
+    final runRecordAction = onInspectRunRecord;
     final presentation = TranscriptMessageActionPresentation.fromMessage(
       message,
       textToSpeechAvailable: tts != null,
       canCancelActiveTurn: canCancel,
       forwardTargets: forwardTargets,
       forwardingAvailable: onForward != null,
+      runRecordInspectionAvailable: runRecordAction != null,
     );
     return showModalBottomSheet<void>(
       context: context,
@@ -201,6 +207,12 @@ class TranscriptBubble extends StatelessWidget {
                       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                         SnackBar(content: Text(presentation.readAloudSnackbar)),
                       );
+                    },
+              onInspectRunRecord: runRecordAction == null
+                  ? null
+                  : () async {
+                      Navigator.of(sheetContext).pop();
+                      await runRecordAction(message);
                     },
               onForward: (target) {
                 Navigator.of(sheetContext).pop();

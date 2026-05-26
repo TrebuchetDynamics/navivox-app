@@ -17,8 +17,10 @@ import '../chat_screen_presentation.dart';
 import '../forward_message_intent.dart';
 import '../local_command_dispatcher.dart';
 import '../local_command_intent.dart';
+import '../transcript_message_action_presentation.dart';
 import '../voice_run_controller.dart';
 import '../widgets/approval_banner.dart';
+import '../widgets/transcript_run_record_sheet.dart';
 import '../widgets/transcript_surface.dart';
 
 /// Voice-capture service used by the chat input bar. Override in tests with
@@ -195,6 +197,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               forwardTargets: presentation.forwardTargets,
               onForward: (message, target) =>
                   _handleForward(channel, message: message, target: target),
+              onInspectRunRecord: (message) =>
+                  _inspectRunRecord(channel, message),
             ),
           ),
         ],
@@ -259,6 +263,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _handleTextSubmit(NavivoxChannel channel, String text) {
     if (_handleLocalCommand(channel, text, fromVoice: false)) return;
     channel.sendText(text);
+  }
+
+  Future<void> _inspectRunRecord(
+    NavivoxChannel channel,
+    NavivoxChatMessage message,
+  ) async {
+    final runRecordId =
+        TranscriptMessageActionPresentation.runRecordIdForMessage(message);
+    if (runRecordId == null) return;
+    try {
+      final record = await channel.runRecord(runRecordId);
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (context) => DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.78,
+          minChildSize: 0.32,
+          maxChildSize: 0.94,
+          builder: (context, scrollController) => TranscriptRunRecordSheet(
+            record: record,
+            scrollController: scrollController,
+            key: const ValueKey('transcript-run-record-sheet'),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Run record unavailable.')));
+    }
   }
 
   void _handleForward(

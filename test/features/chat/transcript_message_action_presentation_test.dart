@@ -74,6 +74,7 @@ void main() {
       _textMessage('read this'),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
+      runRecordInspectionAvailable: true,
     );
     final withoutTts = TranscriptMessageActionPresentation.fromMessage(
       _textMessage('read this later'),
@@ -86,6 +87,13 @@ void main() {
     expect(withTts.readAloudLabel, 'Read aloud');
     expect(withTts.readAloudSnackbar, 'Reading aloud');
     expect(withTts.canReadAloud, isTrue);
+    expect(withTts.runRecordId, 'text-1');
+    expect(withTts.showInspectRunRecord, isTrue);
+    expect(withTts.inspectRunRecordLabel, 'Inspect run record');
+    expect(
+      withTts.inspectRunRecordSubtitle,
+      'Load redacted transcript, voice, tool, and usage evidence.',
+    );
     expect(withTts.showReadAloudUnavailable, isFalse);
     expect(withTts.pauseLabel, 'Pause stream');
     expect(withTts.pauseSubtitle, 'Stop the current assistant response.');
