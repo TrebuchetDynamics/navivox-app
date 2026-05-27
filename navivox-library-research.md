@@ -134,8 +134,8 @@ Current rule:
 
 - The first connect-and-talk loop may submit a local transcript through the text
   turn path.
-- Audio upload, server STT profiles, and TTS playback require voice run records
-  first.
+- Audio upload, server STT profiles, and TTS playback require Voice run
+  lifecycle state first.
 
 ## 8. Generated Models
 
@@ -147,7 +147,7 @@ Good candidates:
 - Gateway events with many variants.
 - Config schema field types.
 - Agent draft/profile/tool/voice settings.
-- Voice run records.
+- Voice run lifecycle models.
 
 Rules:
 
@@ -162,7 +162,7 @@ these needs exists:
 
 - Offline session list.
 - Searchable message history.
-- Durable voice run records.
+- Durable Voice run history.
 - Cached config schema snapshots.
 - Agent draft recovery.
 

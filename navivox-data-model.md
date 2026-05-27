@@ -287,7 +287,7 @@ Never store:
 Add a database only when the product needs durable:
 
 - Message history.
-- Voice run records.
+- Voice run history.
 - Agent draft recovery.
 - Config schema snapshots.
 

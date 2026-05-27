@@ -219,7 +219,7 @@ Current loop:
 - Device capture or local STT may produce a transcript.
 - The transcript is sent through the current text turn path.
 
-Planned voice run record:
+Planned Voice run state:
 
 - `voice_run_id`
 - `session_id`
@@ -369,7 +369,7 @@ Integration:
 
 ### Phase 6: Voice Profiles
 
-- Voice run records.
+- Voice run lifecycle state.
 - BYO STT/TTS provider/profile settings.
 - Agent-specific voice defaults.
 

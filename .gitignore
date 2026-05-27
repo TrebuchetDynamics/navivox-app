@@ -11,3 +11,8 @@ coverage/
 
 # Pi local loop state
 .pi/navivox-loop/logs.jsonl
+
+# Node / Playwright
+node_modules/
+playwright/results.json
+playwright/test-results/

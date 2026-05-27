@@ -118,7 +118,7 @@ Rules:
 - Tool events are structured cards with bounded summaries; raw tool arguments,
   stdout, secrets, and full logs must not be serialized as chat text.
 - Binary audio transport is future work; the first voice loop can submit device
-  transcripts as text while voice run records are designed.
+  transcripts as text while Voice run lifecycle state is designed.
 
 ## 5. Voice Architecture
 
@@ -134,8 +134,8 @@ TTS:
 STT:
 
 - Local STT handles wake word and short control command detection.
-- Audio plus the device transcript can be submitted to Gormes once voice run
-  records and upload semantics exist.
+- Audio plus the device transcript can be submitted to Gormes once Voice run
+  lifecycle state and upload semantics exist.
 - Text-only fallback is always valid.
 
 ## 6. Config Administration
@@ -190,7 +190,7 @@ Order:
    profile, tool, and voice settings.
 4. Render tools as first-class UI objects through `ToolCallCard`.
 5. Add schema-driven safe config admin over HTTP.
-6. Define voice run records and then add BYO STT/TTS provider profiles.
+6. Define Voice run lifecycle state and then add BYO STT/TTS provider profiles.
 
 This order keeps the core operator loop small and proven before adding
 call-center breadth.

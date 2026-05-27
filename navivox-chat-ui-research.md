@@ -61,7 +61,7 @@ Telegram pattern | Navivox translation
 Chat list with avatars, last message, unread/status/time | Flat profile contact list keyed by `server_id + profile_id`, with server label, latest sanitized preview, health, attention count, mic affordance
 Message bubbles | User/assistant/system bubbles backed by `GatewayNavivoxChannel`
 Read ticks | Local send/queued/streaming/done/error state, not server read receipts
-Voice message | Device transcript bubble with auto-send grace; audio playback only after voice run records
+Voice message | Device transcript bubble with auto-send grace; audio playback only after Voice run lifecycle state exists
 Attachment/action tray | Draggable sheet for tools, voice, profile seed, workspace roots, config, and future files
 Pinned banner | Active server/profile/trust warning
 Context menu | Copy, retry, inspect tool, reveal redacted fields when authorized
@@ -118,7 +118,7 @@ backend behavior. The first use should be narrow:
 
 - `VBubbleScope(style: VBubbleStyle.telegram)` at the chat screen boundary.
 - `VTextBubble` for user and assistant text.
-- `VVoiceBubble` only after voice run records define audio/playback state.
+- `VVoiceBubble` only after the Voice run lifecycle model defines audio/playback state.
 - `VCustomBubble` for `ToolCallCard`, so tools remain structured UI objects.
 - Performance config for long transcripts.
 

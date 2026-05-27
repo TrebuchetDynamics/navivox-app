@@ -1,0 +1,3 @@
+# Run record inspection uses gateway-supplied evidence references
+
+Navivox treats **Run records** as Gormes-redacted operator evidence for submitted turns or sessions, not as raw diagnostics or client-local Voice run state. Transcript actions should offer evidence viewing only when the Gormes gateway advertises Run record support and supplies an opaque Run record reference for that transcript item; Navivox must not infer lookup handles from display message ids. This keeps redaction/server authority clear while letting text, voice, tool, safety, or approval transcript items share the same evidence lookup model.

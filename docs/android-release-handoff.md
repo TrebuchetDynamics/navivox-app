@@ -77,15 +77,16 @@ If the app shows `Continuous voice unavailable: device STT unavailable`, verify 
 
 ## Continuous voice blocker handoff
 
-Run id: `dl-mphjm06r-b0c512`.
+Run id: `voice-readiness-smoke-2026-05-27`.
 
 Latest local debug APK:
 
 ```text
 build/app/outputs/flutter-apk/app-debug.apk
+sha256 af9ba1fb0b16efc9bb9b31d8e2684dc191f00781e378a2850e4e25cf3b64c8dc
 ```
 
-Current host blocker: ADB lists `emulator-5554`, but `timeout 5s adb -s emulator-5554 shell true` exits with exit code `124`. Do not treat that emulator as valid evidence for microphone permission prompts, Android speech recognizer availability, or real STT capture.
+Current host blocker: ADB lists no Android devices, and `flutter devices` lists only Linux desktop and Chrome. The available `fractal_test` Android emulator cannot boot on this host because x86_64 emulation requires KVM access and the current user does not have `/dev/kvm` permission. Do not treat this host as valid evidence for microphone permission prompts, Android speech recognizer availability, or real STT capture until a responsive Android target is connected or KVM access is fixed.
 
 What is already covered in the app:
 

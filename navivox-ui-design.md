@@ -21,8 +21,9 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
 7. **Trust boundaries stay visible**: connected host, auth mode, exposure mode,
    and token-required state are shown without leaking secrets.
 8. **Dense, adaptive layout**: mobile keeps chat immersive with a
-   Telegram-style navigation drawer for top-level destinations; desktop uses a
-   left rail and status bar.
+   Telegram-style bottom navigation pill for primary top-level destinations,
+   plus a small `More` sheet for overflow destinations; desktop uses a left
+   rail and status bar.
 9. **Telegram-inspired, Gormes-owned**: borrow fast scanning, grouped bubbles,
    status ticks, action sheets, and compact navigation from Telegram-like apps,
    but keep Navivox focused on Gormes profiles, tools, voice transcripts, and
@@ -47,42 +48,43 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
 
 ```text
 +------------------------------------------------+
-| Navivox                              [search]  |
+| [N] Navivox                         [search][⋮]|
 +------------------------------------------------+
-| M  Mineru Builder              local  OK  9:41 |
-|    Server is healthy.                         o|
-|    2 roots                                     |
-|                                                |
-| W  Work Profile               office auth 9:22 |
-|    Waiting for token.                         o|
-|    model setup                                 |
-|                                                |
-| P  Personal                  laptop offline Tue |
-|    Gateway unavailable.                       o|
-|    retry required                              |
+| Search Profiles                                |
 +------------------------------------------------+
-| [menu]                                      [+] |
+| M  Mineru Builder                         9:41 |
+|    Ready to work · online · 2 roots        mic |
+| W  Work Profile                          9:22 |
+|    Waiting for token · auth required       !   |
+| P  Personal                               Tue |
+|    Gateway unavailable · offline          !   |
++------------------------------------------------+
+| Chats        Agents        Memory       More  |
 +------------------------------------------------+
 ```
 
 Chat list rows are profile contacts:
 
 - Stable identity: `server_id + profile_id`.
-- Deterministic generated avatar from `server_id + profile_id`.
-- Server label as a small chip.
+- Deterministic Telegram-like gradient avatar from `server_id + profile_id`.
+- Server label stays searchable and appears in details/menus, not as a row chip.
 - Server-authoritative display name, with canonical profile id in details.
-- Sanitized latest preview from the server.
-- Timestamp.
-- Health chips for config/provider/model/memory/gateway/WS.
+- One-line sanitized preview combines latest message, health, and compact
+  workspace status.
+- Timestamp is right-aligned with the title baseline.
+- Health/provider/model/memory/gateway/WS state collapses into preview copy or
+  detail sheets instead of row chips.
 - Attention count for approvals, failed tools, auth, offline server, workspace
-  issues, or active/stuck turns.
+  issues, or active/stuck turns appears as a small right-side status marker.
 - Compact workspace summary such as `2 roots` or `workspace issue`, never raw
   paths.
 - Row tap opens the current/latest session for the profile.
 - Row mic opens continuous voice when the server is trusted and healthy.
 - Long press opens profile details/edit.
-- Floating add button opens an action sheet with New profile, Add server, and
-  Import connect-info.
+- Floating add button opens an action sheet with plugged actions for New
+  profile/Create from seed and Add server.
+- Overflow menu routes to gateway, profile, memory, config, and settings
+  screens.
 
 The list is flat by default. Pinned contacts sort first locally, but pins never
 change command routing.
@@ -159,8 +161,16 @@ Key UI elements:
 - Voice button starts continuous voice for the active profile when allowed.
 - Long press opens a message action sheet: copy, retry, inspect event, reveal
   redacted fields when authorized.
-- The plus button opens the action tray for profile seed, tool approvals,
-  profile config, workspace roots, and future attachments.
+- The plus button opens a plugged share sheet: Upload file and Photo/video
+  explain upload readiness until Gormes exposes an upload endpoint, while
+  Workspace file routes to Memory/workspace. Future attachment handlers attach
+  through composer callbacks, not inert rows.
+- Chat info exposes action rows for profile contacts, workspace/memory, profile
+  config, Navivox settings, and gateway details.
+- Agents empty state uses the same plugged profile creation routes: Create from
+  seed opens the profile seed flow, and Add gateway opens gateway registration.
+- Gateway management sheets make profile rows actionable: selecting a profile
+  scopes the channel and opens its chat.
 - Composer text that exactly matches a command-word command, such as
   `navi mineru`, is handled locally by Navivox and is not sent to Gormes.
 
@@ -220,7 +230,7 @@ Voice rules:
   and never pretends tool side effects were undone.
 - `navi settings` opens local Navivox settings, not profile config.
 - Voice approvals and profile config edits by voice are deferred.
-- Audio upload and playback state appear only after voice run records exist.
+- Audio upload and playback state appear only after Voice run lifecycle state exists.
 - Text fallback is always available.
 
 ### 2.6 Action Sheet
@@ -504,6 +514,8 @@ ReachabilityBadge
 // Telegram-inspired surfaces
 ChatPreviewTile
 MessageActionSheet
+ComposerShareSheet
+ChatInfoActionSheet
 NavivoxBubbleScope
 ```
 
@@ -529,10 +541,11 @@ secret-shaped values.
 
 Mobile:
 
-- Telegram-style hamburger drawer for Chats, Servers, Memory, and Settings.
+- Telegram-style bottom navigation for Chats, Agents, Memory, and Settings.
+- `More` overflow sheet for Servers and Config on narrow screens.
 - Single-column chat.
-- No bottom navigation under the active profile thread or contact list.
-- Sheets for server and profile switching.
+- Sheets for server/profile switching, chat info, composer share actions, and
+  overflow destinations.
 - Voice controls as bottom panel.
 
 Desktop:

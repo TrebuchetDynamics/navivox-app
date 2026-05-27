@@ -758,15 +758,15 @@ Planned voice flow:
 ```text
 record audio
   -> local transcript when available
-  -> voice run record
+  -> Voice run lifecycle state
   -> server STT/profile
   -> agent turn
   -> server TTS/profile
   -> playback event
 ```
 
-Voice run records let the UI show capture, transcript, provider, playback, and
-error state as durable objects.
+Voice runs let the UI show capture, transcript, provider, playback, and error
+state as durable objects.
 
 ### 10.1 Client-local Voice run first
 
