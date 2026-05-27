@@ -130,20 +130,24 @@ void main() {
       );
       expect(
         presentation.emptyProfilesSubtitle,
-        'Connect to a Gormes server, then refresh profiles. Profile creation/import requires app-side create-from-seed wiring.',
+        'Connect to a Gormes server, refresh profiles, or draft a new profile from a seed.',
       );
       expect(presentation.refreshProfilesLabel, 'Refresh profiles');
-      expect(
-        presentation.createImportProfileLabel,
-        'Why creation/import is unavailable',
-      );
-      expect(
-        presentation.createImportProfileSheetTitle,
-        'Profile creation/import unavailable',
-      );
+      expect(presentation.createImportProfileLabel, 'Add profile');
+      expect(presentation.createImportProfileSheetTitle, 'Add a profile');
       expect(
         presentation.createImportProfileSheetSubtitle,
-        'Gormes can advertise Navivox create-from-seed support, but this app does not yet wire a durable create/import Operator intent.',
+        'Create from a natural-language seed through Gormes, or add another gateway that already has profiles.',
+      );
+      expect(presentation.createFromSeedTitle, 'Create from seed');
+      expect(
+        presentation.createFromSeedSubtitle,
+        'Ask Gormes to draft a profile from natural language.',
+      );
+      expect(presentation.addGatewayTitle, 'Add gateway');
+      expect(
+        presentation.addGatewaySubtitle,
+        'Register another Gormes gateway and refresh its profile contacts.',
       );
       expect(presentation.profileContacts, isEmpty);
     },

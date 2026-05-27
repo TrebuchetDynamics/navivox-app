@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../router/navigation_intent.dart';
+
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../providers/voice_settings_provider.dart';
 import '../settings_screen_presentation.dart';
@@ -57,9 +59,11 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: controller.setContinuousVoiceEnabled,
           ),
           ListTile(
+            key: const ValueKey('settings-command-word'),
             title: Text(_settingsPresentation.commandWordTitle),
             subtitle: Text(settings.commandWord),
             trailing: const Icon(Icons.keyboard_voice),
+            onTap: () => _showCommandWordSheet(context, settings.commandWord),
           ),
           SwitchListTile(
             key: const ValueKey('voice-profile-switching-enabled'),
@@ -96,6 +100,8 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.dns_outlined),
                 title: Text(currentScope.gateway!.title),
                 subtitle: Text(currentScope.gateway!.subtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => NavigationIntent.go(context, const OpenGateways()),
               ),
             if (currentScope.profile != null)
               ListTile(
@@ -103,12 +109,37 @@ class SettingsScreen extends ConsumerWidget {
                 leading: const Icon(Icons.badge_outlined),
                 title: Text(currentScope.profile!.title),
                 subtitle: Text(currentScope.profile!.subtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => NavigationIntent.go(context, const OpenAgents()),
               ),
           ],
         ],
       ),
     );
   }
+}
+
+void _showCommandWordSheet(BuildContext context, String commandWord) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.keyboard_voice),
+            title: Text(_settingsPresentation.commandWordTitle),
+            subtitle: Text(
+              'Say "$commandWord" before local commands like profile names, stop, cancel, settings, or help. Command-word editing will live here when local voice customization lands.',
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 IconData _managementRouteIcon(SettingsManagementRoutePresentation row) {

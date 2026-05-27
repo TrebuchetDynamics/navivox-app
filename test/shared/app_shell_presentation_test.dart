@@ -29,6 +29,16 @@ void main() {
       ]);
       expect(destinations.first.icon, Icons.chat_bubble_outlined);
       expect(destinations.last.icon, Icons.keyboard_voice_outlined);
+      expect(presentation.mobileNavigationDestinations.map((d) => d.label), [
+        'Chats',
+        'Agents',
+        'Memory',
+        'Settings',
+      ]);
+      expect(presentation.mobileOverflowDestinations.map((d) => d.label), [
+        'Servers',
+        'Config',
+      ]);
     },
   );
 
@@ -50,7 +60,7 @@ void main() {
     );
   });
 
-  test('hides mobile navigation menu only on Profile contact chat threads', () {
+  test('hides mobile navigation only on Profile contact chat threads', () {
     expect(
       presentation.stateForLocation('/chats/local/mineru').showNavigationMenu,
       isFalse,
@@ -65,9 +75,24 @@ void main() {
     );
   });
 
-  test('centralizes drawer header and menu affordance copy', () {
+  test('centralizes bottom nav overflow copy', () {
     expect(presentation.navigationMenuTooltip, 'Open navigation menu');
-    expect(presentation.drawerHeaderTitle, 'Navivox');
-    expect(presentation.drawerHeaderSubtitle, 'Gormes operator console');
+    expect(presentation.mobileOverflowLabel, 'More');
+    expect(presentation.mobileOverflowTooltip, 'Open more destinations');
+  });
+
+  test('maps overflow routes to the More tab on mobile', () {
+    expect(
+      presentation.stateForLocation(AppRoutes.config).selectedMobileIndex,
+      4,
+    );
+    expect(
+      presentation.stateForLocation(AppRoutes.servers).selectedMobileIndex,
+      4,
+    );
+    expect(
+      presentation.stateForLocation(AppRoutes.memory).selectedMobileIndex,
+      2,
+    );
   });
 }

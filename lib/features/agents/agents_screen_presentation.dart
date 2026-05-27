@@ -45,17 +45,26 @@ class AgentsScreenPresentation {
   String get emptyProfilesTitle => 'No profiles found on this server';
 
   String get emptyProfilesSubtitle =>
-      'Connect to a Gormes server, then refresh profiles. Profile creation/import requires app-side create-from-seed wiring.';
+      'Connect to a Gormes server, refresh profiles, or draft a new profile from a seed.';
 
   String get refreshProfilesLabel => 'Refresh profiles';
 
-  String get createImportProfileLabel => 'Why creation/import is unavailable';
+  String get createImportProfileLabel => 'Add profile';
 
-  String get createImportProfileSheetTitle =>
-      'Profile creation/import unavailable';
+  String get createImportProfileSheetTitle => 'Add a profile';
 
   String get createImportProfileSheetSubtitle =>
-      'Gormes can advertise Navivox create-from-seed support, but this app does not yet wire a durable create/import Operator intent.';
+      'Create from a natural-language seed through Gormes, or add another gateway that already has profiles.';
+
+  String get createFromSeedTitle => 'Create from seed';
+
+  String get createFromSeedSubtitle =>
+      'Ask Gormes to draft a profile from natural language.';
+
+  String get addGatewayTitle => 'Add gateway';
+
+  String get addGatewaySubtitle =>
+      'Register another Gormes gateway and refresh its profile contacts.';
 
   bool get showAgentList => agents.isNotEmpty;
   bool get showProfileFallback => !showAgentList && profileContacts.isNotEmpty;

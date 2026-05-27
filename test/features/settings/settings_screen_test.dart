@@ -28,6 +28,14 @@ void main() {
     expect(find.text('Command word'), findsOneWidget);
     expect(find.text('navi'), findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey('settings-command-word')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Say "navi"'), findsOneWidget);
+
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+
     final trustSwitch = find.byKey(const ValueKey('voice-trust-local'));
     expect(tester.widget<SwitchListTile>(trustSwitch).value, isFalse);
 
@@ -174,5 +182,21 @@ void main() {
     );
     expect(find.text('Active profile contact'), findsOneWidget);
     expect(find.text('Mineru Builder · local/mineru · online'), findsOneWidget);
+    expect(
+      tester
+          .widget<ListTile>(
+            find.byKey(const ValueKey('settings-current-gateway')),
+          )
+          .onTap,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<ListTile>(
+            find.byKey(const ValueKey('settings-current-profile')),
+          )
+          .onTap,
+      isNotNull,
+    );
   });
 }

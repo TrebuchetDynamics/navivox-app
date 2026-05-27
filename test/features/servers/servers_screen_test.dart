@@ -102,6 +102,14 @@ void main() {
       expect(find.text('office'), findsWidgets);
       expect(find.text('Profiles on this gateway'), findsOneWidget);
       expect(find.text('Support Triage'), findsOneWidget);
+      expect(
+        tester
+            .widget<ListTile>(
+              find.byKey(const ValueKey('server-profile-office-support')),
+            )
+            .onTap,
+        isNotNull,
+      );
     },
   );
 

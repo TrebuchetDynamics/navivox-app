@@ -107,7 +107,7 @@ void main() {
     },
   );
 
-  testWidgets('empty-state creation/import action explains unavailable support', (
+  testWidgets('empty-state add-profile action opens plugged creation routes', (
     tester,
   ) async {
     final channel = TestNavivoxChannel();
@@ -119,16 +119,21 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Why creation/import is unavailable'));
+    await tester.tap(find.text('Add profile'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Profile creation/import unavailable'), findsOneWidget);
+    expect(find.text('Add a profile'), findsOneWidget);
     expect(
-      find.text(
-        'Gormes can advertise Navivox create-from-seed support, but this app does not yet wire a durable create/import Operator intent.',
-      ),
+      find.byKey(const ValueKey('agents-create-from-seed')),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('agents-add-gateway')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('agents-create-from-seed')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create from seed'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-seed-input')), findsOneWidget);
   });
 
   testWidgets('tapping an agent tile selects it through the channel', (

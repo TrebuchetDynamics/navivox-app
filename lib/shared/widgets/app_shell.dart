@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_shell_presentation.dart';
+import 'sheet_presenter.dart';
 
 const _appShellPresentation = AppShellPresentation();
 
@@ -27,14 +28,15 @@ class AppShell extends StatelessWidget {
           );
         }
         return _MobileShell(
-          destinations: presentation.destinations,
-          selectedIndex: presentation.selectedIndex,
+          mobileNavigationDestinations:
+              presentation.mobileNavigationDestinations,
+          mobileOverflowDestinations: presentation.mobileOverflowDestinations,
+          selectedIndex: presentation.selectedMobileIndex,
+          selectedPath: presentation.selectedDestination.path,
           showNavigationMenu: presentation.showNavigationMenu,
-          navigationMenuTooltip: _appShellPresentation.navigationMenuTooltip,
-          drawerHeaderTitle: _appShellPresentation.drawerHeaderTitle,
-          drawerHeaderSubtitle: _appShellPresentation.drawerHeaderSubtitle,
-          onSelected: (index) =>
-              context.go(presentation.destinations[index].path),
+          mobileOverflowLabel: _appShellPresentation.mobileOverflowLabel,
+          mobileOverflowTooltip: _appShellPresentation.mobileOverflowTooltip,
+          onSelected: (destination) => context.go(destination.path),
           child: child,
         );
       },
@@ -45,129 +47,109 @@ class AppShell extends StatelessWidget {
 class _MobileShell extends StatelessWidget {
   const _MobileShell({
     required this.child,
-    required this.destinations,
+    required this.mobileNavigationDestinations,
+    required this.mobileOverflowDestinations,
     required this.selectedIndex,
+    required this.selectedPath,
     required this.showNavigationMenu,
-    required this.navigationMenuTooltip,
-    required this.drawerHeaderTitle,
-    required this.drawerHeaderSubtitle,
+    required this.mobileOverflowLabel,
+    required this.mobileOverflowTooltip,
     required this.onSelected,
   });
 
   final Widget child;
-  final List<AppShellDestination> destinations;
+  final List<AppShellDestination> mobileNavigationDestinations;
+  final List<AppShellDestination> mobileOverflowDestinations;
   final int selectedIndex;
+  final String selectedPath;
   final bool showNavigationMenu;
-  final String navigationMenuTooltip;
-  final String drawerHeaderTitle;
-  final String drawerHeaderSubtitle;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      drawer: showNavigationMenu
-          ? _AppNavigationDrawer(
-              destinations: destinations,
-              selectedIndex: selectedIndex,
-              drawerHeaderTitle: drawerHeaderTitle,
-              drawerHeaderSubtitle: drawerHeaderSubtitle,
-              onSelected: onSelected,
-            )
-          : null,
-      floatingActionButton: showNavigationMenu
-          ? Builder(
-              builder: (context) => FloatingActionButton.small(
-                heroTag: 'navivox-navigation-menu',
-                tooltip: navigationMenuTooltip,
-                backgroundColor: colorScheme.surface,
-                foregroundColor: colorScheme.primary,
-                elevation: 0,
-                highlightElevation: 0,
-                shape: const CircleBorder(),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                child: const Icon(Icons.menu),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
-      body: child,
-    );
-  }
-}
-
-class _AppNavigationDrawer extends StatelessWidget {
-  const _AppNavigationDrawer({
-    required this.destinations,
-    required this.selectedIndex,
-    required this.drawerHeaderTitle,
-    required this.drawerHeaderSubtitle,
-    required this.onSelected,
-  });
-
-  final List<AppShellDestination> destinations;
-  final int selectedIndex;
-  final String drawerHeaderTitle;
-  final String drawerHeaderSubtitle;
-  final ValueChanged<int> onSelected;
+  final String mobileOverflowLabel;
+  final String mobileOverflowTooltip;
+  final ValueChanged<AppShellDestination> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
 
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              margin: EdgeInsets.zero,
-              decoration: BoxDecoration(color: colorScheme.primary),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: colorScheme.onPrimary.withAlpha(32),
-                    child: Icon(
-                      Icons.smart_toy_outlined,
-                      color: colorScheme.onPrimary,
-                    ),
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: showNavigationMenu
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: NavigationBarTheme(
+                  data: NavigationBarThemeData(
+                    backgroundColor: colorScheme.surfaceContainerHigh,
+                    indicatorColor: colorScheme.primary.withValues(alpha: 0.16),
+                    labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return theme.textTheme.labelSmall?.copyWith(
+                        color: selected
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: selected ? FontWeight.w700 : null,
+                      );
+                    }),
+                    iconTheme: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        color: selected
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                      );
+                    }),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    drawerHeaderTitle,
-                    style: textTheme.titleLarge?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: NavigationBar(
+                    height: 68,
+                    elevation: 0,
+                    selectedIndex: selectedIndex,
+                    labelBehavior:
+                        NavigationDestinationLabelBehavior.alwaysShow,
+                    onDestinationSelected: (index) {
+                      if (index < mobileNavigationDestinations.length) {
+                        onSelected(mobileNavigationDestinations[index]);
+                        return;
+                      }
+                      _showOverflowMenu(context);
+                    },
+                    destinations: [
+                      for (final destination in mobileNavigationDestinations)
+                        NavigationDestination(
+                          icon: Icon(destination.icon),
+                          label: destination.label,
+                        ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.more_horiz),
+                        label: mobileOverflowLabel,
+                        tooltip: mobileOverflowTooltip,
+                      ),
+                    ],
                   ),
-                  Text(
-                    drawerHeaderSubtitle,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                ],
+                ),
               ),
+            )
+          : null,
+    );
+  }
+
+  void _showOverflowMenu(BuildContext context) {
+    showSheet(
+      context,
+      ActionSheet(
+        _appShellPresentation.mobileOverflowLabel,
+        rows: [
+          for (final destination in mobileOverflowDestinations)
+            SheetActionRow(
+              destination.icon,
+              destination.label,
+              onTap: (sheetContext) {
+                Navigator.of(sheetContext).pop();
+                onSelected(destination);
+              },
             ),
-            const Divider(height: 1),
-            for (var index = 0; index < destinations.length; index++)
-              ListTile(
-                leading: Icon(destinations[index].icon),
-                title: Text(destinations[index].label),
-                selected: index == selectedIndex,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onSelected(index);
-                },
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

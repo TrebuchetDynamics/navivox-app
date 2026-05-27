@@ -24,7 +24,7 @@ void main() {
     });
   });
 
-  testWidgets('mobile chat list uses hamburger drawer instead of bottom nav', (
+  testWidgets('mobile top-level screens use a Telegram-like bottom nav', (
     tester,
   ) async {
     await _withMobileSurface(tester, () async {
@@ -35,21 +35,18 @@ void main() {
       );
 
       expect(find.text('Contact list'), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
-      expect(find.text('Servers'), findsNothing);
-
-      await tester.tap(find.byIcon(Icons.menu));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Drawer), findsOneWidget);
-      expect(find.text('Chats'), findsWidgets);
-      expect(find.text('Servers'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byTooltip('Open navigation menu'), findsNothing);
+      expect(find.text('Chats'), findsOneWidget);
+      expect(find.text('Agents'), findsOneWidget);
       expect(find.text('Memory'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Servers'), findsNothing);
     });
   });
 
-  testWidgets('mobile hamburger button is flat and theme-colored', (
+  testWidgets('mobile bottom navigation is compact and theme-colored', (
     tester,
   ) async {
     await _withMobileSurface(tester, () async {
@@ -60,46 +57,17 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
-      final menuButton = tester.widget<FloatingActionButton>(
-        find.byType(FloatingActionButton),
+      final navigationBar = tester.widget<NavigationBar>(
+        find.byType(NavigationBar),
       );
 
-      expect(menuButton.backgroundColor, navivoxLightTheme.colorScheme.surface);
-      expect(menuButton.foregroundColor, navivoxLightTheme.colorScheme.primary);
-      expect(menuButton.elevation, 0);
-      expect(menuButton.highlightElevation, 0);
-      expect(menuButton.shape, const CircleBorder());
+      expect(navigationBar.height, 68);
+      expect(navigationBar.elevation, 0);
+      expect(navigationBar.selectedIndex, 0);
     });
   });
 
-  testWidgets('mobile drawer uses Telegram-blue branded header', (
-    tester,
-  ) async {
-    await _withMobileSurface(tester, () async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: navivoxLightTheme,
-          home: const AppShell(location: '/chats', child: Text('Contact list')),
-        ),
-      );
-
-      await tester.tap(find.byIcon(Icons.menu));
-      await tester.pumpAndSettle();
-
-      final header = tester.widget<DrawerHeader>(find.byType(DrawerHeader));
-      final decoration = header.decoration as BoxDecoration?;
-
-      expect(decoration?.color, navivoxLightTheme.colorScheme.primary);
-      expect(find.byType(CircleAvatar), findsOneWidget);
-      expect(find.text('Navivox'), findsOneWidget);
-      expect(find.text('Gormes operator console'), findsOneWidget);
-    });
-  });
-
-  testWidgets('top-level navigation includes Memory dashboard in drawer', (
-    tester,
-  ) async {
+  testWidgets('mobile more menu plugs overflow destinations', (tester) async {
     await _withMobileSurface(tester, () async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -108,12 +76,33 @@ void main() {
       );
 
       expect(find.text('Memory body'), findsOneWidget);
-      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.menu));
+      await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Memory'), findsWidgets);
+      expect(find.text('Servers'), findsOneWidget);
+      expect(find.text('Config'), findsOneWidget);
+      expect(find.byType(Drawer), findsNothing);
+    });
+  });
+
+  testWidgets('mobile overflow destination keeps More selected', (
+    tester,
+  ) async {
+    await _withMobileSurface(tester, () async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AppShell(location: '/config', child: Text('Config body')),
+        ),
+      );
+
+      final navigationBar = tester.widget<NavigationBar>(
+        find.byType(NavigationBar),
+      );
+
+      expect(find.text('Config body'), findsOneWidget);
+      expect(navigationBar.selectedIndex, 4);
     });
   });
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../../router/app_routes.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
 import '../register_gateway_presentation.dart';
 import '../servers_screen_presentation.dart';
@@ -51,6 +53,7 @@ class ServersScreen extends ConsumerWidget {
     ServerGatewayPresentation gateway,
   ) {
     final server = gateway.server;
+    final parentContext = context;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -114,11 +117,34 @@ class ServersScreen extends ConsumerWidget {
             else
               for (final profile in gateway.profileContacts)
                 ListTile(
+                  key: ValueKey(
+                    'server-profile-${profile.contact.serverId}-${profile.contact.profileId}',
+                  ),
                   contentPadding: EdgeInsets.zero,
                   leading: ProfileContactAvatar(contact: profile.contact),
                   title: Text(profile.contact.displayName),
                   subtitle: Text(profile.contact.profileId),
-                  trailing: _HealthPill(label: profile.compactHealthLabel),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _HealthPill(label: profile.compactHealthLabel),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    channel.selectProfileContact(
+                      serverId: profile.contact.serverId,
+                      profileId: profile.contact.profileId,
+                    );
+                    GoRouter.maybeOf(parentContext)?.go(
+                      AppRoutes.chatLocation(
+                        serverId: profile.contact.serverId,
+                        profileId: profile.contact.profileId,
+                      ),
+                    );
+                  },
                 ),
           ],
         ),

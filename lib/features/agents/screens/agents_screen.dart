@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../router/navigation_intent.dart';
+
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
+import '../../profiles/profile_seed_sheet.dart';
 import '../agents_screen_presentation.dart';
 
 class AgentsScreen extends ConsumerStatefulWidget {
@@ -73,15 +76,17 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
               createImportLabel: presentation.createImportProfileLabel,
               onRefresh: channel.requestAgentList,
               onCreateImport: () =>
-                  _showCreateImportUnavailableSheet(context, presentation),
+                  _showCreateImportSheet(context, channel, presentation),
             ),
     );
   }
 
-  void _showCreateImportUnavailableSheet(
+  void _showCreateImportSheet(
     BuildContext context,
+    NavivoxChannel channel,
     AgentsScreenPresentation presentation,
   ) {
+    final parentContext = context;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -94,9 +99,39 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
               title: Text(presentation.createImportProfileSheetTitle),
               subtitle: Text(presentation.createImportProfileSheetSubtitle),
             ),
+            const Divider(height: 1),
+            ListTile(
+              key: const ValueKey('agents-create-from-seed'),
+              leading: const Icon(Icons.auto_awesome),
+              title: Text(presentation.createFromSeedTitle),
+              subtitle: Text(presentation.createFromSeedSubtitle),
+              onTap: () {
+                Navigator.of(context).pop();
+                _showProfileSeedSheet(parentContext, channel);
+              },
+            ),
+            ListTile(
+              key: const ValueKey('agents-add-gateway'),
+              leading: const Icon(Icons.add_link),
+              title: Text(presentation.addGatewayTitle),
+              subtitle: Text(presentation.addGatewaySubtitle),
+              onTap: () {
+                Navigator.of(context).pop();
+                NavigationIntent.maybeGo(parentContext, const OpenGateways());
+              },
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showProfileSeedSheet(BuildContext context, NavivoxChannel channel) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => ProfileSeedSheet(channel: channel),
     );
   }
 }

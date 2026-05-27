@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../../router/app_routes.dart';
 import '../gateway_connection_presentation.dart';
 import '../navivox_connect_intent_source.dart';
 import '../setup_guide_presentation.dart';
@@ -417,7 +416,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             token: request.token,
             webSocketUrl: request.webSocketUrl,
           );
-      if (mounted) context.go(AppRoutes.chats);
+      if (mounted) NavigationIntent.go(context, const OpenChatsList());
     } catch (_) {
       if (mounted) {
         setState(() => _notice = _setupScreenPresentation.connectFailureNotice);
