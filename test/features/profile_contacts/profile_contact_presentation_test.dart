@@ -7,14 +7,25 @@ void main() {
     const presentation = ProfileContactsScreenPresentation();
 
     expect(presentation.title, 'Navivox');
-    expect(presentation.searchHint, 'Search');
+    expect(presentation.searchHint, 'Search Profiles');
     expect(presentation.searchTooltip, 'Search profiles');
     expect(presentation.closeSearchTooltip, 'Close search');
     expect(presentation.manageGatewaysTooltip, 'Manage gateways');
+    expect(presentation.profileListMenuTooltip, 'Open profile list menu');
     expect(presentation.noProfilesMessage, 'No profiles loaded');
     expect(presentation.noVisibleChatsMessage, 'No chats found');
     expect(presentation.addProfileTooltip, 'Add profile');
     expect(presentation.allServersLabel, 'All');
+    expect(
+      presentation.menuRows.map((row) => '${row.kind.name}:${row.title}'),
+      [
+        'manageGateways:Manage gateways',
+        'manageProfiles:Manage profiles',
+        'openMemory:Memory',
+        'openConfig:Config',
+        'openSettings:Settings',
+      ],
+    );
     expect(
       presentation.addProfileRows.map(
         (row) => '${row.kind.name}:${row.title}:${row.subtitle}',
@@ -52,6 +63,7 @@ void main() {
       expect(summary.memoryLabel, 'Goncho available');
       expect(summary.gonchoStatusLabel, 'available');
       expect(summary.latestLabel, 'typing…');
+      expect(summary.chatListPreviewLabel, 'typing… · online · 2 roots');
       expect(summary.avatarInitial, 'M');
       expect(summary.avatarColorIndex, 13);
       expect(summary.avatarSemanticLabel, 'Mineru Builder profile avatar');
@@ -143,6 +155,27 @@ void main() {
     },
   );
 
+  test('keeps list voice hints profile-reported, not full readiness', () {
+    const contact = NavivoxProfileContact(
+      serverId: 'lab',
+      profileId: 'mineru',
+      displayName: 'Mineru Builder',
+      serverLabel: 'Lab Gateway',
+      health: NavivoxProfileHealth.online,
+      latestPreview: 'Ready',
+      micAvailable: true,
+    );
+
+    final summary = ProfileContactPresentation(contact);
+
+    expect(summary.voiceLabel, 'mic available');
+    expect(summary.channelsLabel, 'local/web chat, voice');
+    expect(summary.searchTerms, contains('mic available'));
+    expect(summary.searchTerms.join(' '), isNot(contains('trust')));
+    expect(summary.searchTerms.join(' '), isNot(contains('device STT')));
+    expect(summary.searchTerms.join(' '), isNot(contains('continuous voice')));
+  });
+
   test('formats contact list timestamps like Telegram chat rows', () {
     final now = DateTime.now();
 
@@ -214,6 +247,7 @@ void main() {
     expect(summary.memoryLabel, 'Goncho needs workspace attention');
     expect(summary.gonchoStatusLabel, 'needs workspace attention');
     expect(summary.latestLabel, 'no recent activity');
+    expect(summary.chatListPreviewLabel, '⚠ Workspace issue · auth required');
     expect(summary.avatarInitial, 'S');
     expect(summary.avatarColorIndex, 17);
     expect(summary.avatarSemanticLabel, 'Support Triage profile avatar');

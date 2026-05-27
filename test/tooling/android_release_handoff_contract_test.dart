@@ -29,10 +29,11 @@ void main() {
     expect(text, contains('microphone permission'));
     expect(text, contains('Continuous voice ready'));
     expect(text, contains('## Continuous voice blocker handoff'));
-    expect(text, contains('Run id: `dl-mphjm06r-b0c512`'));
+    expect(text, contains('Run id: `voice-readiness-smoke-2026-05-27`'));
     expect(text, contains('Latest local debug APK'));
-    expect(text, contains('emulator-5554'));
-    expect(text, contains('exit code `124`'));
+    expect(text, contains('sha256 af9ba1fb0b16efc9bb9b31d8e2684dc191f00781e378a2850e4e25cf3b64c8dc'));
+    expect(text, contains('flutter devices` lists only Linux desktop and Chrome'));
+    expect(text, contains('/dev/kvm'));
     expect(
       text,
       contains(

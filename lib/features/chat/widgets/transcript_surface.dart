@@ -20,6 +20,9 @@ class TranscriptSurface extends StatelessWidget {
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
+    this.onUploadFile,
+    this.onPickPhotoOrVideo,
+    this.onOpenWorkspace,
     this.textToSpeechService,
     this.assistantTypingLabel,
     this.onCancelActiveTurn,
@@ -39,6 +42,9 @@ class TranscriptSurface extends StatelessWidget {
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
+  final VoidCallback? onUploadFile;
+  final VoidCallback? onPickPhotoOrVideo;
+  final VoidCallback? onOpenWorkspace;
   final TextToSpeechService? textToSpeechService;
   final String? assistantTypingLabel;
   final VoidCallback? onCancelActiveTurn;
@@ -60,6 +66,9 @@ class TranscriptSurface extends StatelessWidget {
       voiceUnavailableReason: voiceUnavailableReason,
       voiceRecoveryAction: voiceRecoveryAction,
       onOpenVoiceSettings: onOpenVoiceSettings,
+      onUploadFile: onUploadFile,
+      onPickPhotoOrVideo: onPickPhotoOrVideo,
+      onOpenWorkspace: onOpenWorkspace,
       textToSpeechService: textToSpeechService,
       assistantTypingLabel: assistantTypingLabel,
       onCancelActiveTurn: onCancelActiveTurn,

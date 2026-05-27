@@ -1,3 +1,4 @@
+import '../voice/services/speech_to_text_voice_capture_service.dart';
 import '../voice/services/voice_capture_service.dart';
 
 enum TranscriptVoiceCaptureStatus { unavailable, captured, failed }
@@ -52,6 +53,18 @@ class TranscriptVoiceCaptureFlow {
         error: error,
         errorMessage: 'Voice capture timed out.',
       );
+    } on DeviceSpeechUnavailable catch (error) {
+      return TranscriptVoiceCaptureOutcome.failed(
+        error: error,
+        errorMessage: _deviceSpeechUnavailableMessage(error.message),
+      );
+    } on SpeechToTextCaptureFailure catch (error) {
+      return TranscriptVoiceCaptureOutcome.failed(
+        error: error,
+        errorMessage: error.isNoTranscript
+            ? noSpeechDetectedVoiceCaptureMessage
+            : 'Voice capture failed: $error',
+      );
     } catch (error) {
       return TranscriptVoiceCaptureOutcome.failed(
         error: error,
@@ -59,4 +72,12 @@ class TranscriptVoiceCaptureFlow {
       );
     }
   }
+}
+
+String _deviceSpeechUnavailableMessage(String reason) {
+  final normalized = reason.trim().toLowerCase();
+  if (normalized == 'microphone permission denied') {
+    return microphonePermissionDeniedVoiceCaptureMessage;
+  }
+  return deviceSpeechUnavailableVoiceCaptureMessage;
 }

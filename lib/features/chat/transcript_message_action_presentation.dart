@@ -75,9 +75,9 @@ class TranscriptMessageActionPresentation {
   String get readAloudSnackbar => 'Reading aloud';
 
   bool get showInspectRunRecord => runRecordId != null;
-  String get inspectRunRecordLabel => 'Inspect run record';
+  String get inspectRunRecordLabel => 'View evidence';
   String get inspectRunRecordSubtitle =>
-      'Load redacted transcript, voice, tool, and usage evidence.';
+      'Show redacted transcript, voice, tool, usage, and cost evidence.';
 
   bool get showReadAloudUnavailable => hasText && !textToSpeechAvailable;
   String get readAloudUnavailableLabel => 'Read aloud unavailable';
@@ -88,10 +88,8 @@ class TranscriptMessageActionPresentation {
   String get forwardTitle => 'Forward to';
 
   static String? runRecordIdForMessage(NavivoxChatMessage message) {
-    final id = message.id.trim();
-    if (id.isNotEmpty && !id.startsWith('pending-')) return id;
-    final voiceRunId = message.voice?.voiceRunId?.trim();
-    if (voiceRunId != null && voiceRunId.isNotEmpty) return voiceRunId;
-    return null;
+    final reference = message.runRecordReference?.trim();
+    if (reference == null || reference.isEmpty) return null;
+    return reference;
   }
 }

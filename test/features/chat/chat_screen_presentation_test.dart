@@ -112,6 +112,18 @@ void main() {
       ]),
     );
     expect(
+      presentation.infoActions.map(
+        (action) => '${action.kind.name}:${action.title}:${action.subtitle}',
+      ),
+      [
+        'openAgents:Open profile contacts:Select or manage Gormes profiles.',
+        'openWorkspace:Workspace and memory:Inspect workspace-scoped memory and references.',
+        'openConfig:Profile config:Review profile-scoped config and voice settings.',
+        'openSettings:Navivox settings:Voice, trust, and local app controls.',
+        'manageGateways:Gateway details:Manage Gormes gateway connections.',
+      ],
+    );
+    expect(
       presentation.voiceMode.controlsSemanticsHint,
       'Open continuous voice controls',
     );
@@ -217,6 +229,35 @@ void main() {
       'commandWord:Command word:navi:none',
       'howItWorks:How it works:Reason: device STT unavailable. Continuous voice stays off until resolved.:none',
     ]);
+  });
+
+  test('separates local recognizer unavailability from gateway STT', () {
+    final presentation = ChatScreenPresentation.fromState(
+      state: const NavivoxChannelState(
+        servers: [local],
+        activeServerId: 'srv1',
+        profileContacts: [activeProfile],
+        selectedProfileContactKey: 'srv1::mineru',
+      ),
+      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      localVoiceCaptureAvailable: false,
+    );
+
+    expect(presentation.voiceMode.disabledReason, 'device STT unavailable');
+    expect(
+      presentation.voiceMode.androidRecognizerStatus,
+      'No local speech recognizer is active in Navivox.',
+    );
+    expect(
+      presentation.voiceMode.gatewayProfileSttStatus,
+      'Gateway profile STT is not checked because Android speech recognition is unavailable.',
+    );
+    expect(
+      _voiceRows(presentation.voiceMode),
+      contains(
+        'gatewayProfileStt:Gateway profile STT:Gateway profile STT is not checked because Android speech recognition is unavailable.:none',
+      ),
+    );
   });
 
   test('offers a trust action for untrusted Profile contact voice mode', () {

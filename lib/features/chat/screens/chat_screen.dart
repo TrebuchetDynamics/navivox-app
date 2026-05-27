@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../router/navigation_intent.dart';
+
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_event.dart';
@@ -29,9 +31,37 @@ final chatVoiceCaptureServiceProvider = Provider<VoiceCaptureService?>(
   (_) => createDefaultVoiceCaptureService(),
 );
 
+final chatVoiceCaptureReadinessProvider = FutureProvider<VoiceCaptureReadiness>(
+  (_) => checkDefaultVoiceCaptureReadiness(),
+);
+
 final chatTextToSpeechServiceProvider = Provider<TextToSpeechService?>(
   (_) => null,
 );
+
+String? _readinessUnavailableReason(
+  AsyncValue<VoiceCaptureReadiness>? readiness,
+) {
+  if (readiness == null) return null;
+  return readiness.when(
+    data: (value) => value.available
+        ? null
+        : value.unavailableReason ?? 'device STT unavailable',
+    error: (_, _) => 'device STT unavailable',
+    loading: () => null,
+  );
+}
+
+bool? _readinessMicrophonePermissionGranted(
+  AsyncValue<VoiceCaptureReadiness>? readiness,
+) {
+  if (readiness == null) return null;
+  return readiness.when(
+    data: (value) => value.diagnostics?.microphonePermissionGranted,
+    error: (_, _) => null,
+    loading: () => null,
+  );
+}
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({
@@ -53,7 +83,8 @@ class ChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen>
+    with WidgetsBindingObserver {
   NavivoxChannel? _subscribed;
   final ForwardMessageIntent _forwardMessageIntent =
       const ForwardMessageIntent();
@@ -68,12 +99,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _routeProfileSynced = false;
   String? _lastRouteProfileKey;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   void _onChannelChanged() {
     if (mounted) setState(() {});
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _voiceRunController.clearRuntimeVoiceDisabledReason();
+    ref.invalidate(chatVoiceCaptureReadinessProvider);
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _subscribed?.removeListener(_onChannelChanged);
     _pendingVoiceTimer?.cancel();
     _commandModeTimer?.cancel();
@@ -91,15 +137,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _syncRouteProfile(channel);
 
     final state = channel.state;
+    final voiceServiceOverride = widget.voiceCaptureServiceOverride;
     final voiceService =
-        widget.voiceCaptureServiceOverride ??
-        ref.watch(chatVoiceCaptureServiceProvider);
+        voiceServiceOverride ?? ref.watch(chatVoiceCaptureServiceProvider);
+    final readiness = voiceServiceOverride == null && voiceService != null
+        ? ref.watch(chatVoiceCaptureReadinessProvider)
+        : null;
+    final readinessUnavailableReason = _readinessUnavailableReason(readiness);
+    final localMicrophonePermissionGranted =
+        _readinessMicrophonePermissionGranted(readiness);
+    final localVoiceCaptureChecking = readiness?.isLoading == true;
+    final localVoiceCaptureAvailable =
+        voiceService != null &&
+        !localVoiceCaptureChecking &&
+        readinessUnavailableReason == null;
     final textToSpeechService = ref.watch(chatTextToSpeechServiceProvider);
     final voiceSettings = ref.watch(navivoxVoiceSettingsProvider);
     final presentation = ChatScreenPresentation.fromState(
       state: state,
       voiceSettings: voiceSettings,
-      localVoiceCaptureAvailable: voiceService != null,
+      localVoiceCaptureAvailable: localVoiceCaptureAvailable,
+      localVoiceCaptureChecking: localVoiceCaptureChecking,
+      localVoiceCaptureUnavailableReason: readinessUnavailableReason,
+      localMicrophonePermissionGranted: localMicrophonePermissionGranted,
       runtimeVoiceDisabledReason:
           _voiceRunController.runtimeVoiceDisabledReason,
       notice: _voiceRunController.notice,
@@ -175,12 +235,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: TranscriptSurface(
               messages: presentation.transcriptMessages,
               onSend: (text) => _handleTextSubmit(channel, text),
-              voiceCaptureService: presentation.voiceMode.disabledReason == null
+              voiceCaptureService: presentation.voiceMode.ready
                   ? voiceService
                   : null,
-              voiceUnavailableReason: presentation.voiceMode.disabledReason,
+              voiceUnavailableReason:
+                  presentation.voiceMode.voiceCaptureUnavailableReason,
               voiceRecoveryAction: presentation.voiceMode.recoveryAction,
-              onOpenVoiceSettings: () => context.go(AppRoutes.settings),
+              onOpenVoiceSettings: () =>
+                  NavigationIntent.go(context, const OpenSettings()),
+              onUploadFile: () => _showAttachmentUnavailable(
+                context,
+                title: 'File upload unavailable',
+                message:
+                    'Gormes has not advertised a Navivox upload endpoint yet. Use text or workspace references for now.',
+              ),
+              onPickPhotoOrVideo: () => _showAttachmentUnavailable(
+                context,
+                title: 'Photo upload unavailable',
+                message:
+                    'Photo and video picking is ready to plug into the upload endpoint once Gormes enables uploads.',
+              ),
+              onOpenWorkspace: () =>
+                  NavigationIntent.go(context, const OpenWorkspace()),
               textToSpeechService: textToSpeechService,
               assistantTypingLabel: presentation.assistantTypingLabel,
               onCancelActiveTurn: presentation.assistantTypingLabel != null
@@ -197,11 +273,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               forwardTargets: presentation.forwardTargets,
               onForward: (message, target) =>
                   _handleForward(channel, message: message, target: target),
-              onInspectRunRecord: (message) =>
-                  _inspectRunRecord(channel, message),
+              onInspectRunRecord: state.runRecordInspectionAvailable
+                  ? (message) => _inspectRunRecord(channel, message)
+                  : null,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showAttachmentUnavailable(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.info_outline),
+                title: Text(title),
+                subtitle: Text(message),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -236,11 +340,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   label: row.label,
                   value: row.value,
                 ),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              for (final action in presentation.infoActions)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_chatInfoActionIcon(action.kind)),
+                  title: Text(action.title),
+                  subtitle: Text(action.subtitle),
+                  onTap: () => _handleChatInfoAction(context, action.kind),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _handleChatInfoAction(BuildContext context, ChatInfoActionKind kind) {
+    Navigator.of(context).pop();
+    NavigationIntent.go(
+      context,
+      switch (kind) {
+        ChatInfoActionKind.openAgents => const OpenAgents(),
+        ChatInfoActionKind.openWorkspace => const OpenWorkspace(),
+        ChatInfoActionKind.openConfig => const OpenConfig(),
+        ChatInfoActionKind.openSettings => const OpenSettings(),
+        ChatInfoActionKind.manageGateways => const OpenGateways(),
+      },
+    );
+  }
+
+  IconData _chatInfoActionIcon(ChatInfoActionKind kind) {
+    return switch (kind) {
+      ChatInfoActionKind.openAgents => Icons.people_alt_outlined,
+      ChatInfoActionKind.openWorkspace => Icons.folder_open,
+      ChatInfoActionKind.openConfig => Icons.settings_applications_outlined,
+      ChatInfoActionKind.openSettings => Icons.settings_outlined,
+      ChatInfoActionKind.manageGateways => Icons.dns_outlined,
+    };
   }
 
   IconData _chatInfoIcon(ChatInfoRowKind kind) {
@@ -429,7 +568,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final key = '$serverId::$profileId';
     if (_lastRouteProfileKey != key) {
       _lastRouteProfileKey = key;
-      _voiceRunController.runtimeVoiceDisabledReason = null;
+      _voiceRunController.clearRuntimeVoiceDisabledReason();
       _routeProfileSynced = false;
     }
     if (_routeProfileSynced) return;
@@ -648,7 +787,7 @@ class _VoiceModeBanner extends StatelessWidget {
       },
       VoiceControlActionKind.openVoiceSettings => () {
         Navigator.of(context).pop();
-        GoRouter.maybeOf(context)?.go(AppRoutes.settings);
+        NavigationIntent.maybeGo(context, const OpenSettings());
       },
       VoiceControlActionKind.trustServer => () {
         Navigator.of(context).pop();

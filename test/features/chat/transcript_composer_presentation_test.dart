@@ -25,7 +25,7 @@ void main() {
     expect(presentation.voiceUnavailableTitle, 'device STT unavailable');
     expect(
       presentation.voiceUnavailableHelpText,
-      'Install or enable device speech recognition, then reopen Navivox.',
+      'Install or enable device speech recognition, then return to Navivox.',
     );
     expect(
       presentation.voiceRecoveryAction,
@@ -43,7 +43,7 @@ void main() {
             '${row.kind.name}:${row.title}:${row.subtitle}:${row.actionKind?.name ?? 'none'}',
       ),
       [
-        'status:device STT unavailable:Install or enable device speech recognition, then reopen Navivox.:none',
+        'status:device STT unavailable:Install or enable device speech recognition, then return to Navivox.:none',
         'recoveryAction:Recovery action:Enable Android speech recognition:none',
         'openVoiceSettings:Open voice settings:Review continuous voice after enabling device speech recognition.:openVoiceSettings',
       ],
@@ -71,7 +71,7 @@ void main() {
     expect(permission.voiceUnavailableTitle, 'microphone permission denied');
     expect(
       permission.voiceUnavailableHelpText,
-      'Grant microphone permission in Android App info, then reopen Navivox.',
+      'Grant microphone permission in Android App info, then return to Navivox.',
     );
     expect(permission.voiceRecoveryAction, isNull);
     expect(
@@ -81,7 +81,7 @@ void main() {
     expect(generic.voiceUnavailableTitle, 'select a profile contact');
     expect(
       generic.voiceUnavailableHelpText,
-      'Check microphone permissions and Settings.',
+      'Select a profile contact before using continuous voice.',
     );
     expect(
       generic.voiceSettingsSubtitle,

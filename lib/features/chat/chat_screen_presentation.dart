@@ -2,6 +2,7 @@ import '../../core/channel/navivox_channel.dart';
 import '../../core/protocol/navivox_event.dart';
 import '../../core/protocol/navivox_voice_run.dart';
 import '../settings/providers/voice_settings_provider.dart';
+import 'voice_readiness_presentation.dart';
 
 class ChatScreenPresentation {
   const ChatScreenPresentation({
@@ -11,6 +12,7 @@ class ChatScreenPresentation {
     required this.appBarTitle,
     required this.appBarSubtitle,
     required this.infoRows,
+    required this.infoActions,
     required this.voiceMode,
     required this.transcriptMessages,
     required this.pendingVoiceRun,
@@ -22,6 +24,9 @@ class ChatScreenPresentation {
     required NavivoxChannelState state,
     required NavivoxVoiceSettings voiceSettings,
     required bool localVoiceCaptureAvailable,
+    bool localVoiceCaptureChecking = false,
+    String? localVoiceCaptureUnavailableReason,
+    bool? localMicrophonePermissionGranted,
     String? runtimeVoiceDisabledReason,
     String? notice,
     bool commandMode = false,
@@ -37,15 +42,14 @@ class ChatScreenPresentation {
         state.activeVoiceRun?.status == NavivoxVoiceRunStatus.pendingSend
         ? state.activeVoiceRun
         : null;
-    final voiceDisabledReason = _voiceDisabledReason(
-      localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-      activeProfile: activeProfile,
+    final voiceReadiness = VoiceReadinessPresentation.fromState(
       settings: voiceSettings,
+      activeProfile: activeProfile,
+      localVoiceCaptureAvailable: localVoiceCaptureAvailable,
+      localVoiceCaptureChecking: localVoiceCaptureChecking,
+      localVoiceCaptureUnavailableReason: localVoiceCaptureUnavailableReason,
+      localMicrophonePermissionGranted: localMicrophonePermissionGranted,
       runtimeVoiceDisabledReason: runtimeVoiceDisabledReason,
-    );
-    final voiceRecoveryAction = _voiceRecoveryAction(
-      activeProfile,
-      voiceDisabledReason,
     );
     final transcriptMessages = [
       ...state.messagesList,
@@ -65,23 +69,25 @@ class ChatScreenPresentation {
         server: activeServer,
         agent: selectedAgent,
       ),
+      infoActions: _infoActions(activeProfile: activeProfile),
       voiceMode: VoiceModePresentation(
         commandMode: commandMode,
         commandWord: voiceSettings.commandWord,
-        disabledReason: voiceDisabledReason,
+        disabledReason: voiceReadiness.disabledReason,
         notice: notice,
         pending: pendingVoiceRun != null,
         pendingTranscript: pendingVoiceRun?.transcript,
         profileName: activeProfile?.displayName,
-        recoveryAction: voiceRecoveryAction,
-        localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-        ready:
-            localVoiceCaptureAvailable &&
-            activeProfile != null &&
-            voiceDisabledReason == null,
-        canTrustServer:
-            activeProfile != null &&
-            voiceDisabledReason == 'trust ${activeProfile.serverLabel}',
+        recoveryAction: voiceReadiness.recoveryAction,
+        localVoiceCaptureAvailable: voiceReadiness.localVoiceCaptureAvailable,
+        ready: voiceReadiness.ready,
+        checking: voiceReadiness.checking,
+        canTrustServer: voiceReadiness.canTrustServer,
+        showSttDiagnostics: voiceReadiness.showSttDiagnostics,
+        androidRecognizerStatus: voiceReadiness.androidRecognizerStatus,
+        microphonePermissionStatus: voiceReadiness.microphonePermissionStatus,
+        gatewayProfileSttStatus: voiceReadiness.gatewayProfileSttStatus,
+        voiceSettingsSubtitle: voiceReadiness.voiceSettingsSubtitle,
       ),
       transcriptMessages: transcriptMessages,
       pendingVoiceRun: pendingVoiceRun,
@@ -100,6 +106,7 @@ class ChatScreenPresentation {
   final String appBarTitle;
   final String? appBarSubtitle;
   final List<ChatInfoRowPresentation> infoRows;
+  final List<ChatInfoActionPresentation> infoActions;
   final VoiceModePresentation voiceMode;
   final List<NavivoxChatMessage> transcriptMessages;
   final NavivoxVoiceRun? pendingVoiceRun;
@@ -158,52 +165,6 @@ class ChatScreenPresentation {
     return count == 1 ? one : many;
   }
 
-  static String? _voiceDisabledReason({
-    required bool localVoiceCaptureAvailable,
-    required NavivoxProfileContact? activeProfile,
-    required NavivoxVoiceSettings settings,
-    required String? runtimeVoiceDisabledReason,
-  }) {
-    if (!settings.continuousVoiceEnabled) return 'disabled in Settings';
-    if (activeProfile == null) return 'select a profile contact';
-    if (!localVoiceCaptureAvailable) return 'device STT unavailable';
-    if (runtimeVoiceDisabledReason != null) return runtimeVoiceDisabledReason;
-    final profileVoiceReason =
-        activeProfile.voiceCapability.captureUnavailableReason;
-    if (profileVoiceReason != null) return profileVoiceReason;
-    if (!settings.isTrusted(activeProfile.serverId)) {
-      return 'trust ${activeProfile.serverLabel}';
-    }
-    if (activeProfile.health != NavivoxProfileHealth.online) {
-      return profileHealthLabel(activeProfile.health);
-    }
-    if (!activeProfile.micAvailable) return 'mic unavailable';
-    return null;
-  }
-
-  static String? _voiceRecoveryAction(
-    NavivoxProfileContact? activeProfile,
-    String? voiceDisabledReason,
-  ) {
-    if (voiceDisabledReason == null) return null;
-    final capability = activeProfile?.voiceCapability;
-    final recoveryAction = capability?.recoveryAction.trim();
-    if (capability != null &&
-        recoveryAction != null &&
-        recoveryAction.isNotEmpty &&
-        (voiceDisabledReason == capability.captureUnavailableReason ||
-            voiceDisabledReason == 'device STT unavailable')) {
-      return recoveryAction;
-    }
-    if (voiceDisabledReason == 'device STT unavailable') {
-      return 'Install or enable device speech recognition, then reopen Navivox.';
-    }
-    if (voiceDisabledReason == 'microphone permission denied') {
-      return 'Grant microphone permission in Android App info, then reopen Navivox.';
-    }
-    return null;
-  }
-
   static NavivoxChatMessage _pendingVoiceMessage(NavivoxVoiceRun run) {
     return NavivoxChatMessage(
       id: 'pending-${run.id}',
@@ -218,6 +179,39 @@ class ChatScreenPresentation {
         status: run.status,
       ),
     );
+  }
+
+  static List<ChatInfoActionPresentation> _infoActions({
+    required NavivoxProfileContact? activeProfile,
+  }) {
+    return [
+      if (activeProfile != null)
+        const ChatInfoActionPresentation(
+          kind: ChatInfoActionKind.openAgents,
+          title: 'Open profile contacts',
+          subtitle: 'Select or manage Gormes profiles.',
+        ),
+      const ChatInfoActionPresentation(
+        kind: ChatInfoActionKind.openWorkspace,
+        title: 'Workspace and memory',
+        subtitle: 'Inspect workspace-scoped memory and references.',
+      ),
+      const ChatInfoActionPresentation(
+        kind: ChatInfoActionKind.openConfig,
+        title: 'Profile config',
+        subtitle: 'Review profile-scoped config and voice settings.',
+      ),
+      const ChatInfoActionPresentation(
+        kind: ChatInfoActionKind.openSettings,
+        title: 'Navivox settings',
+        subtitle: 'Voice, trust, and local app controls.',
+      ),
+      const ChatInfoActionPresentation(
+        kind: ChatInfoActionKind.manageGateways,
+        title: 'Gateway details',
+        subtitle: 'Manage Gormes gateway connections.',
+      ),
+    ];
   }
 
   static List<ChatInfoRowPresentation> _infoRows({
@@ -319,6 +313,26 @@ class ChatInfoRowPresentation {
   final String value;
 }
 
+enum ChatInfoActionKind {
+  openAgents,
+  openWorkspace,
+  openConfig,
+  openSettings,
+  manageGateways,
+}
+
+class ChatInfoActionPresentation {
+  const ChatInfoActionPresentation({
+    required this.kind,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final ChatInfoActionKind kind;
+  final String title;
+  final String subtitle;
+}
+
 class VoiceModePresentation {
   const VoiceModePresentation({
     required this.commandMode,
@@ -331,7 +345,13 @@ class VoiceModePresentation {
     required this.recoveryAction,
     required this.localVoiceCaptureAvailable,
     required this.ready,
+    required this.checking,
     required this.canTrustServer,
+    required this.showSttDiagnostics,
+    required this.androidRecognizerStatus,
+    required this.microphonePermissionStatus,
+    required this.gatewayProfileSttStatus,
+    required this.voiceSettingsSubtitle,
   });
 
   final bool commandMode;
@@ -344,7 +364,13 @@ class VoiceModePresentation {
   final String? recoveryAction;
   final bool localVoiceCaptureAvailable;
   final bool ready;
+  final bool checking;
   final bool canTrustServer;
+  final bool showSttDiagnostics;
+  final String androidRecognizerStatus;
+  final String microphonePermissionStatus;
+  final String gatewayProfileSttStatus;
+  final String voiceSettingsSubtitle;
 
   String get controlsSemanticsHint => 'Open continuous voice controls';
 
@@ -442,6 +468,7 @@ class VoiceModePresentation {
   String? get bannerText {
     if (pending) return 'Sending...';
     if (commandMode) return 'Command mode';
+    if (checking) return 'Checking voice readiness...';
     if (disabledReason != null) {
       return 'Continuous voice unavailable: $disabledReason';
     }
@@ -451,52 +478,29 @@ class VoiceModePresentation {
 
   String get sheetStatus {
     if (pending) return 'Pending voice turn';
+    if (checking) return 'Checking voice readiness';
     if (disabledReason != null) return 'Continuous voice unavailable';
     if (ready) return 'Ready for ${profileName ?? 'chat'}';
     return 'Voice standby';
   }
 
-  String get voiceSettingsSubtitle {
-    return disabledReason == 'device STT unavailable'
-        ? 'Review continuous voice after enabling device speech recognition.'
-        : disabledReason == 'microphone permission denied'
-        ? 'Review continuous voice after granting microphone permission.'
-        : disabledReason == 'select a profile contact'
-        ? 'Select a profile contact before reviewing continuous voice settings.'
-        : 'Review continuous voice and trust settings';
-  }
-
-  bool get showSttDiagnostics {
-    return disabledReason == 'device STT unavailable' ||
-        disabledReason == 'microphone permission denied';
+  String? get voiceCaptureUnavailableReason {
+    if (checking) return 'checking voice readiness';
+    return disabledReason;
   }
 
   String get sheetSubtitle {
     final pendingText = pendingTranscript;
     if (pendingText != null && pendingText.isNotEmpty) return pendingText;
+    if (checking) return 'Checking device speech recognition.';
     return disabledReason ??
         'Tap the mic to speak. Say “$commandWord” for command mode.';
   }
 
-  String get androidRecognizerStatus {
-    return localVoiceCaptureAvailable
-        ? 'Ready in Navivox; gateway STT status is separate.'
-        : 'No local speech recognizer is active in Navivox.';
-  }
-
-  String get microphonePermissionStatus {
-    return disabledReason == 'microphone permission denied'
-        ? 'Denied by Android. Grant microphone permission in App info.'
-        : 'Not denied by Android in this session; checked when capture starts.';
-  }
-
-  String get gatewayProfileSttStatus {
-    return disabledReason == 'device STT unavailable'
-        ? 'Gateway reported device STT unavailable for this profile.'
-        : 'Gateway profile STT is not the current blocker.';
-  }
-
   String get howItWorks {
+    if (checking) {
+      return 'Checking device speech recognition before voice capture.';
+    }
     return disabledReason == null
         ? 'Tap once to capture a turn. Use command mode for local actions like switching profiles, stop, cancel, help, or settings.'
         : 'Reason: $disabledReason. Continuous voice stays off until resolved.';

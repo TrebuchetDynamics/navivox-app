@@ -20,7 +20,7 @@ void main() {
   ) async {
     final actions = <String>[];
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('dispatch note'),
+      _textMessage('dispatch note', runRecordReference: 'run-ref-1'),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
       runRecordInspectionAvailable: true,
@@ -47,16 +47,18 @@ void main() {
     expect(find.text('Stop the current assistant response.'), findsOneWidget);
     expect(find.text('Copy text'), findsOneWidget);
     expect(find.text('Read aloud'), findsOneWidget);
-    expect(find.text('Inspect run record'), findsOneWidget);
+    expect(find.text('View evidence'), findsOneWidget);
     expect(
-      find.text('Load redacted transcript, voice, tool, and usage evidence.'),
+      find.text(
+        'Show redacted transcript, voice, tool, usage, and cost evidence.',
+      ),
       findsOneWidget,
     );
 
     await tester.tap(find.text('Pause stream'));
     await tester.tap(find.text('Copy text'));
     await tester.tap(find.text('Read aloud'));
-    await tester.tap(find.text('Inspect run record'));
+    await tester.tap(find.text('View evidence'));
     await tester.pumpAndSettle();
 
     expect(actions, [
@@ -120,12 +122,13 @@ void main() {
   });
 }
 
-NavivoxChatMessage _textMessage(String text) {
+NavivoxChatMessage _textMessage(String text, {String? runRecordReference}) {
   return NavivoxChatMessage(
     id: 'text-1',
     author: NavivoxMessageAuthor.assistant,
     kind: NavivoxMessageKind.text,
     createdAt: DateTime.utc(2026, 5, 23, 11, 15),
     text: text,
+    runRecordReference: runRecordReference,
   );
 }

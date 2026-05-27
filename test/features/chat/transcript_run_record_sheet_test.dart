@@ -50,7 +50,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Run record'), findsOneWidget);
+      expect(find.text('Evidence'), findsOneWidget);
       expect(find.text('req-run-record'), findsOneWidget);
       expect(find.text('s-run-record'), findsOneWidget);
       expect(find.text('completed'), findsOneWidget);

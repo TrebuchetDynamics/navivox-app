@@ -30,9 +30,14 @@ void main() {
       findsOneWidget,
     );
 
-    final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-    expect(avatar.foregroundColor, Colors.white);
-    expect(avatar.backgroundColor, Colors.primaries[13].shade700);
+    final text = tester.widget<Text>(find.text('M'));
+    expect(text.style?.color, Colors.white);
+
+    final avatar = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
+    final decoration = avatar.decoration as BoxDecoration;
+    final gradient = decoration.gradient as LinearGradient;
+    expect(decoration.shape, BoxShape.circle);
+    expect(gradient.colors, const [Color(0xffff9500), Color(0xffff2d55)]);
     semantics.dispose();
   });
 }

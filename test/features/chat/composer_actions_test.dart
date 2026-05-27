@@ -7,12 +7,19 @@ void main() {
   testWidgets('composer attachment button opens Telegram-style upload sheet', (
     tester,
   ) async {
+    var uploadedFile = false;
+    var pickedMedia = false;
+    var openedWorkspace = false;
+
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: TranscriptSurface(
             messages: const <NavivoxChatMessage>[],
             onSend: (_) {},
+            onUploadFile: () => uploadedFile = true,
+            onPickPhotoOrVideo: () => pickedMedia = true,
+            onOpenWorkspace: () => openedWorkspace = true,
           ),
         ),
       ),
@@ -25,6 +32,22 @@ void main() {
     expect(find.text('Upload file'), findsOneWidget);
     expect(find.text('Photo or video'), findsOneWidget);
     expect(find.text('Workspace file'), findsOneWidget);
+
+    await tester.tap(find.text('Upload file'));
+    await tester.pumpAndSettle();
+    expect(uploadedFile, isTrue);
+
+    await tester.tap(find.byTooltip('Attach'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Photo or video'));
+    await tester.pumpAndSettle();
+    expect(pickedMedia, isTrue);
+
+    await tester.tap(find.byTooltip('Attach'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Workspace file'));
+    await tester.pumpAndSettle();
+    expect(openedWorkspace, isTrue);
   });
 
   testWidgets('composer emoji picker inserts emoji before sending', (

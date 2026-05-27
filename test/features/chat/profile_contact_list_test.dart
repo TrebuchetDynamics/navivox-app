@@ -68,6 +68,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Navivox'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-search-field')), findsOneWidget);
     expect(find.text('Mineru Builder'), findsOneWidget);
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.text('Personal'), findsOneWidget);
@@ -75,15 +76,32 @@ void main() {
       find.byKey(const ValueKey('profile-contact-local-mineru')),
       findsOneWidget,
     );
-    expect(find.text('local'), findsWidgets);
-    expect(find.text('office'), findsOneWidget);
-    expect(find.text('2 roots'), findsOneWidget);
-    expect(find.text('auth'), findsWidgets);
+    expect(
+      find.text('Ready to work on mineru · online · 2 roots'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Waiting for token · auth required · 1 root'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Gateway unavailable · offline · 0 roots'),
+      findsOneWidget,
+    );
+    expect(find.text('2 roots'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('profile-contact-local-mineru')),
+        matching: find.byType(Chip),
+      ),
+      findsNothing,
+    );
+    expect(find.text('auth'), findsNothing);
     expect(
       find.byKey(const ValueKey('profile-attention-office-support')),
       findsOneWidget,
     );
-    expect(find.text('1'), findsWidgets);
+    expect(find.text('1'), findsNothing);
     expect(find.text('May 16'), findsWidgets);
     expect(find.text('May 15'), findsOneWidget);
     expect(find.byTooltip('Add profile'), findsOneWidget);
@@ -115,41 +133,42 @@ void main() {
     expect(otherTile.selected, isFalse);
   });
 
-  testWidgets(
-    'contacts show Telegram-style presence and voice readiness badges',
-    (tester) async {
-      final channel = TestNavivoxChannel()
-        ..seedServers(_servers, activeServerId: 'local')
-        ..seedProfileContacts(_contacts);
+  testWidgets('contacts move voice and attention state out of the avatar', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const _RouterTestApp(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey('profile-contact-presence-local-mineru')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('profile-contact-voice-ready-local-mineru')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('profile-contact-presence-office-support')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(
-          const ValueKey('profile-contact-voice-ready-office-support'),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    expect(
+      find.byKey(const ValueKey('profile-contact-presence-local-mineru')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-contact-voice-ready-local-mineru')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-contact-voice-local-mineru')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-contact-presence-office-support')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-contact-voice-ready-office-support')),
+      findsNothing,
+    );
+  });
 
   testWidgets('server filter chips narrow contacts by gateway', (tester) async {
     final channel = TestNavivoxChannel()
@@ -177,6 +196,67 @@ void main() {
     expect(find.text('1 profile'), findsOneWidget);
   });
 
+  testWidgets('profile list overflow menu plugs top-level routes', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Open profile list menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Manage gateways'), findsOneWidget);
+    expect(find.text('Manage profiles'), findsOneWidget);
+    expect(find.text('Memory'), findsWidgets);
+    expect(find.text('Config'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
+
+    await tester.tap(find.text('Manage gateways'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateways'), findsOneWidget);
+  });
+
+  testWidgets('add profile menu rows are plugged into actions', (tester) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_servers, activeServerId: 'local')
+      ..seedProfileContacts(_contacts);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: const _RouterTestApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create from seed'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-seed-input')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add server'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateways'), findsOneWidget);
+  });
+
   testWidgets('search highlights matching contact title text like Telegram', (
     tester,
   ) async {
@@ -192,8 +272,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Search profiles'));
-    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('profile-search-field')),
       'mineru',
@@ -228,9 +306,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Search profiles'));
-    await tester.pumpAndSettle();
-
     expect(find.byKey(const ValueKey('profile-search-field')), findsOneWidget);
 
     await tester.enterText(
@@ -259,8 +334,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Search profiles'));
-    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('profile-search-field')),
       'auth required',
@@ -295,8 +368,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Search profiles'));
-    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('profile-search-field')),
       'missing',
@@ -336,7 +407,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('typing…'), findsOneWidget);
+    expect(find.text('typing… · online · 2 roots'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('profile-active-turn-local-mineru')),
       findsOneWidget,
@@ -489,8 +560,9 @@ void main() {
       find.byKey(const ValueKey('profile-contact-office-support')),
       findsOneWidget,
     );
-    expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byTooltip('Open navigation menu'), findsNothing);
+    expect(find.text('More'), findsOneWidget);
   });
 
   testWidgets('long pressing a profile opens diagnostics and scoped actions', (

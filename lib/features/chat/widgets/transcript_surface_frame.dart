@@ -21,6 +21,9 @@ class TranscriptSurfaceFrame extends StatefulWidget {
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
+    this.onUploadFile,
+    this.onPickPhotoOrVideo,
+    this.onOpenWorkspace,
     this.textToSpeechService,
     this.assistantTypingLabel,
     this.onCancelActiveTurn,
@@ -40,6 +43,9 @@ class TranscriptSurfaceFrame extends StatefulWidget {
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
+  final VoidCallback? onUploadFile;
+  final VoidCallback? onPickPhotoOrVideo;
+  final VoidCallback? onOpenWorkspace;
   final TextToSpeechService? textToSpeechService;
   final String? assistantTypingLabel;
   final VoidCallback? onCancelActiveTurn;
@@ -172,6 +178,9 @@ class _TranscriptSurfaceFrameState extends State<TranscriptSurfaceFrame> {
           voiceUnavailableReason: widget.voiceUnavailableReason,
           voiceRecoveryAction: widget.voiceRecoveryAction,
           onOpenVoiceSettings: widget.onOpenVoiceSettings,
+          onUploadFile: widget.onUploadFile,
+          onPickPhotoOrVideo: widget.onPickPhotoOrVideo,
+          onOpenWorkspace: widget.onOpenWorkspace,
         ),
       ],
     );

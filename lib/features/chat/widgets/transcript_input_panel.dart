@@ -16,6 +16,9 @@ class TranscriptInputPanel extends StatefulWidget {
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
+    this.onUploadFile,
+    this.onPickPhotoOrVideo,
+    this.onOpenWorkspace,
     super.key,
   });
 
@@ -29,6 +32,9 @@ class TranscriptInputPanel extends StatefulWidget {
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
+  final VoidCallback? onUploadFile;
+  final VoidCallback? onPickPhotoOrVideo;
+  final VoidCallback? onOpenWorkspace;
 
   @override
   State<TranscriptInputPanel> createState() => _TranscriptInputPanelState();
@@ -62,6 +68,9 @@ class _TranscriptInputPanelState extends State<TranscriptInputPanel> {
             voiceUnavailableReason: widget.voiceUnavailableReason,
             voiceRecoveryAction: widget.voiceRecoveryAction,
             onOpenVoiceSettings: widget.onOpenVoiceSettings,
+            onUploadFile: widget.onUploadFile,
+            onPickPhotoOrVideo: widget.onPickPhotoOrVideo,
+            onOpenWorkspace: widget.onOpenWorkspace,
             capturing: _capturing,
             onToggleVoice: _toggleVoiceCapture,
           ),

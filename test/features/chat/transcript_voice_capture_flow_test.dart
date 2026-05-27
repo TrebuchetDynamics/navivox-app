@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript_voice_capture_flow.dart';
+import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 
 void main() {
@@ -58,6 +59,49 @@ void main() {
     expect(outcome.error, isA<VoiceCaptureTimeout>());
     expect(outcome.errorMessage, 'Voice capture timed out.');
   });
+
+  test('maps no transcript to actionable recovery copy', () async {
+    final outcome = await flow.capture(
+      service: _ThrowingVoiceCaptureService(
+        const SpeechToTextCaptureFailure('no transcript'),
+      ),
+      timeout: const Duration(seconds: 1),
+    );
+
+    expect(outcome.status, TranscriptVoiceCaptureStatus.failed);
+    expect(outcome.error, isA<SpeechToTextCaptureFailure>());
+    expect(outcome.errorMessage, noSpeechDetectedVoiceCaptureMessage);
+  });
+
+  test('maps device STT unavailable to actionable recovery copy', () async {
+    final outcome = await flow.capture(
+      service: const _ThrowingVoiceCaptureService(DeviceSpeechUnavailable()),
+      timeout: const Duration(seconds: 1),
+    );
+
+    expect(outcome.status, TranscriptVoiceCaptureStatus.failed);
+    expect(outcome.error, isA<DeviceSpeechUnavailable>());
+    expect(outcome.errorMessage, deviceSpeechUnavailableVoiceCaptureMessage);
+  });
+
+  test(
+    'maps microphone permission denied to actionable recovery copy',
+    () async {
+      final outcome = await flow.capture(
+        service: const _ThrowingVoiceCaptureService(
+          DeviceSpeechUnavailable('microphone permission denied'),
+        ),
+        timeout: const Duration(seconds: 1),
+      );
+
+      expect(outcome.status, TranscriptVoiceCaptureStatus.failed);
+      expect(outcome.error, isA<DeviceSpeechUnavailable>());
+      expect(
+        outcome.errorMessage,
+        microphonePermissionDeniedVoiceCaptureMessage,
+      );
+    },
+  );
 
   test('maps unexpected errors to stable operator failure copy', () async {
     final outcome = await flow.capture(

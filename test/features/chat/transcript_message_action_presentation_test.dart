@@ -71,7 +71,7 @@ void main() {
 
   test('exposes copy, read-aloud, unavailable TTS, and pause copy', () {
     final withTts = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('read this'),
+      _textMessage('read this', runRecordReference: 'run-ref-1'),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
       runRecordInspectionAvailable: true,
@@ -87,12 +87,12 @@ void main() {
     expect(withTts.readAloudLabel, 'Read aloud');
     expect(withTts.readAloudSnackbar, 'Reading aloud');
     expect(withTts.canReadAloud, isTrue);
-    expect(withTts.runRecordId, 'text-1');
+    expect(withTts.runRecordId, 'run-ref-1');
     expect(withTts.showInspectRunRecord, isTrue);
-    expect(withTts.inspectRunRecordLabel, 'Inspect run record');
+    expect(withTts.inspectRunRecordLabel, 'View evidence');
     expect(
       withTts.inspectRunRecordSubtitle,
-      'Load redacted transcript, voice, tool, and usage evidence.',
+      'Show redacted transcript, voice, tool, usage, and cost evidence.',
     );
     expect(withTts.showReadAloudUnavailable, isFalse);
     expect(withTts.pauseLabel, 'Pause stream');
@@ -106,6 +106,16 @@ void main() {
       withoutTts.readAloudUnavailableSubtitle,
       'Device TTS is not connected.',
     );
+  });
+
+  test('requires an explicit run record reference before showing evidence', () {
+    final presentation = TranscriptMessageActionPresentation.fromMessage(
+      _textMessage('ordinary message'),
+      runRecordInspectionAvailable: true,
+    );
+
+    expect(presentation.runRecordId, isNull);
+    expect(presentation.showInspectRunRecord, isFalse);
   });
 
   test('exposes forward target rows when forwarding is available', () {
@@ -144,13 +154,14 @@ void main() {
   });
 }
 
-NavivoxChatMessage _textMessage(String text) {
+NavivoxChatMessage _textMessage(String text, {String? runRecordReference}) {
   return NavivoxChatMessage(
     id: 'text-1',
     author: NavivoxMessageAuthor.assistant,
     kind: NavivoxMessageKind.text,
     createdAt: DateTime.utc(2026, 5, 23, 11),
     text: text,
+    runRecordReference: runRecordReference,
   );
 }
 

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/widgets/transcript_input_panel.dart';
+import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 
 void main() {
@@ -81,6 +82,55 @@ void main() {
     expect(failed, isA<StateError>());
     expect(
       find.text('Voice capture failed: Bad state: microphone exploded'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows actionable no-speech recovery copy', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    Object? failed;
+
+    await tester.pumpWidget(
+      _InputPanelHost(
+        controller: controller,
+        onSend: (_) {},
+        voiceCaptureService: const _ThrowingVoiceCaptureService(
+          SpeechToTextCaptureFailure('no transcript'),
+        ),
+        onVoiceCaptureFailed: (error) => failed = error,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic));
+    await tester.pumpAndSettle();
+
+    expect(failed, isA<SpeechToTextCaptureFailure>());
+    expect(find.text(noSpeechDetectedVoiceCaptureMessage), findsOneWidget);
+  });
+
+  testWidgets('shows actionable permission recovery copy', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    Object? failed;
+
+    await tester.pumpWidget(
+      _InputPanelHost(
+        controller: controller,
+        onSend: (_) {},
+        voiceCaptureService: const _ThrowingVoiceCaptureService(
+          DeviceSpeechUnavailable('microphone permission denied'),
+        ),
+        onVoiceCaptureFailed: (error) => failed = error,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic));
+    await tester.pumpAndSettle();
+
+    expect(failed, isA<DeviceSpeechUnavailable>());
+    expect(
+      find.text(microphonePermissionDeniedVoiceCaptureMessage),
       findsOneWidget,
     );
   });

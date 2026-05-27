@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
+import 'package:navivox/router/app_routes.dart';
 
 import '../../support/test_navivox_channel.dart';
 
@@ -123,5 +125,122 @@ void main() {
     expect(find.text('mineru'), findsOneWidget);
     expect(find.text('Server ID'), findsOneWidget);
     expect(find.text('srv1'), findsOneWidget);
+  });
+
+  testWidgets('chat info menu actions navigate to correct routes', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel()
+      ..seedServers(_seedServers, activeServerId: 'srv1')
+      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+
+    final navigatedRoutes = <String>[];
+    final goRouter = GoRouter(
+      initialLocation: AppRoutes.chatLocation(
+        serverId: 'srv1',
+        profileId: 'mineru',
+      ),
+      routes: [
+        GoRoute(
+          path: '/chats/:serverId/:profileId',
+          builder: (context, state) => const ChatScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.agents,
+          builder: (context, state) {
+            navigatedRoutes.add(AppRoutes.agents);
+            return const SizedBox();
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.memory,
+          builder: (context, state) {
+            navigatedRoutes.add(AppRoutes.memory);
+            return const SizedBox();
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.config,
+          builder: (context, state) {
+            navigatedRoutes.add(AppRoutes.config);
+            return const SizedBox();
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.settings,
+          builder: (context, state) {
+            navigatedRoutes.add(AppRoutes.settings);
+            return const SizedBox();
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.servers,
+          builder: (context, state) {
+            navigatedRoutes.add(AppRoutes.servers);
+            return const SizedBox();
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: MaterialApp.router(routerConfig: goRouter),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Helper: open chat info sheet, scroll to reveal actions, tap a labeled
+    // action, and assert the GoRouter navigated to [expectedRoute].
+    // Returns the GoRouter so the caller can navigate back between actions.
+    Future<void> tapInfoAction(
+      String actionLabel,
+      String expectedRoute,
+    ) async {
+      await tester.tap(find.byKey(const ValueKey('chat-context-action')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chat info'), findsOneWidget);
+      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+
+      // Scroll aggressively to reveal actions below profile info rows
+      await tester.drag(
+        find.byType(DraggableScrollableSheet),
+        const Offset(0, -800),
+      );
+      await tester.pumpAndSettle();
+
+      // If scrolling wasn't enough, scroll more
+      if (find.text(actionLabel).evaluate().isEmpty) {
+        await tester.drag(
+          find.byType(DraggableScrollableSheet),
+          const Offset(0, -400),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(find.text(actionLabel), findsOneWidget);
+      await tester.tap(find.text(actionLabel));
+      await tester.pumpAndSettle();
+      expect(
+        navigatedRoutes,
+        contains(expectedRoute),
+        reason: '$actionLabel should navigate to $expectedRoute',
+      );
+      navigatedRoutes.clear();
+
+      // Navigate back to the chat screen for the next action
+      goRouter.go(
+        AppRoutes.chatLocation(serverId: 'srv1', profileId: 'mineru'),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await tapInfoAction('Open profile contacts', AppRoutes.agents);
+    await tapInfoAction('Workspace and memory', AppRoutes.memory);
+    await tapInfoAction('Profile config', AppRoutes.config);
+    await tapInfoAction('Navivox settings', AppRoutes.settings);
+    await tapInfoAction('Gateway details', AppRoutes.servers);
   });
 }

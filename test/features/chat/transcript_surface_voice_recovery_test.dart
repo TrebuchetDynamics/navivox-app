@@ -35,7 +35,7 @@ void main() {
     expect(find.text('device STT unavailable'), findsOneWidget);
     expect(
       find.text(
-        'Install or enable device speech recognition, then reopen Navivox.',
+        'Install or enable device speech recognition, then return to Navivox.',
       ),
       findsOneWidget,
     );
@@ -67,7 +67,7 @@ void main() {
     expect(find.text('microphone permission denied'), findsOneWidget);
     expect(
       find.text(
-        'Grant microphone permission in Android App info, then reopen Navivox.',
+        'Grant microphone permission in Android App info, then return to Navivox.',
       ),
       findsOneWidget,
     );
@@ -102,7 +102,7 @@ void main() {
     expect(find.text('Device STT unavailable'), findsNothing);
     expect(
       find.text(
-        'Install or enable device speech recognition, then reopen Navivox.',
+        'Install or enable device speech recognition, then return to Navivox.',
       ),
       findsOneWidget,
     );

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
+import '../../../router/navigation_intent.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../../router/app_routes.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
 import '../../profile_contacts/profile_contact_list_presentation.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
@@ -23,6 +23,7 @@ class ProfileContactsScreen extends ConsumerStatefulWidget {
 class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
   NavivoxChannel? _subscribed;
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   bool _searching = false;
   String _query = '';
   String? _selectedServerId;
@@ -35,6 +36,7 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
   void dispose() {
     _subscribed?.removeListener(_onChannelChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -56,18 +58,22 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: _searching
-            ? TextField(
-                key: const ValueKey('profile-search-field'),
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: _profileContactsPresentation.searchHint,
-                  border: InputBorder.none,
-                ),
-                onChanged: (value) => setState(() => _query = value),
-              )
-            : Text(_profileContactsPresentation.title),
+        automaticallyImplyLeading: false,
+        leading: const SizedBox.shrink(),
+        leadingWidth: 56,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              child: const Text('N'),
+            ),
+            const SizedBox(width: 10),
+            Text(_profileContactsPresentation.title),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: _searching
@@ -76,88 +82,157 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
             onPressed: _toggleSearch,
             icon: Icon(_searching ? Icons.close : Icons.search),
           ),
-          IconButton(
-            tooltip: _profileContactsPresentation.manageGatewaysTooltip,
-            onPressed: () => context.go(AppRoutes.servers),
-            icon: const Icon(Icons.dns),
+          PopupMenuButton<ProfileContactsMenuActionKind>(
+            tooltip: _profileContactsPresentation.profileListMenuTooltip,
+            icon: const Icon(Icons.more_vert),
+            onSelected: (action) => _handleProfileContactsMenu(context, action),
+            itemBuilder: (context) => [
+              for (final row in _profileContactsPresentation.menuRows)
+                PopupMenuItem(
+                  value: row.kind,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_profileContactsMenuIcon(row.kind)),
+                    title: Text(row.title),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
-      body: !presentation.hasContacts
-          ? Center(child: Text(_profileContactsPresentation.noProfilesMessage))
-          : Column(
-              children: [
-                if (presentation.showServerFilter) ...[
-                  _ServerFilterBar(
-                    servers: presentation.servers,
-                    selectedServerId: presentation.selectedServerId,
-                    visibleCountLabel: presentation.visibleCountLabel,
-                    allServersLabel:
-                        _profileContactsPresentation.allServersLabel,
-                    onSelected: (serverId) => setState(() {
-                      _selectedServerId = serverId;
-                    }),
-                  ),
-                  const Divider(height: 1),
-                ],
-                Expanded(
-                  child: !presentation.hasVisibleContacts
-                      ? Center(
-                          child: Text(
-                            _profileContactsPresentation.noVisibleChatsMessage,
-                          ),
-                        )
-                      : ListView.separated(
-                          itemCount: presentation.visibleContacts.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final contact = presentation.visibleContacts[index];
-                            return _ProfileContactTile(
-                              contact: contact,
-                              query: _query,
-                              selected:
-                                  contact.key ==
-                                  channel.state.selectedProfileContactKey,
-                              onTap: () {
-                                channel.selectProfileContact(
-                                  serverId: contact.serverId,
-                                  profileId: contact.profileId,
-                                );
-                                context.go(
-                                  AppRoutes.chatLocation(
-                                    serverId: contact.serverId,
-                                    profileId: contact.profileId,
-                                  ),
-                                );
-                              },
-                              onLongPress: () =>
-                                  _showProfileDetails(context, contact),
+      body: Column(
+        children: [
+          _ProfileSearchBar(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            hintText: _profileContactsPresentation.searchHint,
+            query: _query,
+            onTap: () => setState(() => _searching = true),
+            onChanged: (value) => setState(() => _query = value),
+            onClear: () => setState(() {
+              _query = '';
+              _searchController.clear();
+            }),
+          ),
+          if (!presentation.hasContacts)
+            Expanded(
+              child: Center(
+                child: Text(_profileContactsPresentation.noProfilesMessage),
+              ),
+            )
+          else ...[
+            if (presentation.showServerFilter) ...[
+              _ServerFilterBar(
+                servers: presentation.servers,
+                selectedServerId: presentation.selectedServerId,
+                visibleCountLabel: presentation.visibleCountLabel,
+                allServersLabel: _profileContactsPresentation.allServersLabel,
+                onSelected: (serverId) => setState(() {
+                  _selectedServerId = serverId;
+                }),
+              ),
+              const Divider(height: 1),
+            ],
+            Expanded(
+              child: !presentation.hasVisibleContacts
+                  ? Center(
+                      child: Text(
+                        _profileContactsPresentation.noVisibleChatsMessage,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.viewPaddingOf(context).bottom + 96,
+                      ),
+                      itemCount: presentation.visibleContacts.length,
+                      separatorBuilder: (context, index) => Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 76),
+                        child: Divider(
+                          height: 1,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withValues(alpha: 0.18),
+                        ),
+                      ),
+                      itemBuilder: (context, index) {
+                        final contact = presentation.visibleContacts[index];
+                        return _ProfileContactTile(
+                          contact: contact,
+                          query: _query,
+                          selected:
+                              contact.key ==
+                              channel.state.selectedProfileContactKey,
+                          onTap: () {
+                            channel.selectProfileContact(
+                              serverId: contact.serverId,
+                              profileId: contact.profileId,
+                            );
+                            NavigationIntent.go(
+                              context,
+                              OpenChatThread(
+                                contact.serverId,
+                                contact.profileId,
+                              ),
                             );
                           },
-                        ),
-                ),
-              ],
+                          onLongPress: () =>
+                              _showProfileDetails(context, contact),
+                        );
+                      },
+                    ),
             ),
-      floatingActionButton: FloatingActionButton.small(
+          ],
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
         tooltip: _profileContactsPresentation.addProfileTooltip,
-        onPressed: () => _showAddProfilePlaceholder(context),
+        shape: const CircleBorder(),
+        onPressed: () => _showAddProfileSheet(context),
         child: const Icon(Icons.add),
       ),
     );
   }
 
   void _toggleSearch() {
-    setState(() {
-      _searching = !_searching;
-      if (!_searching) {
+    if (_searching) {
+      setState(() {
+        _searching = false;
         _query = '';
         _searchController.clear();
-      }
-    });
+      });
+      _searchFocusNode.unfocus();
+      return;
+    }
+    setState(() => _searching = true);
+    _searchFocusNode.requestFocus();
   }
 
-  void _showAddProfilePlaceholder(BuildContext context) {
+  void _handleProfileContactsMenu(
+    BuildContext context,
+    ProfileContactsMenuActionKind action,
+  ) {
+    NavigationIntent.go(
+      context,
+      switch (action) {
+        ProfileContactsMenuActionKind.manageGateways => const OpenGateways(),
+        ProfileContactsMenuActionKind.manageProfiles => const OpenAgents(),
+        ProfileContactsMenuActionKind.openMemory => const OpenWorkspace(),
+        ProfileContactsMenuActionKind.openConfig => const OpenConfig(),
+        ProfileContactsMenuActionKind.openSettings => const OpenSettings(),
+      },
+    );
+  }
+
+  void _handleAddProfileRow(ProfileContactsAddRowKind kind) {
+    switch (kind) {
+      case ProfileContactsAddRowKind.newProfile:
+        _showProfileSeedSheet(context);
+      case ProfileContactsAddRowKind.addServer:
+        NavigationIntent.go(context, const OpenGateways());
+    }
+  }
+
+  void _showAddProfileSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -182,6 +257,10 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                 leading: Icon(_addProfileRowIcon(row.kind)),
                 title: Text(row.title),
                 subtitle: Text(row.subtitle),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _handleAddProfileRow(row.kind);
+                },
               ),
           ],
         ),
@@ -263,7 +342,6 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     NavivoxProfileContact contact,
     ProfileContactDetailActionKind kind,
   ) {
-    final router = GoRouter.of(context);
     Navigator.of(context).pop();
     switch (kind) {
       case ProfileContactDetailActionKind.openChat:
@@ -271,24 +349,22 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
           serverId: contact.serverId,
           profileId: contact.profileId,
         );
-        router.go(
-          AppRoutes.chatLocation(
-            serverId: contact.serverId,
-            profileId: contact.profileId,
-          ),
+        NavigationIntent.go(
+          context,
+          OpenChatThread(contact.serverId, contact.profileId),
         );
       case ProfileContactDetailActionKind.openMemory:
         channel.selectProfileContact(
           serverId: contact.serverId,
           profileId: contact.profileId,
         );
-        router.go(AppRoutes.memory);
+        NavigationIntent.go(context, const OpenWorkspace());
       case ProfileContactDetailActionKind.editProfile:
         channel.selectProfileContact(
           serverId: contact.serverId,
           profileId: contact.profileId,
         );
-        router.go(AppRoutes.config);
+        NavigationIntent.go(context, const OpenConfig());
     }
   }
 }
@@ -372,6 +448,66 @@ class _ServerFilterBar extends StatelessWidget {
   }
 }
 
+class _ProfileSearchBar extends StatelessWidget {
+  const _ProfileSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.query,
+    required this.onTap,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final String query;
+  final VoidCallback onTap;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: SizedBox(
+        height: 52,
+        child: TextField(
+          key: const ValueKey('profile-search-field'),
+          controller: controller,
+          focusNode: focusNode,
+          onTap: onTap,
+          onChanged: onChanged,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixIcon: const Icon(Icons.search, size: 22),
+            suffixIcon: query.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close, size: 18),
+                  ),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.70 : 1,
+            ),
+            contentPadding: EdgeInsets.zero,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileSearchHighlightText extends StatelessWidget {
   const _ProfileSearchHighlightText({
     required this.text,
@@ -434,68 +570,10 @@ class _ProfileContactAvatarStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isOnline = contact.health == NavivoxProfileHealth.online;
-    final voiceReady = contact.micAvailable && contact.voiceCapability.enabled;
     return SizedBox(
-      width: 44,
-      height: 44,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(child: ProfileContactAvatar(contact: contact)),
-          if (isOnline)
-            Positioned(
-              key: ValueKey(
-                'profile-contact-presence-${contact.serverId}-${contact.profileId}',
-              ),
-              right: 1,
-              bottom: 1,
-              child: Semantics(
-                label: '${contact.displayName} online',
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade500,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.surface,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          if (voiceReady)
-            Positioned(
-              key: ValueKey(
-                'profile-contact-voice-ready-${contact.serverId}-${contact.profileId}',
-              ),
-              right: -2,
-              top: -2,
-              child: Semantics(
-                label: '${contact.displayName} voice ready',
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.surface,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.mic,
-                    size: 9,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      width: 48,
+      height: 48,
+      child: Center(child: ProfileContactAvatar(contact: contact, radius: 24)),
     );
   }
 }
@@ -547,123 +625,148 @@ class _ProfileContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final summary = ProfileContactPresentation(contact);
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      fontSize: 16.5,
+      fontWeight: FontWeight.w600,
+      height: 1.15,
+    );
+    final previewStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: contact.activeTurnState == 'streaming'
+          ? theme.colorScheme.primary
+          : theme.colorScheme.onSurfaceVariant,
+      fontSize: 15,
+      height: 1.15,
+      fontStyle: contact.activeTurnState == 'streaming'
+          ? FontStyle.italic
+          : FontStyle.normal,
+    );
+
     return ListTile(
       key: ValueKey('profile-contact-${contact.serverId}-${contact.profileId}'),
       selected: selected,
-      selectedTileColor: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.32),
+      contentPadding: const EdgeInsets.fromLTRB(16, 4, 12, 4),
+      minVerticalPadding: 8,
+      horizontalTitleGap: 12,
+      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.08),
       leading: _ProfileContactAvatarStack(contact: contact),
-      title: Row(
+      title: _ProfileSearchHighlightText(
+        key: ValueKey(
+          'profile-contact-title-${contact.serverId}-${contact.profileId}',
+        ),
+        text: contact.displayName,
+        query: query,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: titleStyle,
+      ),
+      subtitle: Row(
         children: [
           Expanded(
             child: _ProfileSearchHighlightText(
               key: ValueKey(
-                'profile-contact-title-${contact.serverId}-${contact.profileId}',
+                'profile-contact-preview-${contact.serverId}-${contact.profileId}',
               ),
-              text: contact.displayName,
+              text: summary.chatListPreviewLabel,
               query: query,
-              style: Theme.of(context).textTheme.titleMedium,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: previewStyle,
             ),
           ),
-          _ServerChip(label: contact.serverLabel),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _ProfileSearchHighlightText(
-                  key: ValueKey(
-                    'profile-contact-preview-${contact.serverId}-${contact.profileId}',
-                  ),
-                  text: summary.latestLabel,
-                  query: query,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: contact.activeTurnState == 'streaming'
-                      ? TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontStyle: FontStyle.italic,
-                        )
-                      : null,
-                ),
+          if (contact.activeTurnState == 'streaming') ...[
+            Container(
+              key: ValueKey(
+                'profile-active-turn-${contact.serverId}-${contact.profileId}',
               ),
-              if (contact.activeTurnState == 'streaming') ...[
-                Container(
-                  key: ValueKey(
-                    'profile-active-turn-${contact.serverId}-${contact.profileId}',
-                  ),
-                  margin: const EdgeInsets.only(left: 6),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                _ProfileTypingDots(contact: contact),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _HealthChip(summary: summary),
-              Text(
-                summary.workspaceLabel,
-                style: Theme.of(context).textTheme.labelSmall,
+              margin: const EdgeInsets.only(left: 6),
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
               ),
-              for (final badge in contact.attentionBadges)
-                Chip(visualDensity: VisualDensity.compact, label: Text(badge)),
-            ],
-          ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (summary.latestTimeLabel.isNotEmpty)
-            Text(
-              summary.latestTimeLabel,
-              style: Theme.of(context).textTheme.labelSmall,
             ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                contact.micAvailable ? Icons.mic : Icons.mic_off,
-                size: 16,
-                color: contact.micAvailable
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).disabledColor,
-              ),
-              if (summary.attentionCount > 0) ...[
-                const SizedBox(width: 4),
-                _AttentionCountBadge(
-                  key: ValueKey(
-                    'profile-attention-${contact.serverId}-${contact.profileId}',
-                  ),
-                  count: summary.attentionCount,
-                ),
-              ],
-            ],
-          ),
+            const SizedBox(width: 5),
+            _ProfileTypingDots(contact: contact),
+          ],
         ],
       ),
+      trailing: _ProfileContactTrailing(summary: summary, contact: contact),
       onTap: onTap,
       onLongPress: onLongPress,
     );
   }
+}
+
+class _ProfileContactTrailing extends StatelessWidget {
+  const _ProfileContactTrailing({required this.summary, required this.contact});
+
+  final ProfileContactPresentation summary;
+  final NavivoxProfileContact contact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 52,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (summary.latestTimeLabel.isNotEmpty)
+              Text(
+                summary.latestTimeLabel,
+                textAlign: TextAlign.right,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 12.5,
+                ),
+              ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (contact.micAvailable)
+                  Icon(
+                    Icons.mic,
+                    key: ValueKey(
+                      'profile-contact-voice-${contact.serverId}-${contact.profileId}',
+                    ),
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
+                if (summary.attentionCount > 0) ...[
+                  if (contact.micAvailable) const SizedBox(width: 5),
+                  _AttentionCountBadge(
+                    key: ValueKey(
+                      'profile-attention-${contact.serverId}-${contact.profileId}',
+                    ),
+                    count: summary.attentionCount,
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+IconData _profileContactsMenuIcon(ProfileContactsMenuActionKind kind) {
+  return switch (kind) {
+    ProfileContactsMenuActionKind.manageGateways => Icons.dns_outlined,
+    ProfileContactsMenuActionKind.manageProfiles => Icons.smart_toy_outlined,
+    ProfileContactsMenuActionKind.openMemory => Icons.psychology_alt_outlined,
+    ProfileContactsMenuActionKind.openConfig => Icons.settings_outlined,
+    ProfileContactsMenuActionKind.openSettings => Icons.keyboard_voice_outlined,
+  };
 }
 
 IconData _addProfileRowIcon(ProfileContactsAddRowKind kind) {
@@ -703,47 +806,7 @@ class _AttentionCountBadge extends StatelessWidget {
     final theme = Theme.of(context);
     return Semantics(
       label: '$count attention ${count == 1 ? 'item' : 'items'}',
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.error,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          count.toString(),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onError,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ServerChip extends StatelessWidget {
-  const _ServerChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(visualDensity: VisualDensity.compact, label: Text(label));
-  }
-}
-
-class _HealthChip extends StatelessWidget {
-  const _HealthChip({required this.summary});
-
-  final ProfileContactPresentation summary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      summary.compactHealthLabel,
-      style: Theme.of(context).textTheme.labelSmall,
+      child: Icon(Icons.error, size: 14, color: theme.colorScheme.error),
     );
   }
 }

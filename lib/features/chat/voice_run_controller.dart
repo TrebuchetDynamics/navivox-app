@@ -40,6 +40,10 @@ class VoiceRunController {
   String? runtimeVoiceDisabledReason;
   String? notice;
 
+  void clearRuntimeVoiceDisabledReason() {
+    runtimeVoiceDisabledReason = null;
+  }
+
   String startCapture(NavivoxChannel channel) {
     pendingVoiceRunId = channel.startVoiceRun();
     return pendingVoiceRunId!;
@@ -122,6 +126,9 @@ class VoiceRunController {
     if (error is VoiceCaptureTimeout) return 'Voice capture timed out.';
     if (error is DeviceSpeechUnavailable) {
       return _canonicalDeviceSpeechUnavailableReason(error.message);
+    }
+    if (error is SpeechToTextCaptureFailure && error.isNoTranscript) {
+      return noSpeechDetectedVoiceCaptureMessage;
     }
     return 'Voice capture failed.';
   }

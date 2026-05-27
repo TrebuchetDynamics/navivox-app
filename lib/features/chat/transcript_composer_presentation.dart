@@ -133,9 +133,11 @@ class TranscriptComposerPresentation {
 
   String get voiceUnavailableHelpText {
     return voiceUnavailableReason == 'device STT unavailable'
-        ? 'Install or enable device speech recognition, then reopen Navivox.'
+        ? 'Install or enable device speech recognition, then return to Navivox.'
         : voiceUnavailableReason == 'microphone permission denied'
-        ? 'Grant microphone permission in Android App info, then reopen Navivox.'
+        ? 'Grant microphone permission in Android App info, then return to Navivox.'
+        : voiceUnavailableReason == 'select a profile contact'
+        ? 'Select a profile contact before using continuous voice.'
         : 'Check microphone permissions and Settings.';
   }
 

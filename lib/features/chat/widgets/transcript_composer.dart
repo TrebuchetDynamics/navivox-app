@@ -10,6 +10,9 @@ class TranscriptComposer extends StatefulWidget {
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
+    this.onUploadFile,
+    this.onPickPhotoOrVideo,
+    this.onOpenWorkspace,
     this.capturing = false,
     this.onToggleVoice,
     super.key,
@@ -21,6 +24,9 @@ class TranscriptComposer extends StatefulWidget {
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
+  final VoidCallback? onUploadFile;
+  final VoidCallback? onPickPhotoOrVideo;
+  final VoidCallback? onOpenWorkspace;
   final bool capturing;
   final VoidCallback? onToggleVoice;
 
@@ -74,6 +80,7 @@ class _TranscriptComposerState extends State<TranscriptComposer> {
   }
 
   void _showShareSheet(BuildContext context) {
+    final parentContext = context;
     final presentation = _presentation();
     showModalBottomSheet<void>(
       context: context,
@@ -83,18 +90,102 @@ class _TranscriptComposerState extends State<TranscriptComposer> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
-            Text(presentation.shareTitle),
+            Text(
+              presentation.shareTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 12),
             for (final option in presentation.shareOptions)
               ListTile(
                 leading: Icon(_shareIcon(option.kind)),
                 title: Text(option.title),
                 subtitle: Text(option.subtitle),
+                onTap: () => _handleShareOption(
+                  sheetContext: context,
+                  parentContext: parentContext,
+                  kind: option.kind,
+                ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  void _handleShareOption({
+    required BuildContext sheetContext,
+    required BuildContext parentContext,
+    required TranscriptComposerShareOptionKind kind,
+  }) {
+    Navigator.of(sheetContext).pop();
+    switch (kind) {
+      case TranscriptComposerShareOptionKind.uploadFile:
+        final callback = widget.onUploadFile;
+        if (callback != null) {
+          callback();
+          return;
+        }
+        _showDeferredShareUnavailable(
+          parentContext,
+          title: 'File upload unavailable',
+          message:
+              'Gormes has not advertised a Navivox upload endpoint yet. Use text or workspace references for now.',
+        );
+      case TranscriptComposerShareOptionKind.photoOrVideo:
+        final callback = widget.onPickPhotoOrVideo;
+        if (callback != null) {
+          callback();
+          return;
+        }
+        _showDeferredShareUnavailable(
+          parentContext,
+          title: 'Photo upload unavailable',
+          message:
+              'Photo and video picking is ready to plug into the upload endpoint once Gormes enables uploads.',
+        );
+      case TranscriptComposerShareOptionKind.workspaceFile:
+        final callback = widget.onOpenWorkspace;
+        if (callback != null) {
+          callback();
+          return;
+        }
+        _showDeferredShareUnavailable(
+          parentContext,
+          title: 'Workspace browser unavailable',
+          message:
+              'Select a profile contact with workspace roots before browsing workspace files.',
+        );
+    }
+  }
+
+  void _showDeferredShareUnavailable(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(title),
+                  subtitle: Text(message),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   IconData _shareIcon(TranscriptComposerShareOptionKind kind) {

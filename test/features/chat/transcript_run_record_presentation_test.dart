@@ -51,7 +51,7 @@ void main() {
         ),
       );
 
-      expect(presentation.title, 'Run record');
+      expect(presentation.title, 'Evidence');
       expect(presentation.runId, 'req-run-record');
       expect(presentation.sessionId, 's-run-record');
       expect(presentation.statusLabel, 'completed');

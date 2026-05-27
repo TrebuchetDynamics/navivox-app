@@ -66,6 +66,37 @@ void main() {
     expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
   });
 
+  test('clearRuntimeVoiceDisabledReason resets session voice blocker', () {
+    final controller = VoiceRunController()
+      ..runtimeVoiceDisabledReason = 'device STT unavailable';
+
+    controller.clearRuntimeVoiceDisabledReason();
+
+    expect(controller.runtimeVoiceDisabledReason, isNull);
+  });
+
+  test('captureFailed maps no transcript to actionable recovery copy', () {
+    final channel = _seedChannel();
+    final controller = VoiceRunController();
+    final voiceRunId = controller.startCapture(channel);
+
+    final result = controller.captureFailed(
+      channel,
+      const SpeechToTextCaptureFailure('no transcript'),
+    );
+
+    expect(result.reason, noSpeechDetectedVoiceCaptureMessage);
+    expect(result.runtimeVoiceDisabledReason, isNull);
+    expect(
+      channel.state.voiceRuns[voiceRunId]?.status,
+      NavivoxVoiceRunStatus.failed,
+    );
+    expect(
+      channel.state.voiceRuns[voiceRunId]?.reason,
+      noSpeechDetectedVoiceCaptureMessage,
+    );
+  });
+
   test('captureSucceeded cancels a started Voice run for Local commands', () {
     final channel = _seedChannel();
     final controller = VoiceRunController();

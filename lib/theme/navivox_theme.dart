@@ -1,15 +1,31 @@
 import 'package:flutter/material.dart';
 
 const navivoxTelegramBlue = Color(0xff229ed9);
+const _navivoxTelegramDarkBackground = Color(0xff17212b);
+const _navivoxTelegramDarkContainer = Color(0xff202b36);
+const _navivoxTelegramDarkContainerHigh = Color(0xff263544);
+const _navivoxTelegramDarkOutline = Color(0xff2f3d4a);
 
 final navivoxLightTheme = _buildNavivoxTheme(Brightness.light);
 final navivoxDarkTheme = _buildNavivoxTheme(Brightness.dark);
 
 ThemeData _buildNavivoxTheme(Brightness brightness) {
-  final colorScheme = ColorScheme.fromSeed(
+  final seededScheme = ColorScheme.fromSeed(
     seedColor: navivoxTelegramBlue,
     brightness: brightness,
   );
+  final colorScheme = brightness == Brightness.dark
+      ? seededScheme.copyWith(
+          primary: navivoxTelegramBlue,
+          surface: _navivoxTelegramDarkBackground,
+          surfaceContainerLowest: _navivoxTelegramDarkBackground,
+          surfaceContainerLow: _navivoxTelegramDarkContainer,
+          surfaceContainer: _navivoxTelegramDarkContainer,
+          surfaceContainerHigh: _navivoxTelegramDarkContainerHigh,
+          surfaceContainerHighest: _navivoxTelegramDarkContainerHigh,
+          outlineVariant: _navivoxTelegramDarkOutline,
+        )
+      : seededScheme;
 
   return ThemeData(
     colorScheme: colorScheme,
@@ -27,6 +43,7 @@ ThemeData _buildNavivoxTheme(Brightness brightness) {
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: colorScheme.primary,
       foregroundColor: colorScheme.onPrimary,
+      shape: const CircleBorder(),
     ),
     drawerTheme: DrawerThemeData(
       backgroundColor: colorScheme.surface,
@@ -34,7 +51,9 @@ ThemeData _buildNavivoxTheme(Brightness brightness) {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
     ),
     dividerTheme: DividerThemeData(
-      color: colorScheme.outlineVariant.withAlpha(96),
+      color: colorScheme.outlineVariant.withAlpha(
+        brightness == Brightness.dark ? 48 : 96,
+      ),
       thickness: 1,
       space: 1,
     ),

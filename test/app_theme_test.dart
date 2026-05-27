@@ -78,7 +78,9 @@ void main() {
 
       expect(
         theme.dividerTheme.color,
-        colorScheme.outlineVariant.withAlpha(96),
+        colorScheme.outlineVariant.withAlpha(
+          theme.colorScheme.brightness == Brightness.dark ? 48 : 96,
+        ),
       );
       expect(theme.dividerTheme.thickness, 1);
       expect(theme.dividerTheme.space, 1);

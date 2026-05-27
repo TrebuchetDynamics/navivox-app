@@ -25,12 +25,21 @@ void main() {
     expect(sent, ['hello😀']);
   });
 
-  testWidgets('opens the shared attachment sheet', (tester) async {
+  testWidgets('opens and plugs the shared attachment sheet', (tester) async {
     final controller = TextEditingController();
     addTearDown(controller.dispose);
+    var uploadedFile = false;
+    var pickedMedia = false;
+    var openedWorkspace = false;
 
     await tester.pumpWidget(
-      _ComposerHost(controller: controller, onSend: (_) {}),
+      _ComposerHost(
+        controller: controller,
+        onSend: (_) {},
+        onUploadFile: () => uploadedFile = true,
+        onPickPhotoOrVideo: () => pickedMedia = true,
+        onOpenWorkspace: () => openedWorkspace = true,
+      ),
     );
 
     await tester.tap(find.byTooltip('Attach'));
@@ -40,6 +49,41 @@ void main() {
     expect(find.text('Upload file'), findsOneWidget);
     expect(find.text('Photo or video'), findsOneWidget);
     expect(find.text('Workspace file'), findsOneWidget);
+
+    await tester.tap(find.text('Upload file'));
+    await tester.pumpAndSettle();
+    expect(uploadedFile, isTrue);
+
+    await tester.tap(find.byTooltip('Attach'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Photo or video'));
+    await tester.pumpAndSettle();
+    expect(pickedMedia, isTrue);
+
+    await tester.tap(find.byTooltip('Attach'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Workspace file'));
+    await tester.pumpAndSettle();
+    expect(openedWorkspace, isTrue);
+  });
+
+  testWidgets('unplugged attachment rows explain unavailable upload support', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      _ComposerHost(controller: controller, onSend: (_) {}),
+    );
+
+    await tester.tap(find.byTooltip('Attach'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Upload file'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('File upload unavailable'), findsOneWidget);
+    expect(find.textContaining('upload endpoint'), findsOneWidget);
   });
 
   testWidgets('explains unavailable voice and opens voice settings', (
@@ -127,6 +171,9 @@ class _ComposerHost extends StatelessWidget {
     this.voiceUnavailableReason,
     this.voiceRecoveryAction,
     this.onOpenVoiceSettings,
+    this.onUploadFile,
+    this.onPickPhotoOrVideo,
+    this.onOpenWorkspace,
     this.capturing = false,
     this.onToggleVoice,
   });
@@ -137,6 +184,9 @@ class _ComposerHost extends StatelessWidget {
   final String? voiceUnavailableReason;
   final String? voiceRecoveryAction;
   final VoidCallback? onOpenVoiceSettings;
+  final VoidCallback? onUploadFile;
+  final VoidCallback? onPickPhotoOrVideo;
+  final VoidCallback? onOpenWorkspace;
   final bool capturing;
   final VoidCallback? onToggleVoice;
 
@@ -151,6 +201,9 @@ class _ComposerHost extends StatelessWidget {
           voiceUnavailableReason: voiceUnavailableReason,
           voiceRecoveryAction: voiceRecoveryAction,
           onOpenVoiceSettings: onOpenVoiceSettings,
+          onUploadFile: onUploadFile,
+          onPickPhotoOrVideo: onPickPhotoOrVideo,
+          onOpenWorkspace: onOpenWorkspace,
           capturing: capturing,
           onToggleVoice: onToggleVoice,
         ),

@@ -55,6 +55,27 @@ class ProfileContactPresentation {
     return preview.isEmpty ? 'no recent activity' : preview;
   }
 
+  String get chatListPreviewLabel {
+    final lead = _chatListLeadLabel;
+    final segments = <String>[lead];
+    final health = healthLabel;
+    if (health != lead) segments.add(health);
+    if (contact.workspaceRootsOk) {
+      segments.add(workspaceLabel);
+    } else if (lead != '⚠ Workspace issue') {
+      segments.add('⚠ Workspace issue');
+    }
+    return segments.join(' · ');
+  }
+
+  String get _chatListLeadLabel {
+    if (contact.activeTurnState == 'streaming') return 'typing…';
+    final preview = contact.latestPreview.trim();
+    if (preview.isNotEmpty) return preview;
+    if (!contact.workspaceRootsOk) return '⚠ Workspace issue';
+    return 'Profile ready';
+  }
+
   String get latestTimeLabel {
     final latestAt = contact.latestAt;
     if (latestAt == null) return '';
@@ -214,6 +235,7 @@ class ProfileContactPresentation {
     workspaceLabel,
     voiceLabel,
     latestLabel,
+    chatListPreviewLabel,
     contact.activeTurnState,
     ...contact.attentionBadges,
   ];
@@ -224,13 +246,15 @@ class ProfileContactsScreenPresentation {
 
   String get title => 'Navivox';
 
-  String get searchHint => 'Search';
+  String get searchHint => 'Search Profiles';
 
   String get searchTooltip => 'Search profiles';
 
   String get closeSearchTooltip => 'Close search';
 
   String get manageGatewaysTooltip => 'Manage gateways';
+
+  String get profileListMenuTooltip => 'Open profile list menu';
 
   String get noProfilesMessage => 'No profiles loaded';
 
@@ -239,6 +263,29 @@ class ProfileContactsScreenPresentation {
   String get addProfileTooltip => 'Add profile';
 
   String get allServersLabel => 'All';
+
+  List<ProfileContactsMenuRowPresentation> get menuRows => const [
+    ProfileContactsMenuRowPresentation(
+      kind: ProfileContactsMenuActionKind.manageGateways,
+      title: 'Manage gateways',
+    ),
+    ProfileContactsMenuRowPresentation(
+      kind: ProfileContactsMenuActionKind.manageProfiles,
+      title: 'Manage profiles',
+    ),
+    ProfileContactsMenuRowPresentation(
+      kind: ProfileContactsMenuActionKind.openMemory,
+      title: 'Memory',
+    ),
+    ProfileContactsMenuRowPresentation(
+      kind: ProfileContactsMenuActionKind.openConfig,
+      title: 'Config',
+    ),
+    ProfileContactsMenuRowPresentation(
+      kind: ProfileContactsMenuActionKind.openSettings,
+      title: 'Settings',
+    ),
+  ];
 
   List<ProfileContactsAddRowPresentation> get addProfileRows => const [
     ProfileContactsAddRowPresentation(
@@ -252,6 +299,24 @@ class ProfileContactsScreenPresentation {
       subtitle: 'Import connect-info from Gormes.',
     ),
   ];
+}
+
+enum ProfileContactsMenuActionKind {
+  manageGateways,
+  manageProfiles,
+  openMemory,
+  openConfig,
+  openSettings,
+}
+
+class ProfileContactsMenuRowPresentation {
+  const ProfileContactsMenuRowPresentation({
+    required this.kind,
+    required this.title,
+  });
+
+  final ProfileContactsMenuActionKind kind;
+  final String title;
 }
 
 enum ProfileContactsAddRowKind { newProfile, addServer }

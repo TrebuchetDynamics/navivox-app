@@ -78,7 +78,7 @@ class TranscriptRunRecordPresentation {
   final List<TranscriptRunRecordInfoRow> voiceRows;
   final List<TranscriptRunRecordToolRow> toolRows;
 
-  String get title => 'Run record';
+  String get title => 'Evidence';
 
   String get searchableText {
     final parts = <String>[
