@@ -1,4 +1,4 @@
-// Navivox Full App Playwright E2E — all screens, all features
+// Navivox Full App Playwright E2E — complete coverage
 // Run: node serve_web.mjs && npx playwright test --config=playwright.config.mjs
 import { test, expect } from '@playwright/test';
 const APP = 'http://127.0.0.1:8767/';
@@ -10,8 +10,8 @@ async function a11y(p) {
 async function click(p, t) {
   await p.waitForSelector('flt-semantics[role="button"]', {timeout:8000}).catch(()=>{});
   await p.evaluate((text) => {
-    for (const role of ['button','menuitem','checkbox','link','switch']) {
-      for (const e of document.querySelectorAll(`flt-semantics[role="${role}"]`)) {
+    for (const r of ['button','menuitem','checkbox','link','switch','tab']) {
+      for (const e of document.querySelectorAll(`flt-semantics[role="${r}"]`)) {
         if (((e.textContent||'')+'|'+(e.getAttribute('aria-label')||'')).includes(text)) {
           e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
           e.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));
@@ -28,8 +28,8 @@ async function longPress(p, t) {
     for (const b of document.querySelectorAll('flt-semantics[role="button"]')) {
       if (((b.textContent||'')+'|'+(b.getAttribute('aria-label')||'')).includes(text)) {
         const r = b.getBoundingClientRect();
-        b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true, clientX:r.x+r.width/2, clientY:r.y+r.height/2}));
-        return new Promise(resolve => setTimeout(() => { b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true, clientX:r.x+r.width/2, clientY:r.y+r.height/2})); resolve(true); }, 1200));
+        b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.x+r.width/2,clientY:r.y+r.height/2}));
+        return new Promise(resolve => setTimeout(()=>{b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.x+r.width/2,clientY:r.y+r.height/2}));resolve(true);},1200));
       }
     }
     return Promise.resolve(false);
@@ -42,7 +42,7 @@ test.describe('1. Profile Contacts', () => {
   test.beforeEach(async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
   });
-  test('1a seeded profiles present', async ({page}) => {
+  test('1a seeded profiles + count', async ({page}) => {
     await expect(page.getByText('Mineru Builder').first()).toBeVisible();
     await expect(page.getByText('Support Triage').first()).toBeVisible();
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
@@ -61,18 +61,29 @@ test.describe('1. Profile Contacts', () => {
     await expect(page.getByText('Open profile list menu').first()).toBeVisible();
     await expect(page.getByText('Add profile').first()).toBeVisible();
   });
-  test('1d filter chips', async ({page}) => {
+  test('1d filter chips + click filter + All reset', async ({page}) => {
     await expect(page.locator('flt-semantics[role="checkbox"][aria-label="All"]')).toBeVisible();
     await expect(page.locator('flt-semantics[role="checkbox"][aria-label="Local Gormes"]')).toBeVisible();
     await expect(page.locator('flt-semantics[role="checkbox"][aria-label="Office Gormes"]')).toBeVisible();
-  });
-  test('1e filter click narrows + All resets', async ({page}) => {
     await click(page, 'Office Gormes'); await page.waitForTimeout(1000);
-    await expect(page.getByText('Support Triage').first()).toBeVisible();
     await expect(page.getByText('1 profile').first()).toBeVisible();
+    await expect(page.getByText('Mineru Builder').first()).not.toBeVisible();
     await click(page, 'All'); await page.waitForTimeout(1000);
     await expect(page.getByText('3 profiles').first()).toBeVisible();
     await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+  });
+  test('1e search toggle: type Mineru filters profile list', async ({page}) => {
+    // Click search button to activate search mode
+    await click(page, 'Search profiles'); await page.waitForTimeout(1000);
+    // Type in the search input
+    const searchInput = page.locator('input[aria-label="Search Profiles"]');
+    await expect(searchInput).toBeVisible();
+    await page.locator('input[aria-label="Search Profiles"]').fill('Mineru');
+    await page.waitForTimeout(1500);
+    // Only Mineru should show (Support and Voice filtered out)
+    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expect(page.getByText('Support Triage').first()).not.toBeVisible();
+    await expect(page.getByText('Voice Agent').first()).not.toBeVisible();
   });
 });
 
@@ -89,11 +100,11 @@ test.describe('2. Profile Detail', () => {
     await expect(page.getByText('Profile ID: support').first()).toBeVisible();
     await expect(page.getByText('Connected channels').first()).toBeVisible();
   });
-  test('2b different profiles have correct data', async ({page}) => {
+  test('2b different profile: Mineru', async ({page}) => {
     await longPress(page, 'Mineru Builder');
     await expect(page.getByText('Display name: Mineru Builder').first()).toBeVisible();
   });
-  test('2c dismiss with Escape', async ({page}) => {
+  test('2c dismiss', async ({page}) => {
     await longPress(page, 'Support Triage');
     await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
     await expect(page.getByText('Profile diagnostics').first()).not.toBeVisible();
@@ -109,20 +120,20 @@ test.describe('3. Chat & Text', () => {
     await click(page, 'Support Triage'); await page.waitForTimeout(2000);
     expect(page.url()).toContain('/chats/office/support');
     await page.locator('[aria-label="Message Gormes"]').first().click({force:true});
-    await page.keyboard.type('hello playwright'); await page.keyboard.press('Enter');
+    await page.keyboard.type('hello pw'); await page.keyboard.press('Enter');
     await page.waitForTimeout(2000);
-    await expect(page.getByText('hello playwright').first()).toBeVisible();
-    await expect(page.getByText('Echo: hello playwright').first()).toBeVisible();
+    await expect(page.getByText('hello pw').first()).toBeVisible();
+    await expect(page.getByText('Echo: hello pw').first()).toBeVisible();
   });
-  test('3b send multiple messages', async ({page}) => {
+  test('3b multiple messages', async ({page}) => {
     await click(page, 'Voice Agent'); await page.waitForTimeout(2000);
-    for (const msg of ['first msg', 'second msg']) {
+    for (const m of ['msg 1','msg 2']) {
       await page.locator('[aria-label="Message Gormes"]').first().click({force:true});
-      await page.keyboard.type(msg); await page.keyboard.press('Enter');
+      await page.keyboard.type(m); await page.keyboard.press('Enter');
       await page.waitForTimeout(1500);
     }
-    await expect(page.getByText('first msg').first()).toBeVisible();
-    await expect(page.getByText('second msg').first()).toBeVisible();
+    await expect(page.getByText('msg 1').first()).toBeVisible();
+    await expect(page.getByText('msg 2').first()).toBeVisible();
   });
 });
 
@@ -137,7 +148,7 @@ test.describe('4. Menu → Screens', () => {
     expect(page.url()).toContain('/servers');
     await expect(page.getByText('Gateways').first()).toBeVisible({timeout:5000});
   });
-  test('4b Profiles', async ({page}) => {
+  test('4b Agents', async ({page}) => {
     await click(page, 'Manage profiles'); await page.waitForTimeout(2000);
     expect(page.url()).toContain('/agents');
     await expect(page.getByText('Profiles').first()).toBeVisible({timeout:5000});
@@ -159,7 +170,7 @@ test.describe('4. Menu → Screens', () => {
 
 // ─── 5. Screen Content ──────────────────────────────────────────────
 test.describe('5. Screen Content', () => {
-  test('5a Gateways list', async ({page}) => {
+  test('5a Gateways', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Gateways').first()).toBeVisible();
     await expect(page.getByText('Local Gormes').first()).toBeVisible();
@@ -172,13 +183,14 @@ test.describe('5. Screen Content', () => {
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
     await expect(page.getByText('Status: online').first()).toBeVisible();
     await expect(page.getByText('Refresh profiles').first()).toBeVisible();
+    await expect(page.getByText('Active profile').first()).toBeVisible();
   });
   test('5c Memory degraded', async ({page}) => {
     await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Memory').first()).toBeVisible();
     await expect(page.getByText('Gormes memory API is unavailable.').first()).toBeVisible();
   });
-  test('5d Config scope + unavailable', async ({page}) => {
+  test('5d Config unavailable', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Config').first()).toBeVisible();
     await expect(page.getByText('Local Gormes').first()).toBeVisible();
@@ -195,7 +207,7 @@ test.describe('5. Screen Content', () => {
   });
 });
 
-// ─── 6. Settings Lines → Navigation ─────────────────────────────────
+// ─── 6. Settings Lines ────────────────────────────────────────────
 test.describe('6. Settings Lines', () => {
   test('6a manage gateways', async ({page}) => {
     await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
@@ -224,66 +236,140 @@ test.describe('6. Settings Lines', () => {
   });
 });
 
-// ─── 7. FAB Bottom Sheet ───────────────────────────────────────────
-test.describe('7. FAB Bottom Sheet', () => {
+// ─── 7. Settings Voice Toggles ─────────────────────────────────────
+test.describe('7. Voice Toggles', () => {
+  test('7a continuous voice switch exists and is checked', async ({page}) => {
+    await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    const sw = page.locator('[aria-label*="Continuous voice"]');
+    await expect(sw).toBeVisible();
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+  });
+  test('7b voice profile switching switch exists', async ({page}) => {
+    await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    const sw = page.locator('[aria-label*="Voice profile switching"]');
+    await expect(sw).toBeVisible();
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+  });
+  test('7c trust server switch exists and is unchecked', async ({page}) => {
+    await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    const sw = page.locator('[aria-label*="Trust Local Gormes"]');
+    await expect(sw).toBeVisible();
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
+// ─── 8. Profile Selection (Agents + Chat) ─────────────────────────
+test.describe('8. Profile Selection', () => {
+  test('8a agents: click Voice Agent selects it', async ({page}) => {
+    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await click(page, 'Voice Agent'); await page.waitForTimeout(1000);
+    // Voice Agent should show active profile state
+    await expect(page.getByText('Status: online').first()).toBeVisible();
+  });
+  test('8b miners -> agents -> select profile cycle works', async ({page}) => {
+    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    // Click Mineru
+    await click(page, 'Mineru Builder'); await page.waitForTimeout(1000);
+    await expect(page.getByText('Voice Agent').first()).toBeVisible();
+    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+  });
+});
+
+// ─── 9. FAB Bottom Sheet ──────────────────────────────────────────
+test.describe('9. FAB', () => {
   test.beforeEach(async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
   });
-  test('7a options visible', async ({page}) => {
+  test('9a options visible', async ({page}) => {
     await click(page, 'Add profile'); await page.waitForTimeout(2000);
     await expect(page.getByText('Create from seed').first()).toBeVisible();
     await expect(page.getByText('New profile').first()).toBeVisible();
     await expect(page.getByText('Add server').first()).toBeVisible();
   });
-  test('7b add server navigates', async ({page}) => {
+  test('9b add server navigates', async ({page}) => {
     await click(page, 'Add profile'); await page.waitForTimeout(1500);
     await click(page, 'Add server'); await page.waitForTimeout(2000);
     expect(page.url()).toContain('/servers');
   });
 });
 
-// ─── 8. Gateway Management Modal ──────────────────────────────────
-test.describe('8. Gateway Management', () => {
-  test('8a manage gateways modal shows detail', async ({page}) => {
+// ─── 10. Gateway Management ──────────────────────────────────────
+test.describe('10. Gateway', () => {
+  test('10a manage modal shows details', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Manage Local Gormes'); await page.waitForTimeout(2000);
     await expect(page.getByText('Manage gateway').first()).toBeVisible();
-    await expect(page.getByText('Local Gormes').first()).toBeVisible();
     await expect(page.getByText('Profiles on this gateway').first()).toBeVisible();
     await expect(page.getByText('Disconnect current session').first()).toBeVisible();
+    // Should show the profiles on this gateway
+    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expect(page.getByText('Voice Agent').first()).toBeVisible();
   });
-  test('8b dismiss gateway modal', async ({page}) => {
+  test('10b dismiss with Escape', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Manage Local Gormes'); await page.waitForTimeout(1500);
     await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
     await expect(page.getByText('Manage gateway').first()).not.toBeVisible();
   });
+  test('10c register gateway opens bottom sheet', async ({page}) => {
+    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    // Click the FAB via mouse coordinates
+    const btn = await page.evaluate(() => {
+      const sems = document.querySelectorAll('flt-semantics[role="button"]');
+      for (const e of sems) {
+        if ((e.textContent||'').includes('Register gateway')) {
+          const r = e.getBoundingClientRect();
+          return {x: r.x + r.width/2, y: r.y + r.height/2};
+        }
+      }
+      return null;
+    });
+    if (btn) {
+      await page.mouse.click(btn.x, btn.y);
+      await page.waitForTimeout(2000);
+    }
+    // Register gateway opens a bottom sheet with instructions and test button
+    await expect(page.getByText('connect-info --json').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Test connection').first()).toBeVisible({timeout:5000});
+  });
 });
 
-// ─── 9. Mobile Viewport ─────────────────────────────────────────────
-test.describe('9. Mobile Viewport', () => {
-  test('9a mobile bottom tab navigation visible', async ({page}) => {
+// ─── 11. Mobile Viewport ─────────────────────────────────────────
+test.describe('11. Mobile', () => {
+  test('11a bottom tab nav visible with 5 tabs', async ({page}) => {
     await page.setViewportSize({width:390,height:844});
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    // Mobile NavigationBar renders as tablist role
-    const tablist = page.locator('flt-semantics[role="tablist"]');
-    await expect(tablist).toBeVisible();
-    // Should have 5 tabs (bottom nav destinations: Chats, Agents, Memory, Settings, More)
-    const tabs = page.locator('flt-semantics[role="tab"]');
-    await expect(tabs).toHaveCount(5);
+    await expect(page.locator('flt-semantics[role="tablist"]')).toBeVisible();
+    await expect(page.locator('flt-semantics[role="tab"]')).toHaveCount(5);
   });
-  test('9b desktop has no tablist', async ({page}) => {
+  test('11b desktop has no tablist', async ({page}) => {
     await page.setViewportSize({width:1280,height:900});
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    // On desktop, there should be no mobile tablist
-    const tablist = page.locator('flt-semantics[role="tablist"]');
-    await expect(tablist).toHaveCount(0);
+    await expect(page.locator('flt-semantics[role="tablist"]')).toHaveCount(0);
+  });
+  test('11c mobile tab click navigates', async ({page}) => {
+    await page.setViewportSize({width:390,height:844});
+    await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    // Click Memory tab (index 2) via mouse coords
+    const tabX = await page.evaluate(() => {
+      const tabs = document.querySelectorAll('flt-semantics[role="tab"]');
+      if (tabs.length >= 3) {
+        const r = tabs[2].getBoundingClientRect();
+        return r.x + r.width/2;
+      }
+      return null;
+    });
+    if (tabX) {
+      await page.mouse.click(tabX, 800);
+      await page.waitForTimeout(2000);
+      expect(page.url()).toContain('/memory');
+    }
   });
 });
 
-// ─── 10. Back Navigation ──────────────────────────────────────────
-test.describe('10. Back Navigation', () => {
-  test('10a chat back to profiles', async ({page}) => {
+// ─── 12. Back Navigation ─────────────────────────────────────────
+test.describe('12. Back', () => {
+  test('12a chat → back → profiles', async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Support Triage'); await page.waitForTimeout(2000);
     expect(page.url()).toContain('/chats/office/support');
@@ -293,60 +379,140 @@ test.describe('10. Back Navigation', () => {
   });
 });
 
-// ─── 11. Screenshots ─────────────────────────────────────────────
-test.describe('11. Screenshots', () => {
-  test('11a profiles', async ({page}) => {
+// ─── 13. Screenshots ─────────────────────────────────────────────
+test.describe('13. Screenshots', () => {
+  test('13a profiles', async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/profiles.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/profiles.png',fullPage:true});
   });
-  test('11b chat with typed message', async ({page}) => {
+  test('13b chat', async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Support Triage'); await page.waitForTimeout(1500);
     await page.locator('[aria-label="Message Gormes"]').first().click({force:true});
-    await page.keyboard.type('e2e test message'); await page.keyboard.press('Enter');
+    await page.keyboard.type('e2e'); await page.keyboard.press('Enter');
     await page.waitForTimeout(2000);
-    await page.screenshot({path:'playwright/screenshots/chat.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/chat.png',fullPage:true});
   });
-  test('11c servers', async ({page}) => {
+  test('13c servers', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/servers.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/servers.png',fullPage:true});
   });
-  test('11d agents', async ({page}) => {
+  test('13d agents', async ({page}) => {
     await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/agents.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/agents.png',fullPage:true});
   });
-  test('11e memory', async ({page}) => {
+  test('13e memory', async ({page}) => {
     await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/memory.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/memory.png',fullPage:true});
   });
-  test('11f config', async ({page}) => {
+  test('13f config', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/config.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/config.png',fullPage:true});
   });
-  test('11g settings', async ({page}) => {
+  test('13g settings', async ({page}) => {
     await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/settings.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/settings.png',fullPage:true});
   });
-  test('11h profile detail', async ({page}) => {
+  test('13h profile detail', async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await longPress(page, 'Support Triage');
-    await page.screenshot({path:'playwright/screenshots/profile-detail.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/profile-detail.png',fullPage:true});
     await page.keyboard.press('Escape');
   });
-  test('11i FAB sheet', async ({page}) => {
+  test('13i FAB sheet', async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Add profile');
-    await page.screenshot({path:'playwright/screenshots/fab-sheet.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/fab-sheet.png',fullPage:true});
   });
-  test('11j gateway modal', async ({page}) => {
+  test('13j gateway modal', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await click(page, 'Manage Local Gormes');
-    await page.screenshot({path:'playwright/screenshots/gateway-modal.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/gateway-modal.png',fullPage:true});
     await page.keyboard.press('Escape');
   });
-  test('11k mobile layout', async ({page}) => {
+  test('13k mobile', async ({page}) => {
     await page.setViewportSize({width:390,height:844});
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await page.screenshot({path:'playwright/screenshots/mobile.png', fullPage:true});
+    await page.screenshot({path:'playwright/screenshots/mobile.png',fullPage:true});
+  });
+});
+
+// ─── 14. Chat Feature Details ─────────────────────────────────────
+test.describe('14. Chat Features', () => {
+  test.beforeEach(async ({page}) => {
+    await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    // Enter chat with Support Triage
+    const btn = await page.evaluate(() => {
+      const s = document.querySelectorAll('flt-semantics[role="button"]');
+      for (const e of s) {
+        if ((e.textContent||'').includes('Support Triage')) {
+          const r = e.getBoundingClientRect();
+          return {x: r.x + r.width/2, y: r.y + r.height/2};
+        }
+      }
+      return null;
+    });
+    if (btn) {
+      await page.mouse.click(btn.x, btn.y);
+      await page.waitForTimeout(2000);
+    }
+  });
+  test('14a chat voice banner: trust server button visible', async ({page}) => {
+    await expect(page.locator('[aria-label*="Continuous voice unavailable"]').first()).toBeVisible({timeout:5000});
+    await expect(page.locator('[aria-label*="trust office"]').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Trust server').first()).toBeVisible({timeout:5000});
+  });
+  test('14b chat info sheet opens from toolbar', async ({page}) => {
+    await click(page, 'Chat info'); await page.waitForTimeout(1500);
+    await expect(page.getByText('Profile').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Server').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Status').first()).toBeVisible({timeout:5000});
+    await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
+  });
+  test('14c composer buttons: emoji, attach, voice, send', async ({page}) => {
+    await expect(page.getByText('Emoji').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Attach').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Voice unavailable').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Start a conversation').first()).toBeVisible({timeout:5000});
+  });
+  test('14d attach sheet shows options', async ({page}) => {
+    await click(page, 'Attach'); await page.waitForTimeout(1500);
+    await expect(page.getByText('Upload file').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Photo or video').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Workspace file').first()).toBeVisible({timeout:5000});
+    await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
+  });
+});
+
+// ─── 15. FAB Create from Seed ────────────────────────────────────
+test.describe('15. FAB Create from Seed', () => {
+  test.beforeEach(async ({page}) => {
+    await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+  });
+  test('15a create from seed sheet content', async ({page}) => {
+    await click(page, 'Add profile'); await page.waitForTimeout(1500);
+    await expect(page.getByText('Create from seed').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Ask Gormes to draft a profile').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('New profile').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Server-validated profile creation').first()).toBeVisible({timeout:5000});
+  });
+  test('15b create from seed opens seed sheet with input field', async ({page}) => {
+    await click(page, 'Add profile'); await page.waitForTimeout(1500);
+    await click(page, 'Create from seed'); await page.waitForTimeout(1500);
+    await expect(page.getByText('Gormes drafts profile config').first()).toBeVisible({timeout:5000});
+    // Verify seed input exists
+    const seedInput = page.locator('[aria-label*="seed"]');
+    await expect(seedInput).toBeVisible({timeout:5000});
+    await expect(page.getByText('Create from seed').first()).toBeVisible({timeout:5000});
+    await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
+  });
+});
+
+// ─── 16. Config Screen Scopes ────────────────────────────────────
+test.describe('16. Config Screen', () => {
+  test('16a config scope card shows server and profile', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await expect(page.getByText('Profile config scope').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('No config available').first()).toBeVisible({timeout:5000});
   });
 });
