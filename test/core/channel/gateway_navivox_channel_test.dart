@@ -41,7 +41,11 @@ void main() {
 
     final messages = channel.state.messagesList;
     expect(messages.where((m) => m.text == 'hello gateway'), hasLength(1));
-    expect(messages.where((m) => m.text == 'hello from gateway'), hasLength(1));
+    final assistant = messages.singleWhere(
+      (m) => m.text == 'hello from gateway',
+    );
+    expect(assistant.runRecordReference, 'run-${sent['request_id']}');
+    expect(channel.state.runRecordInspectionAvailable, isTrue);
   });
 
   test(
@@ -77,6 +81,22 @@ void main() {
       expect(channel.state.messagesList.last.text, 'Gateway is not connected.');
     },
   );
+
+  test('run records are unavailable when not advertised', () async {
+    final server = await _FakeGatewayServer.start(runRecordsAvailable: false);
+    addTearDown(server.close);
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(
+      baseUrl: server.baseUrl,
+      token: _FakeGatewayServer.token,
+    );
+
+    expect(channel.state.runRecordInspectionAvailable, isFalse);
+    await expectLater(channel.runRecord('run-1'), throwsA(isA<StateError>()));
+  });
 
   test('selected profile scope is included in gateway turn metadata', () async {
     final server = await _FakeGatewayServer.start();
@@ -696,6 +716,7 @@ class _FakeGatewayServer {
     this._contactsProvider,
     this._capabilities,
     this._capabilitiesUnavailable,
+    this._runRecordsAvailable,
   );
 
   static const token = 'nvbx_test_token';
@@ -707,6 +728,7 @@ class _FakeGatewayServer {
   final List<Map<String, Object?>> Function()? _contactsProvider;
   final Map<String, Object?>? _capabilities;
   final bool _capabilitiesUnavailable;
+  final bool _runRecordsAvailable;
   final Completer<Map<String, Object?>> _nextClientMessage = Completer();
   var profileContactsRequests = 0;
   var streamRequests = 0;
@@ -721,6 +743,7 @@ class _FakeGatewayServer {
     List<Map<String, Object?>> Function()? contactsProvider,
     Map<String, Object?>? capabilities,
     bool capabilitiesUnavailable = false,
+    bool runRecordsAvailable = true,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final fake = _FakeGatewayServer._(
@@ -731,6 +754,7 @@ class _FakeGatewayServer {
       contactsProvider,
       capabilities,
       capabilitiesUnavailable,
+      runRecordsAvailable,
     );
     server.listen(fake._handle);
     return fake;
@@ -872,8 +896,9 @@ class _FakeGatewayServer {
         'device_transcribed_text_turns': true,
         'raw_audio_upload': false,
         'voice_profiles_endpoint': '/v1/navivox/voice-profiles',
-        'run_records_endpoint':
-            '/v1/navivox/run-records/{run_id_or_session_id}',
+        'run_records_endpoint': _runRecordsAvailable
+            ? '/v1/navivox/run-records/{run_id_or_session_id}'
+            : '',
         'stt_providers': ['device'],
         'tts_providers': ['server'],
       },
@@ -947,6 +972,7 @@ class _FakeGatewayServer {
         'request_id': requestId,
         'session_id': 's-test',
         'text': 'hello from gateway',
+        'run_record_ref': 'run-$requestId',
       },
       {'type': 'done', 'request_id': requestId, 'session_id': 's-test'},
     ];

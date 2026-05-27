@@ -145,6 +145,7 @@ class NavivoxChannelState {
     this.messages = const {},
     this.voiceRuns = const {},
     this.activeVoiceRunId,
+    this.runRecordInspectionAvailable = false,
     this.agents = const [],
     this.selectedAgentId,
     this.profileContacts = const [],
@@ -162,6 +163,7 @@ class NavivoxChannelState {
   final Map<String, NavivoxChatMessage> messages;
   final Map<String, NavivoxVoiceRun> voiceRuns;
   final String? activeVoiceRunId;
+  final bool runRecordInspectionAvailable;
   final List<NavivoxAgent> agents;
   final String? selectedAgentId;
   final List<NavivoxProfileContact> profileContacts;
@@ -231,6 +233,7 @@ class NavivoxChannelState {
     Map<String, NavivoxChatMessage>? messages,
     Map<String, NavivoxVoiceRun>? voiceRuns,
     String? activeVoiceRunId,
+    bool? runRecordInspectionAvailable,
     List<NavivoxAgent>? agents,
     String? selectedAgentId,
     List<NavivoxProfileContact>? profileContacts,
@@ -247,6 +250,8 @@ class NavivoxChannelState {
       messages: messages ?? this.messages,
       voiceRuns: voiceRuns ?? this.voiceRuns,
       activeVoiceRunId: activeVoiceRunId ?? this.activeVoiceRunId,
+      runRecordInspectionAvailable:
+          runRecordInspectionAvailable ?? this.runRecordInspectionAvailable,
       agents: agents ?? this.agents,
       selectedAgentId: selectedAgentId ?? this.selectedAgentId,
       profileContacts: profileContacts ?? this.profileContacts,

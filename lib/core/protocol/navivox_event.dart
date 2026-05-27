@@ -20,6 +20,7 @@ class NavivoxChatMessage {
     this.toolCall,
     this.voice,
     this.safetyNotice,
+    this.runRecordReference,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class NavivoxChatMessage {
   final NavivoxToolCall? toolCall;
   final NavivoxVoiceMessage? voice;
   final NavivoxSafetyNotice? safetyNotice;
+  final String? runRecordReference;
 }
 
 class NavivoxToolCall {

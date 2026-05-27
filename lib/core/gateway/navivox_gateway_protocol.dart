@@ -1386,6 +1386,7 @@ class NavivoxGatewayEvent {
     this.approvalId,
     this.severity,
     this.risk,
+    this.runRecordReference,
     this.metadata = const {},
     this.contact,
   });
@@ -1406,6 +1407,7 @@ class NavivoxGatewayEvent {
       approvalId: json['approval_id']?.toString(),
       severity: json['severity']?.toString(),
       risk: json['risk']?.toString(),
+      runRecordReference: _runRecordReferenceFromJson(json),
       metadata: _mapFromJson(json['metadata']),
       contact: contact is Map ? Map<String, Object?>.from(contact) : null,
     );
@@ -1424,8 +1426,20 @@ class NavivoxGatewayEvent {
   final String? approvalId;
   final String? severity;
   final String? risk;
+  final String? runRecordReference;
   final Map<String, Object?> metadata;
   final Map<String, Object?>? contact;
 
   bool get isError => type == 'error';
+}
+
+String? _runRecordReferenceFromJson(Map<String, Object?> json) {
+  return _optionalStringFromJson(json['run_record_ref']) ??
+      _optionalStringFromJson(json['run_record_reference']) ??
+      _optionalStringFromJson(
+        _mapFromJson(json['metadata'])['run_record_ref'],
+      ) ??
+      _optionalStringFromJson(
+        _mapFromJson(json['metadata'])['run_record_reference'],
+      );
 }

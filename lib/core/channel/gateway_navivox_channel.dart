@@ -117,6 +117,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       profileContacts: contacts,
       selectedProfileContactKey: contacts.first.key,
       profileRouting: profileRouting,
+      runRecordInspectionAvailable: _runRecordsSupported(capabilities),
       configSchema: configAdminState?.schema ?? const {},
       configValues: configAdminState?.values ?? const {},
       configDiff: const {},
@@ -181,6 +182,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           '/v1/navivox/stream',
         ) &&
         capabilities.streams.canonicalEndpoint == '/v1/navivox/stream';
+  }
+
+  bool _runRecordsSupported(NavivoxCapabilityDocument capabilities) {
+    return capabilities.voice.runRecordsEndpoint.trim().isNotEmpty;
   }
 
   bool _configAdminSupported(NavivoxCapabilityDocument capabilities) {
@@ -250,6 +255,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       selectedProfileContactKey: contact.key,
       profileRouting: const NavivoxProfileRoutingReport(),
       profileRoutingSelections: const {},
+      runRecordInspectionAvailable: false,
       configSchema: const {},
       configValues: const {},
       configDiff: const {},
@@ -526,7 +532,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
     final client = _client;
     if (client == null) {
-      throw StateError('Connect to Gormes to load voice run records.');
+      throw StateError('Connect to Gormes to load run records.');
+    }
+    final capabilities = _capabilities;
+    if (capabilities == null || !_runRecordsSupported(capabilities)) {
+      throw StateError('Gormes run records are not advertised.');
     }
     return client.runRecord(runIdOrSessionId);
   }
@@ -882,6 +892,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           kind: NavivoxMessageKind.text,
           createdAt: _clock(),
           text: event.text ?? '',
+          runRecordReference: event.runRecordReference,
         ),
       );
       return;
@@ -893,6 +904,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         kind: existing.kind,
         createdAt: existing.createdAt,
         text: '${existing.text ?? ''}${event.text ?? ''}',
+        runRecordReference:
+            event.runRecordReference ?? existing.runRecordReference,
       ),
     );
   }
@@ -907,13 +920,16 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: existing?.createdAt ?? _clock(),
       text: event.text ?? '',
+      runRecordReference:
+          event.runRecordReference ?? existing?.runRecordReference,
     );
     _putMessage(message);
   }
 
   void _upsertToolCall(NavivoxGatewayEvent event, String status) {
     final toolCallId = event.toolCallId ?? 'tool-${_uuid.v4()}';
-    final prior = _state.messages[toolCallId]?.toolCall;
+    final priorMessage = _state.messages[toolCallId];
+    final prior = priorMessage?.toolCall;
     final summary = _boundedToolText(
       event.message ?? event.text ?? prior?.summary ?? '',
     );
@@ -934,6 +950,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             prior: prior?.artifacts ?? const [],
           ),
         ),
+        runRecordReference:
+            event.runRecordReference ?? priorMessage?.runRecordReference,
       ),
     );
   }
@@ -1059,6 +1077,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           message: event.message ?? 'Safety warning',
           risk: event.risk,
         ),
+        runRecordReference: event.runRecordReference,
       ),
     );
   }
@@ -1084,6 +1103,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
               risk: risk,
             ),
           ),
+          runRecordReference:
+              event.runRecordReference ??
+              _state.messages[toolCallId]?.runRecordReference,
         ),
       );
     }
@@ -1100,6 +1122,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           message: prompt,
           risk: risk,
         ),
+        runRecordReference: event.runRecordReference,
       ),
     );
     _approvals.add(
