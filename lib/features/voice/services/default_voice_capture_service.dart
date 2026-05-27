@@ -2,6 +2,12 @@ import 'speech_to_text_voice_capture_service.dart';
 import 'voice_capture_platform.dart';
 import 'voice_capture_service.dart';
 
+export 'device_speech_recognition_availability.dart'
+    show
+        DeviceSpeechRecognitionDiagnostics,
+        DeviceSpeechRecognitionDiagnosticsProbe,
+        VoiceCaptureReadiness,
+        checkDefaultVoiceCaptureReadiness;
 export 'voice_capture_platform.dart' show VoiceCapturePlatform;
 
 typedef VoiceCaptureServiceFactory = VoiceCaptureService Function();

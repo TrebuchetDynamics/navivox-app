@@ -8,6 +8,7 @@ import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/features/voice/services/default_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 import 'package:navivox/router/app_router.dart';
@@ -273,6 +274,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    _trustLocalServer(tester);
+    await tester.pumpAndSettle();
 
     expect(
       find.text('Continuous voice unavailable: device STT unavailable'),
@@ -397,6 +400,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    _trustLocalServer(tester);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
     await tester.pumpAndSettle();
@@ -404,7 +409,7 @@ void main() {
     expect(find.text('Recovery action'), findsOneWidget);
     expect(
       find.text(
-        'Install or enable device speech recognition, then reopen Navivox.',
+        'Install or enable device speech recognition, then return to Navivox.',
       ),
       findsOneWidget,
     );
@@ -424,6 +429,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    _trustLocalServer(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
@@ -456,6 +463,8 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
+      _trustLocalServer(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -629,19 +638,11 @@ void main() {
       confidence: 0.9,
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: MaterialApp(
-          home: ChatScreen(
-            serverId: 'local',
-            profileId: 'mineru',
-            voiceCaptureServiceOverride: voiceService,
-          ),
-        ),
-      ),
+    await _pumpTrustedChat(
+      tester,
+      channel: channel,
+      voiceService: voiceService,
     );
-    await tester.pumpAndSettle();
 
     expect(
       find.text('Continuous voice unavailable: device STT unavailable'),
@@ -698,7 +699,7 @@ void main() {
     expect(find.text('Enable device speech recognition'), findsOneWidget);
     expect(
       find.text(
-        'Install or enable device speech recognition, then reopen Navivox.',
+        'Install or enable device speech recognition, then return to Navivox.',
       ),
       findsNothing,
     );
@@ -964,6 +965,8 @@ void main() {
 
     await tester.tap(find.text('Mineru'));
     await tester.pumpAndSettle();
+    _trustLocalServer(tester);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
     await tester.pumpAndSettle();
@@ -996,6 +999,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Mineru'));
+    await tester.pumpAndSettle();
+    _trustLocalServer(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -1052,6 +1057,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Mineru'));
+    await tester.pumpAndSettle();
+    _trustLocalServer(tester);
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -1245,6 +1252,157 @@ void main() {
     expect(find.text('Voice capture timed out.'), findsOneWidget);
   });
 
+  testWidgets(
+    'default voice readiness disables ready banner when Android has no recognizer',
+    (tester) async {
+      final channel = _seedChannel(selectedKey: 'local::mineru');
+      final voiceService = FakeVoiceCaptureService(
+        audio: Uint8List.fromList([1]),
+        transcript: 'should not capture',
+        duration: const Duration(milliseconds: 500),
+        confidence: 0.9,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            navivoxChannelProvider.overrideWithValue(channel),
+            chatVoiceCaptureServiceProvider.overrideWithValue(voiceService),
+            chatVoiceCaptureReadinessProvider.overrideWith(
+              (_) async => const VoiceCaptureReadiness.unavailable(
+                'device STT unavailable',
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+          ),
+        ),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ChatScreen)),
+      );
+      container
+          .read(navivoxVoiceSettingsProvider.notifier)
+          .setServerTrusted('local', true);
+      await tester.pumpAndSettle();
+
+      expect(channel.sentVoiceTranscripts, isEmpty);
+      expect(
+        find.text('Continuous voice unavailable: device STT unavailable'),
+        findsOneWidget,
+      );
+      expect(find.text('Continuous voice ready'), findsNothing);
+      expect(find.byIcon(Icons.mic), findsNothing);
+      expect(find.byIcon(Icons.mic_off), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'ready voice diagnostics show microphone prompt before first capture',
+    (tester) async {
+      final channel = _seedChannel(selectedKey: 'local::mineru');
+      final voiceService = FakeVoiceCaptureService(
+        audio: Uint8List.fromList([1]),
+        transcript: 'ready with prompt',
+        duration: const Duration(milliseconds: 500),
+        confidence: 0.9,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            navivoxChannelProvider.overrideWithValue(channel),
+            chatVoiceCaptureServiceProvider.overrideWithValue(voiceService),
+            chatVoiceCaptureReadinessProvider.overrideWith(
+              (_) async => const VoiceCaptureReadiness.available(
+                diagnostics: DeviceSpeechRecognitionDiagnostics(
+                  recognitionServiceCount: 1,
+                  microphonePermissionGranted: false,
+                  recognitionServices: [
+                    'com.android.speech/.RecognitionService',
+                  ],
+                ),
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+          ),
+        ),
+      );
+      _trustLocalServer(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Continuous voice ready'), findsOneWidget);
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('continuous-voice-banner')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Voice diagnostics'), findsOneWidget);
+      expect(find.text('Microphone permission'), findsOneWidget);
+      expect(
+        find.text(
+          'Not granted yet. Android may prompt when voice capture starts.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('com.android.speech'), findsNothing);
+      expect(find.textContaining('RecognitionService'), findsNothing);
+    },
+  );
+
+  testWidgets('app resume rechecks default voice readiness', (tester) async {
+    final channel = _seedChannel(selectedKey: 'local::mineru');
+    final voiceService = FakeVoiceCaptureService(
+      audio: Uint8List.fromList([1]),
+      transcript: 'ready after resume',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.9,
+    );
+    var readinessChecks = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          navivoxChannelProvider.overrideWithValue(channel),
+          chatVoiceCaptureServiceProvider.overrideWithValue(voiceService),
+          chatVoiceCaptureReadinessProvider.overrideWith((_) async {
+            readinessChecks += 1;
+            if (readinessChecks == 1) {
+              return const VoiceCaptureReadiness.unavailable(
+                'device STT unavailable',
+              );
+            }
+            return const VoiceCaptureReadiness.available();
+          }),
+        ],
+        child: const MaterialApp(
+          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
+        ),
+      ),
+    );
+    _trustLocalServer(tester);
+    await tester.pumpAndSettle();
+
+    expect(readinessChecks, 1);
+    expect(
+      find.text('Continuous voice unavailable: device STT unavailable'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.mic), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(readinessChecks, 2);
+    expect(find.text('Continuous voice ready'), findsOneWidget);
+    expect(find.byIcon(Icons.mic), findsOneWidget);
+  });
+
   testWidgets('runtime device STT failure disables continuous voice', (
     tester,
   ) async {
@@ -1280,7 +1438,7 @@ void main() {
     expect(find.text('Recovery action'), findsOneWidget);
     expect(
       find.text(
-        'Install or enable device speech recognition, then reopen Navivox.',
+        'Install or enable device speech recognition, then return to Navivox.',
       ),
       findsOneWidget,
     );
@@ -1320,7 +1478,7 @@ void main() {
     expect(find.text('Recovery action'), findsOneWidget);
     expect(
       find.text(
-        'Grant microphone permission in Android App info, then reopen Navivox.',
+        'Grant microphone permission in Android App info, then return to Navivox.',
       ),
       findsOneWidget,
     );
@@ -1404,6 +1562,15 @@ VoiceCapture _capture(String transcript) {
     duration: const Duration(milliseconds: 500),
     confidence: 0.95,
   );
+}
+
+void _trustLocalServer(WidgetTester tester) {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(ChatScreen)),
+  );
+  container
+      .read(navivoxVoiceSettingsProvider.notifier)
+      .setServerTrusted('local', true);
 }
 
 Future<void> _pumpTrustedChat(
