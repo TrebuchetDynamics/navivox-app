@@ -1,0 +1,29 @@
+{
+  "name": "navivox-app",
+  "version": "1.0.0",
+  "description": "**Private voice/chat for your own Gormes agents.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrebuchetDynamics/navivox-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TrebuchetDynamics/navivox-app/issues"
+  },
+  "homepage": "https://github.com/TrebuchetDynamics/navivox-app#readme",
+  "dependencies": {
+    "@playwright/test": "^1.60.0",
+    "playwright": "^1.60.0"
+  }
+}

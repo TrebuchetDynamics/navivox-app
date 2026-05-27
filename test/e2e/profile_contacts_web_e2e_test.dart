@@ -68,7 +68,9 @@ void main() {
       expect(find.text('Mineru Builder'), findsNothing);
       expect(find.text('1 profile'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Manage gateways'));
+      await tester.tap(find.byIcon(Icons.more_vert).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Manage gateways'));
       await tester.pumpAndSettle();
 
       expect(find.text('Gateways'), findsOneWidget);
@@ -104,8 +106,14 @@ void main() {
       expect(find.text('Navivox'), findsOneWidget);
       expect(find.text('Mineru Builder'), findsOneWidget);
       expect(find.text('Support Triage'), findsOneWidget);
-      expect(find.text('local'), findsWidgets);
-      expect(find.text('office'), findsOneWidget);
+      expect(
+        find.text('Ready to work on mineru · online · 2 roots'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Waiting for auth · auth required · 1 root'),
+        findsOneWidget,
+      );
       expect(find.byTooltip('Add profile'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Add profile'));
