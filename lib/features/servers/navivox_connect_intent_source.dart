@@ -8,8 +8,10 @@ class NavivoxConnectIntentSource {
   const NavivoxConnectIntentSource({
     MethodChannel methodChannel = const MethodChannel(_methodChannelName),
     EventChannel eventChannel = const EventChannel(_eventChannelName),
+    NavivoxConnectIntentObserver? observer,
   }) : _methodChannel = methodChannel,
-       _eventChannel = eventChannel;
+       _eventChannel = eventChannel,
+       _observer = observer;
 
   static const _methodChannelName =
       'com.trebuchetdynamics.navivox/connect_intents';
@@ -18,6 +20,7 @@ class NavivoxConnectIntentSource {
 
   final MethodChannel _methodChannel;
   final EventChannel _eventChannel;
+  final NavivoxConnectIntentObserver? _observer;
 
   Future<bool> isAvailable() async {
     try {
@@ -33,7 +36,9 @@ class NavivoxConnectIntentSource {
   Future<SetupQrImageImport?> initialImport() async {
     final payload = await _initialPayload();
     if (payload == null) return null;
-    return _parseConnectIntentPayload(payload);
+    final result = _parseConnectIntentPayload(payload);
+    if (result != null) _observer?.record(result);
+    return result;
   }
 
   Stream<SetupQrImageImport> get imports {
@@ -42,7 +47,11 @@ class NavivoxConnectIntentSource {
         .handleError((_) {})
         .map(_parseConnectIntentPayload)
         .where((result) => result != null && result.hasValues)
-        .cast<SetupQrImageImport>();
+        .cast<SetupQrImageImport>()
+        .map((result) {
+          _observer?.record(result);
+          return result;
+        });
   }
 
   Future<Object?> _initialPayload() async {
@@ -53,6 +62,14 @@ class NavivoxConnectIntentSource {
     } on PlatformException {
       return null;
     }
+  }
+}
+
+class NavivoxConnectIntentObserver {
+  SetupQrImageImport? lastImport;
+
+  void record(SetupQrImageImport import) {
+    lastImport = import;
   }
 }
 

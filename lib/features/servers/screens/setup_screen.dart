@@ -10,6 +10,7 @@ import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../gateway_connection_presentation.dart';
 import '../navivox_connect_intent_source.dart';
+import '../navivox_connect_intent_source_provider.dart';
 import '../pairing_handoff_flow.dart';
 import '../setup_guide_presentation.dart';
 import '../setup_qr_import_presentation.dart';
@@ -65,7 +66,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   void initState() {
     super.initState();
     _connectIntentSource =
-        widget.connectIntentSource ?? const NavivoxConnectIntentSource();
+        widget.connectIntentSource ??
+        ref.read(navivoxConnectIntentSourceProvider);
     unawaited(_startConnectIntentHandling());
     unawaited(_tryAutoReconnect());
   }
