@@ -12,6 +12,7 @@ class NavivoxGatewayStatus {
     required this.sessionCount,
     required this.webSocketConnectionCount,
     this.capabilitiesUrl,
+    this.gatewayId,
   });
 
   factory NavivoxGatewayStatus.fromJson(Map<String, Object?> json) {
@@ -26,6 +27,7 @@ class NavivoxGatewayStatus {
       sessionCount: _intFromJson(json['sessions']),
       webSocketConnectionCount: _intFromJson(json['ws_connections']),
       capabilitiesUrl: _optionalStringFromJson(json['capabilities_url']),
+      gatewayId: _optionalStringFromJson(json['gateway_id']),
     );
   }
 
@@ -36,6 +38,10 @@ class NavivoxGatewayStatus {
   final int sessionCount;
   final int webSocketConnectionCount;
   final String? capabilitiesUrl;
+  final String? gatewayId;
+
+  bool get hasGatewayIdentity =>
+      gatewayId != null && gatewayId!.trim().isNotEmpty;
 
   bool supports(String capability) => capabilities.contains(capability);
 }
@@ -52,6 +58,7 @@ class NavivoxCapabilityDocument {
     required this.attachments,
     required this.voice,
     required this.streams,
+    required this.durableReconnect,
   });
 
   factory NavivoxCapabilityDocument.fromJson(Map<String, Object?> json) {
@@ -81,6 +88,9 @@ class NavivoxCapabilityDocument {
         _mapFromJson(json['voice']),
       ),
       streams: NavivoxStreamCapability.fromJson(_mapFromJson(json['streams'])),
+      durableReconnect: NavivoxDurableReconnectCapability.fromJson(
+        _mapFromJson(json['durable_reconnect']),
+      ),
     );
   }
 
@@ -94,6 +104,7 @@ class NavivoxCapabilityDocument {
   final NavivoxAttachmentCapability attachments;
   final NavivoxVoiceProtocolCapability voice;
   final NavivoxStreamCapability streams;
+  final NavivoxDurableReconnectCapability durableReconnect;
 
   bool supports(String capability) => capabilities.contains(capability);
 
@@ -103,6 +114,48 @@ class NavivoxCapabilityDocument {
     );
   }
 }
+
+class NavivoxDurableReconnectCapability {
+  const NavivoxDurableReconnectCapability({
+    required this.supported,
+    required this.issueEndpoint,
+    required this.authMethods,
+    required this.platforms,
+    required this.effectiveSecurity,
+    required this.blockedReason,
+  });
+
+  factory NavivoxDurableReconnectCapability.fromJson(
+    Map<String, Object?> json,
+  ) {
+    return NavivoxDurableReconnectCapability(
+      supported: json['supported'] == true,
+      issueEndpoint: _stringFromJson(json['issue_endpoint'], fallback: ''),
+      authMethods: _stringListFromJson(json['auth_methods']),
+      platforms: _stringListFromJson(json['platforms']),
+      effectiveSecurity: _stringFromJson(
+        json['effective_security'],
+        fallback: '',
+      ),
+      blockedReason: _stringFromJson(json['blocked_reason'], fallback: ''),
+    );
+  }
+
+  final bool supported;
+  final String issueEndpoint;
+  final List<String> authMethods;
+  final List<String> platforms;
+  final String effectiveSecurity;
+  final String blockedReason;
+
+  ReconnectReadinessKind get readinessKind {
+    if (!supported) return ReconnectReadinessKind.unsupported;
+    if (blockedReason.trim().isNotEmpty) return ReconnectReadinessKind.blocked;
+    return ReconnectReadinessKind.available;
+  }
+}
+
+enum ReconnectReadinessKind { unknown, unsupported, blocked, available, saved }
 
 class NavivoxCapabilityAuth {
   const NavivoxCapabilityAuth({

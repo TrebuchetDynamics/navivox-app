@@ -47,6 +47,8 @@ class SetupQrImportPresentation {
           baseUrl: queryBaseUrl,
           token: token,
           webSocketUrl: _normalizeWebSocketUrl(queryWebSocketUrl),
+          serverId: _firstNonEmpty([uri.queryParameters['server_id']]),
+          profileId: _firstNonEmpty([uri.queryParameters['profile_id']]),
         );
       }
       if (uri.scheme == 'http' || uri.scheme == 'https') {
@@ -70,6 +72,8 @@ class SetupQrImportPresentation {
         baseUrl: descriptor.baseUri.toString(),
         token: descriptor.token,
         webSocketUrl: descriptor.webSocketUri.toString(),
+        serverId: descriptor.serverId,
+        profileId: descriptor.profileId,
       );
     } on FormatException {
       return null;
@@ -114,6 +118,8 @@ class SetupQrImportPresentation {
         baseUrl: topLevelBaseUrl,
         token: topLevelToken,
         webSocketUrl: _normalizeWebSocketUrl(topLevelWebSocketUrl),
+        serverId: _stringField(decoded, const ['server_id', 'serverId']),
+        profileId: _stringField(decoded, const ['profile_id', 'profileId']),
       );
     }
 
@@ -150,6 +156,8 @@ class SetupQrImportPresentation {
             baseUrl: baseUrl,
             token: token,
             webSocketUrl: _normalizeWebSocketUrl(webSocketUrl),
+            serverId: _stringField(entry, const ['server_id', 'serverId']),
+            profileId: _stringField(entry, const ['profile_id', 'profileId']),
           );
         }
       }
@@ -158,14 +166,37 @@ class SetupQrImportPresentation {
   }
 }
 
+enum PairingHandoffSource { manual, qrImage, sharedText, directAppOpen }
+
 class SetupQrImageImport {
-  const SetupQrImageImport({this.baseUrl, this.token, this.webSocketUrl});
+  const SetupQrImageImport({
+    this.baseUrl,
+    this.token,
+    this.webSocketUrl,
+    this.serverId,
+    this.profileId,
+    this.source = PairingHandoffSource.manual,
+  });
 
   final String? baseUrl;
   final String? token;
   final String? webSocketUrl;
+  final String? serverId;
+  final String? profileId;
+  final PairingHandoffSource source;
 
   bool get hasValues => baseUrl != null || token != null;
+
+  SetupQrImageImport withSource(PairingHandoffSource source) {
+    return SetupQrImageImport(
+      baseUrl: baseUrl,
+      token: token,
+      webSocketUrl: webSocketUrl,
+      serverId: serverId,
+      profileId: profileId,
+      source: source,
+    );
+  }
 }
 
 SetupQrImageImport? parseNavivoxQrPayload(String payload) =>

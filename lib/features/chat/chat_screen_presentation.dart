@@ -2,6 +2,7 @@ import '../../core/channel/navivox_channel.dart';
 import '../../core/protocol/navivox_event.dart';
 import '../../core/protocol/navivox_voice_run.dart';
 import '../settings/providers/voice_settings_provider.dart';
+import 'profile_contact_conversation.dart';
 import 'voice_readiness_presentation.dart';
 
 class ChatScreenPresentation {
@@ -38,10 +39,8 @@ class ChatScreenPresentation {
         : state.agents
               .where((agent) => agent.id == state.selectedAgentId)
               .firstOrNull;
-    final pendingVoiceRun =
-        state.activeVoiceRun?.status == NavivoxVoiceRunStatus.pendingSend
-        ? state.activeVoiceRun
-        : null;
+    final conversation = ProfileContactConversation.fromState(state);
+    final pendingVoiceRun = conversation.pendingVoiceRun;
     final voiceReadiness = VoiceReadinessPresentation.fromState(
       settings: voiceSettings,
       activeProfile: activeProfile,
@@ -51,11 +50,6 @@ class ChatScreenPresentation {
       localMicrophonePermissionGranted: localMicrophonePermissionGranted,
       runtimeVoiceDisabledReason: runtimeVoiceDisabledReason,
     );
-    final transcriptMessages = [
-      ...state.messagesList,
-      if (pendingVoiceRun != null) _pendingVoiceMessage(pendingVoiceRun),
-    ];
-
     return ChatScreenPresentation(
       activeServer: activeServer,
       activeProfile: activeProfile,
@@ -89,7 +83,7 @@ class ChatScreenPresentation {
         gatewayProfileSttStatus: voiceReadiness.gatewayProfileSttStatus,
         voiceSettingsSubtitle: voiceReadiness.voiceSettingsSubtitle,
       ),
-      transcriptMessages: transcriptMessages,
+      transcriptMessages: conversation.transcriptMessages,
       pendingVoiceRun: pendingVoiceRun,
       assistantTypingLabel: activeProfile?.activeTurnState == 'streaming'
           ? '${activeProfile!.displayName} is typing…'
@@ -163,22 +157,6 @@ class ChatScreenPresentation {
 
   static String _plural(int count, String one, String many) {
     return count == 1 ? one : many;
-  }
-
-  static NavivoxChatMessage _pendingVoiceMessage(NavivoxVoiceRun run) {
-    return NavivoxChatMessage(
-      id: 'pending-${run.id}',
-      author: NavivoxMessageAuthor.user,
-      kind: NavivoxMessageKind.voice,
-      createdAt: run.createdAt,
-      voice: NavivoxVoiceMessage(
-        voiceRunId: run.id,
-        duration: run.duration ?? Duration.zero,
-        transcript: run.transcript ?? '',
-        confidence: run.confidence ?? 1,
-        status: run.status,
-      ),
-    );
   }
 
   static List<ChatInfoActionPresentation> _infoActions({

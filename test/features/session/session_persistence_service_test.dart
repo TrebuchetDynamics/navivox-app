@@ -12,44 +12,41 @@ void main() {
       await service.ensureInitialized();
     });
 
-    test('saveConnection saves gateway session correctly', () async {
+    test('saveConnection saves non-secret gateway metadata', () async {
       await service.saveConnection(
         baseUrl: 'http://192.168.1.100:8765',
-        token: 'nvbx_test_token_abc123',
         webSocketUrl: 'ws://192.168.1.100:8765/v1/navivox/stream',
         gatewayId: 'gw-abc-123',
       );
       final session = await service.loadSession();
       expect(session, isNotNull);
       expect(session!.baseUrl, 'http://192.168.1.100:8765');
-      expect(session.token, 'nvbx_test_token_abc123');
-      expect(
-        session.webSocketUrl,
-        'ws://192.168.1.100:8765/v1/navivox/stream',
-      );
+      expect(session.webSocketUrl, 'ws://192.168.1.100:8765/v1/navivox/stream');
       expect(session.gatewayId, 'gw-abc-123');
       expect(session.lastConnectedAt, isNotNull);
+      expect(session.canAttemptReconnect, isFalse);
     });
 
-    test('saveConnection without token still saves partial session', () async {
-      await service.saveConnection(
-        baseUrl: 'http://192.168.1.100:8765',
-        token: null,
-        webSocketUrl: null,
-        gatewayId: null,
-      );
-      final session = await service.loadSession();
-      expect(session, isNotNull);
-      expect(session!.baseUrl, 'http://192.168.1.100:8765');
-      expect(session.token, isNull);
-      expect(session.webSocketUrl, isNull);
-      expect(session.gatewayId, isNull);
-    });
+    test(
+      'saveConnection without optional metadata saves partial session',
+      () async {
+        await service.saveConnection(
+          baseUrl: 'http://192.168.1.100:8765',
+          webSocketUrl: null,
+          gatewayId: null,
+        );
+        final session = await service.loadSession();
+        expect(session, isNotNull);
+        expect(session!.baseUrl, 'http://192.168.1.100:8765');
+        expect(session.webSocketUrl, isNull);
+        expect(session.gatewayId, isNull);
+        expect(session.canAttemptReconnect, isFalse);
+      },
+    );
 
     test('clearSession removes all saved data', () async {
       await service.saveConnection(
         baseUrl: 'http://192.168.1.100:8765',
-        token: 'nvbx_test_token_abc123',
         webSocketUrl: 'ws://192.168.1.100:8765/v1/navivox/stream',
         gatewayId: 'gw-abc-123',
       );
@@ -68,7 +65,6 @@ void main() {
     test('hasSession returns true after saveConnection', () async {
       await service.saveConnection(
         baseUrl: 'http://192.168.1.100:8765',
-        token: 'nvbx_test_token_abc123',
         webSocketUrl: 'ws://192.168.1.100:8765/v1/navivox/stream',
         gatewayId: 'gw-abc-123',
       );

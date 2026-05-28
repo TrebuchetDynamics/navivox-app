@@ -36,6 +36,53 @@ void main() {
     status: 'ready',
   );
 
+  test('keeps transcript surface scoped to active Profile contact', () {
+    final state = NavivoxChannelState(
+      servers: const [local],
+      activeServerId: 'srv1',
+      profileContacts: const [activeProfile, otherProfile],
+      selectedProfileContactKey: 'srv1::mineru',
+      messages: {
+        'mineru': NavivoxChatMessage(
+          id: 'mineru',
+          author: NavivoxMessageAuthor.user,
+          kind: NavivoxMessageKind.text,
+          text: 'mineru turn',
+          serverId: 'srv1',
+          profileId: 'mineru',
+          createdAt: now,
+        ),
+        'support': NavivoxChatMessage(
+          id: 'support',
+          author: NavivoxMessageAuthor.user,
+          kind: NavivoxMessageKind.text,
+          text: 'support turn',
+          serverId: 'srv1',
+          profileId: 'support',
+          createdAt: now,
+        ),
+        'system': NavivoxChatMessage(
+          id: 'system',
+          author: NavivoxMessageAuthor.system,
+          kind: NavivoxMessageKind.text,
+          text: 'gateway connected',
+          createdAt: now,
+        ),
+      },
+    );
+
+    final presentation = ChatScreenPresentation.fromState(
+      state: state,
+      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      localVoiceCaptureAvailable: true,
+    );
+
+    expect(presentation.transcriptMessages.map((message) => message.text), [
+      'mineru turn',
+      'gateway connected',
+    ]);
+  });
+
   test('summarizes active profile scope and transcript surface inputs', () {
     final pendingRun = NavivoxVoiceRun(
       id: 'voice-1',
@@ -63,6 +110,8 @@ void main() {
           author: NavivoxMessageAuthor.user,
           kind: NavivoxMessageKind.text,
           text: 'hello',
+          serverId: 'srv1',
+          profileId: 'mineru',
           createdAt: now,
         ),
       },

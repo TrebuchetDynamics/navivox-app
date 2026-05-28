@@ -20,7 +20,7 @@ void main() {
         ),
       );
 
-      final importButton = find.bySemanticsLabel('Import pairing QR image');
+      final importButton = find.bySemanticsLabel('Import QR image');
       await tester.ensureVisible(importButton);
       await tester.tap(importButton);
       await tester.pumpAndSettle();
@@ -55,11 +55,13 @@ void main() {
 
   test('parses Gormes navivox pair QR descriptor rest token', () {
     final result = parseNavivoxQrPayload(
-      'navivox://connect?base_url=http%3A%2F%2F127.0.0.1%3A8765&websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&auth_mode=pairing_token&exposure_mode=local&token_required=true&rest_token=nvbx_pair_rest_token',
+      'navivox://connect?base_url=http%3A%2F%2F127.0.0.1%3A8765&websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&auth_mode=pairing_token&exposure_mode=local&token_required=true&rest_token=nvbx_pair_rest_token&server_id=local&profile_id=mineru',
     );
 
     expect(result?.baseUrl, 'http://127.0.0.1:8765');
     expect(result?.token, 'nvbx_pair_rest_token');
+    expect(result?.serverId, 'local');
+    expect(result?.profileId, 'mineru');
   });
 
   test('derives pair base URL from websocket-only QR descriptors', () {

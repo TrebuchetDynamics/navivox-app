@@ -12,7 +12,7 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private var initialConnectIntent: String? = null
+    private var initialConnectIntent: Map<String, String>? = null
     private var connectIntentEvents: EventChannel.EventSink? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,23 +99,14 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun connectPayloadFrom(intent: Intent?): String? {
+    private fun connectPayloadFrom(intent: Intent?): Map<String, String>? {
         if (intent == null) return null
-        return when (intent.action) {
-            Intent.ACTION_VIEW -> {
-                val data = intent.data ?: return null
-                if (data.scheme == "navivox" && data.host == "connect") {
-                    data.toString()
-                } else {
-                    null
-                }
-            }
-            Intent.ACTION_SEND -> {
-                if (!intent.type.orEmpty().startsWith("text/")) return null
-                intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()?.takeIf { it.isNotEmpty() }
-            }
-            else -> null
-        }
+        return PairingHandoffIntentParser.parse(
+            action = intent.action,
+            type = intent.type,
+            data = intent.data?.toString(),
+            text = intent.getStringExtra(Intent.EXTRA_TEXT),
+        )
     }
 
     companion object {

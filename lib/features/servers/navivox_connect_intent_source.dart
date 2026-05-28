@@ -21,7 +21,7 @@ class NavivoxConnectIntentSource {
 
   Future<bool> isAvailable() async {
     try {
-      await _methodChannel.invokeMethod<String>('initialConnectIntent');
+      await _methodChannel.invokeMethod<Object?>('initialConnectIntent');
       return true;
     } on MissingPluginException {
       return false;
@@ -33,31 +33,47 @@ class NavivoxConnectIntentSource {
   Future<SetupQrImageImport?> initialImport() async {
     final payload = await _initialPayload();
     if (payload == null) return null;
-    return parseNavivoxQrPayload(payload);
+    return _parseConnectIntentPayload(payload);
   }
 
   Stream<SetupQrImageImport> get imports {
     return _eventChannel
         .receiveBroadcastStream()
         .handleError((_) {})
-        .where((event) => event is String)
-        .cast<String>()
-        .map(parseNavivoxQrPayload)
+        .map(_parseConnectIntentPayload)
         .where((result) => result != null && result.hasValues)
         .cast<SetupQrImageImport>();
   }
 
-  Future<String?> _initialPayload() async {
+  Future<Object?> _initialPayload() async {
     try {
-      final payload = await _methodChannel.invokeMethod<String>(
-        'initialConnectIntent',
-      );
-      final text = payload?.trim();
-      return text == null || text.isEmpty ? null : text;
+      return await _methodChannel.invokeMethod<Object?>('initialConnectIntent');
     } on MissingPluginException {
       return null;
     } on PlatformException {
       return null;
     }
   }
+}
+
+SetupQrImageImport? _parseConnectIntentPayload(Object? payload) {
+  if (payload is String) {
+    final text = payload.trim();
+    if (text.isEmpty) return null;
+    return parseNavivoxQrPayload(text);
+  }
+  if (payload is! Map) return null;
+  final text = payload['payload']?.toString().trim();
+  if (text == null || text.isEmpty) return null;
+  final parsed = parseNavivoxQrPayload(text);
+  if (parsed == null) return null;
+  return parsed.withSource(_sourceFromPayload(payload['source']));
+}
+
+PairingHandoffSource _sourceFromPayload(Object? value) {
+  return switch (value?.toString()) {
+    'direct_app_open' => PairingHandoffSource.directAppOpen,
+    'shared_text' => PairingHandoffSource.sharedText,
+    _ => PairingHandoffSource.manual,
+  };
 }

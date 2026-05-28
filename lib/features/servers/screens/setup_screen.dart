@@ -10,13 +10,14 @@ import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../gateway_connection_presentation.dart';
 import '../navivox_connect_intent_source.dart';
+import '../pairing_handoff_flow.dart';
 import '../setup_guide_presentation.dart';
 import '../setup_qr_import_presentation.dart';
 import '../setup_screen_presentation.dart';
 import '../../../core/session/session_persistence_service.dart';
 
 export '../setup_qr_import_presentation.dart'
-    show SetupQrImageImport, parseNavivoxQrPayload;
+    show PairingHandoffSource, SetupQrImageImport, parseNavivoxQrPayload;
 
 const _setupGuidePresentation = SetupGuidePresentation();
 const _setupScreenPresentation = SetupScreenPresentation();
@@ -55,6 +56,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   bool _importingQr = false;
   String _scheme = 'http';
   String? _webSocketUrl;
+  PairingHandoffFlow _handoffFlow = const PairingHandoffFlow();
   SetupScreenNotice? _notice;
   late final NavivoxConnectIntentSource _connectIntentSource;
   StreamSubscription<SetupQrImageImport>? _connectIntentSubscription;
@@ -80,7 +82,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   Future<void> _tryAutoReconnect() async {
     final session = SessionPersistenceService();
     final saved = await session.loadSession();
-    if (saved == null || saved.isStale) return;
+    if (saved == null || saved.isStale || !saved.canAttemptReconnect) return;
     if (!mounted) return;
     setState(() {
       _connecting = true;
@@ -89,11 +91,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     try {
       await ref
           .read(gatewayNavivoxChannelProvider)
-          .connect(
-            baseUrl: saved.baseUrl,
-            token: saved.token,
-            webSocketUrl: saved.webSocketUrl,
-          );
+          .connect(baseUrl: saved.baseUrl, webSocketUrl: saved.webSocketUrl);
       // Reconnect success: router redirect will handle navigation to chat.
     } catch (_) {
       if (mounted) {
@@ -233,9 +231,23 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.qr_code_scanner),
+                            : const Icon(Icons.image_search),
                         label: Text(
                           _setupScreenPresentation.importQrButtonLabel,
+                        ),
+                      ),
+                      TextButton.icon(
+                        key: const ValueKey(
+                          'setup-copy-fix-instructions-button',
+                        ),
+                        onPressed: () => _copySetupGuideEntry(
+                          _setupGuidePresentation.entry(
+                            SetupGuideEntryId.navivoxPairHandoff,
+                          ),
+                        ),
+                        icon: const Icon(Icons.content_copy),
+                        label: Text(
+                          _setupScreenPresentation.fixInstructionsButtonLabel,
                         ),
                       ),
                       TextButton.icon(
@@ -335,7 +347,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     });
     try {
       final importer = widget.qrImageImporter ?? importNavivoxQrImage;
-      final result = await importer();
+      final result = (await importer())?.withSource(
+        PairingHandoffSource.qrImage,
+      );
       if (!mounted) return;
       final notice = _setupScreenPresentation.qrImportNotice(result);
       if (result == null || !result.hasValues) {
@@ -381,6 +395,19 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       result,
       _setupScreenPresentation.connectIntentImportNotice,
     );
+    final hasActiveGateway = ref
+        .read(gatewayNavivoxChannelProvider)
+        .state
+        .hasServers;
+    if (_handoffFlow.requiresActiveGatewayConfirmation(
+      hasActiveGateway: hasActiveGateway,
+    )) {
+      unawaited(_confirmActiveGatewayHandoff());
+      return;
+    }
+    if (_handoffFlow.shouldAutoConnect(hasActiveGateway: hasActiveGateway)) {
+      unawaited(_connectGateway(autoConnect: true));
+    }
   }
 
   void _applyConnectionImport(
@@ -401,12 +428,14 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         _tokenController.text = result.token!;
       }
       _webSocketUrl = result.webSocketUrl;
+      _handoffFlow = PairingHandoffFlow.fromImport(result);
       _notice = notice;
     });
   }
 
   void _handleAddressChanged(String value) {
     _webSocketUrl = null;
+    _handoffFlow = _handoffFlow.resetManualConnectionEdit();
     final uri = Uri.tryParse(value.trim());
     if (uri != null && {'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
       _scheme = switch (uri.scheme) {
@@ -419,7 +448,51 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     }
   }
 
-  Future<void> _connectGateway() async {
+  Future<void> _confirmActiveGatewayHandoff() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          _setupScreenPresentation.activeGatewayConfirmationTitle(
+            _handoffFlow.safeSourceLabel(),
+          ),
+        ),
+        content: Text(
+          _setupScreenPresentation.activeGatewayConfirmationMessage(
+            _safeHandoffHostSummary(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              _setupScreenPresentation.activeGatewayCancelButtonLabel,
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              _setupScreenPresentation.activeGatewayConfirmButtonLabel,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _connectGateway(autoConnect: true);
+    }
+  }
+
+  String _safeHandoffHostSummary() {
+    final scheme = _scheme.trim().isEmpty ? 'http' : _scheme.trim();
+    final host = _addressController.text.trim();
+    final port = _portController.text.trim();
+    if (host.isEmpty) return 'the new gateway';
+    if (port.isEmpty) return '$scheme://$host';
+    return '$scheme://$host:$port';
+  }
+
+  Future<void> _connectGateway({bool autoConnect = false}) async {
     const presentation = GatewayConnectionPresentation();
     final validationError = presentation.validateAddressAndPort(
       address: _addressController.text,
@@ -444,20 +517,33 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
     setState(() {
       _connecting = true;
-      _notice = null;
+      _notice = autoConnect ? _setupScreenPresentation.autoConnectNotice : null;
     });
     try {
-      await ref
-          .read(gatewayNavivoxChannelProvider)
-          .connect(
-            baseUrl: request.baseUrl,
-            token: request.token,
-            webSocketUrl: request.webSocketUrl,
-          );
-      if (mounted) NavigationIntent.go(context, const OpenChatsList());
+      final channel = ref.read(gatewayNavivoxChannelProvider);
+      await channel.connect(
+        baseUrl: request.baseUrl,
+        token: request.token,
+        webSocketUrl: request.webSocketUrl,
+      );
+      final outcome = _handoffFlow.afterConnect(channel.state);
+      final contact = outcome.profileContactToSelect;
+      if (contact != null) {
+        channel.selectProfileContact(
+          serverId: contact.serverId,
+          profileId: contact.profileId,
+        );
+      }
+      if (mounted) {
+        NavigationIntent.go(context, outcome.navigationIntent);
+      }
     } catch (_) {
       if (mounted) {
-        setState(() => _notice = _setupScreenPresentation.connectFailureNotice);
+        setState(
+          () => _notice = autoConnect && _handoffFlow.isDirectAppOpen
+              ? _setupScreenPresentation.directPairingConnectFailureNotice
+              : _setupScreenPresentation.connectFailureNotice,
+        );
       }
     } finally {
       if (mounted) setState(() => _connecting = false);

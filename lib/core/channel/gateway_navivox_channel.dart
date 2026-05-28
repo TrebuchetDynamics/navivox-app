@@ -129,9 +129,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     unawaited(
       _sessionService.saveConnection(
         baseUrl: baseUrl,
-        token: token,
         webSocketUrl: webSocketUrl,
-        gatewayId: status.capabilitiesUrl,
+        gatewayId: status.gatewayId,
       ),
     );
     if (!streamAvailable) {
@@ -301,6 +300,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         kind: NavivoxMessageKind.text,
         createdAt: _clock(),
         text: trimmed,
+        serverId: activeProfile?.serverId,
+        profileId: activeProfile?.profileId,
       ),
     );
     socket.add(
@@ -418,6 +419,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         kind: NavivoxMessageKind.voice,
         createdAt: _clock(),
         text: trimmed,
+        serverId: activeProfile?.serverId,
+        profileId: activeProfile?.profileId,
         voice: NavivoxVoiceMessage(
           voiceRunId: voiceRunId,
           duration: submitted.duration ?? Duration.zero,
@@ -861,11 +864,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   /// Returns true if a session was found and connection succeeded.
   Future<bool> tryReconnect() async {
     final session = await _sessionService.loadSession();
-    if (session == null) return false;
+    if (session == null || !session.canAttemptReconnect) return false;
     try {
       await connect(
         baseUrl: session.baseUrl,
-        token: session.token,
         webSocketUrl: session.webSocketUrl,
       );
       return true;
@@ -930,6 +932,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final requestId = event.requestId ?? _uuid.v4();
     final messageId = 'assistant-$requestId';
     final existing = _state.messages[messageId];
+    final scope = _messageScopeFromEvent(event);
     if (existing == null) {
       _putMessage(
         NavivoxChatMessage(
@@ -939,6 +942,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           createdAt: _clock(),
           text: event.text ?? '',
           runRecordReference: event.runRecordReference,
+          serverId: scope.serverId,
+          profileId: scope.profileId,
         ),
       );
       return;
@@ -952,6 +957,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         text: '${existing.text ?? ''}${event.text ?? ''}',
         runRecordReference:
             event.runRecordReference ?? existing.runRecordReference,
+        serverId: existing.serverId ?? scope.serverId,
+        profileId: existing.profileId ?? scope.profileId,
       ),
     );
   }
@@ -960,6 +967,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final requestId = event.requestId ?? _uuid.v4();
     final messageId = 'assistant-$requestId';
     final existing = _state.messages[messageId];
+    final scope = _messageScopeFromEvent(event);
     final message = NavivoxChatMessage(
       id: messageId,
       author: NavivoxMessageAuthor.assistant,
@@ -968,6 +976,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       text: event.text ?? '',
       runRecordReference:
           event.runRecordReference ?? existing?.runRecordReference,
+      serverId: existing?.serverId ?? scope.serverId,
+      profileId: existing?.profileId ?? scope.profileId,
     );
     _putMessage(message);
   }
@@ -976,6 +986,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final toolCallId = event.toolCallId ?? 'tool-${_uuid.v4()}';
     final priorMessage = _state.messages[toolCallId];
     final prior = priorMessage?.toolCall;
+    final scope = _messageScopeFromEvent(event);
     final summary = _boundedToolText(
       event.message ?? event.text ?? prior?.summary ?? '',
     );
@@ -998,8 +1009,42 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         ),
         runRecordReference:
             event.runRecordReference ?? priorMessage?.runRecordReference,
+        serverId: priorMessage?.serverId ?? scope.serverId,
+        profileId: priorMessage?.profileId ?? scope.profileId,
       ),
     );
+  }
+
+  ({String? serverId, String? profileId}) _messageScopeFromEvent(
+    NavivoxGatewayEvent event,
+  ) {
+    final metadataServerId = _trimmedString(event.metadata['server_id']);
+    final metadataProfileId = _trimmedString(event.metadata['profile_id']);
+    if (metadataServerId != null && metadataProfileId != null) {
+      return (serverId: metadataServerId, profileId: metadataProfileId);
+    }
+
+    final requestMessage = event.requestId == null
+        ? null
+        : _state.messages[event.requestId!];
+    if (requestMessage?.profileContactKey != null) {
+      return (
+        serverId: requestMessage!.serverId,
+        profileId: requestMessage.profileId,
+      );
+    }
+
+    final toolMessage = event.toolCallId == null
+        ? null
+        : _state.messages[event.toolCallId!];
+    if (toolMessage?.profileContactKey != null) {
+      return (
+        serverId: toolMessage!.serverId,
+        profileId: toolMessage.profileId,
+      );
+    }
+
+    return (serverId: null, profileId: null);
   }
 
   List<NavivoxToolArtifact> _toolArtifactsFromEvent(
@@ -1111,6 +1156,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void _putSafetyWarning(NavivoxGatewayEvent event) {
     final id = event.safetyId ?? 'safety-${_uuid.v4()}';
+    final scope = _messageScopeFromEvent(event);
     _putMessage(
       NavivoxChatMessage(
         id: id,
@@ -1124,6 +1170,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           risk: event.risk,
         ),
         runRecordReference: event.runRecordReference,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
       ),
     );
   }
@@ -1133,14 +1181,16 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final toolCallId = event.toolCallId ?? '';
     final prompt = event.message ?? 'Approval required';
     final risk = event.risk;
-    final priorTool = _state.messages[toolCallId]?.toolCall;
+    final scope = _messageScopeFromEvent(event);
+    final priorMessage = _state.messages[toolCallId];
+    final priorTool = priorMessage?.toolCall;
     if (priorTool != null) {
       _putMessage(
         NavivoxChatMessage(
           id: toolCallId,
           author: NavivoxMessageAuthor.assistant,
           kind: NavivoxMessageKind.toolCall,
-          createdAt: _state.messages[toolCallId]?.createdAt ?? _clock(),
+          createdAt: priorMessage?.createdAt ?? _clock(),
           toolCall: priorTool.copyWith(
             approval: NavivoxToolApproval(
               id: id,
@@ -1150,8 +1200,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             ),
           ),
           runRecordReference:
-              event.runRecordReference ??
-              _state.messages[toolCallId]?.runRecordReference,
+              event.runRecordReference ?? priorMessage?.runRecordReference,
+          serverId: priorMessage?.serverId ?? scope.serverId,
+          profileId: priorMessage?.profileId ?? scope.profileId,
         ),
       );
     }
@@ -1169,6 +1220,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           risk: risk,
         ),
         runRecordReference: event.runRecordReference,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
       ),
     );
     _approvals.add(

@@ -16,6 +16,10 @@ _Avoid_: backend, remote shell
 The first-run transfer of Gormes gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway.
 _Avoid_: QR flow, connect-info flow, login
 
+**Pairing handoff source**:
+How Navivox received a **Pairing handoff**, such as direct app open from Gormes, shared text, QR/image import, or manual entry. The source affects how much operator confirmation is required before Navivox probes or switches a **Gormes gateway**.
+_Avoid_: QR type, intent action, trust level
+
 **Profile contact**:
 A flat chat-list identity made from one `server_id` plus one `profile_id`.
 _Avoid_: agent, user account, thread
@@ -23,6 +27,18 @@ _Avoid_: agent, user account, thread
 **Gateway identity**:
 A stable opaque-public identity for recognizing the same **Gormes gateway** across changed connection details.
 _Avoid_: Profile contact server_id, base URL, bearer token, display name
+
+**Durable reconnect credential**:
+A Gormes-issued, revocable credential that lets Navivox reconnect to a known **Gormes gateway** after a completed **Pairing handoff**. It is distinct from the Pairing handoff token and must not be stored in shared preferences or shown in normal UI.
+_Avoid_: saved token, persisted pairing token, remember-me password
+
+**Reconnect readiness**:
+The operator-visible state describing whether Navivox can save or use durable reconnect for a **Gormes gateway**. It is separate from active session connectivity and from **Voice readiness**.
+_Avoid_: login status, saved session, remember-me state
+
+**Profile contact conversation**:
+The scoped communication state for one **Profile contact**, including visible transcript items, pending voice state, Gormes turn metadata, and stream attribution for that contact.
+_Avoid_: global chat log, unscoped message history, selected agent chat
 
 **Transcript surface**:
 The chat area that shows user turns, assistant turns, tool activity, safety notices, approval prompts, voice transcript bubbles, the composer, and message action sheets for the active **Profile contact**.
@@ -64,9 +80,13 @@ _Avoid_: message id, row id, guessed run id
 
 - **Navivox** connects to one or more **Gormes gateways**.
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
+- A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - A **Gormes gateway** has one **Gateway identity**.
+- A **Durable reconnect credential** is scoped to one authenticated **Gateway identity** and is not the **Pairing handoff** token.
+- **Reconnect readiness** may be unavailable even when a **Pairing handoff** succeeds and chat works for the current app session.
 - A **Gormes gateway** reports zero or more **Profile contacts**.
 - A **Profile contact** is the target for chat turns and voice turns.
+- A **Profile contact conversation** belongs to one **Profile contact**; Navivox must not show another Profile contact's scoped transcript items in the active **Transcript surface**.
 - The **Transcript surface** renders the active **Profile contact** conversation, keeps tool activity distinct from ordinary assistant text, and owns composer/action-sheet behavior.
 - A **Local command** uses the **Command word** and produces a local intent for Navivox to execute.
 - The **Transcript surface** emits **Operator intents** upward instead of owning Gormes gateway calls or route changes.

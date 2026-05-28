@@ -775,7 +775,10 @@ class _FakeGatewayServer {
       return;
     }
     if (request.uri.path == '/v1/navivox/status') {
-      _writeJson(request.response, {'enabled': true});
+      _writeJson(request.response, {
+        'enabled': true,
+        'gateway_id': 'gw_test_gateway',
+      });
       return;
     }
     if (request.uri.path == '/v1/navivox/capabilities') {

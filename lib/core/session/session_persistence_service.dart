@@ -1,15 +1,14 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists and restores gateway connection state so Navivox can reconnect
-/// without requiring the user to re-pair every session.
+/// Persists non-secret gateway metadata for later reconnect flows.
 ///
-/// Token is saved for reconnection but treated as a durable session credential,
-/// not a one-time QR/temp token. If reconnect fails with the saved token,
-/// [clearSession] can remove stale credentials and route back to setup.
+/// Pairing handoff tokens are bootstrap-only and must not be stored here.
+/// Silent reconnect remains disabled until a secure durable credential adapter
+/// exists for the saved Gateway identity.
 class SessionPersistenceService {
   static const _keyBaseUrl = 'navivox.session.base_url';
   static const _keyWebSocketUrl = 'navivox.session.websocket_url';
-  static const _keyToken = 'navivox.session.token';
+  static const _legacyKeyToken = 'navivox.session.token';
   static const _keyLastConnectedAt = 'navivox.session.last_connected_at';
   static const _keyGatewayId = 'navivox.session.gateway_id';
 
@@ -24,10 +23,9 @@ class SessionPersistenceService {
     }
   }
 
-  /// Save a successful gateway connection for reconnection on next app start.
+  /// Save non-secret gateway metadata after a successful gateway connection.
   Future<void> saveConnection({
     required String baseUrl,
-    String? token,
     String? webSocketUrl,
     String? gatewayId,
   }) async {
@@ -35,9 +33,7 @@ class SessionPersistenceService {
     final prefs = _prefs;
     if (prefs == null) return;
     await prefs.setString(_keyBaseUrl, baseUrl.trim());
-    if (token != null && token.trim().isNotEmpty) {
-      await prefs.setString(_keyToken, token.trim());
-    }
+    await prefs.remove(_legacyKeyToken);
     if (webSocketUrl != null && webSocketUrl.trim().isNotEmpty) {
       await prefs.setString(_keyWebSocketUrl, webSocketUrl.trim());
     }
@@ -60,7 +56,6 @@ class SessionPersistenceService {
 
     return SavedSession(
       baseUrl: baseUrl.trim(),
-      token: _nullableString(prefs.getString(_keyToken)),
       webSocketUrl: _nullableString(prefs.getString(_keyWebSocketUrl)),
       gatewayId: _nullableString(prefs.getString(_keyGatewayId)),
       lastConnectedAt: _parseDateTime(prefs.getString(_keyLastConnectedAt)),
@@ -74,7 +69,7 @@ class SessionPersistenceService {
     final prefs = _prefs;
     if (prefs == null) return;
     await prefs.remove(_keyBaseUrl);
-    await prefs.remove(_keyToken);
+    await prefs.remove(_legacyKeyToken);
     await prefs.remove(_keyWebSocketUrl);
     await prefs.remove(_keyLastConnectedAt);
     await prefs.remove(_keyGatewayId);
@@ -104,14 +99,12 @@ class SessionPersistenceService {
 class SavedSession {
   const SavedSession({
     required this.baseUrl,
-    this.token,
     this.webSocketUrl,
     this.gatewayId,
     this.lastConnectedAt,
   });
 
   final String baseUrl;
-  final String? token;
   final String? webSocketUrl;
   final String? gatewayId;
   final DateTime? lastConnectedAt;
@@ -122,6 +115,8 @@ class SavedSession {
     return DateTime.now().toUtc().difference(lastConnectedAt!).inDays > 7;
   }
 
-  /// Whether the session has a stored auth token.
-  bool get hasAuthToken => token != null && token!.trim().isNotEmpty;
+  /// Whether this metadata can currently perform silent reconnect.
+  ///
+  /// This remains false until a secure durable credential adapter exists.
+  bool get canAttemptReconnect => false;
 }

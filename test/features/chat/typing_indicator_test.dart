@@ -43,6 +43,8 @@ void main() {
           kind: NavivoxMessageKind.text,
           createdAt: DateTime(2026, 5, 21, 10),
           text: 'Drafting the deployment plan.',
+          serverId: 'local',
+          profileId: 'mineru',
         ),
       ]);
 

@@ -60,6 +60,8 @@ void main() {
           kind: NavivoxMessageKind.text,
           createdAt: DateTime.utc(2026, 5, 21, 12),
           text: 'Summarize the workspace status.',
+          serverId: 'local',
+          profileId: 'mineru',
         ),
         NavivoxChatMessage(
           id: 'assistant-1',
@@ -67,6 +69,8 @@ void main() {
           kind: NavivoxMessageKind.text,
           createdAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
           text: 'Navivox is connected and the gateway stream is healthy.',
+          serverId: 'local',
+          profileId: 'mineru',
         ),
         NavivoxChatMessage(
           id: 'tool-1',
@@ -78,6 +82,8 @@ void main() {
             status: 'finished',
             summary: '2 roots checked, 0 blockers.',
           ),
+          serverId: 'local',
+          profileId: 'mineru',
         ),
       ]);
 

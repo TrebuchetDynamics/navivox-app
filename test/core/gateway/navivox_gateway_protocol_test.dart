@@ -246,6 +246,7 @@ void main() {
           'websocket_protocols': ['navivox.v1'],
           'capabilities': ['profile_contacts', 'stream_turns', 'turn_control'],
           'capabilities_url': '/v1/navivox/capabilities',
+          'gateway_id': 'gw_123',
           'sessions': 2,
           'ws_connections': 1,
         });
@@ -263,6 +264,8 @@ void main() {
     expect(status.sessionCount, 2);
     expect(status.webSocketConnectionCount, 1);
     expect(status.capabilitiesUrl, '/v1/navivox/capabilities');
+    expect(status.gatewayId, 'gw_123');
+    expect(status.hasGatewayIdentity, isTrue);
     expect(
       seen.keys.single.toString(),
       'http://127.0.0.1:8765/v1/navivox/status',
@@ -347,6 +350,13 @@ void main() {
             'event_kinds': ['profile_contact_update', 'done'],
             'openai_runs_bridge': false,
           },
+          'durable_reconnect': {
+            'supported': true,
+            'issue_endpoint': '/v1/navivox/device-credentials',
+            'auth_methods': ['device_key_challenge'],
+            'platforms': ['android'],
+            'effective_security': 'loopback',
+          },
         });
       },
     );
@@ -393,6 +403,18 @@ void main() {
     expect(capabilities.streams.transport, 'websocket');
     expect(capabilities.streams.eventKinds, ['profile_contact_update', 'done']);
     expect(capabilities.streams.openAiRunsBridge, isFalse);
+    expect(capabilities.durableReconnect.supported, isTrue);
+    expect(
+      capabilities.durableReconnect.issueEndpoint,
+      '/v1/navivox/device-credentials',
+    );
+    expect(capabilities.durableReconnect.authMethods, ['device_key_challenge']);
+    expect(capabilities.durableReconnect.platforms, ['android']);
+    expect(capabilities.durableReconnect.effectiveSecurity, 'loopback');
+    expect(
+      capabilities.durableReconnect.readinessKind,
+      ReconnectReadinessKind.available,
+    );
     expect(
       seen.keys.single.toString(),
       'http://127.0.0.1:8765/v1/navivox/capabilities',

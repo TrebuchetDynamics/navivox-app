@@ -21,6 +21,8 @@ class NavivoxChatMessage {
     this.voice,
     this.safetyNotice,
     this.runRecordReference,
+    this.serverId,
+    this.profileId,
   });
 
   final String id;
@@ -32,6 +34,20 @@ class NavivoxChatMessage {
   final NavivoxVoiceMessage? voice;
   final NavivoxSafetyNotice? safetyNotice;
   final String? runRecordReference;
+  final String? serverId;
+  final String? profileId;
+
+  String? get profileContactKey {
+    final server = serverId?.trim();
+    final profile = profileId?.trim();
+    if (server == null ||
+        server.isEmpty ||
+        profile == null ||
+        profile.isEmpty) {
+      return null;
+    }
+    return '$server::$profile';
+  }
 }
 
 class NavivoxToolCall {

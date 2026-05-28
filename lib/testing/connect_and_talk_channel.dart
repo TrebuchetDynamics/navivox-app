@@ -39,6 +39,7 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
       servers: [server],
       activeServerId: server.id,
       profileContacts: [profile],
+      selectedProfileContactKey: profile.key,
     );
     notifyListeners();
   }
@@ -49,6 +50,7 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
     if (trimmed.isEmpty) return;
     sentTexts.add(trimmed);
     final now = DateTime(2026, 5, 16, 9, 41);
+    final active = _state.activeProfileContact;
     final messages = Map<String, NavivoxChatMessage>.from(_state.messages);
     messages['user-${sentTexts.length}'] = NavivoxChatMessage(
       id: 'user-${sentTexts.length}',
@@ -56,6 +58,8 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: now,
       text: trimmed,
+      serverId: active?.serverId,
+      profileId: active?.profileId,
     );
     messages['assistant-${sentTexts.length}'] = NavivoxChatMessage(
       id: 'assistant-${sentTexts.length}',
@@ -63,6 +67,8 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: now,
       text: 'hello from gateway',
+      serverId: active?.serverId,
+      profileId: active?.profileId,
     );
     _state = _state.copyWith(messages: messages);
     notifyListeners();

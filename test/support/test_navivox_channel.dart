@@ -228,6 +228,8 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: DateTime.utc(2026, 5, 16, 12, 0, _messageCounter),
       text: trimmed,
+      serverId: active?.serverId,
+      profileId: active?.profileId,
     );
     state = _state.copyWith(messages: messages);
   }

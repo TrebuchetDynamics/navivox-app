@@ -36,10 +36,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Could not connect to Gormes gateway.'), findsOneWidget);
-    expect(
-      find.text('Run `gormes navivox connect-info` on the host and retry.'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('gormes navivox status'), findsWidgets);
+    expect(find.textContaining('gormes navivox pair'), findsWidgets);
+    expect(find.textContaining('connect-info'), findsWidgets);
     expect(_visibleTextContaining('nvbx_super_secret_token'), findsNothing);
     expect(find.text('Connect to Gormes'), findsOneWidget);
     expect(find.text('Connect and talk'), findsOneWidget);

@@ -8,8 +8,8 @@ class SetupScreenPresentation {
   String get pairingInstructions =>
       'Run `gormes navivox pair`. On Android, Gormes can open Navivox '
       'directly; QR/import and `gormes navivox connect-info` are fallbacks. '
-      'After pairing, the session is saved so you stay logged in when you '
-      'close and reopen Navivox.';
+      'Pairing signs in for this app session. Durable reconnect is not saved '
+      'yet; pair again if Navivox cannot reconnect after restart.';
 
   String get networkHint =>
       'Android emulator: use http://10.0.2.2:<port> for a host gateway. '
@@ -36,7 +36,9 @@ class SetupScreenPresentation {
   String get tokenFieldSemanticHint =>
       'Enter the pairing token printed by Gormes.';
 
-  String get importQrButtonLabel => 'Import pairing QR image';
+  String get importQrButtonLabel => 'Import QR image';
+
+  String get fixInstructionsButtonLabel => 'Copy fix instructions';
 
   String tokenVisibilityLabel({required bool showToken}) {
     return showToken ? 'Hide pairing token' : 'Show pairing token';
@@ -68,17 +70,40 @@ class SetupScreenPresentation {
 
   SetupScreenNotice get connectFailureNotice => const SetupScreenNotice.error(
     'Could not connect to Gormes gateway.',
-    recoveryMessage: 'Run `gormes navivox connect-info` on the host and retry.',
+    recoveryMessage:
+        'Run `gormes navivox status`; if it is not listening, run `gormes navivox pair`, keep it open, then retry. Use `connect-info` for LAN/VPN/Tailscale URLs.',
   );
 
+  SetupScreenNotice
+  get directPairingConnectFailureNotice => const SetupScreenNotice.error(
+    'Could not connect from the pairing link.',
+    recoveryMessage:
+        'Keep `gormes navivox pair` running, then retry. If this device cannot reach that URL, import the QR image or use `connect-info`.',
+  );
+
+  SetupScreenNotice get autoConnectNotice =>
+      const SetupScreenNotice.info('Connecting from pairing link…');
+
+  String activeGatewayConfirmationTitle(String sourceLabel) {
+    return 'Review new $sourceLabel';
+  }
+
+  String activeGatewayConfirmationMessage(String hostSummary) {
+    return 'Navivox is already connected. Connect to $hostSummary instead?';
+  }
+
+  String get activeGatewayConfirmButtonLabel => 'Connect to new gateway';
+
+  String get activeGatewayCancelButtonLabel => 'Keep current gateway';
+
   SetupScreenNotice get connectSuccessNotice =>
-      const SetupScreenNotice.info('Connected and logged in. Session saved.');
+      const SetupScreenNotice.info('Connected for this app session.');
 
   String get connectCommandExplanation =>
       'This command starts the Gormes gateway and prints a connection URL '
       'or QR code. Scan the QR with Navivox to pair, or copy the connection '
-      'URL shown in your terminal. After pairing, this connection is saved '
-      'so you do not need to re-pair unless the session expires.';
+      'URL shown in your terminal. Pairing starts this app session; durable '
+      'reconnect will require a future secure credential.';
 }
 
 class SetupScreenNotice {

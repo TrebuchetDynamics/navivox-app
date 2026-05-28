@@ -87,7 +87,8 @@ void main() {
       expect(find.bySemanticsLabel('Gateway address field'), findsOneWidget);
       expect(find.bySemanticsLabel('Gateway port field'), findsOneWidget);
       expect(find.bySemanticsLabel('Pairing token field'), findsOneWidget);
-      expect(find.bySemanticsLabel('Import pairing QR image'), findsOneWidget);
+      expect(find.bySemanticsLabel('Import QR image'), findsOneWidget);
+      expect(find.bySemanticsLabel('Copy fix instructions'), findsOneWidget);
       expect(find.bySemanticsLabel('Show pairing token'), findsOneWidget);
       expect(find.bySemanticsLabel('Connect and talk'), findsOneWidget);
     },
@@ -253,6 +254,7 @@ void main() {
                 baseUrl: 'http://127.0.0.1:8765',
                 token: 'nvbx_deeplink_token',
                 webSocketUrl: 'ws://127.0.0.1:8765/v1/navivox/stream',
+                source: PairingHandoffSource.sharedText,
               ),
             ),
           ),
@@ -273,6 +275,36 @@ void main() {
       'ws://127.0.0.1:8765/v1/navivox/stream',
     );
   });
+
+  testWidgets(
+    'setup auto-connects initial direct app-open link without active gateway',
+    (tester) async {
+      final channel = ConnectAndTalkChannel();
+      addTearDown(channel.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: MaterialApp(
+            home: SetupScreen(
+              connectIntentSource: _FakeConnectIntentSource(
+                initial: const SetupQrImageImport(
+                  baseUrl: 'http://127.0.0.1:8765',
+                  token: 'nvbx_direct_token',
+                  webSocketUrl: 'ws://127.0.0.1:8765/v1/navivox/stream',
+                  source: PairingHandoffSource.directAppOpen,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
+      expect(channel.connectedToken, 'nvbx_direct_token');
+    },
+  );
 
   testWidgets('setup imports foreground Android Navivox connection link', (
     tester,
@@ -301,6 +333,7 @@ void main() {
         baseUrl: 'https://gateway.example:8765',
         token: 'nvbx_foreground_token',
         webSocketUrl: 'wss://gateway.example:8765/v1/navivox/stream',
+        source: PairingHandoffSource.sharedText,
       ),
     );
     await tester.pumpAndSettle();
@@ -363,13 +396,13 @@ void main() {
     expect(find.textContaining('Termux'), findsWidgets);
     expect(find.textContaining('paste the bootstrap command'), findsOneWidget);
     expect(
-      find.textContaining('Gormes can open Navivox directly'),
+      find.textContaining('Navivox should open from the pairing link'),
       findsOneWidget,
     );
-    expect(find.textContaining('QR/import and connect-info'), findsWidgets);
+    expect(find.textContaining('gateway status'), findsOneWidget);
     expect(find.textContaining('gormes navivox pair'), findsWidgets);
     expect(find.text('Copy one-paste bootstrap'), findsOneWidget);
-    expect(find.text('Copy Navivox pair handoff'), findsOneWidget);
+    expect(find.text('Copy fix instructions'), findsWidgets);
     expect(find.text('Advanced Termux commands'), findsNothing);
     expect(find.text('Copy Termux download links'), findsNothing);
     expect(_caseInsensitiveText('curl | sh'), findsNothing);
@@ -437,57 +470,56 @@ void main() {
     expect(find.text('Copied one-paste Termux bootstrap.'), findsOneWidget);
   });
 
-  testWidgets('copy Navivox pair handoff describes app-first setup', (
-    tester,
-  ) async {
-    final copied = <String>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied.add(
-            (call.arguments as Map<Object?, Object?>)['text']! as String,
-          );
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+  testWidgets(
+    'copy Navivox fix instructions gives actionable status recovery',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        null,
-      ),
-    );
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              (call.arguments as Map<Object?, Object?>)['text']! as String,
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
 
-    final channel = ConnectAndTalkChannel();
-    addTearDown(channel.dispose);
+      final channel = ConnectAndTalkChannel();
+      addTearDown(channel.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const _RouterTestApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+          child: const _RouterTestApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Copy Navivox pair handoff'));
-    await tester.tap(find.text('Copy Navivox pair handoff'));
-    await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Copy fix instructions').last);
+      await tester.tap(find.text('Copy fix instructions').last);
+      await tester.pumpAndSettle();
 
-    expect(copied, hasLength(1));
-    expect(copied.single, contains('one terminal interaction maximum'));
-    expect(copied.single, contains('Navivox (recommended)'));
-    expect(copied.single, contains('gormes navivox pair'));
-    expect(copied.single, contains('start local bridge'));
-    expect(copied.single, contains('generate a pairing token'));
-    expect(copied.single, contains('show a QR'));
-    expect(copied.single, contains('print localhost URL'));
-    expect(copied.single, contains('wait for Navivox connection'));
-    expect(copied.single, contains('gormes navivox connect-info'));
-    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
-    expect(copied.single.toLowerCase(), isNot(contains('silent install')));
-    expect(find.text('Copied Navivox pair handoff.'), findsOneWidget);
-  });
+      expect(copied, hasLength(1));
+      expect(copied.single, contains('Navivox operator fix instructions'));
+      expect(copied.single, contains('gormes navivox status'));
+      expect(copied.single, contains('gormes navivox pair'));
+      expect(copied.single, contains('Keep that command open'));
+      expect(copied.single, contains('pairing link'));
+      expect(copied.single, contains('gormes navivox connect-info'));
+      expect(copied.single, contains('10.0.2.2'));
+      expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+      expect(copied.single.toLowerCase(), isNot(contains('silent install')));
+      expect(find.text('Copied Navivox fix instructions.'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'connect failure gives connect-info guidance without token leak',
@@ -516,7 +548,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Could not connect to Gormes gateway.'), findsOneWidget);
-      expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
+      expect(find.textContaining('gormes navivox status'), findsWidgets);
+      expect(find.textContaining('gormes navivox pair'), findsWidgets);
+      expect(find.textContaining('connect-info'), findsWidgets);
       expect(
         _caseInsensitiveText('nvbx_secret_should_not_render'),
         findsNothing,

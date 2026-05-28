@@ -12,6 +12,11 @@ void main() {
       presentation.pairingInstructions,
       contains('gormes navivox connect-info'),
     );
+    expect(presentation.pairingInstructions, contains('this app session'));
+    expect(
+      presentation.pairingInstructions,
+      contains('Durable reconnect is not saved'),
+    );
     expect(presentation.networkHint, contains('10.0.2.2'));
     expect(presentation.addressFieldLabel, 'Gateway address');
     expect(presentation.addressFieldSemanticLabel, 'Gateway address field');
@@ -22,9 +27,28 @@ void main() {
     expect(presentation.tokenFieldLabel, 'Pairing token');
     expect(presentation.tokenFieldSemanticLabel, 'Pairing token field');
     expect(presentation.tokenFieldSemanticHint, contains('printed by Gormes'));
-    expect(presentation.importQrButtonLabel, 'Import pairing QR image');
+    expect(presentation.importQrButtonLabel, 'Import QR image');
+    expect(presentation.fixInstructionsButtonLabel, 'Copy fix instructions');
     expect(presentation.connectButtonLabel, 'Connect and talk');
     expect(presentation.connectButtonSemanticHint, contains('open chat'));
+  });
+
+  test('centralizes active-gateway handoff confirmation copy', () {
+    expect(
+      presentation.activeGatewayConfirmationTitle('pairing link'),
+      'Review new pairing link',
+    );
+    expect(
+      presentation.activeGatewayConfirmationMessage(
+        'https://gateway.example:8765',
+      ),
+      'Navivox is already connected. Connect to https://gateway.example:8765 instead?',
+    );
+    expect(
+      presentation.activeGatewayConfirmButtonLabel,
+      'Connect to new gateway',
+    );
+    expect(presentation.activeGatewayCancelButtonLabel, 'Keep current gateway');
   });
 
   test('centralizes token visibility labels', () {
@@ -67,8 +91,17 @@ void main() {
     final connect = presentation.connectFailureNotice;
     expect(connect.kind, SetupScreenNoticeKind.error);
     expect(connect.message, 'Could not connect to Gormes gateway.');
-    expect(connect.recoveryMessage, contains('gormes navivox connect-info'));
+    expect(connect.recoveryMessage, contains('gormes navivox status'));
+    expect(connect.recoveryMessage, contains('gormes navivox pair'));
+    expect(connect.recoveryMessage, contains('connect-info'));
     expect(connect.recoveryMessage, isNot(contains('nvbx_')));
+
+    final direct = presentation.directPairingConnectFailureNotice;
+    expect(direct.kind, SetupScreenNoticeKind.error);
+    expect(direct.message, 'Could not connect from the pairing link.');
+    expect(direct.recoveryMessage, contains('gormes navivox pair'));
+    expect(direct.recoveryMessage, contains('connect-info'));
+    expect(direct.recoveryMessage, isNot(contains('nvbx_')));
   });
 
   test('uses specific QR errors but falls back rather than leaking tokens', () {

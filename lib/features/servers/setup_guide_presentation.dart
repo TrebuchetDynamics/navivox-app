@@ -4,12 +4,17 @@ class SetupGuidePresentation {
   String get introCopy =>
       'Same-device setup: install Termux from F-Droid or official GitHub '
       'Releases, paste the bootstrap command, then run `gormes navivox pair`. '
-      'Navivox can open from the pairing link; QR/import and connect-info are '
-      'fallbacks only.';
+      'Navivox should open from the pairing link. If Android only offers QR/image '
+      'import or the gateway status looks wrong, copy these instructions and fix '
+      'the host setup from Termux/Gormes instead of guessing inside Navivox.';
+
+  String get operatorFixInstructions => _operatorFixInstructions;
 
   List<SetupGuideEntry> get entries => _entries;
 
-  List<SetupGuideEntry> get visibleEntries => entries;
+  List<SetupGuideEntry> get visibleEntries => entries
+      .where((entry) => entry.id == SetupGuideEntryId.bootstrap)
+      .toList();
 
   SetupGuideEntry entry(SetupGuideEntryId id) =>
       entries.firstWhere((entry) => entry.id == id);
@@ -43,10 +48,10 @@ const _entries = [
   ),
   SetupGuideEntry(
     id: SetupGuideEntryId.navivoxPairHandoff,
-    label: 'Copy Navivox pair handoff',
-    clipboardText: _termuxNavivoxPairHandoff,
-    successMessage: 'Copied Navivox pair handoff.',
-    failureMessage: 'Could not copy Navivox pair handoff.',
+    label: 'Copy fix instructions',
+    clipboardText: _operatorFixInstructions,
+    successMessage: 'Copied Navivox fix instructions.',
+    failureMessage: 'Could not copy Navivox fix instructions.',
   ),
 ];
 
@@ -61,17 +66,26 @@ GORMES_SKIP_SETUP=1 bash install.sh && \
 (gormes navivox pair || gormes navivox connect-info)
 ''';
 
-const _termuxNavivoxPairHandoff = '''
-Navivox pair handoff target:
-The goal is one terminal interaction maximum: install Termux, paste one command, then continue setup in Navivox.
+const _operatorFixInstructions = '''
+Navivox operator fix instructions:
 
-After Gormes installs, choose Navivox (recommended) when prompted. If the installer prints the recommended next step, run:
+1. In Termux on the same Android device or on the host machine, run:
+
+gormes navivox status
+
+2. If the gateway is not running/listening, run:
 
 gormes navivox pair
 
-That command should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection.
+3. Keep that command open until Navivox connects. It should start the local bridge, generate a pairing token, show a QR/link, print the base URL, and wait for the Navivox connection.
 
-In Navivox, scan/import the QR or paste the base URL and token here. If this Gormes build does not offer pair yet, run gormes navivox connect-info and paste those values into Navivox only.
+4. In Navivox, prefer the pairing link that opens the app automatically. If that does not work, import the QR image or paste only the base URL and pairing token shown by Gormes.
 
-Navivox does not install APKs or run Termux commands for you. Do not share pairing tokens in logs, screenshots, issues, or chat transcripts.
+5. If Navivox still cannot connect, run:
+
+gormes navivox connect-info
+
+Then use the LAN/VPN/Tailscale URL shown there; 127.0.0.1 only works when Navivox and Gormes are on the same Android environment. Android emulator host gateway usually uses 10.0.2.2.
+
+Do not share pairing tokens in logs, screenshots, issues, or chat transcripts.
 ''';

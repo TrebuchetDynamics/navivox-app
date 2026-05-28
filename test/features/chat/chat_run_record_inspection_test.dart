@@ -39,6 +39,8 @@ void main() {
                 kind: NavivoxMessageKind.text,
                 createdAt: DateTime(2026, 5, 23, 10),
                 text: 'assistant final answer',
+                serverId: 'local',
+                profileId: 'mineru',
                 runRecordReference: 'req-run-record',
               ),
             ])
@@ -118,6 +120,8 @@ void main() {
           kind: NavivoxMessageKind.text,
           createdAt: DateTime(2026, 5, 23, 10),
           text: 'assistant final answer',
+          serverId: 'local',
+          profileId: 'mineru',
           runRecordReference: 'req-run-record',
         ),
       ]);

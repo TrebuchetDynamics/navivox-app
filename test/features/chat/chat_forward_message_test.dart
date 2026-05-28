@@ -42,6 +42,8 @@ void main() {
           kind: NavivoxMessageKind.text,
           createdAt: DateTime(2026, 5, 19, 12),
           text: 'send this to support',
+          serverId: 'local',
+          profileId: 'mineru',
         ),
       ]);
 

@@ -7,11 +7,11 @@ void main() {
   test('exposes ordered Termux setup guide copy actions', () {
     expect(presentation.introCopy, contains('Same-device setup'));
     expect(presentation.introCopy, contains('gormes navivox pair'));
-    expect(presentation.introCopy, contains('fallbacks only'));
+    expect(presentation.introCopy, contains('gateway status'));
 
     expect(
       presentation.visibleEntries.map((entry) => entry.id).toList(),
-      const [SetupGuideEntryId.bootstrap, SetupGuideEntryId.navivoxPairHandoff],
+      const [SetupGuideEntryId.bootstrap],
     );
 
     expect(presentation.entries.map((entry) => entry.id).toList(), const [
@@ -20,7 +20,7 @@ void main() {
     ]);
     expect(presentation.entries.map((entry) => entry.label).toList(), const [
       'Copy one-paste bootstrap',
-      'Copy Navivox pair handoff',
+      'Copy fix instructions',
     ]);
   });
 
@@ -55,14 +55,14 @@ void main() {
       presentation.entries.map((entry) => entry.successMessage).toList(),
       const [
         'Copied one-paste Termux bootstrap.',
-        'Copied Navivox pair handoff.',
+        'Copied Navivox fix instructions.',
       ],
     );
     expect(
       presentation.entries.map((entry) => entry.failureMessage).toList(),
       const [
         'Could not copy one-paste bootstrap.',
-        'Could not copy Navivox pair handoff.',
+        'Could not copy Navivox fix instructions.',
       ],
     );
   });
