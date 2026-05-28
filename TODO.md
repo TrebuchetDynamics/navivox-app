@@ -114,21 +114,13 @@
   validation: `flutter analyze`, `flutter test`, `flutter build web`, and browser QA against `http://127.0.0.1:8765/#/setup` passed for this slice.
   owner: Navivox app owner / Mineru
 
-[BLOCKED] Android continuous voice live phrase capture — 2026-05-22 18:39 CST
-  blocker: connected emulator `emulator-5554` is listed by ADB but shell commands still time out, so this host cannot install the APK, query Android speech recognizers, grant microphone permission, or capture a real voice phrase.
-  evidence: `build/app/outputs/flutter-apk/app-debug.apk` exists at 184870689 bytes; `adb devices -l` lists `emulator-5554`; `timeout 5s adb -s emulator-5554 shell true` exits 124 on the second retry; `timeout 8s adb -s emulator-5554 shell cmd package query-services -a android.speech.RecognitionService` exits 124 on the second retry.
-  unblocks when: a responsive physical USB-debuggable Android device or healthy emulator is available for `adb shell`, APK install, speech-recognizer query, microphone permission grant, and one short active-profile chat phrase capture.
+[BLOCKED] Android Pairing handoff and continuous voice live smoke — 2026-05-27
+  blocker: this host has no responsive Android target; previous emulator attempts timed out on `adb shell`, so it cannot prove Android OS intent delivery, microphone permission prompts, speech-recognition availability, or a real live phrase capture.
+  evidence: Pairing handoff has Dart/JVM/provider-smoke coverage and optional/manual docs in `docs/android-pairing-handoff-smoke.md` and `docs/android-pairing-handoff-instrumentation.md`; continuous voice docs in `docs/android-release-handoff.md` still say this host is not valid Android evidence until a responsive target is connected.
+  acceptance: on a responsive physical USB-debuggable Android device or healthy emulator, run Pairing handoff before voice. Tier 1 import-only: `ACTION_SEND text/plain` with a sentinel Pairing handoff token fills setup fields, waits for operator action, and does not render the token; QR/image import follows the same no-probe/no-token-leak rule. Direct `ACTION_VIEW navivox://connect?...` is tested only with active-gateway confirmation or another no-probe guard unless a live gateway is intentionally available. Tier 2 live Gormes: direct cold-start and warm-start `ACTION_VIEW` connect successfully, active-gateway handoff asks confirmation before probing/switching, requested Profile contact landing happens only when reported by the gateway, and tokens/credentials do not appear in UI, screenshots, logs, transcripts, or failure copy. Continuous voice: after live Pairing handoff, `adb shell true` returns quickly, at least one Android `RecognitionService` exists, an online Profile contact opens, mic permission is granted if prompted, one short spoken phrase becomes a local transcript bubble and a sent Gormes turn, with no token/credential leakage.
   owner: local Android test environment / Juan.
-  workaround/pivot: keep the release handoff/checklist as the source of truth and rerun the same smoke sequence on a responsive Android target; preserve unrelated profile-management WIP.
-  next check: next development-loop iteration with a responsive Android target.
-
-[BLOCKED] Android continuous voice device smoke validation — 2026-05-22 17:55 CST
-  blocker: connected emulator `emulator-5554` is listed by ADB but shell commands time out, so this host cannot validate microphone permission or real device STT capture.
-  evidence: `adb devices -l` lists `emulator-5554`; `timeout 5s adb -s emulator-5554 shell true` exits 124; `timeout 5s adb -s emulator-5554 shell getprop sys.boot_completed` exits 124.
-  unblocks when: a responsive Android emulator or physical USB-debuggable device is available for `adb shell` plus Navivox APK install/run.
-  owner: local Android test environment / Juan.
-  workaround/pivot: document a repeatable Android continuous-voice smoke checklist and keep code-level Flutter gates green.
-  next check: next Navivox Android smoke iteration.
+  workaround/pivot: keep code-level `flutter analyze`, `flutter test --concurrency=1`, JVM Pairing handoff parser tests, and optional provider smoke green until a responsive Android target is available.
+  next check: rerun with responsive Android target before claiming Android runtime validation.
 
 [RESOLVED] Commit/push screenshot iteration 1 repeated agent-list message slice — 2026-05-22 16:23 CST
   resolved: 2026-05-22 16:45 CST
