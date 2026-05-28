@@ -28,6 +28,10 @@ _Avoid_: agent, user account, thread
 A stable opaque-public identity for recognizing the same **Gormes gateway** across changed connection details.
 _Avoid_: Profile contact server_id, base URL, bearer token, display name
 
+**App install identity**:
+A non-secret random identity for one Navivox installation. It is distinct from a device fingerprint, user account, **Gateway identity**, or credential ID.
+_Avoid_: device ID, hardware ID, Android account, credential ID
+
 **Durable reconnect credential**:
 A Gormes-issued, revocable credential that lets Navivox reconnect to a known **Gormes gateway** after a completed **Pairing handoff**. It is distinct from the Pairing handoff token and must not be stored in shared preferences or shown in normal UI.
 _Avoid_: saved token, persisted pairing token, remember-me password
@@ -82,7 +86,8 @@ _Avoid_: message id, row id, guessed run id
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - A **Gormes gateway** has one **Gateway identity**.
-- A **Durable reconnect credential** is scoped to one authenticated **Gateway identity** and is not the **Pairing handoff** token.
+- An **App install identity** scopes one Navivox installation without identifying the physical device or operator account.
+- A **Durable reconnect credential** is scoped to one authenticated **Gateway identity** and one **App install identity**, and is not the **Pairing handoff** token.
 - **Reconnect readiness** may be unavailable even when a **Pairing handoff** succeeds and chat works for the current app session.
 - A **Gormes gateway** reports zero or more **Profile contacts**.
 - A **Profile contact** is the target for chat turns and voice turns.
