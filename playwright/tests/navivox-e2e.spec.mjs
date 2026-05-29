@@ -516,3 +516,43 @@ test.describe('16. Config Screen', () => {
     await expect(page.getByText('No config available').first()).toBeVisible({timeout:5000});
   });
 });
+
+// ─── 17. Additional Regression Coverage ──────────────────────────
+test.describe('17. Additional Regression Coverage', () => {
+  test('17a office profile filter opens support chat with office scope', async ({page}) => {
+    await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await click(page, 'Office Gormes'); await page.waitForTimeout(1000);
+    await expect(page.getByText('1 profile').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Support Triage').first()).toBeVisible({timeout:5000});
+    await click(page, 'Support Triage'); await page.waitForTimeout(2000);
+    expect(page.url()).toContain('/chats/office/support');
+    await expect(page.getByText('Start a conversation').first()).toBeVisible({timeout:5000});
+    await expect(page.locator('[aria-label*="trust office"]').first()).toBeVisible({timeout:5000});
+  });
+
+  test('17b settings trust switch toggles with accessible checked state', async ({page}) => {
+    await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    const trustSwitch = page.locator('[aria-label*="Trust Local Gormes"]');
+    await expect(trustSwitch).toBeVisible({timeout:5000});
+    await expect(trustSwitch).toHaveAttribute('aria-checked', 'false');
+    await trustSwitch.click(); await page.waitForTimeout(1000);
+    await expect(trustSwitch).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('17c config screen shows scoped fallback boundaries', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await expect(page.getByText('Server: Local Gormes').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Profile: Mineru Builder').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Profile ID: mineru').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Voice profile').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('Text chat remains available when voice providers are unavailable.').first()).toBeVisible({timeout:5000});
+    await expect(page.getByText('No config available').first()).toBeVisible({timeout:5000});
+  });
+
+  test('17d gateway cards expose profile and auth chips to accessibility tree', async ({page}) => {
+    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await expect(page.locator('flt-semantics[role="checkbox"][aria-label="2 profiles"]')).toBeVisible({timeout:5000});
+    await expect(page.locator('flt-semantics[role="checkbox"][aria-label="1 profile"]')).toBeVisible({timeout:5000});
+    await expect(page.locator('flt-semantics[role="checkbox"][aria-label="1 auth"]')).toBeVisible({timeout:5000});
+  });
+});

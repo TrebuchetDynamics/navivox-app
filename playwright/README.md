@@ -36,7 +36,9 @@ playwright/
 └── screenshots/  # Generated local screenshots, ignored by git
 ```
 
-## Test Coverage (25 tests + 14 setup tests = 39 total)
+## Test Coverage (83 Playwright tests total)
+
+Current count comes from `npm run web:e2e -- --list`.
 
 | Area | Tests | Verifies |
 |------|-------|----------|
@@ -50,6 +52,7 @@ playwright/
 | **Settings Screen** | 1 | Voice settings, Global app settings, command word "navi", gateway/profile overview |
 | **Screenshots** | 7 | All 7 screens captured as PNG |
 | **Setup Screen*** | 14 | Form fields, token toggle, error states, retry guidance |
+| **Additional Regression Coverage** | 4 | Office-scoped profile chat routing, accessible switch state, config fallback boundaries, gateway chip semantics |
 
 *\* Setup screen tests (from earlier session) use the real (non-e2e) build.*
 
