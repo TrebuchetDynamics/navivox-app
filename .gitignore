@@ -16,5 +16,6 @@ coverage/
 node_modules/
 playwright/results.json
 playwright/test-results/
+playwright/screenshots/*.png
 test-results/
 test/tooling/failures/
