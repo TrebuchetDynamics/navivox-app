@@ -42,6 +42,10 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            DURABLE_KEYS_METHOD_CHANNEL,
+        ).setMethodCallHandler(DurableKeyStoreChannel())
         EventChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             CONNECT_INTENTS_EVENT_CHANNEL,
@@ -116,5 +120,7 @@ class MainActivity : FlutterActivity() {
             "com.trebuchetdynamics.navivox/connect_intents/events"
         private const val DEVICE_SPEECH_METHOD_CHANNEL =
             "com.trebuchetdynamics.navivox/device_speech"
+        private const val DURABLE_KEYS_METHOD_CHANNEL =
+            "com.trebuchetdynamics.navivox/durable_keys"
     }
 }

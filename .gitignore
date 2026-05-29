@@ -17,3 +17,4 @@ node_modules/
 playwright/results.json
 playwright/test-results/
 test-results/
+test/tooling/failures/
