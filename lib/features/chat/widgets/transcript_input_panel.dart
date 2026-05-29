@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../voice/services/voice_capture_service.dart';
-import '../transcript_voice_capture_flow.dart';
+import '../controllers/transcript_voice_capture_flow.dart';
 import 'transcript_composer.dart';
 
 class TranscriptInputPanel extends StatefulWidget {

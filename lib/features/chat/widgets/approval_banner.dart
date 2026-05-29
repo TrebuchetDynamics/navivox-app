@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
-import '../approval_banner_presentation.dart';
+import '../presentation/approval_banner_presentation.dart';
 
 /// Listens to [NavivoxChannel.approvalRequests] and renders the most recent
 /// pending approval as an Allow/Deny banner. Tapping a button resolves the

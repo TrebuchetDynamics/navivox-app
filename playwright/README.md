@@ -22,7 +22,18 @@ npx playwright test --config=playwright.config.mjs
 kill %1
 
 # Or use the script
-./playwright/run_tests.sh
+./playwright/scripts/run_tests.sh
+```
+
+## Layout
+
+```text
+playwright/
+├── tests/        # Specs run by playwright.config.mjs
+├── debug/        # One-off browser/debug scripts
+├── probes/       # Exploratory route and surface probes
+├── scripts/      # Runnable helpers
+└── screenshots/  # Generated local screenshots, ignored by git
 ```
 
 ## Test Coverage (25 tests + 14 setup tests = 39 total)

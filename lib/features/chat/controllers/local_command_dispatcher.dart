@@ -1,7 +1,7 @@
-import '../../core/channel/navivox_channel.dart';
-import '../../core/protocol/navivox_voice_run.dart';
-import '../../router/app_routes.dart';
-import 'local_command_intent.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_voice_run.dart';
+import '../../../router/app_routes.dart';
+import '../intents/local_command_intent.dart';
 
 class LocalCommandDispatchResult {
   const LocalCommandDispatchResult({

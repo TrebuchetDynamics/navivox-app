@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/chat/transcript_voice_capture_flow.dart';
+import 'package:navivox/features/chat/controllers/transcript_voice_capture_flow.dart';
 import 'package:navivox/features/voice/services/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/voice_capture_service.dart';
 

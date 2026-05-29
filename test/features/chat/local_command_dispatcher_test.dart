@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
-import 'package:navivox/features/chat/local_command_dispatcher.dart';
-import 'package:navivox/features/chat/local_command_intent.dart';
+import 'package:navivox/features/chat/controllers/local_command_dispatcher.dart';
+import 'package:navivox/features/chat/intents/local_command_intent.dart';
 import 'package:navivox/router/app_routes.dart';
 
 import '../../support/test_navivox_channel.dart';

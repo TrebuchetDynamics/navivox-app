@@ -97,17 +97,15 @@ On the host side, `gormes navivox pair` is the recommended setup path. It starts
 ├── integration_test/            # Connect-and-talk integration tests
 ├── web/                         # Flutter web shell
 ├── linux/                       # Flutter Linux runner
-├── docs/screenshots/            # README screenshots generated from widgets
-├── CONTEXT.md                   # Shared product language
-├── navivox-architecture.md      # Architecture notes
-├── navivox-chat-ui-research.md  # Chat UI research notes
-├── navivox-data-model.md        # Data model notes
-├── navivox-decision-record.md   # Product and technical decisions
-├── navivox-library-research.md  # Flutter package research
-├── navivox-prd.md               # Product requirements
-├── navivox-routes.md            # App route plan
-├── navivox-testing-plan.md      # Test strategy
-└── navivox-ui-design.md         # UI design notes
+├── docs/                        # Product, architecture, research, ADRs, runbooks, screenshots
+│   ├── architecture/            # Architecture, data model, decision notes
+│   ├── product/                 # PRD, route plan, UI design, test strategy
+│   ├── research/                # Research notes and analyst summaries
+│   ├── adr/                     # Architecture decision records
+│   ├── runbooks/                # Android, Termux, release, and QA handoffs
+│   └── screenshots/             # README screenshots generated from widgets
+├── playwright/                  # Web QA tests, probes, debug scripts, and screenshots
+└── CONTEXT.md                   # Shared product language
 ```
 
 ## Install And Run
@@ -147,7 +145,7 @@ Android target notes:
 
 - Android emulator: use `http://10.0.2.2:<port>` when the Gormes gateway is running on the host machine.
 - A physical Android device cannot reach the host through `127.0.0.1`; use the host LAN, VPN, or Tailscale URL printed by `gormes navivox pair` or the `gormes navivox connect-info` fallback.
-- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/termux-gormes-bootstrap.md`.
+- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/runbooks/termux-gormes-bootstrap.md`.
 - Recommended setup path: `gormes navivox pair`.
 - Keep the pairing token inside Navivox only; never paste it into issue reports, logs, screenshots, or chat transcripts.
 
@@ -194,12 +192,13 @@ Important boundaries:
 Start with:
 
 - `CONTEXT.md`
-- `docs/termux-gormes-bootstrap.md`
+- `docs/README.md`
+- `docs/runbooks/termux-gormes-bootstrap.md`
 - [Gormes Navivox CLI docs](https://docs.gormes.ai/cli/navivox/)
-- `navivox-prd.md`
-- `navivox-architecture.md`
-- `navivox-testing-plan.md`
-- `navivox-ui-design.md`
+- `docs/product/prd.md`
+- `docs/architecture/architecture.md`
+- `docs/product/testing-plan.md`
+- `docs/product/ui-design.md`
 
 ## License
 

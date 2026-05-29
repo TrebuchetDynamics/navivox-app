@@ -976,12 +976,12 @@ Expected: formatter exits 0.
 ## Task 6: Document future server voice stream events without implementing protocol changes
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/navivox-architecture.md`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/navivox-testing-plan.md`
+- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/docs/architecture/architecture.md`
+- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/docs/product/testing-plan.md`
 
 - [ ] **Step 1: Update architecture doc**
 
-In `navivox-architecture.md` under `## 10. Voice Architecture`, add a subsection:
+In `docs/architecture/architecture.md` under `## 10. Voice Architecture`, add a subsection:
 
 ```markdown
 ### 10.1 Client-local Voice run first
@@ -1009,7 +1009,7 @@ retention/redaction policy, and a server STT/TTS event contract exist.
 
 - [ ] **Step 2: Update testing plan**
 
-In `navivox-testing-plan.md` under Flutter widget tests, add Voice run rows:
+In `docs/product/testing-plan.md` under Flutter widget tests, add Voice run rows:
 
 ```markdown
 ### 4.5 Voice Run Lifecycle
@@ -1030,7 +1030,7 @@ Run:
 
 ```bash
 cd /home/xel/git/sages-openclaw
-git diff --check -- workspace-mineru/navivox-app/navivox-architecture.md workspace-mineru/navivox-app/navivox-testing-plan.md
+git diff --check -- workspace-mineru/navivox-app/docs/architecture/architecture.md workspace-mineru/navivox-app/docs/product/testing-plan.md
 ```
 
 Expected: exit 0.

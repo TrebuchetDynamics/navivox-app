@@ -1,5 +1,5 @@
-import '../../core/channel/navivox_channel.dart';
-import '../settings/providers/voice_settings_provider.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../settings/providers/voice_settings_provider.dart';
 
 enum VoiceReadinessStatus { ready, checking, blocked }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript_message_action_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_message_action_presentation.dart';
 import 'package:navivox/features/chat/widgets/transcript_message_action_sheet.dart';
 
 const _support = NavivoxProfileContact(

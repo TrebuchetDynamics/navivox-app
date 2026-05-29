@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/forward_message_intent.dart';
+import 'package:navivox/features/chat/intents/forward_message_intent.dart';
 
 import '../../support/test_navivox_channel.dart';
 

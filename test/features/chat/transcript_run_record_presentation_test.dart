@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
-import 'package:navivox/features/chat/transcript_run_record_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_run_record_presentation.dart';
 
 void main() {
   test(

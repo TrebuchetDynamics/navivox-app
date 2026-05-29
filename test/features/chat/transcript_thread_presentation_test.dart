@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript_thread_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_thread_presentation.dart';
 
 void main() {
   test('derives empty Transcript surface display state', () {

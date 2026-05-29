@@ -9,7 +9,7 @@
 
 ### E2E Test Counts (navivox-e2e.spec.mjs)
 - 43 specs passed
-- 12 new screenshot specs added (e2e-screenshots-spec.mjs)
+- 12 new screenshot specs added (`playwright/tests/e2e-screenshots.spec.mjs`)
 - Total valid coverage = 55
 
 ### Screenshot Inventory (55 unique captures)

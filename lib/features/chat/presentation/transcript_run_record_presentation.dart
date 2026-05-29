@@ -1,4 +1,4 @@
-import '../../core/gateway/navivox_gateway_protocol.dart';
+import '../../../core/gateway/navivox_gateway_protocol.dart';
 
 class TranscriptRunRecordInfoRow {
   const TranscriptRunRecordInfoRow({required this.label, required this.value});

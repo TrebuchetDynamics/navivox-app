@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/chat/transcript_composer_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_composer_presentation.dart';
 
 void main() {
   test('canonicalizes device STT unavailable recovery copy', () {

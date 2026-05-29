@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript_message_plain_text_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_message_plain_text_presentation.dart';
 
 void main() {
   test('projects text and Voice run messages into plain text', () {

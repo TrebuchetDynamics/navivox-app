@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Android setup checklist documents device paths and safe tokens', () {
-    final checklist = File('docs/android-setup-checklist.md');
+    final checklist = File('docs/runbooks/android-setup-checklist.md');
 
     expect(checklist.existsSync(), isTrue);
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/features/chat/local_command_intent.dart';
+import 'package:navivox/features/chat/intents/local_command_intent.dart';
 
 void main() {
   const contacts = [

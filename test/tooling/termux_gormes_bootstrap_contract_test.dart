@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Termux Gormes bootstrap guide documents safe Android phases', () {
-    final guide = File('docs/termux-gormes-bootstrap.md');
+    final guide = File('docs/runbooks/termux-gormes-bootstrap.md');
 
     expect(guide.existsSync(), isTrue);
 
@@ -54,6 +54,6 @@ void main() {
     expect(text, isNot(contains('curl | sh')));
     expect(text, isNot(contains('pm install')));
     expect(text, isNot(contains('nvbx_')));
-    expect(readme, contains('docs/termux-gormes-bootstrap.md'));
+    expect(readme, contains('docs/runbooks/termux-gormes-bootstrap.md'));
   });
 }

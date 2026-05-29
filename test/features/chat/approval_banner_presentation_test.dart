@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/features/chat/approval_banner_presentation.dart';
+import 'package:navivox/features/chat/presentation/approval_banner_presentation.dart';
 
 void main() {
   test('summarizes approval prompt actions and medium risk copy', () {

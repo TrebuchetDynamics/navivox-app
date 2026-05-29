@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Android release handoff documents safe local install artifacts', () {
-    final handoff = File('docs/android-release-handoff.md');
+    final handoff = File('docs/runbooks/android-release-handoff.md');
 
     expect(handoff.existsSync(), isTrue);
 

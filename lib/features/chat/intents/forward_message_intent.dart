@@ -1,7 +1,7 @@
-import '../../core/channel/navivox_channel.dart';
-import '../../core/protocol/navivox_event.dart';
-import '../../router/app_routes.dart';
-import 'transcript_message_plain_text_presentation.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_event.dart';
+import '../../../router/app_routes.dart';
+import '../presentation/transcript_message_plain_text_presentation.dart';
 
 class ForwardMessageResult {
   const ForwardMessageResult({

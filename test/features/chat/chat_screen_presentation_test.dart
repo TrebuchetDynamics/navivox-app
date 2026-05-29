@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
-import 'package:navivox/features/chat/chat_screen_presentation.dart';
+import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
 
 void main() {

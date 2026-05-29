@@ -1,4 +1,4 @@
-import '../../core/protocol/navivox_event.dart';
+import '../../../core/protocol/navivox_event.dart';
 
 enum TranscriptSafetyNoticeTone { warning, approval }
 

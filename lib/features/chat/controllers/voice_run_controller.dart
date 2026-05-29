@@ -1,7 +1,7 @@
-import '../../core/channel/navivox_channel.dart';
-import '../../core/protocol/navivox_voice_run.dart';
-import '../voice/services/speech_to_text_voice_capture_service.dart';
-import '../voice/services/voice_capture_service.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_voice_run.dart';
+import '../../voice/services/speech_to_text_voice_capture_service.dart';
+import '../../voice/services/voice_capture_service.dart';
 
 class VoiceRunFailureResult {
   const VoiceRunFailureResult({

@@ -1,9 +1,8 @@
-// playwright/e2e-screenshots.spec.mjs — 2026-05-21 CST
+// playwright/tests/e2e-screenshots.spec.mjs — 2026-05-21 CST
 // Tests: 12a-k (back nav), 14e (register modal), 14f (voice gateway),
 // 14g (gateway setup), plus mobile transcript slices 11h-k
 //
 import { test, expect } from '@playwright/test';
-import { APP } from './navivox-e2e.spec.mjs';
 
 const APP = 'http://127.0.0.1:8767/';
 
@@ -81,7 +80,7 @@ test.describe('12. Back', () => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
     await click(page, 'Manage local servers');
     await page.waitForTimeout(1500);
-    final locator = page.locator('flt-semantics[role="button"]:has-text("Manage")');
+    const locator = page.locator('flt-semantics[role="button"]:has-text("Manage")');
     await locator.first().click();
     await page.waitForTimeout(1500);
     await expect(page.getByText('Server detail').first()).toBeVisible();
@@ -155,7 +154,7 @@ test.describe('11. Mobile transcript selection', () => {
   test('11h transcript tap long press show menu', async ({page}) => {
     await click(page, 'Transcript composer');
     await page.waitForTimeout(2000);
-    final transcriptLocator = page.locator('flt-semantics[role="button"]:has-text("Menu")');
+    const transcriptLocator = page.locator('flt-semantics[role="button"]:has-text("Menu")');
     await transcriptLocator.first().click();
     await page.waitForTimeout(1000);
     await expect(page.getByText('Transcript actions').first()).toBeVisible();
@@ -213,7 +212,7 @@ test.describe('12. Additional coverage', () => {
     await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
     await click(page, 'Open profile list menu');
     await page.waitForTimeout(1500);
-    final locator = page.locator('flt-semantics[role="listitem"]').first();
+    const locator = page.locator('flt-semantics[role="listitem"]').first();
     await locator.click();
     await page.waitForTimeout(1500);
     await expect(page.getByText('Contact detail').first()).toBeVisible();
@@ -223,7 +222,7 @@ test.describe('12. Additional coverage', () => {
     await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
     await click(page, 'Voice Agent').first();
     await page.waitForTimeout(1500);
-    final locator = page.locator('flt-semantics[role="listitem"]').first();
+    const locator = page.locator('flt-semantics[role="listitem"]').first();
     await locator.click();
     await page.waitForTimeout(1500);
     await expect(page.getByText('Chat detail').first()).toBeVisible();

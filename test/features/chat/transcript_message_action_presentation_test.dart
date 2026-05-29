@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript_message_action_presentation.dart';
+import 'package:navivox/features/chat/presentation/transcript_message_action_presentation.dart';
 
 const _support = NavivoxProfileContact(
   serverId: 'office',

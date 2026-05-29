@@ -1,5 +1,5 @@
-import '../../core/channel/navivox_channel.dart';
-import '../../core/protocol/navivox_event.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_event.dart';
 import 'transcript_message_plain_text_presentation.dart';
 
 class TranscriptMessageForwardTargetPresentation {

@@ -1,4 +1,4 @@
-import '../../core/channel/navivox_channel.dart';
+import '../../../core/channel/navivox_channel.dart';
 
 enum LocalCommandAction {
   none,

@@ -1,7 +1,7 @@
 # Navivox Route Design
 
 Status: planning draft
-Source: derived from navivox-prd.md and the current Flutter router
+Source: derived from docs/product/prd.md and the current Flutter router
 
 ## 1. Route Architecture
 

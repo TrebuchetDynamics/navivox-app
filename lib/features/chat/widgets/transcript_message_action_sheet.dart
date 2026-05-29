@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
-import '../transcript_message_action_presentation.dart';
+import '../presentation/transcript_message_action_presentation.dart';
 
 class TranscriptMessageActionSheet extends StatelessWidget {
   const TranscriptMessageActionSheet({

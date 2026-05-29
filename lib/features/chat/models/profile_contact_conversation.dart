@@ -1,6 +1,6 @@
-import '../../core/channel/navivox_channel.dart';
-import '../../core/protocol/navivox_event.dart';
-import '../../core/protocol/navivox_voice_run.dart';
+import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_event.dart';
+import '../../../core/protocol/navivox_voice_run.dart';
 
 class ProfileContactConversation {
   const ProfileContactConversation({
