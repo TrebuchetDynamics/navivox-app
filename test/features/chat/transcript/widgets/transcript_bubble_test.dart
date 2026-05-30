@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_bubble.dart';
 
 import '../shared/transcript_test_fixtures.dart';
+import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('renders message text and opens assistant pause action', (
@@ -13,19 +13,15 @@ void main() {
     var paused = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'assistant-1',
-              text: 'pause this answer',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-            onCancelActiveTurn: () => paused = true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'assistant-1',
+          text: 'pause this answer',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
+        onCancelActiveTurn: () => paused = true,
       ),
     );
 
@@ -48,18 +44,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'link-1',
-              text: 'Review https://docs.navivox.dev/setup?tab=android.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'link-1',
+          text: 'Review https://docs.navivox.dev/setup?tab=android.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -73,18 +65,14 @@ void main() {
 
   testWidgets('renders Telegram-style inline text formatting', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'inline-format-1',
-              text: 'Use *bold*, _italic_, `code`, and ~old~ safely.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'inline-format-1',
+          text: 'Use *bold*, _italic_, `code`, and ~old~ safely.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -107,19 +95,15 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'contact-patterns-1',
-              text:
-                  'Open https://navivox.dev, mail ops@navivox.dev, or call +1 555 010 1212.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'contact-patterns-1',
+          text:
+              'Open https://navivox.dev, mail ops@navivox.dev, or call +1 555 010 1212.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -150,18 +134,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'mention-id-1',
-              text: 'Route this to [@Mineru:profile_mineru] now.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'mention-id-1',
+          text: 'Route this to [@Mineru:profile_mineru] now.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -179,18 +159,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'mention-tag-1',
-              text: 'Route this to @mineru for #deploy review.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'mention-tag-1',
+          text: 'Route this to @mineru for #deploy review.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -209,18 +185,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'quote-1',
-              text: 'Context:\n> Keep *deployment* reversible\nNext step.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'quote-1',
+          text: 'Context:\n> Keep *deployment* reversible\nNext step.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -247,18 +219,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'list-1',
-              text: 'Checklist:\n- Back up `config`\n- Restart service\nDone.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'list-1',
+          text: 'Checklist:\n- Back up `config`\n- Restart service\nDone.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -290,18 +258,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'numbered-list-1',
-              text: 'Plan:\n1. Back up config\n2. Restart service\nDone.',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'numbered-list-1',
+          text: 'Plan:\n1. Back up config\n2. Restart service\nDone.',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -321,18 +285,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'code-1',
-              text: "Run this:\n```dart\nprint('hi');\n```\nThen continue.",
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'code-1',
+          text: "Run this:\n```dart\nprint('hi');\n```\nThen continue.",
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -355,20 +315,15 @@ void main() {
     ).join(' ');
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: TranscriptBubble(
-              message: transcriptTextMessage(
-                id: 'long-1',
-                text: longText,
-                author: NavivoxMessageAuthor.assistant,
-              ),
-              isUser: false,
-              showTail: true,
-            ),
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'long-1',
+          text: longText,
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
+        wrapBubble: (bubble) => SingleChildScrollView(child: bubble),
       ),
     );
 
@@ -391,19 +346,15 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptVoiceMessage(
-              id: 'voice-wave-1',
-              transcript: 'ship the voice note',
-              duration: const Duration(milliseconds: 3200),
-              confidence: 0.86,
-            ),
-            isUser: true,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptVoiceMessage(
+          id: 'voice-wave-1',
+          transcript: 'ship the voice note',
+          duration: const Duration(milliseconds: 3200),
+          confidence: 0.86,
         ),
+        isUser: true,
+        showTail: true,
       ),
     );
 
@@ -420,18 +371,14 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'reaction-1',
-              text: 'react locally',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: true,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'reaction-1',
+          text: 'react locally',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: true,
       ),
     );
 
@@ -468,18 +415,14 @@ void main() {
     final semantics = tester.ensureSemantics();
     try {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TranscriptBubble(
-              message: transcriptTextMessage(
-                id: 'user-sent-1',
-                text: 'sent text',
-                author: NavivoxMessageAuthor.user,
-              ),
-              isUser: true,
-              showTail: true,
-            ),
+        transcriptBubbleTestApp(
+          message: transcriptTextMessage(
+            id: 'user-sent-1',
+            text: 'sent text',
+            author: NavivoxMessageAuthor.user,
           ),
+          isUser: true,
+          showTail: true,
         ),
       );
 
@@ -493,19 +436,15 @@ void main() {
 
   testWidgets('does not show pause action for user messages', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'user-1',
-              text: 'user text',
-              author: NavivoxMessageAuthor.user,
-            ),
-            isUser: true,
-            showTail: true,
-            onCancelActiveTurn: () {},
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'user-1',
+          text: 'user text',
+          author: NavivoxMessageAuthor.user,
         ),
+        isUser: true,
+        showTail: true,
+        onCancelActiveTurn: () {},
       ),
     );
 
@@ -522,20 +461,16 @@ void main() {
     NavivoxProfileContact? forwardedTo;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptBubble(
-            message: transcriptTextMessage(
-              id: 'forward-1',
-              text: 'forward this update',
-              author: NavivoxMessageAuthor.assistant,
-            ),
-            isUser: false,
-            showTail: false,
-            forwardTargets: const [transcriptSupportContact],
-            onForward: (_, target) => forwardedTo = target,
-          ),
+      transcriptBubbleTestApp(
+        message: transcriptTextMessage(
+          id: 'forward-1',
+          text: 'forward this update',
+          author: NavivoxMessageAuthor.assistant,
         ),
+        isUser: false,
+        showTail: false,
+        forwardTargets: const [transcriptSupportContact],
+        onForward: (_, target) => forwardedTo = target,
       ),
     );
 

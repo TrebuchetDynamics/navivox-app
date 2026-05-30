@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
+import 'package:navivox/features/chat/transcript/widgets/transcript_bubble.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_composer.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_input_panel.dart';
+import 'package:navivox/features/chat/transcript/widgets/transcript_surface_frame.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
 import '../../../shared/app/test_material_app.dart';
+
+/// Mounts [TranscriptBubble] under the shared Material feature-test shell.
+Widget transcriptBubbleTestApp({
+  required NavivoxChatMessage message,
+  required bool isUser,
+  bool showTail = true,
+  List<NavivoxProfileContact> forwardTargets = const [],
+  void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
+  onForward,
+  VoidCallback? onCancelActiveTurn,
+  Widget Function(Widget bubble)? wrapBubble,
+}) {
+  final bubble = TranscriptBubble(
+    message: message,
+    isUser: isUser,
+    showTail: showTail,
+    forwardTargets: forwardTargets,
+    onForward: onForward,
+    onCancelActiveTurn: onCancelActiveTurn,
+  );
+
+  return TestMaterialScaffold(body: wrapBubble?.call(bubble) ?? bubble);
+}
 
 /// Mounts [TranscriptComposer] under the shared Material feature-test shell.
 Widget transcriptComposerTestApp({
@@ -57,6 +82,30 @@ Widget transcriptInputPanelTestApp({
       onVoiceCaptureStarted: onVoiceCaptureStarted,
       onVoiceCaptureFailed: onVoiceCaptureFailed,
     ),
+  );
+}
+
+/// Mounts [TranscriptSurfaceFrame] under the shared Material feature-test shell.
+Widget transcriptSurfaceFrameTestApp({
+  required List<NavivoxChatMessage> messages,
+  ValueChanged<String>? onSend,
+  Widget? header,
+  double height = 360,
+}) {
+  final frame = TranscriptSurfaceFrame(
+    messages: messages,
+    onSend: onSend ?? (_) {},
+  );
+
+  return TestMaterialScaffold(
+    body: header == null
+        ? SizedBox(height: height, child: frame)
+        : Column(
+            children: [
+              header,
+              Expanded(child: frame),
+            ],
+          ),
   );
 }
 

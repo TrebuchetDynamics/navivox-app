@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface_frame.dart';
+import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets(
@@ -134,17 +134,7 @@ class _FrameHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: SizedBox(
-          height: 360,
-          child: TranscriptSurfaceFrame(
-            messages: messages,
-            onSend: onSend ?? (_) {},
-          ),
-        ),
-      ),
-    );
+    return transcriptSurfaceFrameTestApp(messages: messages, onSend: onSend);
   }
 }
 
@@ -160,22 +150,11 @@ class _UpdatingFrameHostState extends State<_UpdatingFrameHost> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Column(
-          children: [
-            ElevatedButton(
-              onPressed: () => setState(() => count += 1),
-              child: const Text('Append message'),
-            ),
-            Expanded(
-              child: TranscriptSurfaceFrame(
-                messages: _messages(count),
-                onSend: (_) {},
-              ),
-            ),
-          ],
-        ),
+    return transcriptSurfaceFrameTestApp(
+      messages: _messages(count),
+      header: ElevatedButton(
+        onPressed: () => setState(() => count += 1),
+        child: const Text('Append message'),
       ),
     );
   }
