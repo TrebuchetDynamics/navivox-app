@@ -8,9 +8,10 @@ import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 import 'package:navivox/features/voice/services/platform/default_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
-import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
 import '../../shared/app/test_router_app.dart';
@@ -196,8 +197,8 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([7, 8, 9]),
+    final voiceService = successfulVoiceCaptureService(
+      audio: [7, 8, 9],
       transcript: 'before commit',
       duration: const Duration(milliseconds: 800),
       confidence: 0.91,
@@ -492,8 +493,7 @@ void main() {
           ),
         ),
       ], selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -540,8 +540,7 @@ void main() {
             ),
           ),
         ], selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'should not capture',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -614,8 +613,7 @@ void main() {
           ),
         ),
       ], selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -662,8 +660,7 @@ void main() {
           ),
         ),
       ], selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -710,8 +707,7 @@ void main() {
             ),
           ),
         ], selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'capture after trust',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -765,8 +761,7 @@ void main() {
             ),
           ),
         ], selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'local android stt works',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -810,8 +805,7 @@ void main() {
             ),
           ),
         ], selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'local android stt works',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -867,8 +861,7 @@ void main() {
             ),
           ),
         ], selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'local android stt works',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -912,8 +905,7 @@ void main() {
           ),
         ),
       ], selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -1058,8 +1050,7 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'hello',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -1085,8 +1076,7 @@ void main() {
 
   testWidgets('continuous voice banner opens a control sheet', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'hello',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -1120,8 +1110,8 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1, 2, 3]),
+    final voiceService = successfulVoiceCaptureService(
+      audio: [1, 2, 3],
       transcript: 'check status',
       duration: const Duration(milliseconds: 900),
       confidence: 0.9,
@@ -1156,8 +1146,8 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1, 2, 3]),
+    final voiceService = successfulVoiceCaptureService(
+      audio: [1, 2, 3],
       transcript: 'check status',
       duration: const Duration(milliseconds: 900),
       confidence: 0.9,
@@ -1239,8 +1229,7 @@ void main() {
     'default voice readiness disables ready banner when Android has no recognizer',
     (tester) async {
       final channel = _seedChannel(selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'should not capture',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -1285,8 +1274,7 @@ void main() {
     'ready voice diagnostics show microphone prompt before first capture',
     (tester) async {
       final channel = _seedChannel(selectedKey: 'local::mineru');
-      final voiceService = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      final voiceService = successfulVoiceCaptureService(
         transcript: 'ready with prompt',
         duration: const Duration(milliseconds: 500),
         confidence: 0.9,
@@ -1338,8 +1326,7 @@ void main() {
 
   testWidgets('app resume rechecks default voice readiness', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final voiceService = successfulVoiceCaptureService(
       transcript: 'ready after resume',
       duration: const Duration(milliseconds: 500),
       confidence: 0.9,
@@ -1469,8 +1456,8 @@ void main() {
 
   testWidgets('trusted voice capture auto-sends after grace', (tester) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([4, 5, 6]),
+    final voiceService = successfulVoiceCaptureService(
+      audio: [4, 5, 6],
       transcript: 'summarize workspace',
       duration: const Duration(milliseconds: 1200),
       confidence: 0.88,

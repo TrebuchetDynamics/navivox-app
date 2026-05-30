@@ -1,10 +1,10 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import '../shared/transcript_surface_test_app.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+
+import '../../../shared/fakes/voice_capture_service_fakes.dart';
+import '../shared/transcript_surface_test_app.dart';
 
 void main() {
   testWidgets('renders a captured voice transcript bubble', (tester) async {
@@ -124,8 +124,7 @@ void main() {
   testWidgets('unavailable STT reason disables mic even with a voice service', (
     tester,
   ) async {
-    final service = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final service = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 1),
       confidence: 1,
@@ -159,12 +158,7 @@ void main() {
   testWidgets(
     'tap mic invokes the voice service and forwards result via onVoice',
     (tester) async {
-      final service = FakeVoiceCaptureService(
-        audio: Uint8List.fromList([10, 20, 30, 40]),
-        transcript: 'hello voice',
-        duration: const Duration(milliseconds: 700),
-        confidence: 0.88,
-      );
+      final service = successfulVoiceCaptureService(audio: [10, 20, 30, 40]);
       VoiceCapture? captured;
 
       await tester.pumpWidget(
@@ -190,8 +184,7 @@ void main() {
   testWidgets('mic shows recording indicator while capture is in flight', (
     tester,
   ) async {
-    final service = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final service = successfulVoiceCaptureService(
       transcript: 't',
       duration: const Duration(milliseconds: 50),
       confidence: 1.0,

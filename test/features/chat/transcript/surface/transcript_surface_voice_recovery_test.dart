@@ -1,10 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
+import '../../../shared/fakes/voice_capture_service_fakes.dart';
 import '../shared/transcript_surface_test_app.dart';
 
 void main() {
@@ -148,8 +147,7 @@ void main() {
   testWidgets('unavailable STT reason disables mic even with a voice service', (
     tester,
   ) async {
-    final service = FakeVoiceCaptureService(
-      audio: Uint8List.fromList([1]),
+    final service = successfulVoiceCaptureService(
       transcript: 'should not capture',
       duration: const Duration(milliseconds: 1),
       confidence: 1,

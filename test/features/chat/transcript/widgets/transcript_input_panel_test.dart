@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_input_panel.dart';
@@ -39,12 +37,7 @@ void main() {
       _InputPanelHost(
         controller: controller,
         onSend: (_) {},
-        voiceCaptureService: FakeVoiceCaptureService(
-          audio: Uint8List.fromList([1, 2, 3]),
-          transcript: 'hello voice',
-          duration: const Duration(milliseconds: 700),
-          confidence: 0.88,
-        ),
+        voiceCaptureService: successfulVoiceCaptureService(audio: [1, 2, 3]),
         onVoiceCaptureStarted: () => events.add('started'),
         onVoice: (capture) {
           events.add('captured');
@@ -145,8 +138,7 @@ void main() {
       _InputPanelHost(
         controller: controller,
         onSend: (_) {},
-        voiceCaptureService: FakeVoiceCaptureService(
-          audio: Uint8List.fromList([1]),
+        voiceCaptureService: successfulVoiceCaptureService(
           transcript: 'slow voice',
           duration: const Duration(milliseconds: 50),
           confidence: 1,

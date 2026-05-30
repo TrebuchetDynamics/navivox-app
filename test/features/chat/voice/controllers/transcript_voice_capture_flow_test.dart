@@ -47,8 +47,7 @@ void main() {
 
   test('maps timeout to stable operator recovery copy', () async {
     final outcome = await flow.capture(
-      service: FakeVoiceCaptureService(
-        audio: Uint8List.fromList([1]),
+      service: successfulVoiceCaptureService(
         transcript: 'late voice',
         duration: const Duration(milliseconds: 10),
         confidence: 1,
