@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T05:17:28.994Z",
+  "generatedAt": "2026-05-30T05:18:49.318Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,16 +8,16 @@
   "candidates": [
     {
       "relative": "playwright",
-      "score": 522,
-      "files": 34,
+      "score": 511,
+      "files": 33,
       "direct": 2,
-      "churn": 133,
+      "churn": 136,
       "callers": 0,
       "importsOut": 0,
-      "tests": 2,
+      "tests": 1,
       "roles": 4,
-      "duplicates": 62,
-      "subdirs": 6,
+      "duplicates": 61,
+      "subdirs": 5,
       "extensions": [
         ".json",
         ".md",
@@ -425,6 +425,16 @@
     }
   ],
   "refactorIgnoreSuggestions": [
+    {
+      "path": "playwright/tests/screenshots",
+      "pattern": "playwright/tests/screenshots/",
+      "reason": "folder name 'screenshots' is usually non-refactorable",
+      "confidence": 3,
+      "files": 1,
+      "extensions": [
+        ".mjs"
+      ]
+    },
     {
       "path": "docs/screenshots",
       "pattern": "docs/screenshots/",
