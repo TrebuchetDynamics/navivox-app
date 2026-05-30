@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T15:40:37.456Z",
+  "generatedAt": "2026-05-30T15:43:06.373Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -11,7 +11,7 @@
       "score": 2109.5,
       "files": 112,
       "direct": 3,
-      "churn": 472,
+      "churn": 477,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -27,7 +27,7 @@
       "score": 1572,
       "files": 74,
       "direct": 0,
-      "churn": 373,
+      "churn": 374,
       "callers": 1,
       "importsOut": 17,
       "tests": 0,
@@ -59,7 +59,7 @@
       "score": 721,
       "files": 21,
       "direct": 0,
-      "churn": 57,
+      "churn": 61,
       "callers": 53,
       "importsOut": 0,
       "tests": 0,
@@ -186,6 +186,22 @@
       ]
     },
     {
+      "relative": "lib/core/gateway",
+      "score": 314,
+      "files": 6,
+      "direct": 6,
+      "churn": 20,
+      "callers": 10,
+      "importsOut": 3,
+      "tests": 0,
+      "roles": 2,
+      "duplicates": 35,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "playwright/debug",
       "score": 312.5,
       "files": 18,
@@ -200,22 +216,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "lib/core/gateway",
-      "score": 311.6,
-      "files": 6,
-      "direct": 6,
-      "churn": 18,
-      "callers": 10,
-      "importsOut": 3,
-      "tests": 0,
-      "roles": 2,
-      "duplicates": 35,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
       ]
     },
     {
@@ -269,10 +269,10 @@
     },
     {
       "relative": "lib/core/protocol",
-      "score": 253.7,
+      "score": 256.1,
       "files": 7,
       "direct": 7,
-      "churn": 11,
+      "churn": 13,
       "callers": 33,
       "importsOut": 1,
       "tests": 0,
