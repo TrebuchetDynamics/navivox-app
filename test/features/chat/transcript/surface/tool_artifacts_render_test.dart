@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import '../shared/transcript_surface_test_app.dart';
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets(
     'tool-call tile shows nothing extra when there are no artifacts',
     (tester) async {
-      final message = NavivoxChatMessage(
+      final message = transcriptToolMessage(
         id: 'm-1',
-        author: NavivoxMessageAuthor.assistant,
-        kind: NavivoxMessageKind.toolCall,
         createdAt: DateTime(2026, 5, 7, 10),
         toolCall: const NavivoxToolCall(
           name: 'shell.run',
@@ -33,10 +32,8 @@ void main() {
   testWidgets(
     'tool-call tile lists each artifact with kind + title + summary',
     (tester) async {
-      final message = NavivoxChatMessage(
+      final message = transcriptToolMessage(
         id: 'm-2',
-        author: NavivoxMessageAuthor.assistant,
-        kind: NavivoxMessageKind.toolCall,
         createdAt: DateTime(2026, 5, 7, 10),
         toolCall: const NavivoxToolCall(
           name: 'shell.run',
@@ -86,24 +83,22 @@ void main() {
     tester,
   ) async {
     final messages = [
-      NavivoxChatMessage(
+      transcriptNoticeMessage(
         id: 'safe-1',
-        author: NavivoxMessageAuthor.system,
         kind: NavivoxMessageKind.safetyWarning,
         createdAt: DateTime(2026, 5, 7, 10),
-        safetyNotice: const NavivoxSafetyNotice(
+        notice: const NavivoxSafetyNotice(
           id: 'safe-1',
           severity: 'high',
           message: 'Shell command wants to modify files',
           risk: 'Writes may change the workspace',
         ),
       ),
-      NavivoxChatMessage(
+      transcriptNoticeMessage(
         id: 'approval-1',
-        author: NavivoxMessageAuthor.system,
         kind: NavivoxMessageKind.approvalRequest,
         createdAt: DateTime(2026, 5, 7, 10, 1),
-        safetyNotice: const NavivoxSafetyNotice(
+        notice: const NavivoxSafetyNotice(
           id: 'approval-1',
           approvalId: 'approval-1',
           toolCallId: 'call-shell',

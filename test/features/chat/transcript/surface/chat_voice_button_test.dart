@@ -5,22 +5,19 @@ import 'package:navivox/features/voice/services/capture/voice_capture_service.da
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
 import '../shared/transcript_surface_test_app.dart';
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets('renders a captured voice transcript bubble', (tester) async {
     await tester.pumpWidget(
       transcriptSurfaceTestApp(
         messages: [
-          NavivoxChatMessage(
+          transcriptVoiceMessage(
             id: 'voice-1',
-            author: NavivoxMessageAuthor.user,
-            kind: NavivoxMessageKind.voice,
+            transcript: 'hello voice',
             createdAt: DateTime(2026, 5, 16, 9, 30),
-            voice: const NavivoxVoiceMessage(
-              transcript: 'hello voice',
-              duration: Duration(milliseconds: 1200),
-              confidence: 0.91,
-            ),
+            duration: const Duration(milliseconds: 1200),
+            confidence: 0.91,
           ),
         ],
         onSend: (_) {},

@@ -3,6 +3,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/forwarding/forward_message_intent.dart';
 
+import '../transcript/shared/transcript_test_fixtures.dart';
 import '../../../support/test_navivox_channel.dart';
 
 const _target = NavivoxProfileContact(
@@ -22,7 +23,10 @@ void main() {
 
     final result = intent.forward(
       channel,
-      message: _textMessage('send this to support'),
+      message: transcriptTextMessage(
+        text: 'send this to support',
+        createdAt: DateTime.utc(2026, 5, 23, 10),
+      ),
       target: _target,
     );
 
@@ -46,7 +50,12 @@ void main() {
 
     final result = intent.forward(
       channel,
-      message: _voiceMessage('voice update'),
+      message: transcriptVoiceMessage(
+        transcript: 'voice update',
+        duration: const Duration(milliseconds: 500),
+        confidence: 0.92,
+        createdAt: DateTime.utc(2026, 5, 23, 10),
+      ),
       target: _target,
     );
 
@@ -60,12 +69,13 @@ void main() {
 
     final result = intent.forward(
       channel,
-      message: _toolMessage(
-        const NavivoxToolCall(
+      message: transcriptToolMessage(
+        toolCall: const NavivoxToolCall(
           name: 'grep',
           status: 'completed',
           summary: 'Found 3 TODOs',
         ),
+        createdAt: DateTime.utc(2026, 5, 23, 10),
       ),
       target: _target,
     );
@@ -80,25 +90,27 @@ void main() {
 
     final safety = intent.forward(
       channel,
-      message: _safetyMessage(
+      message: transcriptNoticeMessage(
         kind: NavivoxMessageKind.safetyWarning,
         notice: const NavivoxSafetyNotice(
           id: 'safe-1',
           message: 'Needs confirmation',
           risk: 'Writes config',
         ),
+        createdAt: DateTime.utc(2026, 5, 23, 10),
       ),
       target: _target,
     );
     final approval = intent.forward(
       channel,
-      message: _safetyMessage(
+      message: transcriptNoticeMessage(
         kind: NavivoxMessageKind.approvalRequest,
         notice: const NavivoxSafetyNotice(
           id: 'approval-1',
           message: 'Approve tool call?',
           risk: 'Runs shell command',
         ),
+        createdAt: DateTime.utc(2026, 5, 23, 10),
       ),
       target: _target,
     );
@@ -116,7 +128,10 @@ void main() {
 
     final result = intent.forward(
       channel,
-      message: _textMessage(''),
+      message: transcriptTextMessage(
+        text: '',
+        createdAt: DateTime.utc(2026, 5, 23, 10),
+      ),
       target: _target,
     );
 
@@ -146,51 +161,4 @@ TestNavivoxChannel _seedChannel() {
       ),
       _target,
     ], selectedKey: 'local::mineru');
-}
-
-NavivoxChatMessage _textMessage(String text) {
-  return NavivoxChatMessage(
-    id: 'text-1',
-    author: NavivoxMessageAuthor.assistant,
-    kind: NavivoxMessageKind.text,
-    createdAt: DateTime.utc(2026, 5, 23, 10),
-    text: text,
-  );
-}
-
-NavivoxChatMessage _voiceMessage(String transcript) {
-  return NavivoxChatMessage(
-    id: 'voice-1',
-    author: NavivoxMessageAuthor.user,
-    kind: NavivoxMessageKind.voice,
-    createdAt: DateTime.utc(2026, 5, 23, 10),
-    voice: NavivoxVoiceMessage(
-      duration: const Duration(milliseconds: 500),
-      transcript: transcript,
-      confidence: 0.92,
-    ),
-  );
-}
-
-NavivoxChatMessage _toolMessage(NavivoxToolCall toolCall) {
-  return NavivoxChatMessage(
-    id: 'tool-1',
-    author: NavivoxMessageAuthor.system,
-    kind: NavivoxMessageKind.toolCall,
-    createdAt: DateTime.utc(2026, 5, 23, 10),
-    toolCall: toolCall,
-  );
-}
-
-NavivoxChatMessage _safetyMessage({
-  required NavivoxMessageKind kind,
-  required NavivoxSafetyNotice notice,
-}) {
-  return NavivoxChatMessage(
-    id: 'safety-1',
-    author: NavivoxMessageAuthor.system,
-    kind: kind,
-    createdAt: DateTime.utc(2026, 5, 23, 10),
-    safetyNotice: notice,
-  );
 }
