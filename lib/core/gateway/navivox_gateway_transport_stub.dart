@@ -1,24 +1,5 @@
-class NavivoxGatewaySocket {
-  Stream<dynamic> get events => const Stream<dynamic>.empty();
-
-  void add(String message) {
-    throw UnsupportedError('Navivox gateway WebSocket is not supported here.');
-  }
-
-  Future<void> close() async {}
-}
-
-Future<String> defaultGet(Uri uri, Map<String, String> headers) {
-  throw UnsupportedError('Navivox gateway HTTP is not supported here.');
-}
-
-Future<String> defaultPost(Uri uri, Map<String, String> headers, String body) {
-  throw UnsupportedError('Navivox gateway HTTP is not supported here.');
-}
-
-Future<NavivoxGatewaySocket> defaultConnectWebSocket(
-  Uri uri,
-  Map<String, String> headers,
-) {
-  throw UnsupportedError('Navivox gateway WebSocket is not supported here.');
-}
+/// Compatibility facade — re-exports from `package:navivox/core/gateway/transport/navivox_gateway_transport_stub.dart`.
+///
+/// Import the transport file directly from `transport/` subpackage.
+library;
+export 'transport/navivox_gateway_transport_stub.dart';

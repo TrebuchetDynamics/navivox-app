@@ -3,12 +3,13 @@ library;
 /// Public barrel for the Navivox gateway protocol layer.
 ///
 /// Re-exports all gateway protocol types, messages, capabilities, voice,
-/// config-admin, and observation types from their responsibility-focused
-/// subpackages.
+/// config-admin, observation types, client, and transport from their
+/// responsibility-focused subpackages.
 export '../protocol/navivox_pairing_descriptor.dart';
-export 'navivox_gateway_config.dart';
 
 export 'capabilities/navivox_gateway_capabilities.dart';
+export 'client/navivox_gateway_client.dart';
+export 'client/navivox_gateway_config.dart';
 export 'config_admin/navivox_gateway_config_admin.dart';
 export 'messages/navivox_gateway_event.dart';
 export 'messages/navivox_gateway_message.dart';

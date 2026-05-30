@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-import '../gateway/navivox_gateway_client.dart';
 import '../gateway/navivox_gateway_protocol.dart';
 import '../protocol/navivox_event.dart';
 import '../protocol/navivox_json.dart';

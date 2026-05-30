@@ -1,4 +1,4 @@
-import '../gateway/navivox_gateway_config.dart';
+import '../gateway/client/navivox_gateway_config.dart';
 import 'navivox_endpoint_uri.dart';
 import 'navivox_json.dart';
 
