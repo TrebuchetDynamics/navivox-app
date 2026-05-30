@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T15:37:42.722Z",
+  "generatedAt": "2026-05-30T15:40:37.456Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,10 +8,10 @@
   "candidates": [
     {
       "relative": "lib",
-      "score": 2108.5,
-      "files": 111,
+      "score": 2109.5,
+      "files": 112,
       "direct": 3,
-      "churn": 462,
+      "churn": 472,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -24,12 +24,12 @@
     },
     {
       "relative": "lib/features",
-      "score": 1570,
+      "score": 1572,
       "files": 74,
       "direct": 0,
-      "churn": 366,
+      "churn": 373,
       "callers": 1,
-      "importsOut": 16,
+      "importsOut": 17,
       "tests": 0,
       "roles": 5,
       "duplicates": 221,
@@ -40,12 +40,12 @@
     },
     {
       "relative": "lib/features/chat",
-      "score": 814,
+      "score": 816,
       "files": 29,
       "direct": 0,
-      "churn": 210,
+      "churn": 215,
       "callers": 1,
-      "importsOut": 21,
+      "importsOut": 22,
       "tests": 0,
       "roles": 2,
       "duplicates": 106,
@@ -56,11 +56,11 @@
     },
     {
       "relative": "lib/core",
-      "score": 708,
-      "files": 20,
+      "score": 721,
+      "files": 21,
       "direct": 0,
-      "churn": 55,
-      "callers": 50,
+      "churn": 57,
+      "callers": 53,
       "importsOut": 0,
       "tests": 0,
       "roles": 4,
@@ -123,10 +123,10 @@
     },
     {
       "relative": "lib/features/chat/transcript",
-      "score": 455.8,
+      "score": 457,
       "files": 17,
       "direct": 0,
-      "churn": 19,
+      "churn": 20,
       "callers": 2,
       "importsOut": 8,
       "tests": 0,
@@ -219,6 +219,22 @@
       ]
     },
     {
+      "relative": "lib/core/channel",
+      "score": 277.9,
+      "files": 3,
+      "direct": 3,
+      "churn": 22,
+      "callers": 41,
+      "importsOut": 7,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 9,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/features/config",
       "score": 276,
       "files": 9,
@@ -230,22 +246,6 @@
       "roles": 3,
       "duplicates": 28,
       "subdirs": 4,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "lib/core/channel",
-      "score": 274.7,
-      "files": 3,
-      "direct": 3,
-      "churn": 21,
-      "callers": 41,
-      "importsOut": 6,
-      "tests": 0,
-      "roles": 1,
-      "duplicates": 9,
-      "subdirs": 0,
       "extensions": [
         ".dart"
       ]
@@ -268,6 +268,22 @@
       ]
     },
     {
+      "relative": "lib/core/protocol",
+      "score": 253.7,
+      "files": 7,
+      "direct": 7,
+      "churn": 11,
+      "callers": 33,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 0,
+      "duplicates": 14,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "docs",
       "score": 238.5,
       "files": 25,
@@ -284,29 +300,13 @@
       ]
     },
     {
-      "relative": "lib/core/protocol",
-      "score": 238,
-      "files": 6,
-      "direct": 6,
-      "churn": 10,
-      "callers": 30,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 14,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "lib/features/voice",
-      "score": 218.6,
+      "score": 223,
       "files": 12,
       "direct": 0,
-      "churn": 28,
+      "churn": 30,
       "callers": 8,
-      "importsOut": 0,
+      "importsOut": 1,
       "tests": 0,
       "roles": 1,
       "duplicates": 17,
@@ -326,6 +326,22 @@
       "tests": 0,
       "roles": 1,
       "duplicates": 17,
+      "subdirs": 4,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "lib/features/voice/services",
+      "score": 201.8,
+      "files": 11,
+      "direct": 0,
+      "churn": 29,
+      "callers": 8,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 13,
       "subdirs": 4,
       "extensions": [
         ".dart"
@@ -353,27 +369,11 @@
       ]
     },
     {
-      "relative": "lib/features/voice/services",
-      "score": 197.4,
-      "files": 11,
-      "direct": 0,
-      "churn": 27,
-      "callers": 8,
-      "importsOut": 0,
-      "tests": 0,
-      "roles": 1,
-      "duplicates": 13,
-      "subdirs": 4,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "lib/features/chat/transcript/presentation",
-      "score": 188.7,
+      "score": 189.9,
       "files": 9,
       "direct": 9,
-      "churn": 11,
+      "churn": 12,
       "callers": 7,
       "importsOut": 4,
       "tests": 0,
