@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T06:04:02.367Z",
+  "generatedAt": "2026-05-30T06:06:43.132Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -61,15 +61,15 @@
     },
     {
       "relative": "test",
-      "score": 267,
+      "score": 262,
       "files": 104,
       "direct": 0,
-      "churn": 436,
+      "churn": 448,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 1,
+      "duplicates": 0,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -109,16 +109,16 @@
     },
     {
       "relative": "test/features",
-      "score": 218,
-      "files": 76,
+      "score": 213,
+      "files": 75,
       "direct": 0,
-      "churn": 355,
+      "churn": 363,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 6,
       "duplicates": 0,
-      "subdirs": 10,
+      "subdirs": 9,
       "extensions": [
         ".dart"
       ]
@@ -181,7 +181,7 @@
       "score": 148,
       "files": 38,
       "direct": 0,
-      "churn": 177,
+      "churn": 182,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -281,10 +281,10 @@
     },
     {
       "relative": "test/core",
-      "score": 108.8,
-      "files": 12,
+      "score": 111,
+      "files": 13,
       "direct": 0,
-      "churn": 29,
+      "churn": 30,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -376,6 +376,22 @@
       ]
     },
     {
+      "relative": "test/features/chat/transcript",
+      "score": 100,
+      "files": 23,
+      "direct": 0,
+      "churn": 44,
+      "callers": 0,
+      "importsOut": 0,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 0,
+      "subdirs": 4,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/features/servers",
       "score": 100,
       "files": 12,
@@ -387,22 +403,6 @@
       "roles": 2,
       "duplicates": 0,
       "subdirs": 5,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/chat/transcript",
-      "score": 98,
-      "files": 21,
-      "direct": 0,
-      "churn": 42,
-      "callers": 0,
-      "importsOut": 0,
-      "tests": 0,
-      "roles": 1,
-      "duplicates": 0,
-      "subdirs": 4,
       "extensions": [
         ".dart"
       ]
