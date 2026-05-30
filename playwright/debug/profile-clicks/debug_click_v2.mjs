@@ -1,5 +1,6 @@
 // Debug: check profile contact click in test context
 import { DEFAULT_APP_URL, enableFlutterAccessibility, openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 20000 },
@@ -51,18 +52,7 @@ await enableFlutterAccessibility(page);
 
 // Use evaluate dispatch
 console.log('\n=== Using evaluate dispatch ===');
-const clicked = await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent || '').includes('Support Triage')) {
-      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-      b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
-      b.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      return true;
-    }
-  }
-  return false;
-});
+const clicked = await clickSemanticButtonContaining(page, 'Support Triage', { cancelable: true });
 console.log('Clicked:', clicked);
 await page.waitForTimeout(3000);
 console.log('URL after dispatch:', page.url());

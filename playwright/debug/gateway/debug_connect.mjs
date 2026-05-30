@@ -1,4 +1,5 @@
 import { openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining, setNativeInputValue } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 30000 },
@@ -25,55 +26,18 @@ console.log('Port field:', JSON.stringify(portDefault));
 console.log('\n=== Fill and connect ===');
 
 // Fill address
-await page.evaluate(() => {
-  const input = document.querySelector('input[aria-label="Gateway address field"]');
-  if (input) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(input, '127.0.0.1');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-});
+await setNativeInputValue(page, 'input[aria-label="Gateway address field"]', '127.0.0.1');
 
 // Fill port
-await page.evaluate(() => {
-  const input = document.querySelector('input[aria-label="Gateway port field"]');
-  if (input) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(input, '8765');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-});
+await setNativeInputValue(page, 'input[aria-label="Gateway port field"]', '8765');
 
 // Fill token
-await page.evaluate(() => {
-  const input = document.querySelector('input[aria-label="Pairing token field"]');
-  if (input) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(input, 'nvbx_test');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-});
+await setNativeInputValue(page, 'input[aria-label="Pairing token field"]', 'nvbx_test');
 
 // Click connect button
 console.log('Clicking Connect and talk...');
-const connectResult = await page.evaluate(() => {
-  const buttons = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const btn of buttons) {
-    const text = btn.textContent || '';
-    if (text.includes('Connect and talk')) {
-      console.log('Found connect button, clicking...');
-      btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-      btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
-      btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      return { found: true, text: text.substring(0, 50) };
-    }
-  }
-  return { found: false };
-});
-console.log('Connect click result:', JSON.stringify(connectResult));
+const connectClicked = await clickSemanticButtonContaining(page, 'Connect and talk', { cancelable: true });
+console.log('Connect click result:', JSON.stringify({ found: connectClicked }));
 
 await page.waitForTimeout(3000);
 

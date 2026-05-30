@@ -1,4 +1,5 @@
 import { openDebugPage } from '../support/browser.mjs';
+import { setNativeInputValue } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 30000 },
@@ -41,17 +42,7 @@ const val1 = await page.evaluate(() => {
 console.log('After keyboard type:', JSON.stringify(val1));
 
 // Try using evaluate to set value via Flutter's internal mechanism
-await page.evaluate(() => {
-  const input = document.querySelector('input[aria-label="Gateway address field"]');
-  if (input) {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    )?.set;
-    nativeInputValueSetter?.call(input, '10.0.0.1');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-});
+await setNativeInputValue(page, 'input[aria-label="Gateway address field"]', '10.0.0.1');
 await page.waitForTimeout(1000);
 
 const val2 = await page.evaluate(() => {

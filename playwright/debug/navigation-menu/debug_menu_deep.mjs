@@ -1,5 +1,6 @@
 // Debug: examine popup menu semantics more carefully
 import { openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 20000 },
@@ -27,17 +28,7 @@ console.log('Interactive elements before menu:');
 for (const b of before) console.log(`  <${b.tag}> role="${b.role}" aria="${b.aria}" text="${b.text}"`);
 
 // Open menu
-await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent || '').includes('Open profile list menu')) {
-      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-      b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      break;
-    }
-  }
-});
+await clickSemanticButtonContaining(page, 'Open profile list menu');
 await page.waitForTimeout(2000);
 
 // Check ALL elements that appeared after menu

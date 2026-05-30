@@ -1,5 +1,6 @@
 // Test keyboard text entry on chat textarea
 import { enableFlutterAccessibility, openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { timeout: 20000 },
@@ -14,10 +15,7 @@ async function a11y(p) {
 }
 
 // Navigate to Support Triage chat
-await page.evaluate(() => {
-  const b = [...document.querySelectorAll('flt-semantics[role="button"]')].find(b => (b.textContent||'').includes('Support Triage'));
-  if (b) { b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true})); b.dispatchEvent(new MouseEvent('click',{bubbles:true})); }
-});
+await clickSemanticButtonContaining(page, 'Support Triage');
 await page.waitForTimeout(3000);
 console.log('URL:', page.url());
 

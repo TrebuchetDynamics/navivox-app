@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "target": "playwright/debug",
+  "updatedAt": "2026-05-30T05:29:47.233Z",
+  "objective": "Keep playwright/debug organized by debug responsibility folders with support helpers for shared browser/Flutter semantics debug actions. Root stays README facade only.",
+  "completedSlices": [
+    "Existing responsibility topology retained: accessibility, chat-input, gateway, navigation-menu, profile-clicks, support.",
+    "Extracted repeated semantic button click and native input setter logic into playwright/debug/support/semantic_actions.mjs.",
+    "Added focused behavior tests for semantic action helpers in playwright/debug/support/semantic_actions_test.mjs.",
+    "Updated chat-input, gateway, navigation-menu, and profile-clicks scripts to reuse support helpers where behavior/output stayed stable."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "for f in playwright/debug/**/*.mjs; do node --check \"$f\" || exit 1; done && node --test playwright/debug/support/semantic_actions_test.mjs (passed)"
+  ]
+}

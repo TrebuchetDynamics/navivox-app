@@ -1,5 +1,6 @@
 // Debug: find the chat textbox element
 import { openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 20000 },
@@ -8,17 +9,7 @@ const { browser, page } = await openDebugPage({
 });
 
 // Navigate to chat
-await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent || '').includes('Support Triage')) {
-      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-      b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      break;
-    }
-  }
-});
+await clickSemanticButtonContaining(page, 'Support Triage');
 await page.waitForTimeout(3000);
 
 // Find ALL elements with roles

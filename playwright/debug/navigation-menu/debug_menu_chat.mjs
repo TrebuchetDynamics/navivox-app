@@ -1,5 +1,6 @@
 // Debug: check popup menu DOM and send button
 import { openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { waitUntil: 'load', timeout: 20000 },
@@ -9,18 +10,8 @@ const { browser, page } = await openDebugPage({
 
 // Open menu
 console.log('=== Opening menu ===');
-await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent || '').includes('Open profile list menu')) {
-      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-      b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      console.log('Clicked menu button');
-      break;
-    }
-  }
-});
+await clickSemanticButtonContaining(page, 'Open profile list menu');
+console.log('Clicked menu button');
 await page.waitForTimeout(2000);
 
 // Check DOM for menu items
@@ -51,17 +42,7 @@ console.log('Total visible semantics:', totalSem);
 // Now go to chat and check send button
 console.log('\n=== Chat send button ===');
 // Close menu by clicking somewhere else, then navigate to Support Triage
-await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent || '').includes('Support Triage')) {
-      b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-      b.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      break;
-    }
-  }
-});
+await clickSemanticButtonContaining(page, 'Support Triage');
 await page.waitForTimeout(3000);
 console.log('URL:', page.url());
 

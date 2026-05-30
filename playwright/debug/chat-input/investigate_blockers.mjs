@@ -1,5 +1,6 @@
 // Investigate: 1) Nav rail semantics 2) Long-press via gesture 3) Keyboard text entry
 import { DEFAULT_APP_URL, enableFlutterAccessibility, openDebugPage } from '../support/browser.mjs';
+import { clickSemanticButtonContaining } from '../support/semantic_actions.mjs';
 
 const { browser, page } = await openDebugPage({
   gotoOptions: { timeout: 20000 },
@@ -94,18 +95,7 @@ for (const t of lpResult) console.log(`  "${t}"`);
 // 3. KEYBOARD TEXT ENTRY: try clicking semantics overlay then keyboard.type
 console.log('\n=== 3. TEXT ENTRY VIA KEYBOARD ===');
 // Navigate to Support Triage chat
-const clicked = await page.evaluate(() => {
-  const btns = document.querySelectorAll('flt-semantics[role="button"]');
-  for (const b of btns) {
-    if ((b.textContent||'').includes('Support Triage')) {
-      b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
-      b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));
-      b.dispatchEvent(new MouseEvent('click',{bubbles:true}));
-      return true;
-    }
-  }
-  return false;
-});
+const clicked = await clickSemanticButtonContaining(page, 'Support Triage');
 await page.waitForTimeout(3000);
 console.log('At chat:', page.url());
 
