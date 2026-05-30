@@ -3,6 +3,7 @@ import {
   DEFAULT_BROWSER_VIEWPORT,
   createBrowserSession,
 } from '../../support/browser_session.mjs';
+import { enableFlutterAccessibility as enableSharedFlutterAccessibility } from '../../support/flutter_semantics.mjs';
 
 export const DEFAULT_APP_URL = process.env.NAVIVOX_DEBUG_URL ?? 'http://127.0.0.1:8767/';
 export const DEFAULT_VIEWPORT = DEFAULT_BROWSER_VIEWPORT;
@@ -48,10 +49,5 @@ export async function openDebugPage({
 }
 
 export async function enableFlutterAccessibility(page, { settleMs = 3000 } = {}) {
-  await page.evaluate(() => {
-    document.querySelector('flt-semantics-placeholder')?.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, cancelable: true }),
-    );
-  });
-  if (settleMs > 0) await page.waitForTimeout(settleMs);
+  await enableSharedFlutterAccessibility(page, { delay: settleMs });
 }
