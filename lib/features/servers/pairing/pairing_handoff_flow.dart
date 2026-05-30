@@ -1,6 +1,6 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../router/navigation_intent.dart';
-import '../setup/setup_qr_import_presentation.dart';
+import '../models/connection_import.dart';
 import 'pairing_handoff_landing.dart';
 
 class PairingHandoffFlow {

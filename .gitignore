@@ -9,8 +9,9 @@ coverage/
 .idea/
 *.iml
 
-# Pi local loop state
-.pi/navivox-loop/logs.jsonl
+# Pi agent artifacts
+.pi/**
+.understand-anything/**
 
 # Node / Playwright
 node_modules/

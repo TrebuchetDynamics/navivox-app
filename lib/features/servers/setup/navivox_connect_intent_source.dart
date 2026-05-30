@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import '../models/connection_import.dart';
 import 'setup_qr_import_presentation.dart';
 
 class NavivoxConnectIntentSource {

@@ -1,4 +1,5 @@
 import 'gateway_connection_presentation.dart';
+import '../models/connection_gateway.dart';
 
 class RegisterGatewayPresentation {
   const RegisterGatewayPresentation({this.testing = false});

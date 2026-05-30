@@ -10,6 +10,7 @@ import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_endpoint_uri.dart';
 import '../../../core/session/session_persistence_service.dart';
 import '../../../router/navigation_intent.dart';
+import '../models/connection_import.dart';
 import '../pairing/pairing_handoff_flow.dart';
 import '../registration/gateway_connection_presentation.dart';
 import '../setup/navivox_connect_intent_source.dart';
@@ -18,8 +19,10 @@ import '../setup/setup_guide_presentation.dart';
 import '../setup/setup_qr_import_presentation.dart';
 import '../setup/setup_screen_presentation.dart';
 
-export '../setup/setup_qr_import_presentation.dart'
-    show PairingHandoffSource, SetupQrImageImport, parseNavivoxQrPayload;
+export '../models/connection_import.dart'
+    show PairingHandoffSource, SetupQrImageImport;
+
+export '../setup/setup_qr_import_presentation.dart' show parseNavivoxQrPayload;
 
 const _setupGuidePresentation = SetupGuidePresentation();
 const _setupScreenPresentation = SetupScreenPresentation();

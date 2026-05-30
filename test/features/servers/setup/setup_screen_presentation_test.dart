@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/servers/setup/setup_qr_import_presentation.dart';
+import 'package:navivox/features/servers/models/connection_import.dart';
 import 'package:navivox/features/servers/setup/setup_screen_presentation.dart';
 
 void main() {

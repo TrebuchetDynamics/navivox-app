@@ -1,4 +1,4 @@
-import 'setup_qr_import_presentation.dart';
+import '../models/connection_import.dart';
 
 class SetupScreenPresentation {
   const SetupScreenPresentation();
