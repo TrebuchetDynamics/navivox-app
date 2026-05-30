@@ -1,4 +1,5 @@
 import '../../../../core/gateway/navivox_gateway_protocol.dart';
+import '../../../../core/protocol/navivox_json.dart';
 
 class TranscriptRunRecordInfoRow {
   const TranscriptRunRecordInfoRow({required this.label, required this.value});
@@ -250,9 +251,7 @@ String _costLabel(Map<String, Object?> value) {
 }
 
 Map<String, Object?> _mapField(Map<String, Object?> json, String key) {
-  final value = json[key];
-  if (value is Map) return Map<String, Object?>.from(value);
-  return const {};
+  return navivoxMapFromJson(json[key]);
 }
 
 String _dateLabel(DateTime? date) {
@@ -266,7 +265,5 @@ String _valueOrUnknown(String value) {
 }
 
 String? _trimmedString(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  return text;
+  return navivoxOptionalStringFromJson(value);
 }

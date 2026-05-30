@@ -1,4 +1,5 @@
 import '../../../core/channel/navivox_channel.dart';
+import '../../../shared/presentation/count_labels.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
 
 class ServersScreenPresentation {
@@ -97,17 +98,13 @@ class ServerGatewayPresentation {
         .length;
 
     return [
-      _plural(profileContacts.length, 'profile'),
-      if (warningCount > 0) _plural(warningCount, 'warning'),
-      if (authCount > 0) _plural(authCount, 'auth'),
-      if (activeTurns > 0) _plural(activeTurns, 'active turn'),
+      countLabel(profileContacts.length, 'profile'),
+      if (warningCount > 0) countLabel(warningCount, 'warning'),
+      if (authCount > 0) countLabel(authCount, 'auth'),
+      if (activeTurns > 0) countLabel(activeTurns, 'active turn'),
     ];
   }
 
-  static String _plural(int count, String noun) {
-    if (count == 1) return '1 $noun';
-    return '$count ${noun}s';
-  }
 }
 
 class GatewayProfileContactPresentation {

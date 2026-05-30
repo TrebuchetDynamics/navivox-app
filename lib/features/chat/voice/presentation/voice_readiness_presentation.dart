@@ -1,4 +1,5 @@
 import '../../../../core/channel/navivox_channel.dart';
+import '../../../../shared/presentation/profile_health_labels.dart';
 import '../../../settings/providers/voice_settings_provider.dart';
 
 enum VoiceReadinessStatus { ready, checking, blocked }
@@ -103,7 +104,7 @@ class VoiceReadinessPresentation {
     if (activeProfile.health != NavivoxProfileHealth.online) {
       return _blocked(
         VoiceReadinessBlockerKind.profileContactNotOnline,
-        _profileHealthLabel(activeProfile.health),
+        profileHealthLabel(activeProfile.health),
         localVoiceCaptureAvailable: true,
         localMicrophonePermissionGranted: localMicrophonePermissionGranted,
       );
@@ -254,12 +255,4 @@ class VoiceReadinessPresentation {
     return trimmed;
   }
 
-  static String _profileHealthLabel(NavivoxProfileHealth health) {
-    return switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth required',
-      NavivoxProfileHealth.warning => 'warning',
-    };
-  }
 }

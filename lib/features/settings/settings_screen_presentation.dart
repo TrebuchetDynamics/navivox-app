@@ -1,5 +1,7 @@
 import '../../core/channel/navivox_channel.dart';
 import '../../router/app_routes.dart';
+import '../../shared/presentation/count_labels.dart';
+import '../../shared/presentation/profile_health_labels.dart';
 import 'providers/voice_settings_provider.dart';
 
 class SettingsScreenPresentation {
@@ -48,7 +50,7 @@ class SettingsScreenPresentation {
       keyValue: 'settings-management-overview',
       title: 'Management overview',
       subtitle:
-          '${_countLabel(serverCount, 'Gormes gateway')} · ${_countLabel(profileContactCount, 'profile contact')}',
+          '${countLabel(serverCount, 'Gormes gateway')} · ${countLabel(profileContactCount, 'profile contact')}',
     );
   }
 
@@ -87,24 +89,11 @@ class SettingsScreenPresentation {
               keyValue: 'settings-current-profile',
               title: 'Active profile contact',
               subtitle:
-                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId} · ${healthLabel(activeProfile.health)}',
+                  '${activeProfile.displayName} · ${activeProfile.serverId}/${activeProfile.profileId} · ${compactProfileHealthLabel(activeProfile.health)}',
             ),
     );
   }
 
-  String healthLabel(NavivoxProfileHealth health) {
-    return switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth',
-      NavivoxProfileHealth.warning => 'warning',
-    };
-  }
-
-  String _countLabel(int count, String singular) {
-    final plural = count == 1 ? singular : '${singular}s';
-    return '$count $plural';
-  }
 }
 
 class SettingsManagementRoutePresentation {

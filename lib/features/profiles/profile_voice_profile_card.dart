@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/channel/navivox_channel.dart';
 import '../../core/gateway/navivox_gateway_protocol.dart';
+import '../../core/protocol/navivox_json.dart';
 
 class ProfileVoiceProfileCard extends StatefulWidget {
   const ProfileVoiceProfileCard({super.key, required this.channel});
@@ -455,11 +456,9 @@ String _valueOrUnset(String value) {
 }
 
 Map<String, Object?> _mapField(Map<String, Object?> json, String key) {
-  final value = json[key];
-  if (value is Map) return Map<String, Object?>.from(value);
-  return const {};
+  return navivoxMapFromJson(json[key]);
 }
 
 String _stringField(Map<String, Object?> json, String key) {
-  return json[key]?.toString().trim() ?? '';
+  return navivoxStringFromJson(json[key], fallback: '');
 }

@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../../core/channel/navivox_channel.dart';
+import '../../shared/presentation/profile_health_labels.dart';
 
 const _avatarColorSlots = 18;
 
@@ -9,19 +10,9 @@ class ProfileContactPresentation {
 
   final NavivoxProfileContact contact;
 
-  String get healthLabel => switch (contact.health) {
-    NavivoxProfileHealth.online => 'online',
-    NavivoxProfileHealth.offline => 'offline',
-    NavivoxProfileHealth.needsAuth => 'auth required',
-    NavivoxProfileHealth.warning => 'warning',
-  };
+  String get healthLabel => profileHealthLabel(contact.health);
 
-  String get compactHealthLabel => switch (contact.health) {
-    NavivoxProfileHealth.online => 'online',
-    NavivoxProfileHealth.offline => 'offline',
-    NavivoxProfileHealth.needsAuth => 'auth',
-    NavivoxProfileHealth.warning => 'warning',
-  };
+  String get compactHealthLabel => compactProfileHealthLabel(contact.health);
 
   String get workspaceLabel {
     if (!contact.workspaceRootsOk) return 'workspace issue';

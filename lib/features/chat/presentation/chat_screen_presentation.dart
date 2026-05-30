@@ -1,6 +1,8 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/protocol/navivox_event.dart';
 import '../../../core/protocol/navivox_voice_run.dart';
+import '../../../shared/presentation/count_labels.dart';
+import '../../../shared/presentation/profile_health_labels.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../conversations/profile_contact_conversation.dart';
 import '../voice/presentation/voice_readiness_presentation.dart';
@@ -111,15 +113,6 @@ class ChatScreenPresentation {
 
   String get chatInfoTitle => 'Chat info';
 
-  static String profileHealthLabel(NavivoxProfileHealth health) {
-    return switch (health) {
-      NavivoxProfileHealth.online => 'online',
-      NavivoxProfileHealth.offline => 'offline',
-      NavivoxProfileHealth.needsAuth => 'auth required',
-      NavivoxProfileHealth.warning => 'warning',
-    };
-  }
-
   static String _profileStatusBar(NavivoxProfileContact profile) {
     return [
       profile.serverLabel,
@@ -131,19 +124,13 @@ class ChatScreenPresentation {
   static List<String> _projectStatusSegments(NavivoxProfileContact profile) {
     final segments = <String>[];
     if (profile.workspaceRootCount > 0) {
-      segments.add(
-        '${profile.workspaceRootCount} ${_plural(profile.workspaceRootCount, 'project', 'projects')}',
-      );
+      segments.add(countLabel(profile.workspaceRootCount, 'project'));
     }
     if (profile.workspaceRootsError > 0) {
-      segments.add(
-        '${profile.workspaceRootsError} ${_plural(profile.workspaceRootsError, 'error', 'errors')}',
-      );
+      segments.add(countLabel(profile.workspaceRootsError, 'error'));
     }
     if (profile.workspaceRootsWarning > 0) {
-      segments.add(
-        '${profile.workspaceRootsWarning} ${_plural(profile.workspaceRootsWarning, 'warning', 'warnings')}',
-      );
+      segments.add(countLabel(profile.workspaceRootsWarning, 'warning'));
     }
     if (segments.isEmpty && !profile.workspaceRootsOk) {
       segments.add('project attention needed');
@@ -155,9 +142,6 @@ class ChatScreenPresentation {
     return _projectStatusSegments(profile).join(' • ');
   }
 
-  static String _plural(int count, String one, String many) {
-    return count == 1 ? one : many;
-  }
 
   static List<ChatInfoActionPresentation> _infoActions({
     required NavivoxProfileContact? activeProfile,

@@ -3,6 +3,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
 import 'package:navivox/features/settings/settings_screen_presentation.dart';
 import 'package:navivox/router/app_routes.dart';
+import 'package:navivox/shared/presentation/profile_health_labels.dart';
 
 void main() {
   const presentation = SettingsScreenPresentation();
@@ -133,9 +134,9 @@ void main() {
       presentation.currentScopeFor(activeServer: null, activeProfile: null),
       isNull,
     );
-    expect(presentation.healthLabel(NavivoxProfileHealth.online), 'online');
-    expect(presentation.healthLabel(NavivoxProfileHealth.offline), 'offline');
-    expect(presentation.healthLabel(NavivoxProfileHealth.needsAuth), 'auth');
-    expect(presentation.healthLabel(NavivoxProfileHealth.warning), 'warning');
+    expect(compactProfileHealthLabel(NavivoxProfileHealth.online), 'online');
+    expect(compactProfileHealthLabel(NavivoxProfileHealth.offline), 'offline');
+    expect(compactProfileHealthLabel(NavivoxProfileHealth.needsAuth), 'auth');
+    expect(compactProfileHealthLabel(NavivoxProfileHealth.warning), 'warning');
   });
 }
