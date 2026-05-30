@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/servers/screens/setup_screen.dart';
 
+import '../../shared/app/test_material_app.dart';
 import '../../shared/finders/test_finders.dart';
 
 void main() {
@@ -10,13 +10,11 @@ void main() {
     'QR image import fills setup fields without rendering the token',
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: SetupScreen(
-              qrImageImporter: () async => const SetupQrImageImport(
-                baseUrl: 'http://10.0.2.2:8765',
-                token: 'nvbx_from_qr_picture',
-              ),
+        TestProviderMaterialApp(
+          home: SetupScreen(
+            qrImageImporter: () async => const SetupQrImageImport(
+              baseUrl: 'http://10.0.2.2:8765',
+              token: 'nvbx_from_qr_picture',
             ),
           ),
         ),

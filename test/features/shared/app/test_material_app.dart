@@ -15,6 +15,18 @@ class TestMaterialScaffold extends StatelessWidget {
   }
 }
 
+/// Mounts a Riverpod-backed feature screen under a Material app.
+class TestProviderMaterialApp extends StatelessWidget {
+  const TestProviderMaterialApp({required this.home, super.key});
+
+  final Widget home;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(child: MaterialApp(home: home));
+  }
+}
+
 /// Mounts a feature screen in the standard Navivox test shell.
 ///
 /// Use this for screen tests that only need a mocked [NavivoxChannel] plus

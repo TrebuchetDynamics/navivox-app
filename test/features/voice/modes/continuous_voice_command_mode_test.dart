@@ -12,6 +12,7 @@ import 'package:navivox/features/voice/services/platform/default_voice_capture_s
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 import '../../shared/app/test_router_app.dart';
 
 const _servers = [
@@ -49,11 +50,9 @@ void main() {
     final channel = _seedChannel(selectedKey: 'office::support');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(
-          home: ChatScreen(serverId: 'office', profileId: 'support'),
-        ),
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const ChatScreen(serverId: 'office', profileId: 'support'),
       ),
     );
     await tester.pumpAndSettle();
@@ -93,11 +92,9 @@ void main() {
       ], selectedKey: 'local::mineru');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(
-          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
-        ),
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const ChatScreen(serverId: 'local', profileId: 'mineru'),
       ),
     );
     await tester.pumpAndSettle();
@@ -1580,16 +1577,14 @@ Future<void> _pumpTrustedChat(
   Duration voiceCommandTimeout = const Duration(seconds: 5),
 }) async {
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-      child: MaterialApp(
-        home: ChatScreen(
-          serverId: 'local',
-          profileId: 'mineru',
-          voiceCaptureServiceOverride: voiceService,
-          voiceAutoSendGrace: voiceAutoSendGrace,
-          voiceCommandTimeout: voiceCommandTimeout,
-        ),
+    TestNavivoxMaterialApp(
+      channel: channel,
+      home: ChatScreen(
+        serverId: 'local',
+        profileId: 'mineru',
+        voiceCaptureServiceOverride: voiceService,
+        voiceAutoSendGrace: voiceAutoSendGrace,
+        voiceCommandTimeout: voiceCommandTimeout,
       ),
     ),
   );

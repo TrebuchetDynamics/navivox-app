@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/servers/screens/setup_screen.dart';
+
+import '../../shared/app/test_material_app.dart';
 
 void main() {
   testWidgets('pairing token can be shown and hidden without losing text', (
@@ -11,7 +12,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: SetupScreen())),
+      const TestProviderMaterialApp(home: SetupScreen()),
     );
 
     final tokenFieldFinder = find.widgetWithText(TextField, 'Pairing token');

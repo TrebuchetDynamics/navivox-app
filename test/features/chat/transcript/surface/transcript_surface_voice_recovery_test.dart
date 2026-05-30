@@ -3,22 +3,19 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+
+import '../shared/transcript_surface_test_app.dart';
 
 void main() {
   testWidgets('disabled STT mic explains recovery in Transcript surface', (
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'device STT unavailable',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'device STT unavailable',
       ),
     );
 
@@ -45,14 +42,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'microphone permission denied',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'microphone permission denied',
       ),
     );
 
@@ -75,14 +68,10 @@ void main() {
 
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: ' Device STT unavailable ',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: ' Device STT unavailable ',
       ),
     );
 
@@ -112,15 +101,11 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'device STT unavailable',
-            voiceRecoveryAction: 'Enable device speech recognition',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'device STT unavailable',
+        voiceRecoveryAction: 'Enable device speech recognition',
       ),
     );
 
@@ -135,15 +120,11 @@ void main() {
     var opened = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'device STT unavailable',
-            onOpenVoiceSettings: () => opened = true,
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'device STT unavailable',
+        onOpenVoiceSettings: () => opened = true,
       ),
     );
 
@@ -176,16 +157,12 @@ void main() {
     VoiceCapture? captured;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceCaptureService: service,
-            voiceUnavailableReason: 'device STT unavailable',
-            onVoice: (capture) => captured = capture,
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceCaptureService: service,
+        voiceUnavailableReason: 'device STT unavailable',
+        onVoice: (capture) => captured = capture,
       ),
     );
 

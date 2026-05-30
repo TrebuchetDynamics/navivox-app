@@ -13,6 +13,8 @@ Widget transcriptSurfaceTestApp({
   VoidCallback? onPickPhotoOrVideo,
   VoidCallback? onOpenWorkspace,
   String? voiceUnavailableReason,
+  String? voiceRecoveryAction,
+  VoidCallback? onOpenVoiceSettings,
   VoiceCaptureService? voiceCaptureService,
   ValueChanged<VoiceCapture>? onVoice,
 }) {
@@ -24,6 +26,8 @@ Widget transcriptSurfaceTestApp({
       onPickPhotoOrVideo: onPickPhotoOrVideo,
       onOpenWorkspace: onOpenWorkspace,
       voiceUnavailableReason: voiceUnavailableReason,
+      voiceRecoveryAction: voiceRecoveryAction,
+      onOpenVoiceSettings: onOpenVoiceSettings,
       voiceCaptureService: voiceCaptureService,
       onVoice: onVoice,
     ),
