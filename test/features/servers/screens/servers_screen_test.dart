@@ -5,6 +5,7 @@ import 'package:navivox/features/servers/screens/servers_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 class RecordingConnectChannel extends TestNavivoxChannel {
   final connectCalls =
@@ -35,44 +36,18 @@ void main() {
     'servers screen groups profiles by gateway and opens management sheet',
     (tester) async {
       final channel = TestNavivoxChannel()
-        ..seedServers(const [
-          NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-          NavivoxServer(
-            id: 'office',
-            name: 'Office Gateway',
-            status: 'offline',
-          ),
-        ], activeServerId: 'local')
+        ..seedServers(
+          localOfficeServers(office: officeGatewayServer),
+          activeServerId: 'local',
+        )
         ..seedProfileContacts([
-          const NavivoxProfileContact(
-            serverId: 'local',
-            profileId: 'mineru',
-            displayName: 'Mineru Builder',
-            serverLabel: 'local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Ready',
-            workspaceRootCount: 2,
-            micAvailable: true,
-          ),
-          const NavivoxProfileContact(
-            serverId: 'local',
-            profileId: 'personal',
-            displayName: 'Personal',
-            serverLabel: 'local',
+          mineruBuilderProfile(latestPreview: 'Ready'),
+          personalProfile(
             health: NavivoxProfileHealth.warning,
             latestPreview: 'Workspace warning',
             workspaceRootCount: 1,
-            workspaceRootsOk: false,
           ),
-          const NavivoxProfileContact(
-            serverId: 'office',
-            profileId: 'support',
-            displayName: 'Support Triage',
-            serverLabel: 'office',
-            health: NavivoxProfileHealth.needsAuth,
-            latestPreview: 'Waiting for token',
-            attentionBadges: ['auth'],
-          ),
+          supportTriageProfile(),
         ]);
 
       await tester.pumpWidget(
@@ -113,10 +88,10 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-        NavivoxServer(id: 'office', name: 'Office Gateway', status: 'offline'),
-      ], activeServerId: 'local');
+      ..seedServers(
+        localOfficeServers(office: officeGatewayServer),
+        activeServerId: 'local',
+      );
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const ServersScreen()),
@@ -131,9 +106,7 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local');
+      ..seedServers([localGormesServer], activeServerId: 'local');
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const ServersScreen()),
@@ -194,9 +167,7 @@ void main() {
     tester,
   ) async {
     final channel = RecordingConnectChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local');
+      ..seedServers([localGormesServer], activeServerId: 'local');
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const ServersScreen()),
@@ -227,18 +198,9 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Ready',
-        ),
+      ..seedServers([localGormesServer], activeServerId: 'local')
+      ..seedProfileContacts([
+        mineruBuilderProfile(latestPreview: 'Ready', workspaceRootCount: 0),
       ], selectedKey: 'local::mineru');
 
     await tester.pumpWidget(

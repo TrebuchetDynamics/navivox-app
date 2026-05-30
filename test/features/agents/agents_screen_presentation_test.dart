@@ -2,47 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/agents_screen_presentation.dart';
 
+import '../shared/fixtures/profile_contact_fixtures.dart';
 import '../shared/fixtures/seed_fixtures.dart';
 
-const _servers = [
-  NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-  NavivoxServer(id: 'office', name: 'Office', status: 'offline'),
-];
-
+final _servers = localOfficeServers();
 final _profiles = [
-  NavivoxProfileContact(
-    serverId: 'office',
-    profileId: 'support',
-    displayName: 'Support Triage',
-    serverLabel: 'office',
-    health: NavivoxProfileHealth.needsAuth,
-    latestPreview: 'Waiting for token',
-    workspaceRootCount: 1,
-    attentionBadges: ['auth'],
-    micAvailable: false,
-  ),
-  NavivoxProfileContact(
-    serverId: 'local',
-    profileId: 'personal',
-    displayName: 'Personal',
-    serverLabel: 'local',
-    health: NavivoxProfileHealth.offline,
-    latestPreview: 'Gateway unavailable',
-    workspaceRootCount: 0,
-    attentionBadges: ['offline'],
-    micAvailable: false,
-  ),
-  NavivoxProfileContact(
-    serverId: 'local',
-    profileId: 'mineru',
-    displayName: 'Mineru Builder',
-    serverLabel: 'local',
-    health: NavivoxProfileHealth.online,
-    latestPreview: 'Ready to work on mineru',
-    latestAt: DateTime(2026, 5, 16, 9, 41),
-    workspaceRootCount: 2,
-    micAvailable: true,
-  ),
+  supportTriageProfile(),
+  personalProfile(),
+  mineruBuilderProfile(latestAt: DateTime(2026, 5, 16, 9, 41)),
 ];
 
 void main() {

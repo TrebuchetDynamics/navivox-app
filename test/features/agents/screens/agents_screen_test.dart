@@ -4,37 +4,17 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/screens/agents_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/fixtures/profile_contact_fixtures.dart';
 import '../../shared/fixtures/seed_fixtures.dart';
 import '../../shared/app/test_material_app.dart';
 
-const _seedServers = [
-  NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-  NavivoxServer(id: 'office', name: 'Office', status: 'offline'),
-];
-
+final _seedServers = localOfficeServers();
 final _seedProfiles = [
-  NavivoxProfileContact(
-    serverId: 'local',
-    profileId: 'mineru',
-    displayName: 'Mineru Builder',
-    serverLabel: 'local',
-    health: NavivoxProfileHealth.online,
+  mineruBuilderProfile(
     latestPreview: 'Goncho memory active',
     latestAt: DateTime(2026, 5, 16, 9, 41),
-    workspaceRootCount: 2,
-    micAvailable: true,
   ),
-  NavivoxProfileContact(
-    serverId: 'office',
-    profileId: 'support',
-    displayName: 'Support Triage',
-    serverLabel: 'office',
-    health: NavivoxProfileHealth.needsAuth,
-    latestPreview: 'Waiting for token',
-    workspaceRootCount: 1,
-    attentionBadges: ['auth'],
-    micAvailable: false,
-  ),
+  supportTriageProfile(),
 ];
 
 void main() {

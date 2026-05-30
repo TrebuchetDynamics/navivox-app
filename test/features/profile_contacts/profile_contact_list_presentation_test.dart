@@ -1,49 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/profile_contacts/profile_contact_list_presentation.dart';
 
-const _servers = [
-  NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-  NavivoxServer(id: 'office', name: 'Office', status: 'offline'),
-];
+import '../shared/fixtures/profile_contact_fixtures.dart';
 
-final _contacts = [
-  NavivoxProfileContact(
-    serverId: 'office',
-    profileId: 'support',
-    displayName: 'Support Triage',
-    serverLabel: 'office',
-    health: NavivoxProfileHealth.needsAuth,
-    latestPreview: 'Waiting for token',
-    latestAt: DateTime(2026, 5, 16, 9, 22),
-    workspaceRootCount: 1,
-    attentionBadges: ['auth'],
-    micAvailable: false,
-  ),
-  NavivoxProfileContact(
-    serverId: 'local',
-    profileId: 'mineru',
-    displayName: 'Mineru Builder',
-    serverLabel: 'local',
-    health: NavivoxProfileHealth.online,
-    latestPreview: 'Ready to work on mineru',
-    latestAt: DateTime(2026, 5, 16, 9, 41),
-    workspaceRootCount: 2,
-    micAvailable: true,
-  ),
-  NavivoxProfileContact(
-    serverId: 'local',
-    profileId: 'personal',
-    displayName: 'Personal',
-    serverLabel: 'local',
-    health: NavivoxProfileHealth.offline,
-    latestPreview: 'Gateway unavailable',
-    latestAt: DateTime(2026, 5, 15, 18),
-    workspaceRootCount: 0,
-    attentionBadges: ['offline'],
-    micAvailable: false,
-  ),
-];
+final _servers = localOfficeServers();
+final _contacts = sortedProfileListContacts();
 
 void main() {
   test('sorts all Profile contacts and exposes visible state', () {

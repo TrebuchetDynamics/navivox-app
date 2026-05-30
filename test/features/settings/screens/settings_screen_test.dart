@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/settings/screens/settings_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
   testWidgets('renders continuous voice controls for the active server', (
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local');
+      ..seedServers([localGormesServer], activeServerId: 'local');
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const SettingsScreen()),
@@ -45,9 +43,7 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local');
+      ..seedServers([localGormesServer], activeServerId: 'local');
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const SettingsScreen()),
@@ -85,35 +81,14 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-        NavivoxServer(id: 'remote', name: 'Remote Gormes', status: 'offline'),
+      ..seedServers([
+        localGormesServer,
+        remoteGormesServer,
       ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Ready',
-        ),
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'link',
-          displayName: 'Link Reviewer',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.warning,
-          latestPreview: 'Reviewing',
-        ),
-        NavivoxProfileContact(
-          serverId: 'remote',
-          profileId: 'sidon',
-          displayName: 'Sidon Planner',
-          serverLabel: 'remote',
-          health: NavivoxProfileHealth.offline,
-          latestPreview: 'Away',
-        ),
+      ..seedProfileContacts([
+        mineruBuilderProfile(latestPreview: 'Ready', workspaceRootCount: 0),
+        linkReviewerProfile(),
+        sidonPlannerProfile(),
       ], selectedKey: 'local::mineru');
 
     await tester.pumpWidget(
@@ -135,18 +110,9 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Ready',
-        ),
+      ..seedServers([localGormesServer], activeServerId: 'local')
+      ..seedProfileContacts([
+        mineruBuilderProfile(latestPreview: 'Ready', workspaceRootCount: 0),
       ], selectedKey: 'local::mineru');
 
     await tester.pumpWidget(
