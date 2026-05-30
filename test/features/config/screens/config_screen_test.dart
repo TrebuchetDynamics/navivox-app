@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
 void main() {
@@ -14,10 +13,7 @@ void main() {
     final channel = TestNavivoxChannel();
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     expect(find.text('No config available'), findsOneWidget);
@@ -48,10 +44,7 @@ void main() {
       ..emitConfigValues(const {'provider': 'openai'});
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     expect(find.text('Profile config scope'), findsOneWidget);
@@ -73,10 +66,7 @@ void main() {
       ..emitConfigValues(const {'provider': 'anthropic', 'temperature': 0.4});
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     expect(find.text('provider'), findsOneWidget);
@@ -121,10 +111,7 @@ void main() {
       });
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     expect(find.text('Provider and Models'), findsOneWidget);
@@ -173,9 +160,9 @@ void main() {
         });
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: ConfigScreen(sectionId: 'providers')),
+        TestNavivoxMaterialApp(
+          channel: channel,
+          home: const ConfigScreen(sectionId: 'providers'),
         ),
       );
 
@@ -205,9 +192,9 @@ void main() {
       ..emitConfigValues(const {'providers.default': 'openai'});
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen(sectionId: 'missing')),
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const ConfigScreen(sectionId: 'missing'),
       ),
     );
 
@@ -238,10 +225,7 @@ void main() {
         });
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: ConfigScreen()),
-        ),
+        TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
       );
 
       expect(find.text('OpenAI API key'), findsOneWidget);
@@ -310,10 +294,7 @@ void main() {
       });
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     await tester.tap(
@@ -362,10 +343,7 @@ void main() {
         ..emitConfigValues(const {'navivox.exposure_mode': 'local'});
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: ConfigScreen()),
-        ),
+        TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
       );
 
       await tester.tap(
@@ -419,10 +397,7 @@ void main() {
       ..emitConfigValues(const {'temperature': 0.4});
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     await tester.tap(find.byKey(const ValueKey('config-edit-temperature')));
@@ -518,10 +493,7 @@ void main() {
         );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: ConfigScreen()),
-        ),
+        TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
       );
 
       expect(find.text('Port'), findsOneWidget);
@@ -608,10 +580,7 @@ void main() {
       );
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
     await tester.tap(

@@ -8,6 +8,7 @@ import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/router/app_routes.dart';
 
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 import '../../shared/fixtures/seed_fixtures.dart';
 
 const _seedServers = [
@@ -34,10 +35,7 @@ void main() {
         ..seedAgents(defaultSeedAgents);
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: ChatScreen()),
-        ),
+        TestNavivoxMaterialApp(channel: channel, home: const ChatScreen()),
       );
 
       expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
@@ -52,10 +50,7 @@ void main() {
       ..seedAgents(defaultSeedAgents, selectedAgentId: 'arch');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ChatScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ChatScreen()),
     );
 
     expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
@@ -78,10 +73,7 @@ void main() {
       ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ChatScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ChatScreen()),
     );
 
     expect(
@@ -106,10 +98,7 @@ void main() {
       ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ChatScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ChatScreen()),
     );
 
     await tester.tap(find.byKey(const ValueKey('chat-context-action')));

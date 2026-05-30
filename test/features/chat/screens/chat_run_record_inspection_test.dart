@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 
 void main() {
   testWidgets(
@@ -71,11 +70,9 @@ void main() {
             );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(
-            home: ChatScreen(serverId: 'local', profileId: 'mineru'),
-          ),
+        TestNavivoxMaterialApp(
+          channel: channel,
+          home: const ChatScreen(serverId: 'local', profileId: 'mineru'),
         ),
       );
       await tester.pumpAndSettle();
@@ -127,11 +124,9 @@ void main() {
       ]);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(
-          home: ChatScreen(serverId: 'local', profileId: 'mineru'),
-        ),
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const ChatScreen(serverId: 'local', profileId: 'mineru'),
       ),
     );
     await tester.pumpAndSettle();

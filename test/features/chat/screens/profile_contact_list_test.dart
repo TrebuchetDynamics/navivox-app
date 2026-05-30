@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 import '../../shared/app/test_router_app.dart';
 
 const _servers = [
@@ -59,12 +58,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     expect(find.text('Navivox'), findsOneWidget);
@@ -114,12 +108,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts, selectedKey: 'local::mineru');
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     final selectedTile = tester.widget<ListTile>(
@@ -140,12 +129,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     expect(
@@ -175,12 +159,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('server-filter-all')), findsOneWidget);
@@ -203,12 +182,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Open profile list menu'));
@@ -231,12 +205,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Add profile'));
@@ -264,12 +233,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -298,12 +262,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('profile-search-field')), findsOneWidget);
@@ -326,12 +285,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -360,12 +314,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -399,12 +348,7 @@ void main() {
         ..._contacts.skip(1),
       ]);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     expect(find.text('typing… · online · 2 roots'), findsOneWidget);
@@ -433,12 +377,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -490,12 +429,7 @@ void main() {
         ),
       ]);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -532,12 +466,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.tap(
@@ -575,12 +504,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.longPress(
@@ -652,12 +576,7 @@ void main() {
       ..seedServers(_servers, activeServerId: 'local')
       ..seedProfileContacts(_contacts);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const TestRouterApp(),
-      ),
-    );
+    await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
     await tester.longPress(
@@ -690,11 +609,9 @@ void main() {
       ..seedProfileContacts(_contacts);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(
-          home: ChatScreen(serverId: 'office', profileId: 'support'),
-        ),
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const ChatScreen(serverId: 'office', profileId: 'support'),
       ),
     );
     await tester.pumpAndSettle();

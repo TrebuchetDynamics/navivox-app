@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 
 void main() {
   testWidgets('renders and applies profile voice settings through Gormes', (
@@ -22,10 +21,7 @@ void main() {
       ..seedRunRecord(_voiceFallbackRecord());
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -108,10 +104,7 @@ void main() {
       ..seedVoiceProfileValidation(_invalidValidation());
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: ConfigScreen()),
-      ),
+      TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
     await tester.pumpAndSettle();
 

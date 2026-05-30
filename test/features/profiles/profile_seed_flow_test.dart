@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../../support/test_navivox_channel.dart';
 import '../shared/app/test_router_app.dart';
@@ -25,12 +23,7 @@ void main() {
           apply: _appliedResult(workspaceCount: 1),
         );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const TestRouterApp(),
-        ),
-      );
+      await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byTooltip('Add profile'));
@@ -128,12 +121,7 @@ void main() {
           apply: _appliedResult(workspaceCount: 0),
         );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [navivoxChannelProvider.overrideWithValue(channel)],
-          child: const TestRouterApp(),
-        ),
-      );
+      await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byTooltip('Add profile'));
