@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
+import 'package:navivox/core/protocol/navivox_json.dart';
 import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
@@ -663,14 +664,7 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   NavivoxProfileHealth _profileHealthFromJson(Object? value) {
-    return switch (value?.toString().trim().toLowerCase()) {
-      'offline' => NavivoxProfileHealth.offline,
-      'needs_auth' ||
-      'needs-auth' ||
-      'needsauth' => NavivoxProfileHealth.needsAuth,
-      'warning' => NavivoxProfileHealth.warning,
-      _ => NavivoxProfileHealth.online,
-    };
+    return navivoxProfileHealthFromJson(value);
   }
 
   String _stringField(
@@ -694,12 +688,7 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     String key, {
     bool fallback = false,
   }) {
-    final value = json[key];
-    if (value is bool) return value;
-    final text = value?.toString().trim().toLowerCase();
-    if (text == 'true') return true;
-    if (text == 'false') return false;
-    return fallback;
+    return navivoxStrictBoolFromJson(json[key], fallback: fallback);
   }
 
   List<String> _stringListField(Map<String, Object?> json, String key) {

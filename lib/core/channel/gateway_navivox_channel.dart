@@ -1518,14 +1518,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   NavivoxProfileHealth _profileHealthFromJson(Object? value) {
-    return switch (value?.toString().trim().toLowerCase()) {
-      'offline' => NavivoxProfileHealth.offline,
-      'needs_auth' ||
-      'needsauth' ||
-      'needs-auth' => NavivoxProfileHealth.needsAuth,
-      'warning' => NavivoxProfileHealth.warning,
-      _ => NavivoxProfileHealth.online,
-    };
+    return navivoxProfileHealthFromJson(value);
   }
 
   DateTime? _dateFromJson(Object? value) {
@@ -1541,11 +1534,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   bool _boolFromJson(Object? value, {bool fallback = false}) {
-    if (value is bool) return value;
-    final text = value?.toString().trim().toLowerCase();
-    if (text == 'true') return true;
-    if (text == 'false') return false;
-    return fallback;
+    return navivoxStrictBoolFromJson(value, fallback: fallback);
   }
 
   List<String> _stringListFromJson(Object? value) {

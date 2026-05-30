@@ -48,6 +48,17 @@ class NavivoxAgent {
 
 enum NavivoxProfileHealth { online, offline, needsAuth, warning }
 
+NavivoxProfileHealth navivoxProfileHealthFromJson(Object? value) {
+  return switch (value?.toString().trim().toLowerCase()) {
+    'offline' => NavivoxProfileHealth.offline,
+    'needs_auth' ||
+    'needs-auth' ||
+    'needsauth' => NavivoxProfileHealth.needsAuth,
+    'warning' => NavivoxProfileHealth.warning,
+    _ => NavivoxProfileHealth.online,
+  };
+}
+
 class NavivoxVoiceCapability {
   const NavivoxVoiceCapability({
     this.deviceStt = 'unavailable',

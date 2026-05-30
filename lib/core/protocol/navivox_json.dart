@@ -35,6 +35,18 @@ bool navivoxBoolFromJson(Object? value, {bool fallback = false}) {
   return fallback;
 }
 
+/// Returns only literal bool values or `true`/`false` string tokens.
+///
+/// Use this for protocol flags whose existing contract intentionally does not
+/// accept broader truthy aliases such as `1` or `yes`.
+bool navivoxStrictBoolFromJson(Object? value, {bool fallback = false}) {
+  if (value is bool) return value;
+  final text = value?.toString().trim().toLowerCase();
+  if (text == 'true') return true;
+  if (text == 'false') return false;
+  return fallback;
+}
+
 Map<String, Object?> navivoxMapFromJson(Object? value) {
   if (value is! Map) return const {};
   return Map<String, Object?>.from(value);

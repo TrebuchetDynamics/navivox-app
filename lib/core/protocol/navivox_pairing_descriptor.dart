@@ -99,7 +99,7 @@ String _baseUrlFromWebSocketUri(Uri uri, String descriptor) {
 }
 
 bool _boolFromPairingParam(String? value) {
-  return value?.trim().toLowerCase() == 'true';
+  return navivoxStrictBoolFromJson(value);
 }
 
 List<String> _csvPairingParam(String? value) {

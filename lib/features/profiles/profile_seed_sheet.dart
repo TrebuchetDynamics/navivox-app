@@ -412,7 +412,5 @@ String _keyValueText(Map<String, Object?> values) {
 }
 
 bool _boolField(Map<String, Object?> json, String key) {
-  final value = json[key];
-  if (value is bool) return value;
-  return value?.toString().trim().toLowerCase() == 'true';
+  return navivoxStrictBoolFromJson(json[key]);
 }

@@ -2,6 +2,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 
 void main() {
+  group('navivoxProfileHealthFromJson', () {
+    test('normalizes gateway profile health tokens', () {
+      expect(
+        navivoxProfileHealthFromJson(' offline '),
+        NavivoxProfileHealth.offline,
+      );
+      expect(
+        navivoxProfileHealthFromJson('needs_auth'),
+        NavivoxProfileHealth.needsAuth,
+      );
+      expect(
+        navivoxProfileHealthFromJson('needs-auth'),
+        NavivoxProfileHealth.needsAuth,
+      );
+      expect(
+        navivoxProfileHealthFromJson('needsauth'),
+        NavivoxProfileHealth.needsAuth,
+      );
+      expect(
+        navivoxProfileHealthFromJson('warning'),
+        NavivoxProfileHealth.warning,
+      );
+      expect(
+        navivoxProfileHealthFromJson('unknown'),
+        NavivoxProfileHealth.online,
+      );
+    });
+  });
+
   group('NavivoxVoiceCapability.captureUnavailableReason', () {
     test('keeps bare reported device STT unavailable informational', () {
       const capability = NavivoxVoiceCapability(
