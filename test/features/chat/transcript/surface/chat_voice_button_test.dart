@@ -3,31 +3,27 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
+import '../shared/transcript_surface_test_app.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
 void main() {
   testWidgets('renders a captured voice transcript bubble', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: [
-              NavivoxChatMessage(
-                id: 'voice-1',
-                author: NavivoxMessageAuthor.user,
-                kind: NavivoxMessageKind.voice,
-                createdAt: DateTime(2026, 5, 16, 9, 30),
-                voice: const NavivoxVoiceMessage(
-                  transcript: 'hello voice',
-                  duration: Duration(milliseconds: 1200),
-                  confidence: 0.91,
-                ),
-              ),
-            ],
-            onSend: (_) {},
+      transcriptSurfaceTestApp(
+        messages: [
+          NavivoxChatMessage(
+            id: 'voice-1',
+            author: NavivoxMessageAuthor.user,
+            kind: NavivoxMessageKind.voice,
+            createdAt: DateTime(2026, 5, 16, 9, 30),
+            voice: const NavivoxVoiceMessage(
+              transcript: 'hello voice',
+              duration: Duration(milliseconds: 1200),
+              confidence: 0.91,
+            ),
           ),
-        ),
+        ],
+        onSend: (_) {},
       ),
     );
 
@@ -39,14 +35,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'device STT unavailable',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'device STT unavailable',
       ),
     );
 
@@ -74,14 +66,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: 'microphone permission denied',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: 'microphone permission denied',
       ),
     );
 
@@ -104,14 +92,10 @@ void main() {
 
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceUnavailableReason: ' Device STT unavailable ',
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceUnavailableReason: ' Device STT unavailable ',
       ),
     );
 
@@ -149,16 +133,12 @@ void main() {
     VoiceCapture? captured;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceCaptureService: service,
-            voiceUnavailableReason: 'device STT unavailable',
-            onVoice: (capture) => captured = capture,
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceCaptureService: service,
+        voiceUnavailableReason: 'device STT unavailable',
+        onVoice: (capture) => captured = capture,
       ),
     );
 
@@ -188,15 +168,11 @@ void main() {
       VoiceCapture? captured;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TranscriptSurface(
-              messages: const <NavivoxChatMessage>[],
-              onSend: (_) {},
-              voiceCaptureService: service,
-              onVoice: (capture) => captured = capture,
-            ),
-          ),
+        transcriptSurfaceTestApp(
+          messages: const <NavivoxChatMessage>[],
+          onSend: (_) {},
+          voiceCaptureService: service,
+          onVoice: (capture) => captured = capture,
         ),
       );
 
@@ -223,15 +199,11 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            voiceCaptureService: service,
-            onVoice: (_) {},
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        voiceCaptureService: service,
+        onVoice: (_) {},
       ),
     );
 

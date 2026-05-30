@@ -4,8 +4,8 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/screens/agents_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
-import '../../shared/seed_fixtures.dart';
-import '../../shared/test_material_app.dart';
+import '../../shared/fixtures/seed_fixtures.dart';
+import '../../shared/app/test_material_app.dart';
 
 const _seedServers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),

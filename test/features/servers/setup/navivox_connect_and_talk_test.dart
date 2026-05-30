@@ -9,8 +9,8 @@ import 'package:navivox/features/servers/setup/navivox_connect_intent_source.dar
 import 'package:navivox/features/servers/screens/setup_screen.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
-import '../../shared/test_finders.dart';
-import '../../shared/test_router_app.dart';
+import '../../shared/finders/test_finders.dart';
+import '../../shared/app/test_router_app.dart';
 
 void main() {
   testWidgets('connect-info lands on chat and sends a text turn', (

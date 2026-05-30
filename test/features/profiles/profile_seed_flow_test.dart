@@ -5,7 +5,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../../support/test_navivox_channel.dart';
-import '../shared/test_router_app.dart';
+import '../shared/app/test_router_app.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/agents_screen_presentation.dart';
 
-import '../shared/seed_fixtures.dart';
+import '../shared/fixtures/seed_fixtures.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),

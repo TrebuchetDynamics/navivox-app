@@ -12,7 +12,7 @@ import 'package:navivox/features/voice/services/platform/default_voice_capture_s
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 import '../../../support/test_navivox_channel.dart';
-import '../../shared/test_router_app.dart';
+import '../../shared/app/test_router_app.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
+import '../shared/transcript_surface_test_app.dart';
 
 void main() {
   testWidgets(
@@ -20,11 +20,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TranscriptSurface(messages: [message], onSend: (_) {}),
-          ),
-        ),
+        transcriptSurfaceTestApp(messages: [message], onSend: (_) {}),
       );
 
       expect(find.text('shell.run'), findsOneWidget);
@@ -70,11 +66,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TranscriptSurface(messages: [message], onSend: (_) {}),
-          ),
-        ),
+        transcriptSurfaceTestApp(messages: [message], onSend: (_) {}),
       );
 
       expect(find.byIcon(Icons.attachment), findsNWidgets(2));
@@ -122,11 +114,7 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(messages: messages, onSend: (_) {}),
-        ),
-      ),
+      transcriptSurfaceTestApp(messages: messages, onSend: (_) {}),
     );
 
     expect(find.byKey(const ValueKey('safety-warning-card')), findsOneWidget);

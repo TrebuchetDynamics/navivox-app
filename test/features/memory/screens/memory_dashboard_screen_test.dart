@@ -5,7 +5,7 @@ import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/features/memory/screens/memory_dashboard_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
-import '../../shared/test_material_app.dart';
+import '../../shared/app/test_material_app.dart';
 
 void main() {
   testWidgets(

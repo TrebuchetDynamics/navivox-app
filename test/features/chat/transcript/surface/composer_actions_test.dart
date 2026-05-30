@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
+import '../shared/transcript_surface_test_app.dart';
 
 void main() {
   testWidgets('composer attachment button opens Telegram-style upload sheet', (
@@ -12,16 +12,12 @@ void main() {
     var openedWorkspace = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: (_) {},
-            onUploadFile: () => uploadedFile = true,
-            onPickPhotoOrVideo: () => pickedMedia = true,
-            onOpenWorkspace: () => openedWorkspace = true,
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: (_) {},
+        onUploadFile: () => uploadedFile = true,
+        onPickPhotoOrVideo: () => pickedMedia = true,
+        onOpenWorkspace: () => openedWorkspace = true,
       ),
     );
 
@@ -56,13 +52,9 @@ void main() {
     final sent = <String>[];
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: const <NavivoxChatMessage>[],
-            onSend: sent.add,
-          ),
-        ),
+      transcriptSurfaceTestApp(
+        messages: const <NavivoxChatMessage>[],
+        onSend: sent.add,
       ),
     );
 

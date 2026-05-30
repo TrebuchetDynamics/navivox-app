@@ -4,7 +4,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/servers/screens/servers_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
-import '../../shared/test_material_app.dart';
+import '../../shared/app/test_material_app.dart';
 
 class RecordingConnectChannel extends TestNavivoxChannel {
   final connectCalls =

@@ -3,7 +3,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/servers/pairing/pairing_handoff_landing.dart';
 import 'package:navivox/router/navigation_intent.dart';
 
-import '../../shared/test_constants.dart';
+import '../../shared/fixtures/test_constants.dart';
 
 void main() {
 

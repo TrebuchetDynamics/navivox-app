@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../support/test_navivox_channel.dart';
+import '../../shared/app/test_material_app.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/approval/approval_banner.dart';
 
@@ -11,9 +12,7 @@ void main() {
     final channel = TestNavivoxChannel();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ApprovalBanner(channel: channel)),
-      ),
+      TestMaterialScaffold(body: ApprovalBanner(channel: channel)),
     );
 
     channel.emitApprovalRequest(
@@ -45,9 +44,7 @@ void main() {
     final channel = TestNavivoxChannel();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ApprovalBanner(channel: channel)),
-      ),
+      TestMaterialScaffold(body: ApprovalBanner(channel: channel)),
     );
 
     channel.emitApprovalRequest(
@@ -75,9 +72,7 @@ void main() {
     final channel = TestNavivoxChannel();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ApprovalBanner(channel: channel)),
-      ),
+      TestMaterialScaffold(body: ApprovalBanner(channel: channel)),
     );
 
     channel.emitApprovalRequest(
