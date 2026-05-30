@@ -1,7 +1,7 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/protocol/navivox_event.dart';
 import '../../../core/protocol/navivox_voice_run.dart';
-import '../../../shared/presentation/count_labels.dart';
+import '../../../shared/presentation/profile_contact_labels.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../conversations/profile_contact_conversation.dart';
@@ -58,7 +58,7 @@ class ChatScreenPresentation {
       selectedAgent: selectedAgent,
       appBarTitle: activeProfile?.displayName ?? activeServer?.name ?? 'Chats',
       appBarSubtitle: activeProfile != null
-          ? _profileStatusBar(activeProfile)
+          ? profileContactStatusBarLabel(activeProfile)
           : activeServer?.status,
       infoRows: _infoRows(
         profile: activeProfile,
@@ -112,36 +112,6 @@ class ChatScreenPresentation {
   String get chatInfoTooltip => 'Chat info';
 
   String get chatInfoTitle => 'Chat info';
-
-  static String _profileStatusBar(NavivoxProfileContact profile) {
-    return [
-      profile.serverLabel,
-      profileHealthLabel(profile.health),
-      ..._projectStatusSegments(profile),
-    ].join(' • ');
-  }
-
-  static List<String> _projectStatusSegments(NavivoxProfileContact profile) {
-    final segments = <String>[];
-    if (profile.workspaceRootCount > 0) {
-      segments.add(countLabel(profile.workspaceRootCount, 'project'));
-    }
-    if (profile.workspaceRootsError > 0) {
-      segments.add(countLabel(profile.workspaceRootsError, 'error'));
-    }
-    if (profile.workspaceRootsWarning > 0) {
-      segments.add(countLabel(profile.workspaceRootsWarning, 'warning'));
-    }
-    if (segments.isEmpty && !profile.workspaceRootsOk) {
-      segments.add('project attention needed');
-    }
-    return segments;
-  }
-
-  static String _projectStatusLabel(NavivoxProfileContact profile) {
-    return _projectStatusSegments(profile).join(' • ');
-  }
-
 
   static List<ChatInfoActionPresentation> _infoActions({
     required NavivoxProfileContact? activeProfile,
@@ -210,11 +180,11 @@ class ChatScreenPresentation {
           label: 'Status',
           value: profileHealthLabel(profile.health),
         ),
-        if (_projectStatusSegments(profile).isNotEmpty)
+        if (profileContactProjectStatusSegments(profile).isNotEmpty)
           ChatInfoRowPresentation(
             kind: ChatInfoRowKind.projects,
             label: 'Projects',
-            value: _projectStatusLabel(profile),
+            value: profileContactProjectStatusLabel(profile),
           ),
       ]);
     } else if (server != null) {

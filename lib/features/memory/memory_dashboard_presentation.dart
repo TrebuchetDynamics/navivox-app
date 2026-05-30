@@ -1,5 +1,6 @@
 import '../../core/channel/navivox_channel.dart';
 import '../../core/protocol/navivox_memory.dart';
+import '../../shared/presentation/profile_contact_labels.dart';
 
 class MemoryDashboardPresentation {
   const MemoryDashboardPresentation();
@@ -33,8 +34,14 @@ class MemoryDashboardPresentation {
     NavivoxMemoryOverview overview, {
     required NavivoxProfileContact? activeProfile,
   }) {
-    final server = serverLabel(activeProfile, fallback: 'default');
-    final profile = profileLabel(activeProfile, fallback: overview.profileId);
+    final server = profileContactServerLabel(
+      activeProfile,
+      fallback: 'default',
+    );
+    final profile = profileContactDisplayLabel(
+      activeProfile,
+      fallback: overview.profileId,
+    );
     final workspace = overview.workspaceId.trim();
     final lastUpdated = overview.lastUpdatedAt;
     return MemoryOverviewPresentation(
@@ -128,7 +135,10 @@ class MemoryDashboardPresentation {
   }) {
     return MemoryErrorPresentation(
       title: 'Goncho degraded',
-      profileLabel: profileLabel(activeProfile, fallback: 'default'),
+      profileLabel: profileContactDisplayLabel(
+        activeProfile,
+        fallback: 'default',
+      ),
       message: message,
     );
   }
@@ -142,24 +152,6 @@ class MemoryDashboardPresentation {
       return '${requestedAction.label} requested.';
     }
     return result.message;
-  }
-
-  String profileLabel(
-    NavivoxProfileContact? contact, {
-    required String fallback,
-  }) {
-    final displayName = contact?.displayName.trim();
-    if (displayName != null && displayName.isNotEmpty) return displayName;
-    return fallback;
-  }
-
-  String serverLabel(
-    NavivoxProfileContact? contact, {
-    required String fallback,
-  }) {
-    final label = contact?.serverLabel.trim();
-    if (label != null && label.isNotEmpty) return label;
-    return fallback;
   }
 }
 
