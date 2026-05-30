@@ -1,3 +1,5 @@
+import '../../../core/protocol/navivox_endpoint_uri.dart';
+
 class GatewayConnectionPresentation {
   const GatewayConnectionPresentation();
 
@@ -8,7 +10,7 @@ class GatewayConnectionPresentation {
     if (uri == null || uri.host.isEmpty) {
       return 'Enter a valid Gormes gateway URL.';
     }
-    if (!{'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
+    if (!navivoxIsEndpointScheme(uri.scheme)) {
       return 'Use http, https, ws, or wss.';
     }
     return null;
@@ -50,7 +52,7 @@ class GatewayConnectionPresentation {
         'Enter a valid Gormes gateway address.',
       );
     }
-    if (!{'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
+    if (!navivoxIsEndpointScheme(uri.scheme)) {
       return const GatewayConnectionAddressPort.error(
         'Use http, https, ws, or wss.',
       );
@@ -64,10 +66,8 @@ class GatewayConnectionPresentation {
       );
     }
 
-    final baseUri = Uri(
-      scheme: _httpSchemeFor(uri.scheme),
-      host: uri.host,
-      port: selectedPort,
+    final baseUri = Uri.parse(
+      navivoxHttpBaseUrlFromEndpointUri(uri.replace(port: selectedPort)),
     );
     return GatewayConnectionAddressPort(
       address: uri.host,
@@ -167,15 +167,7 @@ int? _parsePort(String value) {
   return parsed;
 }
 
-String _httpSchemeFor(String scheme) => switch (scheme) {
-  'ws' => 'http',
-  'wss' => 'https',
-  _ => scheme,
-};
-
 String? _supportedInputScheme(String scheme) {
   final normalized = scheme.trim().toLowerCase();
-  return {'http', 'https', 'ws', 'wss'}.contains(normalized)
-      ? normalized
-      : null;
+  return navivoxIsEndpointScheme(normalized) ? normalized : null;
 }

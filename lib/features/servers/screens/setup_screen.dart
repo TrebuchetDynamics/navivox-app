@@ -6,16 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../../core/protocol/navivox_endpoint_uri.dart';
+import '../../../core/session/session_persistence_service.dart';
+import '../../../router/navigation_intent.dart';
+import '../pairing/pairing_handoff_flow.dart';
 import '../registration/gateway_connection_presentation.dart';
 import '../setup/navivox_connect_intent_source.dart';
 import '../setup/navivox_connect_intent_source_provider.dart';
-import '../pairing/pairing_handoff_flow.dart';
 import '../setup/setup_guide_presentation.dart';
 import '../setup/setup_qr_import_presentation.dart';
 import '../setup/setup_screen_presentation.dart';
-import '../../../core/session/session_persistence_service.dart';
 
 export '../setup/setup_qr_import_presentation.dart'
     show PairingHandoffSource, SetupQrImageImport, parseNavivoxQrPayload;
@@ -439,12 +440,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     _webSocketUrl = null;
     _handoffFlow = _handoffFlow.resetManualConnectionEdit();
     final uri = Uri.tryParse(value.trim());
-    if (uri != null && {'http', 'https', 'ws', 'wss'}.contains(uri.scheme)) {
-      _scheme = switch (uri.scheme) {
-        'ws' => 'http',
-        'wss' => 'https',
-        _ => uri.scheme,
-      };
+    if (uri != null && navivoxIsEndpointScheme(uri.scheme)) {
+      _scheme = navivoxHttpSchemeFromEndpointScheme(uri.scheme);
     } else {
       _scheme = 'http';
     }
