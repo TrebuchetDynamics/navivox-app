@@ -4,7 +4,7 @@ import 'package:navivox/features/servers/models/connection_import.dart';
 import 'package:navivox/features/servers/pairing/pairing_handoff_flow.dart';
 import 'package:navivox/router/navigation_intent.dart';
 
-import '../shared/test_constants.dart';
+import '../../shared/test_constants.dart';
 
 void main() {
 

@@ -1,11 +1,4 @@
-import 'package:navivox/core/channel/navivox_channel.dart';
-
-/// A reusable Profile contact fixture for Mineru Builder.
-const mineru = NavivoxProfileContact(
-  serverId: 'local',
-  profileId: 'mineru',
-  displayName: 'Mineru',
-  serverLabel: 'Local',
-  health: NavivoxProfileHealth.online,
-  latestPreview: 'Ready',
-);
+// Compatibility re-export. Prefer importing directly from
+// 'package:navivox/test/features/shared/test_constants.dart'
+// or the appropriate relative path in new code.
+export '../../shared/test_constants.dart';
