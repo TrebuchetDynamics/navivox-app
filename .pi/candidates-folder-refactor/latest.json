@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T15:23:49.166Z",
+  "generatedAt": "2026-05-30T15:26:42.340Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,10 +8,10 @@
   "candidates": [
     {
       "relative": "lib",
-      "score": 2101.5,
-      "files": 104,
+      "score": 2104.5,
+      "files": 107,
       "direct": 3,
-      "churn": 441,
+      "churn": 446,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -24,12 +24,12 @@
     },
     {
       "relative": "lib/features",
-      "score": 1556,
+      "score": 1560,
       "files": 74,
       "direct": 0,
-      "churn": 353,
+      "churn": 354,
       "callers": 1,
-      "importsOut": 9,
+      "importsOut": 11,
       "tests": 0,
       "roles": 5,
       "duplicates": 221,
@@ -56,14 +56,14 @@
     },
     {
       "relative": "lib/core",
-      "score": 690,
-      "files": 17,
+      "score": 700,
+      "files": 20,
       "direct": 0,
-      "churn": 51,
+      "churn": 55,
       "callers": 48,
       "importsOut": 0,
       "tests": 0,
-      "roles": 3,
+      "roles": 4,
       "duplicates": 65,
       "subdirs": 4,
       "extensions": [
@@ -170,6 +170,22 @@
       ]
     },
     {
+      "relative": "lib/features/servers",
+      "score": 314,
+      "files": 12,
+      "direct": 0,
+      "churn": 66,
+      "callers": 1,
+      "importsOut": 9,
+      "tests": 0,
+      "roles": 2,
+      "duplicates": 32,
+      "subdirs": 5,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "playwright/debug",
       "score": 312.5,
       "files": 18,
@@ -187,32 +203,16 @@
       ]
     },
     {
-      "relative": "lib/features/servers",
-      "score": 312,
-      "files": 12,
-      "direct": 0,
-      "churn": 65,
-      "callers": 1,
-      "importsOut": 8,
+      "relative": "lib/core/gateway",
+      "score": 311.6,
+      "files": 6,
+      "direct": 6,
+      "churn": 18,
+      "callers": 10,
+      "importsOut": 3,
       "tests": 0,
       "roles": 2,
-      "duplicates": 32,
-      "subdirs": 5,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "lib/core/gateway",
-      "score": 303.7,
-      "files": 5,
-      "direct": 5,
-      "churn": 16,
-      "callers": 10,
-      "importsOut": 2,
-      "tests": 0,
-      "roles": 1,
-      "duplicates": 36,
+      "duplicates": 35,
       "subdirs": 0,
       "extensions": [
         ".dart"
@@ -284,6 +284,22 @@
       ]
     },
     {
+      "relative": "lib/core/protocol",
+      "score": 226,
+      "files": 6,
+      "direct": 6,
+      "churn": 10,
+      "callers": 27,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 0,
+      "duplicates": 14,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/features/voice",
       "score": 218.6,
       "files": 12,
@@ -311,22 +327,6 @@
       "roles": 1,
       "duplicates": 17,
       "subdirs": 4,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "lib/core/protocol",
-      "score": 202.6,
-      "files": 4,
-      "direct": 4,
-      "churn": 8,
-      "callers": 25,
-      "importsOut": 0,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 13,
-      "subdirs": 0,
       "extensions": [
         ".dart"
       ]
