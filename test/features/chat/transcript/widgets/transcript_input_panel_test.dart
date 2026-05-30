@@ -6,6 +6,8 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_input_panel.
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
+import '../../../shared/fakes/voice_capture_service_fakes.dart';
+
 void main() {
   testWidgets('sends typed text and clears the composer controller', (
     tester,
@@ -69,7 +71,7 @@ void main() {
       _InputPanelHost(
         controller: controller,
         onSend: (_) {},
-        voiceCaptureService: _ThrowingVoiceCaptureService(
+        voiceCaptureService: ThrowingVoiceCaptureService(
           StateError('microphone exploded'),
         ),
         onVoiceCaptureFailed: (error) => failed = error,
@@ -95,7 +97,7 @@ void main() {
       _InputPanelHost(
         controller: controller,
         onSend: (_) {},
-        voiceCaptureService: const _ThrowingVoiceCaptureService(
+        voiceCaptureService: const ThrowingVoiceCaptureService(
           SpeechToTextCaptureFailure('no transcript'),
         ),
         onVoiceCaptureFailed: (error) => failed = error,
@@ -118,7 +120,7 @@ void main() {
       _InputPanelHost(
         controller: controller,
         onSend: (_) {},
-        voiceCaptureService: const _ThrowingVoiceCaptureService(
+        voiceCaptureService: const ThrowingVoiceCaptureService(
           DeviceSpeechUnavailable('microphone permission denied'),
         ),
         onVoiceCaptureFailed: (error) => failed = error,
@@ -195,16 +197,5 @@ class _InputPanelHost extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ThrowingVoiceCaptureService implements VoiceCaptureService {
-  const _ThrowingVoiceCaptureService(this.error);
-
-  final Object error;
-
-  @override
-  Future<VoiceCapture> capture({required Duration timeout}) async {
-    throw error;
   }
 }

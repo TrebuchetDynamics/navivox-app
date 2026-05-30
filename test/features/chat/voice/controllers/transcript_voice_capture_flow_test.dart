@@ -5,6 +5,8 @@ import 'package:navivox/features/chat/voice/controllers/transcript_voice_capture
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
+import '../../../shared/fakes/voice_capture_service_fakes.dart';
+
 void main() {
   const flow = TranscriptVoiceCaptureFlow();
 
@@ -62,7 +64,7 @@ void main() {
 
   test('maps no transcript to actionable recovery copy', () async {
     final outcome = await flow.capture(
-      service: _ThrowingVoiceCaptureService(
+      service: ThrowingVoiceCaptureService(
         const SpeechToTextCaptureFailure('no transcript'),
       ),
       timeout: const Duration(seconds: 1),
@@ -75,7 +77,7 @@ void main() {
 
   test('maps device STT unavailable to actionable recovery copy', () async {
     final outcome = await flow.capture(
-      service: const _ThrowingVoiceCaptureService(DeviceSpeechUnavailable()),
+      service: const ThrowingVoiceCaptureService(DeviceSpeechUnavailable()),
       timeout: const Duration(seconds: 1),
     );
 
@@ -88,7 +90,7 @@ void main() {
     'maps microphone permission denied to actionable recovery copy',
     () async {
       final outcome = await flow.capture(
-        service: const _ThrowingVoiceCaptureService(
+        service: const ThrowingVoiceCaptureService(
           DeviceSpeechUnavailable('microphone permission denied'),
         ),
         timeout: const Duration(seconds: 1),
@@ -105,7 +107,7 @@ void main() {
 
   test('maps unexpected errors to stable operator failure copy', () async {
     final outcome = await flow.capture(
-      service: _ThrowingVoiceCaptureService(StateError('microphone exploded')),
+      service: ThrowingVoiceCaptureService(StateError('microphone exploded')),
       timeout: const Duration(seconds: 1),
     );
 
@@ -132,16 +134,5 @@ class _RecordingVoiceCaptureService implements VoiceCaptureService {
       duration: const Duration(milliseconds: 700),
       confidence: 0.88,
     );
-  }
-}
-
-class _ThrowingVoiceCaptureService implements VoiceCaptureService {
-  const _ThrowingVoiceCaptureService(this.error);
-
-  final Object error;
-
-  @override
-  Future<VoiceCapture> capture({required Duration timeout}) async {
-    throw error;
   }
 }

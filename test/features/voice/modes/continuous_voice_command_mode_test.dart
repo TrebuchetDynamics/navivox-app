@@ -14,6 +14,7 @@ import 'package:navivox/features/voice/services/capture/voice_capture_service.da
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
 import '../../shared/app/test_router_app.dart';
+import '../../shared/fakes/voice_capture_service_fakes.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
@@ -1229,7 +1230,7 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = _ThrowingVoiceCaptureService(
+    final voiceService = ThrowingVoiceCaptureService(
       const VoiceCaptureTimeout(),
     );
 
@@ -1403,7 +1404,7 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = _ThrowingVoiceCaptureService(
+    final voiceService = ThrowingVoiceCaptureService(
       const DeviceSpeechUnavailable(),
     );
 
@@ -1444,7 +1445,7 @@ void main() {
     tester,
   ) async {
     final channel = _seedChannel(selectedKey: 'local::mineru');
-    final voiceService = _ThrowingVoiceCaptureService(
+    final voiceService = ThrowingVoiceCaptureService(
       const DeviceSpeechUnavailable('microphone permission denied'),
     );
 
@@ -1616,17 +1617,6 @@ Future<void> _submitText(WidgetTester tester, String text) async {
   );
   await tester.tap(find.byIcon(Icons.send));
   await tester.pump();
-}
-
-class _ThrowingVoiceCaptureService implements VoiceCaptureService {
-  const _ThrowingVoiceCaptureService(this.error);
-
-  final Object error;
-
-  @override
-  Future<VoiceCapture> capture({required Duration timeout}) async {
-    throw error;
-  }
 }
 
 class _QueueVoiceCaptureService implements VoiceCaptureService {
