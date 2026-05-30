@@ -1,4 +1,4 @@
-// playwright/tests/e2e-screenshots.spec.mjs — 2026-05-21 CST
+// playwright/tests/screenshots/e2e-screenshots.spec.mjs — 2026-05-21 CST
 // Tests: 12a-k (back nav), 14e (register modal), 14f (voice gateway),
 // 14g (gateway setup), plus mobile transcript slices 11h-k
 //
@@ -7,7 +7,7 @@ import {
   APP_URL as APP,
   activateVisibleSemantics as a11y,
   clickSemantic,
-} from '../support/flutter_semantics.mjs';
+} from '../../support/flutter_semantics.mjs';
 
 async function click(page, text) {
   await page.waitForTimeout(800);

@@ -6,7 +6,7 @@ import {
   clickSemantic as click,
   enableFlutterAccessibility as a11y,
   longPressSemantic as longPress,
-} from '../support/flutter_semantics.mjs';
+} from '../../support/flutter_semantics.mjs';
 
 // ─── 1. Profile Contacts ─────────────────────────────────────────────
 test.describe('1. Profile Contacts', () => {
