@@ -1,8 +1,8 @@
 {
   "version": 1,
   "target": "test",
-  "updatedAt": "2026-05-30T06:06:27.441Z",
-  "objective": "Align test/ topology with lib responsibility boundaries while preserving behavior: theme tests under test/theme, shared widget tests under test/shared/widgets, chat transcript/voice tests under chat transcript/controller/presentation subfolders, voice service tests under capture/platform/speech subfolders, and misplaced session persistence feature tests under core/session.",
+  "updatedAt": "2026-05-30T06:08:17.582Z",
+  "objective": "Align test/ topology with lib responsibility boundaries while preserving behavior. Current planned topology is complete: root has no test files; tests are grouped under core, features, router, shared, support, theme, tooling, and e2e, with feature subfolders matching domain responsibilities.",
   "completedSlices": [
     "Moved theme test from test/app to test/theme/navivox_theme_test.dart.",
     "Moved shared app shell tests into test/shared/widgets.",
@@ -10,12 +10,14 @@
     "Moved TranscriptSurface voice tests into test/features/chat/transcript/surface.",
     "Moved voice service tests into test/features/voice/services/{platform,capture,speech}.",
     "Moved misplaced feature/session persistence test into test/core/session/session_persistence_service_feature_test.dart.",
-    "Removed empty obsolete directories."
+    "Removed empty obsolete directories.",
+    "Completion check found no remaining root files or empty directories; stale old-path grep returned no matches."
   ],
   "nextCandidates": [],
   "validationReceipts": [
     "flutter test targeted moved paths after each slice: passed.",
     "flutter test: passed (504 tests).",
+    "rg stale old test paths in test lib: no matches.",
     "folder_refactor_audit target=test plannedTopologyComplete=true: pass."
   ]
 }
