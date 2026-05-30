@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
 
 import '../shared/transcript_test_fixtures.dart';
+import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('renders the shared empty Transcript surface state', (
@@ -14,7 +14,7 @@ void main() {
     addTearDown(scrollController.dispose);
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         messages: const <NavivoxChatMessage>[],
       ),
@@ -31,7 +31,7 @@ void main() {
     addTearDown(scrollController.dispose);
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         dateLabelNow: DateTime.utc(2026, 6, 1),
         messages: [
@@ -68,7 +68,7 @@ void main() {
     addTearDown(scrollController.dispose);
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         messages: [
           transcriptTextMessage(
@@ -95,7 +95,7 @@ void main() {
     final now = DateTime.utc(2026, 5, 23, 14);
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         dateLabelNow: now,
         messages: [
@@ -129,7 +129,7 @@ void main() {
     var paused = false;
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         messages: [
           transcriptTextMessage(
@@ -182,7 +182,7 @@ void main() {
     NavivoxProfileContact? forwardedTo;
 
     await tester.pumpWidget(
-      _ThreadHost(
+      transcriptThreadTestApp(
         scrollController: scrollController,
         messages: [
           transcriptTextMessage(
@@ -207,42 +207,4 @@ void main() {
 
     expect(forwardedTo, transcriptSupportContact);
   });
-}
-
-class _ThreadHost extends StatelessWidget {
-  const _ThreadHost({
-    required this.scrollController,
-    required this.messages,
-    this.assistantTypingLabel,
-    this.dateLabelNow,
-    this.forwardTargets = const [],
-    this.onForward,
-    this.onCancelActiveTurn,
-  });
-
-  final ScrollController scrollController;
-  final List<NavivoxChatMessage> messages;
-  final String? assistantTypingLabel;
-  final DateTime? dateLabelNow;
-  final List<NavivoxProfileContact> forwardTargets;
-  final void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
-  onForward;
-  final VoidCallback? onCancelActiveTurn;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: TranscriptThread(
-          messages: messages,
-          scrollController: scrollController,
-          assistantTypingLabel: assistantTypingLabel,
-          dateLabelNow: dateLabelNow,
-          forwardTargets: forwardTargets,
-          onForward: onForward,
-          onCancelActiveTurn: onCancelActiveTurn,
-        ),
-      ),
-    );
-  }
 }

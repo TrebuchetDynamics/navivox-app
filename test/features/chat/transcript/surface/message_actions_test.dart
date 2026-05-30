@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
-
-import '../shared/transcript_test_fixtures.dart';
 import 'package:navivox/features/voice/services/tts/text_to_speech_service.dart';
+
+import '../shared/transcript_surface_test_app.dart';
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets('long press text message opens selectable copy actions', (
@@ -31,19 +31,15 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: [
-              transcriptTextMessage(
-                id: 'm-1',
-                text: 'copy this dispatch note',
-                createdAt: DateTime(2026, 5, 19, 12),
-              ),
-            ],
-            onSend: (_) {},
+      transcriptSurfaceTestApp(
+        messages: [
+          transcriptTextMessage(
+            id: 'm-1',
+            text: 'copy this dispatch note',
+            createdAt: DateTime(2026, 5, 19, 12),
           ),
-        ),
+        ],
+        onSend: (_) {},
       ),
     );
 
@@ -67,20 +63,16 @@ void main() {
     final tts = FakeTextToSpeechService();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: [
-              transcriptTextMessage(
-                id: 'm-1',
-                text: 'read this aloud',
-                createdAt: DateTime(2026, 5, 19, 12),
-              ),
-            ],
-            onSend: (_) {},
-            textToSpeechService: tts,
+      transcriptSurfaceTestApp(
+        messages: [
+          transcriptTextMessage(
+            id: 'm-1',
+            text: 'read this aloud',
+            createdAt: DateTime(2026, 5, 19, 12),
           ),
-        ),
+        ],
+        onSend: (_) {},
+        textToSpeechService: tts,
       ),
     );
 
@@ -97,19 +89,15 @@ void main() {
 
   testWidgets('long press text explains unavailable TTS', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptSurface(
-            messages: [
-              transcriptTextMessage(
-                id: 'm-1',
-                text: 'read this later',
-                createdAt: DateTime(2026, 5, 19, 12),
-              ),
-            ],
-            onSend: (_) {},
+      transcriptSurfaceTestApp(
+        messages: [
+          transcriptTextMessage(
+            id: 'm-1',
+            text: 'read this later',
+            createdAt: DateTime(2026, 5, 19, 12),
           ),
-        ),
+        ],
+        onSend: (_) {},
       ),
     );
 
@@ -125,25 +113,21 @@ void main() {
     (tester) async {
       final forwarded = <({String text, String serverId, String profileId})>[];
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: TranscriptSurface(
-              messages: [
-                transcriptTextMessage(
-                  id: 'm-1',
-                  text: 'forward this finding',
-                  createdAt: DateTime(2026, 5, 19, 12),
-                ),
-              ],
-              onSend: (_) {},
-              forwardTargets: const [transcriptSupportContact],
-              onForward: (message, target) => forwarded.add((
-                text: message.text!,
-                serverId: target.serverId,
-                profileId: target.profileId,
-              )),
+        transcriptSurfaceTestApp(
+          messages: [
+            transcriptTextMessage(
+              id: 'm-1',
+              text: 'forward this finding',
+              createdAt: DateTime(2026, 5, 19, 12),
             ),
-          ),
+          ],
+          onSend: (_) {},
+          forwardTargets: const [transcriptSupportContact],
+          onForward: (message, target) => forwarded.add((
+            text: message.text!,
+            serverId: target.serverId,
+            profileId: target.profileId,
+          )),
         ),
       );
 

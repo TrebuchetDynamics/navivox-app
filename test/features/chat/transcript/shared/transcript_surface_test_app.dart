@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+import 'package:navivox/features/voice/services/tts/text_to_speech_service.dart';
 
 import '../../../shared/app/test_material_app.dart';
 
@@ -17,6 +19,10 @@ Widget transcriptSurfaceTestApp({
   VoidCallback? onOpenVoiceSettings,
   VoiceCaptureService? voiceCaptureService,
   ValueChanged<VoiceCapture>? onVoice,
+  TextToSpeechService? textToSpeechService,
+  List<NavivoxProfileContact> forwardTargets = const [],
+  void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
+  onForward,
 }) {
   return TestMaterialScaffold(
     body: TranscriptSurface(
@@ -30,6 +36,9 @@ Widget transcriptSurfaceTestApp({
       onOpenVoiceSettings: onOpenVoiceSettings,
       voiceCaptureService: voiceCaptureService,
       onVoice: onVoice,
+      textToSpeechService: textToSpeechService,
+      forwardTargets: forwardTargets,
+      onForward: onForward,
     ),
   );
 }

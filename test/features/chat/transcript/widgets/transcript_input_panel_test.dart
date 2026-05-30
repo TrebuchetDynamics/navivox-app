@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_input_panel.dart';
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
+import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and clears the composer controller', (
@@ -15,7 +15,7 @@ void main() {
     final sent = <String>[];
 
     await tester.pumpWidget(
-      _InputPanelHost(controller: controller, onSend: sent.add),
+      transcriptInputPanelTestApp(controller: controller, onSend: sent.add),
     );
 
     await tester.tap(find.byIcon(Icons.send));
@@ -34,7 +34,7 @@ void main() {
     VoiceCapture? captured;
 
     await tester.pumpWidget(
-      _InputPanelHost(
+      transcriptInputPanelTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureService: successfulVoiceCaptureService(audio: [1, 2, 3]),
@@ -61,7 +61,7 @@ void main() {
     Object? failed;
 
     await tester.pumpWidget(
-      _InputPanelHost(
+      transcriptInputPanelTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureService: ThrowingVoiceCaptureService(
@@ -87,7 +87,7 @@ void main() {
     Object? failed;
 
     await tester.pumpWidget(
-      _InputPanelHost(
+      transcriptInputPanelTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureService: const ThrowingVoiceCaptureService(
@@ -110,7 +110,7 @@ void main() {
     Object? failed;
 
     await tester.pumpWidget(
-      _InputPanelHost(
+      transcriptInputPanelTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureService: const ThrowingVoiceCaptureService(
@@ -135,7 +135,7 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      _InputPanelHost(
+      transcriptInputPanelTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureService: successfulVoiceCaptureService(
@@ -156,38 +156,4 @@ void main() {
 
     await tester.pumpAndSettle();
   });
-}
-
-class _InputPanelHost extends StatelessWidget {
-  const _InputPanelHost({
-    required this.controller,
-    required this.onSend,
-    this.voiceCaptureService,
-    this.onVoice,
-    this.onVoiceCaptureStarted,
-    this.onVoiceCaptureFailed,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onSend;
-  final VoiceCaptureService? voiceCaptureService;
-  final ValueChanged<VoiceCapture>? onVoice;
-  final VoidCallback? onVoiceCaptureStarted;
-  final ValueChanged<Object>? onVoiceCaptureFailed;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: TranscriptInputPanel(
-          controller: controller,
-          onSend: onSend,
-          voiceCaptureService: voiceCaptureService,
-          onVoice: onVoice,
-          onVoiceCaptureStarted: onVoiceCaptureStarted,
-          onVoiceCaptureFailed: onVoiceCaptureFailed,
-        ),
-      ),
-    );
-  }
 }

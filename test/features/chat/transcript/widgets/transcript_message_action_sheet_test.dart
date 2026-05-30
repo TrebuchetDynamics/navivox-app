@@ -4,6 +4,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_action_presentation.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_message_action_sheet.dart';
 
+import '../../../shared/app/test_material_app.dart';
 import '../shared/transcript_test_fixtures.dart';
 
 void main() {
@@ -22,15 +23,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptMessageActionSheet(
-            presentation: presentation,
-            onPauseStream: () async => actions.add('pause'),
-            onCopyText: () async => actions.add('copy:${presentation.text}'),
-            onReadAloud: () async => actions.add('read:${presentation.text}'),
-            onInspectRunRecord: () async => actions.add('inspect'),
-          ),
+      TestMaterialScaffold(
+        body: TranscriptMessageActionSheet(
+          presentation: presentation,
+          onPauseStream: () async => actions.add('pause'),
+          onCopyText: () async => actions.add('copy:${presentation.text}'),
+          onReadAloud: () async => actions.add('read:${presentation.text}'),
+          onInspectRunRecord: () async => actions.add('inspect'),
         ),
       ),
     );
@@ -75,12 +74,10 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptMessageActionSheet(
-            presentation: presentation,
-            onForward: (target) => forwardedTo = target,
-          ),
+      TestMaterialScaffold(
+        body: TranscriptMessageActionSheet(
+          presentation: presentation,
+          onForward: (target) => forwardedTo = target,
         ),
       ),
     );
@@ -104,10 +101,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: TranscriptMessageActionSheet(presentation: presentation),
-        ),
+      TestMaterialScaffold(
+        body: TranscriptMessageActionSheet(presentation: presentation),
       ),
     );
 

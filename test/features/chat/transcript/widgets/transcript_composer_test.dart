@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/chat/transcript/widgets/transcript_composer.dart';
+
+import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and inserts quick emoji', (tester) async {
@@ -9,7 +10,7 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      _ComposerHost(controller: controller, onSend: sent.add),
+      transcriptComposerTestApp(controller: controller, onSend: sent.add),
     );
 
     await tester.tap(find.byTooltip('Emoji'));
@@ -33,7 +34,7 @@ void main() {
     var openedWorkspace = false;
 
     await tester.pumpWidget(
-      _ComposerHost(
+      transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
         onUploadFile: () => uploadedFile = true,
@@ -74,7 +75,7 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      _ComposerHost(controller: controller, onSend: (_) {}),
+      transcriptComposerTestApp(controller: controller, onSend: (_) {}),
     );
 
     await tester.tap(find.byTooltip('Attach'));
@@ -94,7 +95,7 @@ void main() {
     var openedSettings = false;
 
     await tester.pumpWidget(
-      _ComposerHost(
+      transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
         voiceUnavailableReason: ' Device STT unavailable ',
@@ -133,7 +134,7 @@ void main() {
     var toggles = 0;
 
     await tester.pumpWidget(
-      _ComposerHost(
+      transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureAvailable: true,
@@ -147,7 +148,7 @@ void main() {
     expect(toggles, 1);
 
     await tester.pumpWidget(
-      _ComposerHost(
+      transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
         voiceCaptureAvailable: true,
@@ -161,53 +162,4 @@ void main() {
     await tester.pump();
     expect(toggles, 2);
   });
-}
-
-class _ComposerHost extends StatelessWidget {
-  const _ComposerHost({
-    required this.controller,
-    required this.onSend,
-    this.voiceCaptureAvailable = false,
-    this.voiceUnavailableReason,
-    this.voiceRecoveryAction,
-    this.onOpenVoiceSettings,
-    this.onUploadFile,
-    this.onPickPhotoOrVideo,
-    this.onOpenWorkspace,
-    this.capturing = false,
-    this.onToggleVoice,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onSend;
-  final bool voiceCaptureAvailable;
-  final String? voiceUnavailableReason;
-  final String? voiceRecoveryAction;
-  final VoidCallback? onOpenVoiceSettings;
-  final VoidCallback? onUploadFile;
-  final VoidCallback? onPickPhotoOrVideo;
-  final VoidCallback? onOpenWorkspace;
-  final bool capturing;
-  final VoidCallback? onToggleVoice;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: TranscriptComposer(
-          controller: controller,
-          onSend: onSend,
-          voiceCaptureAvailable: voiceCaptureAvailable,
-          voiceUnavailableReason: voiceUnavailableReason,
-          voiceRecoveryAction: voiceRecoveryAction,
-          onOpenVoiceSettings: onOpenVoiceSettings,
-          onUploadFile: onUploadFile,
-          onPickPhotoOrVideo: onPickPhotoOrVideo,
-          onOpenWorkspace: onOpenWorkspace,
-          capturing: capturing,
-          onToggleVoice: onToggleVoice,
-        ),
-      ),
-    );
-  }
 }
