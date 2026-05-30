@@ -5,7 +5,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/settings/screens/settings_screen.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 void main() {
   testWidgets('renders continuous voice controls for the active server', (

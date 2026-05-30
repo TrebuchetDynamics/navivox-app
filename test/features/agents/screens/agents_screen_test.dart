@@ -5,7 +5,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/agents/screens/agents_screen.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 const _seedAgents = [
   NavivoxAgent(id: 'def', name: 'Default', status: 'ready'),
