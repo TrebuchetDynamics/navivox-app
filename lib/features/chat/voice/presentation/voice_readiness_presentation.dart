@@ -1,5 +1,6 @@
 import '../../../../core/channel/navivox_channel.dart';
 import '../../../../shared/presentation/profile_health_labels.dart';
+import '../../../../shared/presentation/voice_unavailable_presentation.dart';
 import '../../../settings/providers/voice_settings_provider.dart';
 
 enum VoiceReadinessStatus { ready, checking, blocked }
@@ -72,8 +73,14 @@ class VoiceReadinessPresentation {
       );
     }
 
-    final runtimeReason = _canonicalReason(runtimeVoiceDisabledReason);
-    final localReason = _canonicalReason(localVoiceCaptureUnavailableReason);
+    final runtimeReason = canonicalVoiceUnavailableReason(
+      runtimeVoiceDisabledReason,
+      emptyAsNull: true,
+    );
+    final localReason = canonicalVoiceUnavailableReason(
+      localVoiceCaptureUnavailableReason,
+      emptyAsNull: true,
+    );
     final localBlockerReason = runtimeReason ?? localReason;
     if (!localVoiceCaptureAvailable || localBlockerReason != null) {
       final reason = localBlockerReason ?? 'device STT unavailable';
@@ -86,8 +93,9 @@ class VoiceReadinessPresentation {
       );
     }
 
-    final profileVoiceReason = _canonicalReason(
+    final profileVoiceReason = canonicalVoiceUnavailableReason(
       activeProfile.voiceCapability.captureUnavailableReason,
+      emptyAsNull: true,
     );
     if (profileVoiceReason != null) {
       return _blocked(
@@ -150,16 +158,11 @@ class VoiceReadinessPresentation {
   }
 
   String get voiceSettingsSubtitle {
-    return blockerKind == VoiceReadinessBlockerKind.deviceSpeechUnavailable ||
-            (blockerKind ==
-                    VoiceReadinessBlockerKind.gatewayProfileSttUnavailable &&
-                disabledReason == 'device STT unavailable')
-        ? 'Review continuous voice after enabling device speech recognition.'
-        : blockerKind == VoiceReadinessBlockerKind.microphonePermissionDenied
-        ? 'Review continuous voice after granting microphone permission.'
-        : blockerKind == VoiceReadinessBlockerKind.selectProfileContact
-        ? 'Select a profile contact before reviewing continuous voice settings.'
-        : 'Review continuous voice and trust settings';
+    return voiceSettingsSubtitleForUnavailableReason(
+      blockerKind == VoiceReadinessBlockerKind.selectProfileContact
+          ? 'select a profile contact'
+          : disabledReason,
+    );
   }
 
   String get androidRecognizerStatus {
@@ -222,7 +225,7 @@ class VoiceReadinessPresentation {
     if (reason == 'device STT unavailable' && recoveryAction.isNotEmpty) {
       return recoveryAction;
     }
-    return _defaultRecoveryAction(reason);
+    return defaultVoiceUnavailableRecoveryAction(reason);
   }
 
   static String? _profileRecoveryAction(
@@ -231,28 +234,6 @@ class VoiceReadinessPresentation {
   ) {
     final recoveryAction = profile.voiceCapability.recoveryAction.trim();
     if (recoveryAction.isNotEmpty) return recoveryAction;
-    return _defaultRecoveryAction(reason);
+    return defaultVoiceUnavailableRecoveryAction(reason);
   }
-
-  static String? _defaultRecoveryAction(String reason) {
-    if (reason == 'device STT unavailable') {
-      return 'Install or enable device speech recognition, then return to Navivox.';
-    }
-    if (reason == 'microphone permission denied') {
-      return 'Grant microphone permission in Android App info, then return to Navivox.';
-    }
-    return null;
-  }
-
-  static String? _canonicalReason(String? reason) {
-    final trimmed = reason?.trim();
-    if (trimmed == null || trimmed.isEmpty) return null;
-    final normalized = trimmed.toLowerCase();
-    if (normalized == 'device stt unavailable') return 'device STT unavailable';
-    if (normalized == 'microphone permission denied') {
-      return 'microphone permission denied';
-    }
-    return trimmed;
-  }
-
 }

@@ -1,3 +1,6 @@
+import '../../../../../shared/presentation/voice_unavailable_presentation.dart'
+    as voice_unavailable_policy;
+
 enum TranscriptComposerVoiceButtonState { capture, stop, unavailable }
 
 enum TranscriptComposerVoiceSheetRowKind {
@@ -59,7 +62,9 @@ class TranscriptComposerPresentation {
     required bool capturing,
     required bool emojiOpen,
   }) {
-    final reason = canonicalVoiceUnavailableReason(voiceUnavailableReason);
+    final reason = voice_unavailable_policy.canonicalVoiceUnavailableReason(
+      voiceUnavailableReason,
+    );
     final voiceAvailable = voiceCaptureAvailable && reason?.isNotEmpty != true;
     return TranscriptComposerPresentation(
       showEmoji: emojiOpen,
@@ -132,23 +137,15 @@ class TranscriptComposerPresentation {
   }
 
   String get voiceUnavailableHelpText {
-    return voiceUnavailableReason == 'device STT unavailable'
-        ? 'Install or enable device speech recognition, then return to Navivox.'
-        : voiceUnavailableReason == 'microphone permission denied'
-        ? 'Grant microphone permission in Android App info, then return to Navivox.'
-        : voiceUnavailableReason == 'select a profile contact'
-        ? 'Select a profile contact before using continuous voice.'
-        : 'Check microphone permissions and Settings.';
+    return voice_unavailable_policy.voiceUnavailableHelpText(
+      voiceUnavailableReason,
+    );
   }
 
   String get voiceSettingsSubtitle {
-    return voiceUnavailableReason == 'device STT unavailable'
-        ? 'Review continuous voice after enabling device speech recognition.'
-        : voiceUnavailableReason == 'microphone permission denied'
-        ? 'Review continuous voice after granting microphone permission.'
-        : voiceUnavailableReason == 'select a profile contact'
-        ? 'Select a profile contact before reviewing continuous voice settings.'
-        : 'Review continuous voice and trust settings';
+    return voice_unavailable_policy.voiceSettingsSubtitleForUnavailableReason(
+      voiceUnavailableReason,
+    );
   }
 
   List<TranscriptComposerVoiceSheetRowPresentation> get voiceSheetRows {
@@ -180,19 +177,6 @@ class TranscriptComposerPresentation {
       );
     }
     return rows;
-  }
-
-  static String? canonicalVoiceUnavailableReason(String? reason) {
-    final trimmed = reason?.trim();
-    if (trimmed == null || trimmed.isEmpty) return trimmed;
-    final normalized = trimmed.toLowerCase();
-    if (normalized == 'device stt unavailable') {
-      return 'device STT unavailable';
-    }
-    if (normalized == 'microphone permission denied') {
-      return 'microphone permission denied';
-    }
-    return trimmed;
   }
 
   static String? trimmedOrNull(String? value) {
