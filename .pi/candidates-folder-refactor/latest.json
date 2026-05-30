@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T15:20:53.827Z",
+  "generatedAt": "2026-05-30T15:23:49.166Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,16 +8,16 @@
   "candidates": [
     {
       "relative": "lib",
-      "score": 2094.5,
-      "files": 101,
+      "score": 2101.5,
+      "files": 104,
       "direct": 3,
-      "churn": 434,
+      "churn": 441,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
       "duplicates": 306,
-      "subdirs": 6,
+      "subdirs": 7,
       "extensions": [
         ".dart"
       ]
@@ -56,11 +56,11 @@
     },
     {
       "relative": "lib/core",
-      "score": 685,
-      "files": 16,
+      "score": 690,
+      "files": 17,
       "direct": 0,
-      "churn": 48,
-      "callers": 47,
+      "churn": 51,
+      "callers": 48,
       "importsOut": 0,
       "tests": 0,
       "roles": 3,
@@ -204,12 +204,12 @@
     },
     {
       "relative": "lib/core/gateway",
-      "score": 296.5,
+      "score": 303.7,
       "files": 5,
       "direct": 5,
-      "churn": 15,
-      "callers": 9,
-      "importsOut": 1,
+      "churn": 16,
+      "callers": 10,
+      "importsOut": 2,
       "tests": 0,
       "roles": 1,
       "duplicates": 36,
@@ -253,11 +253,11 @@
     },
     {
       "relative": "lib/core/channel",
-      "score": 262.7,
+      "score": 266.7,
       "files": 3,
       "direct": 3,
       "churn": 21,
-      "callers": 38,
+      "callers": 39,
       "importsOut": 6,
       "tests": 0,
       "roles": 1,
@@ -316,6 +316,22 @@
       ]
     },
     {
+      "relative": "lib/core/protocol",
+      "score": 202.6,
+      "files": 4,
+      "direct": 4,
+      "churn": 8,
+      "callers": 25,
+      "importsOut": 0,
+      "tests": 0,
+      "roles": 0,
+      "duplicates": 13,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "android",
       "score": 198.5,
       "files": 24,
@@ -348,22 +364,6 @@
       "roles": 1,
       "duplicates": 13,
       "subdirs": 4,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "lib/core/protocol",
-      "score": 193.7,
-      "files": 3,
-      "direct": 3,
-      "churn": 6,
-      "callers": 24,
-      "importsOut": 0,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 13,
-      "subdirs": 0,
       "extensions": [
         ".dart"
       ]
