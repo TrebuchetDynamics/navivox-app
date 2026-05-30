@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
 void main() {

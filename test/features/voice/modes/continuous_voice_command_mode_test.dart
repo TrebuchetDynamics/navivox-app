@@ -13,7 +13,7 @@ import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capt
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 import 'package:navivox/router/app_router.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),

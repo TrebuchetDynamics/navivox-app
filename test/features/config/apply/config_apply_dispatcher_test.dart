@@ -3,7 +3,7 @@ import 'package:navivox/features/config/apply/config_apply_dispatcher.dart';
 import 'package:navivox/features/config/apply/config_apply_flow_model.dart';
 import 'package:navivox/features/config/form/config_form_model.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 void main() {
   test('dispatches plain and secret config changes to the channel', () {

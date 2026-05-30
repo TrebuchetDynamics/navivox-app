@@ -7,7 +7,7 @@ import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 void main() {
   testWidgets('renders and applies profile voice settings through Gormes', (
