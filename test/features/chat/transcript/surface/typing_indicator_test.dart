@@ -6,6 +6,8 @@ import 'package:navivox/features/chat/screens/chat_screen.dart';
 
 import '../../../../support/test_navivox_channel.dart';
 import '../../../shared/app/test_material_app.dart';
+import '../../../shared/fixtures/profile_contact_channel_fixtures.dart';
+import '../../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
   testWidgets('chat thread shows assistant typing indicator while streaming', (
@@ -67,18 +69,13 @@ void main() {
   });
 }
 
-TestNavivoxChannel _streamingMineruChannel() => TestNavivoxChannel()
-  ..seedServers(const [
-    NavivoxServer(id: 'local', name: 'Local', status: 'online'),
-  ], activeServerId: 'local')
-  ..seedProfileContacts(const [
-    NavivoxProfileContact(
-      serverId: 'local',
-      profileId: 'mineru',
+TestNavivoxChannel _streamingMineruChannel() => profileContactChannel(
+  servers: const [NavivoxServer(id: 'local', name: 'Local', status: 'online')],
+  contacts: [
+    mineruBuilderProfile(
       displayName: 'Mineru',
-      serverLabel: 'local',
-      health: NavivoxProfileHealth.online,
       latestPreview: 'Working on it',
       activeTurnState: 'streaming',
     ),
-  ], selectedKey: 'local::mineru');
+  ],
+);

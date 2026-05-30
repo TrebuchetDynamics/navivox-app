@@ -4,9 +4,9 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 
-import '../../../support/test_navivox_channel.dart';
 import '../transcript/shared/transcript_test_fixtures.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -14,15 +14,12 @@ void main() {
     'chat action opens redacted backend run record inspection panel',
     (tester) async {
       final channel =
-          TestNavivoxChannel(
+          profileContactChannel(
               initial: const NavivoxChannelState(
                 runRecordInspectionAvailable: true,
               ),
+              contacts: [mineruBuilderProfile(latestPreview: 'building')],
             )
-            ..seedServers(const [localReadyServer], activeServerId: 'local')
-            ..seedProfileContacts([
-              mineruBuilderProfile(latestPreview: 'building'),
-            ], selectedKey: 'local::mineru')
             ..seedMessages([
               transcriptTextMessage(
                 id: 'req-run-record',
@@ -86,21 +83,19 @@ void main() {
   testWidgets('chat action hides evidence when run records are unavailable', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(const [localReadyServer], activeServerId: 'local')
-      ..seedProfileContacts([
-        mineruBuilderProfile(latestPreview: 'building'),
-      ], selectedKey: 'local::mineru')
-      ..seedMessages([
-        transcriptTextMessage(
-          id: 'assistant-row',
-          createdAt: DateTime(2026, 5, 23, 10),
-          text: 'assistant final answer',
-          serverId: 'local',
-          profileId: 'mineru',
-          runRecordReference: 'req-run-record',
-        ),
-      ]);
+    final channel =
+        profileContactChannel(
+          contacts: [mineruBuilderProfile(latestPreview: 'building')],
+        )..seedMessages([
+          transcriptTextMessage(
+            id: 'assistant-row',
+            createdAt: DateTime(2026, 5, 23, 10),
+            text: 'assistant final answer',
+            serverId: 'local',
+            profileId: 'mineru',
+            runRecordReference: 'req-run-record',
+          ),
+        ]);
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(
