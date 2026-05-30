@@ -1,16 +1,19 @@
 {
   "version": 1,
   "target": "lib",
-  "updatedAt": "2026-05-30T15:23:26.985Z",
-  "objective": "Refactor lib toward explicit entrypoint facades plus focused shared contracts/helpers. Root keeps app.dart compatibility facade and app/main entrypoints; implementation lives under app/, core/, features/, router/, shared/, testing/, theme/. Shared-code objective extracted wire JSON coercion contract for gateway+memory protocol parsing and test E2E channel fixture out of root main_e2e.",
+  "updatedAt": "2026-05-30T15:26:27.042Z",
+  "objective": "Refactor lib toward explicit root entrypoints/facades plus focused shared contracts/helpers. Root keeps app.dart compatibility facade plus main.dart and main_e2e.dart entrypoints; implementation lives under app/, core/, features/, router/, shared/, testing/, theme/. Shared-code objective extracted wire JSON coercion, E2E channel fixture, endpoint URI normalization, gateway config, and pairing descriptor contracts so setup can depend on focused protocol contracts instead of the broad gateway protocol.",
   "completedSlices": [
     "Extracted shared Navivox wire JSON coercion helpers to lib/core/protocol/navivox_json.dart and reused them from gateway and memory protocol decoders.",
     "Moved NavivoxApp implementation from root lib/app.dart to lib/app/navivox_app.dart while keeping lib/app.dart as public compatibility export.",
-    "Extracted E2EMockChannel from lib/main_e2e.dart to lib/testing/e2e_mock_channel.dart so the root e2e entrypoint remains thin."
+    "Extracted E2EMockChannel from lib/main_e2e.dart to lib/testing/e2e_mock_channel.dart so the root e2e entrypoint remains thin.",
+    "Extracted endpoint URI normalization helpers to lib/core/protocol/navivox_endpoint_uri.dart and reused them from gateway pairing parsing and setup QR import parsing.",
+    "Extracted NavivoxGatewayConfig to lib/core/gateway/navivox_gateway_config.dart and NavivoxPairingDescriptor to lib/core/protocol/navivox_pairing_descriptor.dart; kept lib/core/gateway/navivox_gateway_protocol.dart compatibility exports and updated setup QR parsing to import the focused pairing descriptor contract directly."
   ],
   "nextCandidates": [],
   "validationReceipts": [
     "flutter analyze: passed (No issues found).",
-    "flutter test test/core/gateway/navivox_gateway_protocol_test.dart test/core/protocol/navivox_voice_run_test.dart test/theme/navivox_theme_test.dart test/router/app_router_test.dart test/e2e/connect_and_talk_web_e2e_test.dart: passed (37 tests)."
+    "flutter test test/core/gateway/navivox_gateway_protocol_test.dart test/features/servers/setup/setup_qr_import_presentation_test.dart: passed (24 tests).",
+    "folder_refactor_audit target=lib plannedTopologyComplete=true facadeFiles=[app.dart, main.dart, main_e2e.dart] nextCandidateFiles=[]: passed."
   ]
 }

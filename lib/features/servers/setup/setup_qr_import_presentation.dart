@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import '../../../core/gateway/navivox_gateway_protocol.dart';
+import '../../../core/protocol/navivox_endpoint_uri.dart';
+import '../../../core/protocol/navivox_pairing_descriptor.dart';
 
 class SetupQrImportPresentation {
   const SetupQrImportPresentation();
@@ -52,7 +53,10 @@ class SetupQrImportPresentation {
         );
       }
       if (uri.scheme == 'http' || uri.scheme == 'https') {
-        return SetupQrImageImport(baseUrl: _originFromUri(uri), token: token);
+        return SetupQrImageImport(
+          baseUrl: navivoxOriginFromUri(uri),
+          token: token,
+        );
       }
     }
 
@@ -308,7 +312,7 @@ String? _normalizeBaseUrl(String? raw) {
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
   if (uri.scheme != 'http' && uri.scheme != 'https') return value;
-  return _originFromUri(uri);
+  return navivoxOriginFromUri(uri);
 }
 
 String? _normalizeWebSocketUrl(String? raw) {
@@ -327,14 +331,11 @@ String? _normalizeWebSocketBaseUrl(String? raw) {
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
   final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'ws') return _originFromUri(uri.replace(scheme: 'http'));
-  if (scheme == 'wss') return _originFromUri(uri.replace(scheme: 'https'));
-  if (scheme == 'http' || scheme == 'https') return _originFromUri(uri);
+  if (scheme == 'ws' ||
+      scheme == 'wss' ||
+      scheme == 'http' ||
+      scheme == 'https') {
+    return navivoxHttpBaseUrlFromEndpointUri(uri);
+  }
   return null;
-}
-
-String _originFromUri(Uri uri) {
-  final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
-  final port = uri.hasPort ? ':${uri.port}' : '';
-  return '${uri.scheme}://$host$port';
 }
