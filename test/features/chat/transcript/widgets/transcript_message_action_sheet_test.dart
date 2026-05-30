@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_action_presentation.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_message_action_sheet.dart';
 
-const _support = NavivoxProfileContact(
-  serverId: 'office',
-  profileId: 'support',
-  displayName: 'Support Triage',
-  serverLabel: 'office',
-  health: NavivoxProfileHealth.online,
-  latestPreview: 'Watching tickets',
-);
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets('renders action text and invokes pause, copy, and read actions', (
@@ -20,7 +12,10 @@ void main() {
   ) async {
     final actions = <String>[];
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('dispatch note', runRecordReference: 'run-ref-1'),
+      transcriptTextMessage(
+        text: 'dispatch note',
+        runRecordReference: 'run-ref-1',
+      ),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
       runRecordInspectionAvailable: true,
@@ -74,8 +69,8 @@ void main() {
   ) async {
     NavivoxProfileContact? forwardedTo;
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('forward this'),
-      forwardTargets: const [_support],
+      transcriptTextMessage(text: 'forward this'),
+      forwardTargets: const [transcriptSupportContact],
       forwardingAvailable: true,
     );
 
@@ -97,14 +92,14 @@ void main() {
     await tester.tap(find.text('Support Triage'));
     await tester.pumpAndSettle();
 
-    expect(forwardedTo, _support);
+    expect(forwardedTo, transcriptSupportContact);
   });
 
   testWidgets('renders unavailable TTS row when text has no TTS action', (
     tester,
   ) async {
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('silent note'),
+      transcriptTextMessage(text: 'silent note'),
       textToSpeechAvailable: false,
     );
 
@@ -120,15 +115,4 @@ void main() {
     expect(find.text('Device TTS is not connected.'), findsOneWidget);
     expect(find.text('Read aloud'), findsNothing);
   });
-}
-
-NavivoxChatMessage _textMessage(String text, {String? runRecordReference}) {
-  return NavivoxChatMessage(
-    id: 'text-1',
-    author: NavivoxMessageAuthor.assistant,
-    kind: NavivoxMessageKind.text,
-    createdAt: DateTime.utc(2026, 5, 23, 11, 15),
-    text: text,
-    runRecordReference: runRecordReference,
-  );
 }

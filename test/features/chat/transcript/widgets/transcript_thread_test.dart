@@ -4,14 +4,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
 
-const _support = NavivoxProfileContact(
-  serverId: 'office',
-  profileId: 'support',
-  displayName: 'Support Triage',
-  serverLabel: 'office',
-  health: NavivoxProfileHealth.online,
-  latestPreview: 'Watching tickets',
-);
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets('renders the shared empty Transcript surface state', (
@@ -42,19 +35,19 @@ void main() {
         scrollController: scrollController,
         dateLabelNow: DateTime.utc(2026, 6, 1),
         messages: [
-          _textMessage(
+          transcriptTextMessage(
             id: 'day-one-a',
             text: 'First day',
             author: NavivoxMessageAuthor.assistant,
             createdAt: DateTime.utc(2026, 5, 22, 9),
           ),
-          _textMessage(
+          transcriptTextMessage(
             id: 'day-one-b',
             text: 'Same day',
             author: NavivoxMessageAuthor.user,
             createdAt: DateTime.utc(2026, 5, 22, 10),
           ),
-          _textMessage(
+          transcriptTextMessage(
             id: 'day-two',
             text: 'Next day',
             author: NavivoxMessageAuthor.assistant,
@@ -78,7 +71,7 @@ void main() {
       _ThreadHost(
         scrollController: scrollController,
         messages: [
-          _textMessage(
+          transcriptTextMessage(
             id: 'system-status',
             text: 'Connected to office / support',
             author: NavivoxMessageAuthor.system,
@@ -106,13 +99,13 @@ void main() {
         scrollController: scrollController,
         dateLabelNow: now,
         messages: [
-          _textMessage(
+          transcriptTextMessage(
             id: 'yesterday',
             text: 'Yesterday update',
             author: NavivoxMessageAuthor.assistant,
             createdAt: DateTime.utc(2026, 5, 22, 9),
           ),
-          _textMessage(
+          transcriptTextMessage(
             id: 'today',
             text: 'Today update',
             author: NavivoxMessageAuthor.user,
@@ -139,7 +132,7 @@ void main() {
       _ThreadHost(
         scrollController: scrollController,
         messages: [
-          _textMessage(
+          transcriptTextMessage(
             id: 'assistant-1',
             text: 'Drafting the deployment plan.',
             author: NavivoxMessageAuthor.assistant,
@@ -192,13 +185,13 @@ void main() {
       _ThreadHost(
         scrollController: scrollController,
         messages: [
-          _textMessage(
+          transcriptTextMessage(
             id: 'assistant-1',
             text: 'Forward this note',
             author: NavivoxMessageAuthor.assistant,
           ),
         ],
-        forwardTargets: const [_support],
+        forwardTargets: const [transcriptSupportContact],
         onForward: (_, target) => forwardedTo = target,
       ),
     );
@@ -212,7 +205,7 @@ void main() {
     await tester.tap(find.text('Support Triage'));
     await tester.pumpAndSettle();
 
-    expect(forwardedTo, _support);
+    expect(forwardedTo, transcriptSupportContact);
   });
 }
 
@@ -252,19 +245,4 @@ class _ThreadHost extends StatelessWidget {
       ),
     );
   }
-}
-
-NavivoxChatMessage _textMessage({
-  required String id,
-  required String text,
-  required NavivoxMessageAuthor author,
-  DateTime? createdAt,
-}) {
-  return NavivoxChatMessage(
-    id: id,
-    author: author,
-    kind: NavivoxMessageKind.text,
-    createdAt: createdAt ?? DateTime.utc(2026, 5, 23, 11, 15),
-    text: text,
-  );
 }

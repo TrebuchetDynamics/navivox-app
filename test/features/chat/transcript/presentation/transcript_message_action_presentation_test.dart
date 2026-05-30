@@ -1,39 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_action_presentation.dart';
 
-const _support = NavivoxProfileContact(
-  serverId: 'office',
-  profileId: 'support',
-  displayName: 'Support Triage',
-  serverLabel: 'office',
-  health: NavivoxProfileHealth.online,
-  latestPreview: 'Watching tickets',
-);
-
-const _ops = NavivoxProfileContact(
-  serverId: 'lab',
-  profileId: 'ops',
-  displayName: 'Ops Desk',
-  serverLabel: 'lab',
-  health: NavivoxProfileHealth.warning,
-  latestPreview: 'Watching devices',
-);
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   test(
     'derives action text for text, voice, tool, safety, and approval messages',
     () {
       final text = TranscriptMessageActionPresentation.fromMessage(
-        _textMessage('copy this'),
+        transcriptTextMessage(text: 'copy this'),
       );
       final voice = TranscriptMessageActionPresentation.fromMessage(
-        _voiceMessage('captured voice'),
+        transcriptVoiceMessage(transcript: 'captured voice'),
       );
       final tool = TranscriptMessageActionPresentation.fromMessage(
-        _toolMessage(
-          const NavivoxToolCall(
+        transcriptToolMessage(
+          toolCall: const NavivoxToolCall(
             name: 'grep',
             status: 'finished',
             summary: 'Matched 2 files',
@@ -41,7 +24,7 @@ void main() {
         ),
       );
       final safety = TranscriptMessageActionPresentation.fromMessage(
-        _noticeMessage(
+        transcriptNoticeMessage(
           kind: NavivoxMessageKind.safetyWarning,
           notice: const NavivoxSafetyNotice(
             id: 'safety-1',
@@ -51,7 +34,7 @@ void main() {
         ),
       );
       final approval = TranscriptMessageActionPresentation.fromMessage(
-        _noticeMessage(
+        transcriptNoticeMessage(
           kind: NavivoxMessageKind.approvalRequest,
           notice: const NavivoxSafetyNotice(
             id: 'approval-1',
@@ -71,13 +54,13 @@ void main() {
 
   test('exposes copy, read-aloud, unavailable TTS, and pause copy', () {
     final withTts = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('read this', runRecordReference: 'run-ref-1'),
+      transcriptTextMessage(text: 'read this', runRecordReference: 'run-ref-1'),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
       runRecordInspectionAvailable: true,
     );
     final withoutTts = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('read this later'),
+      transcriptTextMessage(text: 'read this later'),
       textToSpeechAvailable: false,
     );
 
@@ -110,7 +93,7 @@ void main() {
 
   test('requires an explicit run record reference before showing evidence', () {
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('ordinary message'),
+      transcriptTextMessage(text: 'ordinary message'),
       runRecordInspectionAvailable: true,
     );
 
@@ -120,8 +103,8 @@ void main() {
 
   test('exposes forward target rows when forwarding is available', () {
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage('send to someone'),
-      forwardTargets: const [_support, _ops],
+      transcriptTextMessage(text: 'send to someone'),
+      forwardTargets: const [transcriptSupportContact, transcriptOpsContact],
       forwardingAvailable: true,
     );
 
@@ -137,10 +120,10 @@ void main() {
 
   test('hides text-dependent actions for empty action text', () {
     final presentation = TranscriptMessageActionPresentation.fromMessage(
-      _textMessage(''),
+      transcriptTextMessage(text: ''),
       textToSpeechAvailable: true,
       canCancelActiveTurn: true,
-      forwardTargets: const [_support],
+      forwardTargets: const [transcriptSupportContact],
       forwardingAvailable: true,
     );
 
@@ -152,52 +135,4 @@ void main() {
     expect(presentation.showForwardSection, isFalse);
     expect(presentation.showPauseStream, isTrue);
   });
-}
-
-NavivoxChatMessage _textMessage(String text, {String? runRecordReference}) {
-  return NavivoxChatMessage(
-    id: 'text-1',
-    author: NavivoxMessageAuthor.assistant,
-    kind: NavivoxMessageKind.text,
-    createdAt: DateTime.utc(2026, 5, 23, 11),
-    text: text,
-    runRecordReference: runRecordReference,
-  );
-}
-
-NavivoxChatMessage _voiceMessage(String transcript) {
-  return NavivoxChatMessage(
-    id: 'voice-1',
-    author: NavivoxMessageAuthor.user,
-    kind: NavivoxMessageKind.voice,
-    createdAt: DateTime.utc(2026, 5, 23, 11),
-    voice: NavivoxVoiceMessage(
-      duration: const Duration(seconds: 1),
-      transcript: transcript,
-      confidence: 0.9,
-    ),
-  );
-}
-
-NavivoxChatMessage _toolMessage(NavivoxToolCall toolCall) {
-  return NavivoxChatMessage(
-    id: 'tool-1',
-    author: NavivoxMessageAuthor.system,
-    kind: NavivoxMessageKind.toolCall,
-    createdAt: DateTime.utc(2026, 5, 23, 11),
-    toolCall: toolCall,
-  );
-}
-
-NavivoxChatMessage _noticeMessage({
-  required NavivoxMessageKind kind,
-  required NavivoxSafetyNotice notice,
-}) {
-  return NavivoxChatMessage(
-    id: 'notice-1',
-    author: NavivoxMessageAuthor.system,
-    kind: kind,
-    createdAt: DateTime.utc(2026, 5, 23, 11),
-    safetyNotice: notice,
-  );
 }

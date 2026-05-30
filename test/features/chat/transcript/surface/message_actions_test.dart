@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart';
+
+import '../shared/transcript_test_fixtures.dart';
 import 'package:navivox/features/voice/services/tts/text_to_speech_service.dart';
 
 void main() {
@@ -33,7 +34,13 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: TranscriptSurface(
-            messages: [_textMessage('m-1', 'copy this dispatch note')],
+            messages: [
+              transcriptTextMessage(
+                id: 'm-1',
+                text: 'copy this dispatch note',
+                createdAt: DateTime(2026, 5, 19, 12),
+              ),
+            ],
             onSend: (_) {},
           ),
         ),
@@ -63,7 +70,13 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: TranscriptSurface(
-            messages: [_textMessage('m-1', 'read this aloud')],
+            messages: [
+              transcriptTextMessage(
+                id: 'm-1',
+                text: 'read this aloud',
+                createdAt: DateTime(2026, 5, 19, 12),
+              ),
+            ],
             onSend: (_) {},
             textToSpeechService: tts,
           ),
@@ -87,7 +100,13 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: TranscriptSurface(
-            messages: [_textMessage('m-1', 'read this later')],
+            messages: [
+              transcriptTextMessage(
+                id: 'm-1',
+                text: 'read this later',
+                createdAt: DateTime(2026, 5, 19, 12),
+              ),
+            ],
             onSend: (_) {},
           ),
         ),
@@ -105,22 +124,19 @@ void main() {
     'long press text message can forward to another profile contact',
     (tester) async {
       final forwarded = <({String text, String serverId, String profileId})>[];
-      const support = NavivoxProfileContact(
-        serverId: 'office',
-        profileId: 'support',
-        displayName: 'Support Triage',
-        serverLabel: 'office',
-        health: NavivoxProfileHealth.online,
-        latestPreview: 'watching tickets',
-      );
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: TranscriptSurface(
-              messages: [_textMessage('m-1', 'forward this finding')],
+              messages: [
+                transcriptTextMessage(
+                  id: 'm-1',
+                  text: 'forward this finding',
+                  createdAt: DateTime(2026, 5, 19, 12),
+                ),
+              ],
               onSend: (_) {},
-              forwardTargets: const [support],
+              forwardTargets: const [transcriptSupportContact],
               onForward: (message, target) => forwarded.add((
                 text: message.text!,
                 serverId: target.serverId,
@@ -150,11 +166,3 @@ void main() {
     },
   );
 }
-
-NavivoxChatMessage _textMessage(String id, String text) => NavivoxChatMessage(
-  id: id,
-  author: NavivoxMessageAuthor.assistant,
-  kind: NavivoxMessageKind.text,
-  createdAt: DateTime(2026, 5, 19, 12),
-  text: text,
-);
