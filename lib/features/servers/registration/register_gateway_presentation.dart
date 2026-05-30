@@ -1,4 +1,4 @@
-import 'gateway_connection_presentation.dart';
+import '../shared/gateway_connection_presentation.dart';
 import '../models/connection_gateway.dart';
 
 class RegisterGatewayPresentation {

@@ -12,7 +12,7 @@ import '../../../core/session/session_persistence_service.dart';
 import '../../../router/navigation_intent.dart';
 import '../models/connection_import.dart';
 import '../pairing/pairing_handoff_flow.dart';
-import '../registration/gateway_connection_presentation.dart';
+import '../shared/gateway_connection_presentation.dart';
 import '../setup/navivox_connect_intent_source.dart';
 import '../setup/navivox_connect_intent_source_provider.dart';
 import '../setup/setup_guide_presentation.dart';

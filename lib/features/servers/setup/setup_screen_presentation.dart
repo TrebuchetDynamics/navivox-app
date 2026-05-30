@@ -1,4 +1,7 @@
 import '../models/connection_import.dart';
+import '../shared/setup_screen_notice.dart';
+
+export '../shared/setup_screen_notice.dart';
 
 class SetupScreenPresentation {
   const SetupScreenPresentation();
@@ -105,32 +108,6 @@ class SetupScreenPresentation {
       'URL shown in your terminal. Pairing starts this app session; durable '
       'reconnect will require a future secure credential.';
 }
-
-class SetupScreenNotice {
-  const SetupScreenNotice._({
-    required this.kind,
-    required this.message,
-    this.recoveryMessage,
-  });
-
-  const SetupScreenNotice.info(String message)
-    : this._(kind: SetupScreenNoticeKind.info, message: message);
-
-  const SetupScreenNotice.error(String message, {String? recoveryMessage})
-    : this._(
-        kind: SetupScreenNoticeKind.error,
-        message: message,
-        recoveryMessage: recoveryMessage,
-      );
-
-  final SetupScreenNoticeKind kind;
-  final String message;
-  final String? recoveryMessage;
-
-  bool get isError => kind == SetupScreenNoticeKind.error;
-}
-
-enum SetupScreenNoticeKind { info, error }
 
 String _safeDetailOrFallback(String? detail, String fallback) {
   final text = detail?.trim();
