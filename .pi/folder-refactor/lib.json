@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "target": "lib",
+  "updatedAt": "2026-05-30T15:23:26.985Z",
+  "objective": "Refactor lib toward explicit entrypoint facades plus focused shared contracts/helpers. Root keeps app.dart compatibility facade and app/main entrypoints; implementation lives under app/, core/, features/, router/, shared/, testing/, theme/. Shared-code objective extracted wire JSON coercion contract for gateway+memory protocol parsing and test E2E channel fixture out of root main_e2e.",
+  "completedSlices": [
+    "Extracted shared Navivox wire JSON coercion helpers to lib/core/protocol/navivox_json.dart and reused them from gateway and memory protocol decoders.",
+    "Moved NavivoxApp implementation from root lib/app.dart to lib/app/navivox_app.dart while keeping lib/app.dart as public compatibility export.",
+    "Extracted E2EMockChannel from lib/main_e2e.dart to lib/testing/e2e_mock_channel.dart so the root e2e entrypoint remains thin."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "flutter analyze: passed (No issues found).",
+    "flutter test test/core/gateway/navivox_gateway_protocol_test.dart test/core/protocol/navivox_voice_run_test.dart test/theme/navivox_theme_test.dart test/router/app_router_test.dart test/e2e/connect_and_talk_web_e2e_test.dart: passed (37 tests)."
+  ]
+}

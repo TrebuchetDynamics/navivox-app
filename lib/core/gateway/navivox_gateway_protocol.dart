@@ -1,3 +1,4 @@
+import '../protocol/navivox_json.dart';
 import '../protocol/navivox_memory.dart';
 
 const navivoxWebSocketProtocol = 'navivox.v1';
@@ -18,16 +19,18 @@ class NavivoxGatewayStatus {
   factory NavivoxGatewayStatus.fromJson(Map<String, Object?> json) {
     return NavivoxGatewayStatus(
       enabled: json['enabled'] == true,
-      protocolVersion: _stringFromJson(
+      protocolVersion: navivoxStringFromJson(
         json['protocol_version'],
         fallback: navivoxWebSocketProtocol,
       ),
-      websocketProtocols: _stringListFromJson(json['websocket_protocols']),
-      capabilities: _stringListFromJson(json['capabilities']),
-      sessionCount: _intFromJson(json['sessions']),
-      webSocketConnectionCount: _intFromJson(json['ws_connections']),
-      capabilitiesUrl: _optionalStringFromJson(json['capabilities_url']),
-      gatewayId: _optionalStringFromJson(json['gateway_id']),
+      websocketProtocols: navivoxStringListFromJson(
+        json['websocket_protocols'],
+      ),
+      capabilities: navivoxStringListFromJson(json['capabilities']),
+      sessionCount: navivoxIntFromJson(json['sessions']),
+      webSocketConnectionCount: navivoxIntFromJson(json['ws_connections']),
+      capabilitiesUrl: navivoxOptionalStringFromJson(json['capabilities_url']),
+      gatewayId: navivoxOptionalStringFromJson(json['gateway_id']),
     );
   }
 
@@ -63,14 +66,17 @@ class NavivoxCapabilityDocument {
 
   factory NavivoxCapabilityDocument.fromJson(Map<String, Object?> json) {
     return NavivoxCapabilityDocument(
-      object: _stringFromJson(json['object'], fallback: ''),
-      protocolVersion: _stringFromJson(json['protocol_version'], fallback: ''),
-      capabilities: _stringListFromJson(json['capabilities']),
-      auth: NavivoxCapabilityAuth.fromJson(_mapFromJson(json['auth'])),
-      healthAliases: _stringListFromJson(
-        _mapFromJson(json['health'])['aliases'],
+      object: navivoxStringFromJson(json['object'], fallback: ''),
+      protocolVersion: navivoxStringFromJson(
+        json['protocol_version'],
+        fallback: '',
       ),
-      endpoints: _listFromJson(json['endpoints'])
+      capabilities: navivoxStringListFromJson(json['capabilities']),
+      auth: NavivoxCapabilityAuth.fromJson(navivoxMapFromJson(json['auth'])),
+      healthAliases: navivoxStringListFromJson(
+        navivoxMapFromJson(json['health'])['aliases'],
+      ),
+      endpoints: navivoxListFromJson(json['endpoints'])
           .whereType<Map>()
           .map(
             (endpoint) => NavivoxCapabilityEndpoint.fromJson(
@@ -79,17 +85,19 @@ class NavivoxCapabilityDocument {
           )
           .toList(growable: false),
       profileManagement: NavivoxProfileManagementCapability.fromJson(
-        _mapFromJson(json['profile_management']),
+        navivoxMapFromJson(json['profile_management']),
       ),
       attachments: NavivoxAttachmentCapability.fromJson(
-        _mapFromJson(json['attachments']),
+        navivoxMapFromJson(json['attachments']),
       ),
       voice: NavivoxVoiceProtocolCapability.fromJson(
-        _mapFromJson(json['voice']),
+        navivoxMapFromJson(json['voice']),
       ),
-      streams: NavivoxStreamCapability.fromJson(_mapFromJson(json['streams'])),
+      streams: NavivoxStreamCapability.fromJson(
+        navivoxMapFromJson(json['streams']),
+      ),
       durableReconnect: NavivoxDurableReconnectCapability.fromJson(
-        _mapFromJson(json['durable_reconnect']),
+        navivoxMapFromJson(json['durable_reconnect']),
       ),
     );
   }
@@ -130,14 +138,20 @@ class NavivoxDurableReconnectCapability {
   ) {
     return NavivoxDurableReconnectCapability(
       supported: json['supported'] == true,
-      issueEndpoint: _stringFromJson(json['issue_endpoint'], fallback: ''),
-      authMethods: _stringListFromJson(json['auth_methods']),
-      platforms: _stringListFromJson(json['platforms']),
-      effectiveSecurity: _stringFromJson(
+      issueEndpoint: navivoxStringFromJson(
+        json['issue_endpoint'],
+        fallback: '',
+      ),
+      authMethods: navivoxStringListFromJson(json['auth_methods']),
+      platforms: navivoxStringListFromJson(json['platforms']),
+      effectiveSecurity: navivoxStringFromJson(
         json['effective_security'],
         fallback: '',
       ),
-      blockedReason: _stringFromJson(json['blocked_reason'], fallback: ''),
+      blockedReason: navivoxStringFromJson(
+        json['blocked_reason'],
+        fallback: '',
+      ),
     );
   }
 
@@ -166,9 +180,11 @@ class NavivoxCapabilityAuth {
 
   factory NavivoxCapabilityAuth.fromJson(Map<String, Object?> json) {
     return NavivoxCapabilityAuth(
-      mode: _stringFromJson(json['mode'], fallback: ''),
-      headers: _stringListFromJson(json['headers']),
-      webSocketProtocols: _stringListFromJson(json['websocket_protocols']),
+      mode: navivoxStringFromJson(json['mode'], fallback: ''),
+      headers: navivoxStringListFromJson(json['headers']),
+      webSocketProtocols: navivoxStringListFromJson(
+        json['websocket_protocols'],
+      ),
     );
   }
 
@@ -188,11 +204,11 @@ class NavivoxCapabilityEndpoint {
 
   factory NavivoxCapabilityEndpoint.fromJson(Map<String, Object?> json) {
     return NavivoxCapabilityEndpoint(
-      method: _stringFromJson(json['method'], fallback: ''),
-      path: _stringFromJson(json['path'], fallback: ''),
-      auth: _stringFromJson(json['auth'], fallback: ''),
-      stability: _stringFromJson(json['stability'], fallback: ''),
-      description: _stringFromJson(json['description'], fallback: ''),
+      method: navivoxStringFromJson(json['method'], fallback: ''),
+      path: navivoxStringFromJson(json['path'], fallback: ''),
+      auth: navivoxStringFromJson(json['auth'], fallback: ''),
+      stability: navivoxStringFromJson(json['stability'], fallback: ''),
+      description: navivoxStringFromJson(json['description'], fallback: ''),
     );
   }
 
@@ -213,12 +229,12 @@ class NavivoxStreamCapability {
 
   factory NavivoxStreamCapability.fromJson(Map<String, Object?> json) {
     return NavivoxStreamCapability(
-      canonicalEndpoint: _stringFromJson(
+      canonicalEndpoint: navivoxStringFromJson(
         json['canonical_endpoint'],
         fallback: '',
       ),
-      transport: _stringFromJson(json['transport'], fallback: ''),
-      eventKinds: _stringListFromJson(json['event_kinds']),
+      transport: navivoxStringFromJson(json['transport'], fallback: ''),
+      eventKinds: navivoxStringListFromJson(json['event_kinds']),
       openAiRunsBridge: json['openai_runs_bridge'] == true,
     );
   }
@@ -244,19 +260,26 @@ class NavivoxProfileManagementCapability {
     Map<String, Object?> json,
   ) {
     return NavivoxProfileManagementCapability(
-      contactsEndpoint: _stringFromJson(
+      contactsEndpoint: navivoxStringFromJson(
         json['contacts_endpoint'],
         fallback: '',
       ),
-      routingEndpoint: _stringFromJson(json['routing_endpoint'], fallback: ''),
-      createFromSeedEndpoint: _stringFromJson(
+      routingEndpoint: navivoxStringFromJson(
+        json['routing_endpoint'],
+        fallback: '',
+      ),
+      createFromSeedEndpoint: navivoxStringFromJson(
         json['create_from_seed_endpoint'],
         fallback: '',
       ),
       dashboardApiExposed: json['dashboard_api_exposed'] == true,
-      supportedActions: _stringListFromJson(json['supported_actions']),
-      unsupportedActions: _stringListFromJson(json['unsupported_actions']),
-      profileContractParts: _stringListFromJson(json['profile_contract_parts']),
+      supportedActions: navivoxStringListFromJson(json['supported_actions']),
+      unsupportedActions: navivoxStringListFromJson(
+        json['unsupported_actions'],
+      ),
+      profileContractParts: navivoxStringListFromJson(
+        json['profile_contract_parts'],
+      ),
     );
   }
 
@@ -283,12 +306,12 @@ class NavivoxAttachmentCapability {
 
   factory NavivoxAttachmentCapability.fromJson(Map<String, Object?> json) {
     return NavivoxAttachmentCapability(
-      maxRequestBytes: _intFromJson(json['max_request_bytes']),
+      maxRequestBytes: navivoxIntFromJson(json['max_request_bytes']),
       opaqueUploadIds: json['opaque_upload_ids'] == true,
       rawLocalPathsAccepted: json['raw_local_paths_accepted'] == true,
       workspaceFileAttach: json['workspace_file_attach'] == true,
-      mimeAllowlist: _stringListFromJson(json['mime_allowlist']),
-      retention: _stringFromJson(json['retention'], fallback: ''),
+      mimeAllowlist: navivoxStringListFromJson(json['mime_allowlist']),
+      retention: navivoxStringFromJson(json['retention'], fallback: ''),
     );
   }
 
@@ -317,16 +340,16 @@ class NavivoxVoiceProtocolCapability {
     return NavivoxVoiceProtocolCapability(
       deviceTranscribedTextTurns: json['device_transcribed_text_turns'] == true,
       rawAudioUpload: json['raw_audio_upload'] == true,
-      voiceProfilesEndpoint: _stringFromJson(
+      voiceProfilesEndpoint: navivoxStringFromJson(
         json['voice_profiles_endpoint'],
         fallback: '',
       ),
-      runRecordsEndpoint: _stringFromJson(
+      runRecordsEndpoint: navivoxStringFromJson(
         json['run_records_endpoint'],
         fallback: '',
       ),
-      sttProviders: _stringListFromJson(json['stt_providers']),
-      ttsProviders: _stringListFromJson(json['tts_providers']),
+      sttProviders: navivoxStringListFromJson(json['stt_providers']),
+      ttsProviders: navivoxStringListFromJson(json['tts_providers']),
     );
   }
 
@@ -349,11 +372,17 @@ class NavivoxProfileVoiceProfile {
 
   factory NavivoxProfileVoiceProfile.fromJson(Map<String, Object?> json) {
     return NavivoxProfileVoiceProfile(
-      sttProvider: _stringFromJson(json['stt_provider'], fallback: ''),
-      ttsProvider: _stringFromJson(json['tts_provider'], fallback: ''),
-      voiceId: _stringFromJson(json['voice_id'], fallback: ''),
-      languagePolicy: _stringFromJson(json['language_policy'], fallback: ''),
-      fallbackVoice: _stringFromJson(json['fallback_voice'], fallback: ''),
+      sttProvider: navivoxStringFromJson(json['stt_provider'], fallback: ''),
+      ttsProvider: navivoxStringFromJson(json['tts_provider'], fallback: ''),
+      voiceId: navivoxStringFromJson(json['voice_id'], fallback: ''),
+      languagePolicy: navivoxStringFromJson(
+        json['language_policy'],
+        fallback: '',
+      ),
+      fallbackVoice: navivoxStringFromJson(
+        json['fallback_voice'],
+        fallback: '',
+      ),
     );
   }
 
@@ -384,8 +413,8 @@ class NavivoxVoiceProviderMatrix {
 
   factory NavivoxVoiceProviderMatrix.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProviderMatrix(
-      sttProviders: _stringListFromJson(json['stt']),
-      ttsProviders: _stringListFromJson(json['tts']),
+      sttProviders: navivoxStringListFromJson(json['stt']),
+      ttsProviders: navivoxStringListFromJson(json['tts']),
     );
   }
 
@@ -405,8 +434,8 @@ class NavivoxVoiceCredentialStatus {
     return NavivoxVoiceCredentialStatus(
       configured: json['configured'] == true,
       required: json['required'] == true,
-      status: _stringFromJson(json['status'], fallback: ''),
-      source: _stringFromJson(json['source'], fallback: ''),
+      status: navivoxStringFromJson(json['status'], fallback: ''),
+      source: navivoxStringFromJson(json['source'], fallback: ''),
     );
   }
 
@@ -425,9 +454,9 @@ class NavivoxVoiceProfileFieldError {
 
   factory NavivoxVoiceProfileFieldError.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProfileFieldError(
-      field: _stringFromJson(json['field'], fallback: ''),
-      code: _stringFromJson(json['code'], fallback: ''),
-      message: _stringFromJson(json['message'], fallback: ''),
+      field: navivoxStringFromJson(json['field'], fallback: ''),
+      code: navivoxStringFromJson(json['code'], fallback: ''),
+      message: navivoxStringFromJson(json['message'], fallback: ''),
     );
   }
 
@@ -447,9 +476,9 @@ class NavivoxVoiceProfileValidation {
 
   factory NavivoxVoiceProfileValidation.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProfileValidation(
-      profileId: _stringFromJson(json['profile_id'], fallback: ''),
+      profileId: navivoxStringFromJson(json['profile_id'], fallback: ''),
       voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        _mapFromJson(json['voice_profile']),
+        navivoxMapFromJson(json['voice_profile']),
       ),
       valid: json['valid'] == true,
       errors: _voiceProfileErrorsFromJson(json['errors']),
@@ -477,12 +506,15 @@ class NavivoxVoiceProfileView {
   });
 
   factory NavivoxVoiceProfileView.fromJson(Map<String, Object?> json) {
-    final profileId = _stringFromJson(json['profile_id'], fallback: '');
+    final profileId = navivoxStringFromJson(json['profile_id'], fallback: '');
     return NavivoxVoiceProfileView(
       profileId: profileId,
-      displayName: _stringFromJson(json['display_name'], fallback: profileId),
+      displayName: navivoxStringFromJson(
+        json['display_name'],
+        fallback: profileId,
+      ),
       voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        _mapFromJson(json['voice_profile']),
+        navivoxMapFromJson(json['voice_profile']),
       ),
       credentialStatusRefs: _voiceCredentialRefsFromJson(
         json['credential_status_refs'],
@@ -509,11 +541,11 @@ class NavivoxVoiceProfilesResponse {
 
   factory NavivoxVoiceProfilesResponse.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProfilesResponse(
-      action: _stringFromJson(json['action'], fallback: ''),
+      action: navivoxStringFromJson(json['action'], fallback: ''),
       providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        _mapFromJson(json['provider_matrix']),
+        navivoxMapFromJson(json['provider_matrix']),
       ),
-      profiles: _listFromJson(json['profiles'])
+      profiles: navivoxListFromJson(json['profiles'])
           .whereType<Map>()
           .map(
             (profile) => NavivoxVoiceProfileView.fromJson(
@@ -541,15 +573,15 @@ class NavivoxVoiceProfileValidationResponse {
   factory NavivoxVoiceProfileValidationResponse.fromJson(
     Map<String, Object?> json,
   ) {
-    final validationJson = _mapFromJson(json['validation']);
+    final validationJson = navivoxMapFromJson(json['validation']);
     final validation = validationJson.isEmpty
         ? null
         : NavivoxVoiceProfileValidation.fromJson(validationJson);
     final topErrors = _voiceProfileErrorsFromJson(json['errors']);
     return NavivoxVoiceProfileValidationResponse(
-      action: _stringFromJson(json['action'], fallback: ''),
+      action: navivoxStringFromJson(json['action'], fallback: ''),
       providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        _mapFromJson(json['provider_matrix']),
+        navivoxMapFromJson(json['provider_matrix']),
       ),
       validation: validation,
       valid: json['valid'] == true || validation?.valid == true,
@@ -578,17 +610,17 @@ class NavivoxConfigAdminField {
 
   factory NavivoxConfigAdminField.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminField(
-      key: _stringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: _stringFromJson(json['type'], fallback: 'string'),
-      title: _stringFromJson(
+      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
+      type: navivoxStringFromJson(json['type'], fallback: 'string'),
+      title: navivoxStringFromJson(
         json['title'] ?? json['label'] ?? json['key'],
         fallback: '',
       ),
-      description: _stringFromJson(json['description'], fallback: ''),
+      description: navivoxStringFromJson(json['description'], fallback: ''),
       secret: json['secret'] == true,
-      allowed: _stringListFromJson(json['allowed']),
-      actions: _stringListFromJson(json['actions']),
-      reload: _stringFromJson(json['reload'], fallback: ''),
+      allowed: navivoxStringListFromJson(json['allowed']),
+      actions: navivoxStringListFromJson(json['actions']),
+      reload: navivoxStringFromJson(json['reload'], fallback: ''),
     );
   }
 
@@ -625,8 +657,8 @@ class NavivoxConfigAdminSchemaResponse {
 
   factory NavivoxConfigAdminSchemaResponse.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminSchemaResponse(
-      action: _stringFromJson(json['action'], fallback: ''),
-      fields: _listFromJson(json['fields'])
+      action: navivoxStringFromJson(json['action'], fallback: ''),
+      fields: navivoxListFromJson(json['fields'])
           .whereType<Map>()
           .map(
             (field) => NavivoxConfigAdminField.fromJson(
@@ -658,12 +690,12 @@ class NavivoxConfigAdminValue {
 
   factory NavivoxConfigAdminValue.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminValue(
-      key: _stringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: _stringFromJson(json['type'], fallback: 'string'),
+      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
+      type: navivoxStringFromJson(json['type'], fallback: 'string'),
       value: json['value'],
       secret: json['secret'] == true,
-      secretStatus: _stringFromJson(json['secret_status'], fallback: ''),
-      source: _stringFromJson(json['source'], fallback: ''),
+      secretStatus: navivoxStringFromJson(json['secret_status'], fallback: ''),
+      source: navivoxStringFromJson(json['source'], fallback: ''),
     );
   }
 
@@ -691,8 +723,8 @@ class NavivoxConfigAdminGetResponse {
 
   factory NavivoxConfigAdminGetResponse.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminGetResponse(
-      action: _stringFromJson(json['action'], fallback: ''),
-      values: _listFromJson(json['values'])
+      action: navivoxStringFromJson(json['action'], fallback: ''),
+      values: navivoxListFromJson(json['values'])
           .whereType<Map>()
           .map(
             (value) => NavivoxConfigAdminValue.fromJson(
@@ -747,14 +779,14 @@ class NavivoxConfigAdminDiff {
 
   factory NavivoxConfigAdminDiff.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminDiff(
-      key: _stringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: _stringFromJson(json['type'], fallback: 'string'),
+      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
+      type: navivoxStringFromJson(json['type'], fallback: 'string'),
       secret: json['secret'] == true,
       before: json['before'],
       after: json['after'],
       beforeRedacted: json['before_redacted'] == true,
       afterRedacted: json['after_redacted'] == true,
-      secretStatus: _stringFromJson(json['secret_status'], fallback: ''),
+      secretStatus: navivoxStringFromJson(json['secret_status'], fallback: ''),
     );
   }
 
@@ -794,12 +826,15 @@ class NavivoxConfigAdminFieldError {
 
   factory NavivoxConfigAdminFieldError.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminFieldError(
-      key: _stringFromJson(
+      key: navivoxStringFromJson(
         json['key'] ?? json['path'] ?? json['field'] ?? json['name'],
         fallback: '',
       ),
-      code: _stringFromJson(json['code'], fallback: ''),
-      message: _stringFromJson(json['message'] ?? json['error'], fallback: ''),
+      code: navivoxStringFromJson(json['code'], fallback: ''),
+      message: navivoxStringFromJson(
+        json['message'] ?? json['error'],
+        fallback: '',
+      ),
     );
   }
 
@@ -826,13 +861,13 @@ class NavivoxConfigAdminResponse {
 
   factory NavivoxConfigAdminResponse.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminResponse(
-      action: _stringFromJson(json['action'], fallback: ''),
+      action: navivoxStringFromJson(json['action'], fallback: ''),
       valid: json['valid'] == true,
       applied: json['applied'] == true,
       reloadApplied: json['reload_applied'] == true,
       pendingRestart: json['pending_restart'] == true,
-      reloadError: _stringFromJson(json['reload_error'], fallback: ''),
-      changes: _listFromJson(json['changes'])
+      reloadError: navivoxStringFromJson(json['reload_error'], fallback: ''),
+      changes: navivoxListFromJson(json['changes'])
           .whereType<Map>()
           .map(
             (change) => NavivoxConfigAdminDiff.fromJson(
@@ -841,7 +876,7 @@ class NavivoxConfigAdminResponse {
           )
           .where((change) => change.key.isNotEmpty)
           .toList(growable: false),
-      errors: _listFromJson(json['errors'])
+      errors: navivoxListFromJson(json['errors'])
           .whereType<Map>()
           .map(
             (error) => NavivoxConfigAdminFieldError.fromJson(
@@ -894,7 +929,7 @@ Map<String, NavivoxVoiceCredentialStatus> _voiceCredentialRefsFromJson(
 }
 
 List<NavivoxVoiceProfileFieldError> _voiceProfileErrorsFromJson(Object? value) {
-  return _listFromJson(value)
+  return navivoxListFromJson(value)
       .whereType<Map>()
       .map(
         (error) => NavivoxVoiceProfileFieldError.fromJson(
@@ -926,47 +961,6 @@ String _configAdminDisplayValue(
   return '$value';
 }
 
-String _stringFromJson(Object? value, {required String fallback}) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return fallback;
-  return text;
-}
-
-String? _optionalStringFromJson(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  return text;
-}
-
-int _intFromJson(Object? value) {
-  if (value is int) return value;
-  return int.tryParse(value?.toString() ?? '') ?? 0;
-}
-
-Map<String, Object?> _mapFromJson(Object? value) {
-  if (value is! Map) return const {};
-  return Map<String, Object?>.from(value);
-}
-
-List<Object?> _listFromJson(Object? value) {
-  if (value is! List) return const [];
-  return value.cast<Object?>();
-}
-
-List<String> _stringListFromJson(Object? value) {
-  if (value is! List) return const [];
-  return value
-      .map((item) => item.toString().trim())
-      .where((item) => item.isNotEmpty)
-      .toList(growable: false);
-}
-
-DateTime? _dateTimeFromJson(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  return DateTime.tryParse(text);
-}
-
 class NavivoxGatewaySessionSnapshot {
   const NavivoxGatewaySessionSnapshot({
     required this.sessionId,
@@ -980,13 +974,19 @@ class NavivoxGatewaySessionSnapshot {
 
   factory NavivoxGatewaySessionSnapshot.fromJson(Map<String, Object?> json) {
     return NavivoxGatewaySessionSnapshot(
-      sessionId: _stringFromJson(json['session_id'], fallback: ''),
-      lastRequestId: _stringFromJson(json['last_request_id'], fallback: ''),
-      profileServer: _stringFromJson(json['profile_server'], fallback: ''),
-      profileId: _stringFromJson(json['profile_id'], fallback: ''),
-      createdAt: _dateTimeFromJson(json['created_at']),
-      updatedAt: _dateTimeFromJson(json['updated_at']),
-      subscribers: _intFromJson(json['subscribers']),
+      sessionId: navivoxStringFromJson(json['session_id'], fallback: ''),
+      lastRequestId: navivoxStringFromJson(
+        json['last_request_id'],
+        fallback: '',
+      ),
+      profileServer: navivoxStringFromJson(
+        json['profile_server'],
+        fallback: '',
+      ),
+      profileId: navivoxStringFromJson(json['profile_id'], fallback: ''),
+      createdAt: navivoxDateTimeFromJson(json['created_at']),
+      updatedAt: navivoxDateTimeFromJson(json['updated_at']),
+      subscribers: navivoxIntFromJson(json['subscribers']),
     );
   }
 
@@ -1012,12 +1012,12 @@ class NavivoxRunRecordSnapshot {
 
   factory NavivoxRunRecordSnapshot.fromJson(Map<String, Object?> json) {
     return NavivoxRunRecordSnapshot(
-      runId: _stringFromJson(json['run_id'], fallback: ''),
-      sessionId: _stringFromJson(json['session_id'], fallback: ''),
-      status: _stringFromJson(json['status'], fallback: ''),
-      createdAt: _dateTimeFromJson(json['created_at']),
-      updatedAt: _dateTimeFromJson(json['updated_at']),
-      completedAt: _dateTimeFromJson(json['completed_at']),
+      runId: navivoxStringFromJson(json['run_id'], fallback: ''),
+      sessionId: navivoxStringFromJson(json['session_id'], fallback: ''),
+      status: navivoxStringFromJson(json['status'], fallback: ''),
+      createdAt: navivoxDateTimeFromJson(json['created_at']),
+      updatedAt: navivoxDateTimeFromJson(json['updated_at']),
+      completedAt: navivoxDateTimeFromJson(json['completed_at']),
       raw: json,
     );
   }
@@ -1045,14 +1045,14 @@ class NavivoxProfileSeedResult {
 
   factory NavivoxProfileSeedResult.fromJson(Map<String, Object?> json) {
     return NavivoxProfileSeedResult(
-      action: _stringFromJson(json['action'], fallback: ''),
-      status: _stringFromJson(json['status'], fallback: ''),
+      action: navivoxStringFromJson(json['action'], fallback: ''),
+      status: navivoxStringFromJson(json['status'], fallback: ''),
       applied: json['applied'] == true,
-      profileId: _stringFromJson(json['profile_id'], fallback: ''),
-      root: _stringFromJson(json['root'], fallback: ''),
-      workspaceCount: _intFromJson(json['workspace_count']),
-      draft: _mapFromJson(json['draft']),
-      contact: _mapFromJson(json['contact']),
+      profileId: navivoxStringFromJson(json['profile_id'], fallback: ''),
+      root: navivoxStringFromJson(json['root'], fallback: ''),
+      workspaceCount: navivoxIntFromJson(json['workspace_count']),
+      draft: navivoxMapFromJson(json['draft']),
+      contact: navivoxMapFromJson(json['contact']),
     );
   }
 
@@ -1102,13 +1102,16 @@ class NavivoxProfileRoute {
   });
 
   factory NavivoxProfileRoute.fromJson(Map<String, Object?> json) {
-    final profileId = _stringFromJson(json['profile_id'], fallback: '');
+    final profileId = navivoxStringFromJson(json['profile_id'], fallback: '');
     return NavivoxProfileRoute(
       profileId: profileId,
-      displayName: _stringFromJson(json['display_name'], fallback: profileId),
-      workspaces: _stringListFromJson(json['workspaces']),
-      providers: _stringListFromJson(json['providers']),
-      channels: _stringListFromJson(json['channels']),
+      displayName: navivoxStringFromJson(
+        json['display_name'],
+        fallback: profileId,
+      ),
+      workspaces: navivoxStringListFromJson(json['workspaces']),
+      providers: navivoxStringListFromJson(json['providers']),
+      channels: navivoxStringListFromJson(json['channels']),
     );
   }
 
@@ -1461,7 +1464,7 @@ class NavivoxGatewayEvent {
       severity: json['severity']?.toString(),
       risk: json['risk']?.toString(),
       runRecordReference: _runRecordReferenceFromJson(json),
-      metadata: _mapFromJson(json['metadata']),
+      metadata: navivoxMapFromJson(json['metadata']),
       contact: contact is Map ? Map<String, Object?>.from(contact) : null,
     );
   }
@@ -1487,12 +1490,12 @@ class NavivoxGatewayEvent {
 }
 
 String? _runRecordReferenceFromJson(Map<String, Object?> json) {
-  return _optionalStringFromJson(json['run_record_ref']) ??
-      _optionalStringFromJson(json['run_record_reference']) ??
-      _optionalStringFromJson(
-        _mapFromJson(json['metadata'])['run_record_ref'],
+  return navivoxOptionalStringFromJson(json['run_record_ref']) ??
+      navivoxOptionalStringFromJson(json['run_record_reference']) ??
+      navivoxOptionalStringFromJson(
+        navivoxMapFromJson(json['metadata'])['run_record_ref'],
       ) ??
-      _optionalStringFromJson(
-        _mapFromJson(json['metadata'])['run_record_reference'],
+      navivoxOptionalStringFromJson(
+        navivoxMapFromJson(json['metadata'])['run_record_reference'],
       );
 }

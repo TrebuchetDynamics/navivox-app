@@ -1,3 +1,5 @@
+import 'navivox_json.dart';
+
 enum NavivoxMemoryHealth { active, degraded, unavailable }
 
 enum NavivoxMemoryType {
@@ -73,8 +75,11 @@ class NavivoxMemorySearchResult {
                 )
                 .toList(growable: false)
           : const [],
-      nextPageToken: _string(json['next_page_token'], fallback: ''),
-      degradedReason: _string(
+      nextPageToken: navivoxStringFromJson(
+        json['next_page_token'],
+        fallback: '',
+      ),
+      degradedReason: navivoxStringFromJson(
         json['degraded_reason'] ?? json['reason'],
         fallback: '',
       ),
@@ -103,18 +108,24 @@ class NavivoxMemoryItem {
 
   factory NavivoxMemoryItem.fromJson(Map<String, Object?> json) {
     return NavivoxMemoryItem(
-      id: _string(json['id'], fallback: ''),
+      id: navivoxStringFromJson(json['id'], fallback: ''),
       type: NavivoxMemoryType.fromWire(json['type']),
-      snippet: _string(json['snippet'] ?? json['content'], fallback: ''),
-      timestamp: _string(json['timestamp'] ?? json['created_at'], fallback: ''),
-      sessionId: _string(
+      snippet: navivoxStringFromJson(
+        json['snippet'] ?? json['content'],
+        fallback: '',
+      ),
+      timestamp: navivoxStringFromJson(
+        json['timestamp'] ?? json['created_at'],
+        fallback: '',
+      ),
+      sessionId: navivoxStringFromJson(
         json['session_id'] ?? json['session_key'],
         fallback: '',
       ),
-      peerId: _string(json['peer_id'], fallback: ''),
-      status: _string(json['status'], fallback: ''),
-      tags: _stringList(json['tags']),
-      score: _double(json['score']),
+      peerId: navivoxStringFromJson(json['peer_id'], fallback: ''),
+      status: navivoxStringFromJson(json['status'], fallback: ''),
+      tags: navivoxStringListFromJson(json['tags']),
+      score: navivoxDoubleFromJson(json['score']),
     );
   }
 
@@ -164,23 +175,34 @@ class NavivoxMemoryDetail {
 
   factory NavivoxMemoryDetail.fromJson(Map<String, Object?> json) {
     return NavivoxMemoryDetail(
-      id: _string(json['id'], fallback: ''),
+      id: navivoxStringFromJson(json['id'], fallback: ''),
       type: NavivoxMemoryType.fromWire(json['type']),
-      content: _string(json['content'] ?? json['snippet'], fallback: ''),
-      source: _string(json['source'] ?? json['source_table'], fallback: ''),
-      sessionId: _string(
+      content: navivoxStringFromJson(
+        json['content'] ?? json['snippet'],
+        fallback: '',
+      ),
+      source: navivoxStringFromJson(
+        json['source'] ?? json['source_table'],
+        fallback: '',
+      ),
+      sessionId: navivoxStringFromJson(
         json['session_id'] ?? json['session_key'],
         fallback: '',
       ),
-      peerId: _string(json['peer_id'], fallback: ''),
-      createdAt: _string(json['created_at'] ?? json['timestamp'], fallback: ''),
-      updatedAt: _string(json['updated_at'], fallback: ''),
-      status: _string(json['status'], fallback: ''),
-      tags: _stringList(json['tags']),
-      provenance: _string(json['provenance'], fallback: ''),
-      linkedEntities: _stringList(json['linked_entities']),
-      linkedRelationships: _stringList(json['linked_relationships']),
-      degradedReason: _string(
+      peerId: navivoxStringFromJson(json['peer_id'], fallback: ''),
+      createdAt: navivoxStringFromJson(
+        json['created_at'] ?? json['timestamp'],
+        fallback: '',
+      ),
+      updatedAt: navivoxStringFromJson(json['updated_at'], fallback: ''),
+      status: navivoxStringFromJson(json['status'], fallback: ''),
+      tags: navivoxStringListFromJson(json['tags']),
+      provenance: navivoxStringFromJson(json['provenance'], fallback: ''),
+      linkedEntities: navivoxStringListFromJson(json['linked_entities']),
+      linkedRelationships: navivoxStringListFromJson(
+        json['linked_relationships'],
+      ),
+      degradedReason: navivoxStringFromJson(
         json['degraded_reason'] ?? json['reason'],
         fallback: '',
       ),
@@ -224,11 +246,14 @@ class NavivoxMemoryActionResult {
 
   factory NavivoxMemoryActionResult.fromJson(Map<String, Object?> json) {
     return NavivoxMemoryActionResult(
-      accepted: _bool(json['accepted']),
+      accepted: navivoxBoolFromJson(json['accepted']),
       action: NavivoxMemoryActionType.fromWire(json['action']),
-      message: _string(json['message'], fallback: ''),
-      rawSourcePreserved: _bool(json['raw_source_preserved'], fallback: true),
-      degradedReason: _string(
+      message: navivoxStringFromJson(json['message'], fallback: ''),
+      rawSourcePreserved: navivoxBoolFromJson(
+        json['raw_source_preserved'],
+        fallback: true,
+      ),
+      degradedReason: navivoxStringFromJson(
         json['degraded_reason'] ?? json['reason'],
         fallback: '',
       ),
@@ -288,26 +313,28 @@ class NavivoxMemoryOverview {
     };
 
     return NavivoxMemoryOverview(
-      profileId: _string(json['profile_id'], fallback: 'default'),
-      workspaceId: _string(json['workspace_id'], fallback: ''),
+      profileId: navivoxStringFromJson(json['profile_id'], fallback: 'default'),
+      workspaceId: navivoxStringFromJson(json['workspace_id'], fallback: ''),
       databaseLabel: _safeDatabaseLabel(
         json['database_label'] ?? json['database_path'],
       ),
       health: health,
-      totalTurns: _int(countMap['turns'] ?? countMap['total_turns']),
-      activeMemoryItems: _int(
+      totalTurns: navivoxIntFromJson(
+        countMap['turns'] ?? countMap['total_turns'],
+      ),
+      activeMemoryItems: navivoxIntFromJson(
         countMap['memory_items'] ?? countMap['active_memory_items'],
       ),
-      observations: _int(countMap['observations']),
-      conclusions: _int(countMap['conclusions']),
-      sessionSummaries: _int(countMap['session_summaries']),
-      entities: _int(countMap['entities']),
-      relationships: _int(countMap['relationships']),
-      degradedReason: _string(
+      observations: navivoxIntFromJson(countMap['observations']),
+      conclusions: navivoxIntFromJson(countMap['conclusions']),
+      sessionSummaries: navivoxIntFromJson(countMap['session_summaries']),
+      entities: navivoxIntFromJson(countMap['entities']),
+      relationships: navivoxIntFromJson(countMap['relationships']),
+      degradedReason: navivoxStringFromJson(
         json['degraded_reason'] ?? json['reason'],
         fallback: '',
       ),
-      lastUpdatedAt: _dateTime(json['last_updated_at']),
+      lastUpdatedAt: navivoxDateTimeFromJson(json['last_updated_at']),
     );
   }
 
@@ -332,46 +359,6 @@ class NavivoxMemoryOverview {
     NavivoxMemoryHealth.degraded => 'Goncho degraded',
     NavivoxMemoryHealth.unavailable => 'Goncho unavailable',
   };
-}
-
-String _string(Object? value, {required String fallback}) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return fallback;
-  return text;
-}
-
-int _int(Object? value) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? 0;
-}
-
-double? _double(Object? value) {
-  if (value is double) return value;
-  if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '');
-}
-
-bool _bool(Object? value, {bool fallback = false}) {
-  if (value is bool) return value;
-  final text = value?.toString().trim().toLowerCase();
-  if (text == 'true' || text == '1' || text == 'yes') return true;
-  if (text == 'false' || text == '0' || text == 'no') return false;
-  return fallback;
-}
-
-List<String> _stringList(Object? value) {
-  if (value is! List) return const [];
-  return value
-      .map((item) => item.toString().trim())
-      .where((item) => item.isNotEmpty)
-      .toList(growable: false);
-}
-
-DateTime? _dateTime(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  return DateTime.tryParse(text);
 }
 
 String _safeDatabaseLabel(Object? value) {
