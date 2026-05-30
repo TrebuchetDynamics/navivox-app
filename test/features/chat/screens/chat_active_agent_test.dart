@@ -8,11 +8,7 @@ import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/router/app_routes.dart';
 
 import '../../../support/test_navivox_channel.dart';
-
-const _seedAgents = [
-  NavivoxAgent(id: 'def', name: 'Default', status: 'ready'),
-  NavivoxAgent(id: 'arch', name: 'Architect', status: 'ready'),
-];
+import '../../shared/seed_fixtures.dart';
 
 const _seedServers = [
   NavivoxServer(id: 'srv1', name: 'Local', status: 'ready'),
@@ -35,7 +31,7 @@ void main() {
     (tester) async {
       final channel = TestNavivoxChannel()
         ..seedServers(_seedServers, activeServerId: 'srv1')
-        ..seedAgents(_seedAgents);
+        ..seedAgents(defaultSeedAgents);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -53,7 +49,7 @@ void main() {
   ) async {
     final channel = TestNavivoxChannel()
       ..seedServers(_seedServers, activeServerId: 'srv1')
-      ..seedAgents(_seedAgents, selectedAgentId: 'arch');
+      ..seedAgents(defaultSeedAgents, selectedAgentId: 'arch');
 
     await tester.pumpWidget(
       ProviderScope(

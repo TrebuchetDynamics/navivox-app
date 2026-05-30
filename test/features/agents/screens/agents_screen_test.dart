@@ -6,11 +6,7 @@ import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/agents/screens/agents_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
-
-const _seedAgents = [
-  NavivoxAgent(id: 'def', name: 'Default', status: 'ready'),
-  NavivoxAgent(id: 'arch', name: 'Architect', status: 'ready'),
-];
+import '../../shared/seed_fixtures.dart';
 
 const _seedServers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
@@ -61,7 +57,7 @@ void main() {
       // The screen calls requestAgentList(); our test mock records that and
       // we simulate the server response by seeding agents directly.
       await tester.tap(find.text('Refresh profiles'));
-      channel.seedAgents(_seedAgents);
+      channel.seedAgents(defaultSeedAgents);
       await tester.pump();
 
       expect(channel.agentListRequests, greaterThanOrEqualTo(1));
@@ -139,7 +135,7 @@ void main() {
   testWidgets('tapping an agent tile selects it through the channel', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()..seedAgents(_seedAgents);
+    final channel = TestNavivoxChannel()..seedAgents(defaultSeedAgents);
 
     await tester.pumpWidget(
       ProviderScope(

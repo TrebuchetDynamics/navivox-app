@@ -2,10 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/agents_screen_presentation.dart';
 
-const _agents = [
-  NavivoxAgent(id: 'def', name: 'Default', status: 'ready'),
-  NavivoxAgent(id: 'arch', name: 'Architect', status: 'ready'),
-];
+import '../shared/seed_fixtures.dart';
 
 const _servers = [
   NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
@@ -52,7 +49,7 @@ void main() {
   test('prefers the legacy agent list when agents are present', () {
     final presentation = AgentsScreenPresentation.fromState(
       NavivoxChannelState(
-        agents: _agents,
+        agents: defaultSeedAgents,
         selectedAgentId: 'arch',
         servers: _servers,
         activeServerId: 'local',
@@ -66,7 +63,7 @@ void main() {
     expect(presentation.showAgentList, isTrue);
     expect(presentation.showProfileFallback, isFalse);
     expect(presentation.showEmptyProfileState, isFalse);
-    expect(presentation.agents, _agents);
+    expect(presentation.agents, defaultSeedAgents);
     expect(presentation.selectedAgentId, 'arch');
   });
 
