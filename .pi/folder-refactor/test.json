@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "target": "test",
+  "updatedAt": "2026-05-30T05:32:12.093Z",
+  "objective": "Refactor test folder so root contains no loose test files; app-level theme/app tests live under test/app while existing responsibility folders remain intact.",
+  "completedSlices": [
+    "Moved test/app_theme_test.dart to test/app/app_theme_test.dart (move-only).",
+    "Validated moved app/theme tests with flutter test --concurrency=1 test/app/app_theme_test.dart.",
+    "Completion audit passed: no remaining root files in test."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "flutter test --concurrency=1 test/app/app_theme_test.dart: All tests passed.",
+    "folder_refactor_audit target=test plannedTopologyComplete=true: pass"
+  ]
+}
