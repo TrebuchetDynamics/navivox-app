@@ -1,13 +1,14 @@
 {
   "version": 1,
   "target": "features/servers/shared",
-  "updatedAt": "2026-05-31T09:35:37.119Z",
-  "objective": "Split features/servers/shared into focused connection_import, connection_gateway, and notices subfolders while preserving root compatibility exports and extracting duplicated connection import field parsing into a shared helper inside connection_import parser.",
+  "updatedAt": "2026-05-31T09:36:25.989Z",
+  "objective": "Split features/servers/shared into focused connection_import, connection_gateway, and notices subfolders while preserving root compatibility exports and extracting duplicated connection import field parsing into a shared helper inside connection_import parser. Topology complete; no safe next candidates remain under the target root.",
   "completedSlices": [
     "Moved connection import implementation into shared/connection_import/parser.dart with root export compatibility; extracted repeated field-to-SetupQrImageImport mapping into _importFromFields.",
     "Moved gateway connection presentation into shared/connection_gateway/presentation.dart with root export compatibility.",
     "Moved setup notice model into shared/notices/setup_screen_notice.dart with root export compatibility.",
-    "Moved connection import regression test under shared/connection_import/parser_regression_test.dart."
+    "Moved connection import regression test under shared/connection_import/parser_regression_test.dart.",
+    "Re-scanned for duplicate policy/types/helpers across shared, setup, registration, screens, and core protocol; no additional identical multi-call-site shared extraction met the gate."
   ],
   "nextCandidates": [],
   "validationReceipts": [

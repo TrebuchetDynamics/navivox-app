@@ -31,3 +31,4 @@
 {"ts":"2026-05-31T03:30:11-06:00","candidate":"features/profile_contacts","reason":"validation rollback","scope":"candidate","temporary":false}
 {"ts":"2026-05-31T03:30:12-06:00","candidate":"core/channel","reason":"sub-candidates exhausted this run","scope":"parent","temporary":true}
 {"ts":"2026-05-31T03:31:34-06:00","candidate":"router","reason":"no metric progress rollback","scope":"candidate","temporary":false}
+{"ts":"2026-05-31T03:36:36-06:00","candidate":"features/servers/shared","reason":"no changes","scope":"candidate","temporary":false}

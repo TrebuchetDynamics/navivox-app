@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T09:33:53.573Z",
+  "generatedAt": "2026-05-31T09:36:36.718Z",
   "cwd": "/home/xel/git/gormes/navivox-app/lib",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app/lib",
@@ -231,22 +231,6 @@
       ]
     },
     {
-      "relative": "features/servers/shared",
-      "score": 40.4,
-      "files": 4,
-      "direct": 4,
-      "churn": 6,
-      "callers": 5,
-      "importsOut": 5,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 4,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "shared/voice",
       "score": 40.4,
       "files": 4,
@@ -289,6 +273,22 @@
       "tests": 0,
       "roles": 3,
       "duplicates": 13,
+      "subdirs": 3,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "features/servers/shared",
+      "score": 30.7,
+      "files": 7,
+      "direct": 3,
+      "churn": 13,
+      "callers": 5,
+      "importsOut": 5,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 5,
       "subdirs": 3,
       "extensions": [
         ".dart"

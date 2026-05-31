@@ -3,6 +3,7 @@ import '../connection_import_parser.dart';
 void main() {
   parsesValidCorePairingDescriptor();
   parsesGenericTokenUrlOutsideCoreDescriptorProtocol();
+  preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
 }
 
@@ -12,8 +13,14 @@ void parsesValidCorePairingDescriptor() {
   );
 
   _expect(result != null, 'valid navivox://connect descriptor should parse');
-  _expect(result!.baseUrl == 'http://127.0.0.1:8765', 'baseUrl derived from websocket_url');
-  _expect(result.webSocketUrl == 'ws://127.0.0.1:8765/ws', 'webSocketUrl preserved');
+  _expect(
+    result!.baseUrl == 'http://127.0.0.1:8765',
+    'baseUrl derived from websocket_url',
+  );
+  _expect(
+    result.webSocketUrl == 'ws://127.0.0.1:8765/ws',
+    'webSocketUrl preserved',
+  );
   _expect(result.token == 'nvbx_ok', 'rest_token preserved');
   _expect(result.serverId == 'srv', 'server_id preserved');
   _expect(result.profileId == 'profile', 'profile_id preserved');
@@ -25,8 +32,25 @@ void parsesGenericTokenUrlOutsideCoreDescriptorProtocol() {
   );
 
   _expect(result != null, 'generic URL import should still parse');
-  _expect(result!.baseUrl == 'https://gateway.example', 'generic URL baseUrl normalized');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'generic URL baseUrl normalized',
+  );
   _expect(result.token == 'nvbx_generic', 'generic token preserved');
+}
+
+void preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin() {
+  final result = parseNavivoxConnectionImportPayload(
+    'https://gateway.example/connect?server_id=srv&profile_id=profile',
+  );
+
+  _expect(result != null, 'generic URL metadata import should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'URL origin provides baseUrl',
+  );
+  _expect(result.serverId == 'srv', 'server_id should be preserved');
+  _expect(result.profileId == 'profile', 'profile_id should be preserved');
 }
 
 void rejectsMalformedCorePairingDescriptorBeforeGenericFallback() {

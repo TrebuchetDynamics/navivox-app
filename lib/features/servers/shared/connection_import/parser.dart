@@ -94,20 +94,21 @@ SetupQrImageImport? _importFromFields(
     fields,
     _webSocketUrlFieldNames,
   );
-  final baseUrl =
+  final explicitBaseUrl =
       _normalizeBaseUrl(
         navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames),
       ) ??
       _normalizeWebSocketBaseUrl(webSocketUrl);
-  if (baseUrl == null && token == null) return null;
-
-  return SetupQrImageImport(
-    baseUrl: baseUrl ?? fallbackBaseUrl,
+  final candidate = _ConnectionImportCandidate(
+    baseUrl: explicitBaseUrl ?? fallbackBaseUrl,
     token: token,
     webSocketUrl: _normalizeWebSocketUrl(webSocketUrl),
     serverId: navivoxFirstStringFieldFromJson(fields, _serverIdFieldNames),
     profileId: navivoxFirstStringFieldFromJson(fields, _profileIdFieldNames),
   );
+  if (!candidate.hasImportValues) return null;
+
+  return candidate.toImport();
 }
 
 String? _httpOriginFromHttpUri(Uri uri) {
@@ -115,6 +116,34 @@ String? _httpOriginFromHttpUri(Uri uri) {
     'http' || 'https' => navivoxOriginFromUri(uri),
     _ => null,
   };
+}
+
+class _ConnectionImportCandidate {
+  const _ConnectionImportCandidate({
+    this.baseUrl,
+    this.token,
+    this.webSocketUrl,
+    this.serverId,
+    this.profileId,
+  });
+
+  final String? baseUrl;
+  final String? token;
+  final String? webSocketUrl;
+  final String? serverId;
+  final String? profileId;
+
+  bool get hasImportValues => baseUrl != null || token != null;
+
+  SetupQrImageImport toImport() {
+    return SetupQrImageImport(
+      baseUrl: baseUrl,
+      token: token,
+      webSocketUrl: webSocketUrl,
+      serverId: serverId,
+      profileId: profileId,
+    );
+  }
 }
 
 const _tokenFieldNames = [
