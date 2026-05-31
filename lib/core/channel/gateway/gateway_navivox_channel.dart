@@ -10,7 +10,6 @@ import '../../protocol/navivox_profile_contact_key.dart';
 import '../../protocol/navivox_voice_run.dart';
 import '../../session/session_persistence_service.dart';
 import '../contracts/navivox_channel.dart';
-import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_assistant_message_policy.dart';
 import 'gateway_capability_policy.dart';
@@ -496,17 +495,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     String? serverId,
     String? profileId,
   }) async {
-    final scope = navivoxMemoryScopeFor(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
       activeProfile: _state.activeProfileContact,
       serverId: serverId,
       profileId: profileId,
-    );
-    return navivoxGatewayMemoryRequest(
-      client: _client,
-      scope: scope,
       disconnectedReason: 'Connect to Gormes to load Goncho memory.',
       unavailableReason: 'Gormes memory API is unavailable.',
-      degraded: (reason) => NavivoxMemoryOverview.degraded(
+      degraded: (scope, reason) => NavivoxMemoryOverview.degraded(
         profileId: scope.profileId,
         reason: reason,
       ),
@@ -526,17 +522,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     int limit = 20,
     String? pageToken,
   }) async {
-    final scope = navivoxMemoryScopeFor(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
       activeProfile: _state.activeProfileContact,
       serverId: serverId,
       profileId: profileId,
-    );
-    return navivoxGatewayMemoryRequest(
-      client: _client,
-      scope: scope,
       disconnectedReason: 'Connect to Gormes to search Goncho memory.',
       unavailableReason: 'Gormes memory search API is unavailable.',
-      degraded: (reason) => NavivoxMemorySearchResult.degraded(reason: reason),
+      degraded: (_, reason) =>
+          NavivoxMemorySearchResult.degraded(reason: reason),
       request: (client, scope) => client.memorySearch(
         serverId: scope.serverId,
         profileId: scope.profileId,
@@ -555,17 +549,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required String id,
     required NavivoxMemoryType type,
   }) async {
-    final scope = navivoxMemoryScopeFor(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
       activeProfile: _state.activeProfileContact,
       serverId: serverId,
       profileId: profileId,
-    );
-    return navivoxGatewayMemoryRequest(
-      client: _client,
-      scope: scope,
       disconnectedReason: 'Connect to Gormes to inspect Goncho memory.',
       unavailableReason: 'Gormes memory detail API is unavailable.',
-      degraded: (reason) =>
+      degraded: (_, reason) =>
           NavivoxMemoryDetail.degraded(id: id, reason: reason),
       request: (client, scope) => client.memoryDetail(
         serverId: scope.serverId,
@@ -585,17 +576,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required NavivoxMemoryActionType action,
     String? correction,
   }) async {
-    final scope = navivoxMemoryScopeFor(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
       activeProfile: _state.activeProfileContact,
       serverId: serverId,
       profileId: profileId,
-    );
-    return navivoxGatewayMemoryRequest(
-      client: _client,
-      scope: scope,
       disconnectedReason: 'Connect to Gormes to manage Goncho memory.',
       unavailableReason: 'Gormes memory management API is unavailable.',
-      degraded: (reason) =>
+      degraded: (_, reason) =>
           NavivoxMemoryActionResult.degraded(action: action, reason: reason),
       request: (client, scope) => client.memoryAction(
         serverId: scope.serverId,
