@@ -31,8 +31,12 @@ object PairingHandoffIntentParser {
     }
 
     private fun URI.isNavivoxConnectUri(): Boolean {
-        return scheme.equals(NAVIVOX_SCHEME, ignoreCase = true) &&
-            host.equals(NAVIVOX_CONNECT_HOST, ignoreCase = true)
+        return scheme.equalsIgnoringCase(NAVIVOX_SCHEME) &&
+            host.equalsIgnoringCase(NAVIVOX_CONNECT_HOST)
+    }
+
+    private fun String?.equalsIgnoringCase(expected: String): Boolean {
+        return this?.equals(expected, ignoreCase = true) == true
     }
 
     private const val NAVIVOX_SCHEME = "navivox"

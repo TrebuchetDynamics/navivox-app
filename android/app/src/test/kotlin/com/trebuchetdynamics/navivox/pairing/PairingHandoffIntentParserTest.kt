@@ -74,6 +74,18 @@ class PairingHandoffIntentParserTest {
     }
 
     @Test
+    fun directAppOpenRejectsNavivoxUrisWithoutAuthority() {
+        val parsed = PairingHandoffIntentParser.parse(
+            action = PairingHandoffIntentParser.ACTION_VIEW,
+            type = null,
+            data = "navivox:connect?token=secret-token",
+            text = null,
+        )
+
+        assertNull(parsed)
+    }
+
+    @Test
     fun sharedTextClassifiesTextPayloadAndTrimsOuterWhitespace() {
         val payload = "navivox://connect?base_url=http://127.0.0.1:8765&token=secret-token"
 
