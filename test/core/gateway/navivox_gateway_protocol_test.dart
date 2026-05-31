@@ -97,6 +97,10 @@ void main() {
     ]);
     expect(navivoxGatewayContentTypeHeader, 'Content-Type');
     expect(navivoxGatewayJsonContentType, 'application/json');
+    expect(navivoxGatewayIsSuccessStatus(199), isFalse);
+    expect(navivoxGatewayIsSuccessStatus(200), isTrue);
+    expect(navivoxGatewayIsSuccessStatus(299), isTrue);
+    expect(navivoxGatewayIsSuccessStatus(300), isFalse);
     expect(
       navivoxGatewayHttpStatusMessage(503),
       'Navivox gateway returned HTTP 503',

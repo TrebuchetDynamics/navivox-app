@@ -66,7 +66,7 @@ Future<String> defaultPost(
 }
 
 Future<String> _readResponse(web.Response response) async {
-  if (!response.ok) {
+  if (!navivoxGatewayIsSuccessStatus(response.status)) {
     throw StateError(navivoxGatewayHttpStatusMessage(response.status));
   }
   final jsText = await response.text().toDart;

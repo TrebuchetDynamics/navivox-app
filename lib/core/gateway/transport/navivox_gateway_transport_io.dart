@@ -48,7 +48,7 @@ Future<String> defaultPost(
 
 Future<String> _readResponse(HttpClientResponse response, Uri uri) async {
   final body = await utf8.decoder.bind(response).join();
-  if (response.statusCode < 200 || response.statusCode >= 300) {
+  if (!navivoxGatewayIsSuccessStatus(response.statusCode)) {
     throw HttpException(
       navivoxGatewayHttpStatusMessage(response.statusCode),
       uri: uri,
