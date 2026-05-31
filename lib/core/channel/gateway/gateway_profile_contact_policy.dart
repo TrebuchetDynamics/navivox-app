@@ -96,6 +96,25 @@ List<NavivoxServer> navivoxServersFromProfileContacts(
   return servers.values.toList(growable: false);
 }
 
+NavivoxChannelState navivoxStateWithProfileContactUpsert({
+  required NavivoxChannelState state,
+  required NavivoxProfileContact contact,
+}) {
+  final contacts = [...state.profileContacts];
+  final index = contacts.indexWhere((existing) => existing.key == contact.key);
+  if (index >= 0) {
+    contacts[index] = contact;
+  } else {
+    contacts.add(contact);
+  }
+  return state.copyWith(
+    servers: navivoxUpsertProfileServer(state.servers, contact),
+    activeServerId: state.activeServerId ?? contact.serverId,
+    profileContacts: contacts,
+    selectedProfileContactKey: state.selectedProfileContactKey ?? contact.key,
+  );
+}
+
 List<NavivoxServer> navivoxUpsertProfileServer(
   List<NavivoxServer> servers,
   NavivoxProfileContact contact,

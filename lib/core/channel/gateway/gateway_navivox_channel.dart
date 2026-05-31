@@ -959,22 +959,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _upsertProfileContact(NavivoxProfileContact contact) {
-    final contacts = [..._state.profileContacts];
-    final index = contacts.indexWhere(
-      (existing) => existing.key == contact.key,
-    );
-    if (index >= 0) {
-      contacts[index] = contact;
-    } else {
-      contacts.add(contact);
-    }
-    final servers = navivoxUpsertProfileServer(_state.servers, contact);
-    _state = _state.copyWith(
-      servers: servers,
-      activeServerId: _state.activeServerId ?? contact.serverId,
-      profileContacts: contacts,
-      selectedProfileContactKey:
-          _state.selectedProfileContactKey ?? contact.key,
+    _state = navivoxStateWithProfileContactUpsert(
+      state: _state,
+      contact: contact,
     );
     notifyListeners();
   }

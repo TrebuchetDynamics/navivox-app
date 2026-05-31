@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T02:36:09.124Z",
+  "generatedAt": "2026-05-31T02:37:32.125Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,11 +8,11 @@
   "candidates": [
     {
       "relative": "lib/core/protocol",
-      "score": 342,
+      "score": 345,
       "files": 20,
       "direct": 9,
       "churn": 51,
-      "callers": 58,
+      "callers": 59,
       "importsOut": 1,
       "tests": 0,
       "roles": 2,
@@ -25,9 +25,9 @@
     {
       "relative": "lib/core",
       "score": 305,
-      "files": 72,
+      "files": 73,
       "direct": 0,
-      "churn": 254,
+      "churn": 256,
       "callers": 61,
       "importsOut": 0,
       "tests": 0,
@@ -40,14 +40,14 @@
     },
     {
       "relative": "lib/core/channel",
-      "score": 226.7,
-      "files": 19,
+      "score": 234,
+      "files": 20,
       "direct": 3,
-      "churn": 67,
+      "churn": 69,
       "callers": 43,
       "importsOut": 9,
       "tests": 0,
-      "roles": 2,
+      "roles": 3,
       "duplicates": 12,
       "subdirs": 3,
       "extensions": [
@@ -89,9 +89,9 @@
     {
       "relative": "lib",
       "score": 195,
-      "files": 203,
+      "files": 204,
       "direct": 3,
-      "churn": 835,
+      "churn": 837,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -287,6 +287,22 @@
       ]
     },
     {
+      "relative": "lib/core/channel/gateway",
+      "score": 120.9,
+      "files": 13,
+      "direct": 13,
+      "churn": 32,
+      "callers": 1,
+      "importsOut": 11,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 1,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/features/config",
       "score": 119.3,
       "files": 11,
@@ -333,22 +349,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "lib/core/channel/gateway",
-      "score": 108.6,
-      "files": 12,
-      "direct": 12,
-      "churn": 30,
-      "callers": 1,
-      "importsOut": 11,
-      "tests": 0,
-      "roles": 2,
-      "duplicates": 1,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
       ]
     },
     {
