@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/servers/setup/navivox_connect_intent_source.dart';
 import 'package:navivox/features/servers/screens/setup_screen.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
-import '../../shared/app/test_material_app.dart';
-import '../../shared/app/test_router_app.dart';
-import '../../shared/finders/test_finders.dart';
+import '../../../shared/app/test_material_app.dart';
+import '../../../shared/app/test_router_app.dart';
+import '../../../shared/finders/test_finders.dart';
+import '../shared/setup_screen_test_contracts.dart';
 
 void main() {
   testWidgets('connect-info lands on chat and sends a text turn', (
@@ -22,7 +22,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
-    expect(find.text('Connect and talk'), findsOneWidget);
+    expect(setupConnectAction(), findsOneWidget);
     expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
     expect(find.textContaining('Android emulator'), findsOneWidget);
     expect(find.textContaining('10.0.2.2'), findsOneWidget);
@@ -30,16 +30,10 @@ void main() {
     expect(caseInsensitiveText('telephony'), findsNothing);
     expect(caseInsensitiveText('fake'), findsNothing);
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      'http://127.0.0.1:8765',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Pairing token'),
-      'nvbx_test_token',
-    );
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
+    await tester.enterText(setupTokenField(), 'nvbx_test_token');
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
@@ -94,11 +88,8 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      'http://127.0.0.1:8765',
-    );
-    final tokenField = find.widgetWithText(TextField, 'Pairing token');
+    await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
+    final tokenField = setupTokenField();
     await tester.enterText(tokenField, 'nvbx_test_token');
     await tester.showKeyboard(tokenField);
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -114,13 +105,10 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      '127.0.0.1',
-    );
-    await tester.enterText(find.widgetWithText(TextField, 'Port'), '8765');
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.enterText(setupAddressField(), '127.0.0.1');
+    await tester.enterText(setupPortField(), '8765');
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
@@ -135,13 +123,10 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      'http://127.0.0.1:7319',
-    );
-    await tester.enterText(find.widgetWithText(TextField, 'Port'), '8765');
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.enterText(setupAddressField(), 'http://127.0.0.1:7319');
+    await tester.enterText(setupPortField(), '8765');
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:7319');
@@ -156,16 +141,10 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      '  http://127.0.0.1:8765  ',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Pairing token'),
-      '   ',
-    );
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.enterText(setupAddressField(), '  http://127.0.0.1:8765  ');
+    await tester.enterText(setupTokenField(), '   ');
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
@@ -191,12 +170,12 @@ void main() {
       ),
     );
 
-    final importButton = find.byKey(const ValueKey('setup-import-qr-button'));
+    final importButton = setupImportQrAction();
     await tester.ensureVisible(importButton);
     await tester.tap(importButton);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'https://gateway.example:8765');
@@ -231,8 +210,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Imported Navivox connection link.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
@@ -302,8 +281,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Imported Navivox connection link.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(channel.connectedBaseUrl, 'https://gateway.example:8765');
@@ -323,12 +302,9 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
-      'ftp://example.com',
-    );
-    await tester.ensureVisible(find.text('Connect and talk'));
-    await tester.tap(find.text('Connect and talk'));
+    await tester.enterText(setupAddressField(), 'ftp://example.com');
+    await tester.ensureVisible(setupConnectAction());
+    await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
 
     expect(find.text('Use http, https, ws, or wss.'), findsOneWidget);
@@ -364,24 +340,7 @@ void main() {
   testWidgets('copy one-paste bootstrap stays safe and inspect-first', (
     tester,
   ) async {
-    final copied = <String>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied.add(
-            (call.arguments as Map<Object?, Object?>)['text']! as String,
-          );
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      ),
-    );
+    final clipboard = ClipboardCapture()..install(tester);
 
     final channel = ConnectAndTalkChannel();
     addTearDown(channel.dispose);
@@ -393,52 +352,44 @@ void main() {
     await tester.tap(find.text('Copy one-paste bootstrap'));
     await tester.pumpAndSettle();
 
-    expect(copied, hasLength(1));
-    expect(copied.single, contains('one pasted Termux command'));
-    expect(copied.single, contains('pkg upgrade -y'));
-    expect(copied.single, contains('pkg install -y git curl'));
+    expect(clipboard.copiedTexts, hasLength(1));
+    expect(clipboard.copiedTexts.single, contains('one pasted Termux command'));
+    expect(clipboard.copiedTexts.single, contains('pkg upgrade -y'));
+    expect(clipboard.copiedTexts.single, contains('pkg install -y git curl'));
     expect(
-      copied.single,
+      clipboard.copiedTexts.single,
       contains(
         'curl -fsSLO https://github.com/TrebuchetDynamics/gormes-agent/releases/latest/download/install.sh',
       ),
     );
     expect(
-      copied.single,
+      clipboard.copiedTexts.single,
       contains('Press q to continue install, or Ctrl-C to abort'),
     );
-    expect(copied.single, contains('less install.sh'));
-    expect(copied.single, contains('GORMES_SKIP_SETUP=1 bash install.sh'));
+    expect(clipboard.copiedTexts.single, contains('less install.sh'));
     expect(
-      copied.single,
+      clipboard.copiedTexts.single,
+      contains('GORMES_SKIP_SETUP=1 bash install.sh'),
+    );
+    expect(
+      clipboard.copiedTexts.single,
       contains('(gormes navivox pair || gormes navivox connect-info)'),
     );
-    expect(copied.single.toLowerCase(), isNot(contains('curl | sh')));
-    expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
+    expect(
+      clipboard.copiedTexts.single.toLowerCase(),
+      isNot(contains('curl | sh')),
+    );
+    expect(
+      clipboard.copiedTexts.single.toLowerCase(),
+      isNot(contains('nvbx_')),
+    );
     expect(find.text('Copied one-paste Termux bootstrap.'), findsOneWidget);
   });
 
   testWidgets(
     'copy Navivox fix instructions gives actionable status recovery',
     (tester) async {
-      final copied = <String>[];
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          if (call.method == 'Clipboard.setData') {
-            copied.add(
-              (call.arguments as Map<Object?, Object?>)['text']! as String,
-            );
-          }
-          return null;
-        },
-      );
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        ),
-      );
+      final clipboard = ClipboardCapture()..install(tester);
 
       final channel = ConnectAndTalkChannel();
       addTearDown(channel.dispose);
@@ -450,16 +401,28 @@ void main() {
       await tester.tap(find.text('Copy fix instructions').last);
       await tester.pumpAndSettle();
 
-      expect(copied, hasLength(1));
-      expect(copied.single, contains('Navivox operator fix instructions'));
-      expect(copied.single, contains('gormes navivox status'));
-      expect(copied.single, contains('gormes navivox pair'));
-      expect(copied.single, contains('Keep that command open'));
-      expect(copied.single, contains('pairing link'));
-      expect(copied.single, contains('gormes navivox connect-info'));
-      expect(copied.single, contains('10.0.2.2'));
-      expect(copied.single.toLowerCase(), isNot(contains('nvbx_')));
-      expect(copied.single.toLowerCase(), isNot(contains('silent install')));
+      expect(clipboard.copiedTexts, hasLength(1));
+      expect(
+        clipboard.copiedTexts.single,
+        contains('Navivox operator fix instructions'),
+      );
+      expect(clipboard.copiedTexts.single, contains('gormes navivox status'));
+      expect(clipboard.copiedTexts.single, contains('gormes navivox pair'));
+      expect(clipboard.copiedTexts.single, contains('Keep that command open'));
+      expect(clipboard.copiedTexts.single, contains('pairing link'));
+      expect(
+        clipboard.copiedTexts.single,
+        contains('gormes navivox connect-info'),
+      );
+      expect(clipboard.copiedTexts.single, contains('10.0.2.2'));
+      expect(
+        clipboard.copiedTexts.single.toLowerCase(),
+        isNot(contains('nvbx_')),
+      );
+      expect(
+        clipboard.copiedTexts.single.toLowerCase(),
+        isNot(contains('silent install')),
+      );
       expect(find.text('Copied Navivox fix instructions.'), findsOneWidget);
     },
   );
@@ -473,16 +436,13 @@ void main() {
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
+      await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
       await tester.enterText(
-        find.widgetWithText(TextField, 'Gateway address'),
-        'http://127.0.0.1:8765',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Pairing token'),
+        setupTokenField(),
         'nvbx_secret_should_not_render',
       );
-      await tester.ensureVisible(find.text('Connect and talk'));
-      await tester.tap(find.text('Connect and talk'));
+      await tester.ensureVisible(setupConnectAction());
+      await tester.tap(setupConnectAction());
       await tester.pumpAndSettle();
 
       expect(find.text('Could not connect to Gormes gateway.'), findsOneWidget);
