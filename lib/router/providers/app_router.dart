@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/channel/navivox_channel_provider.dart';
 import '../../features/agents/screens/agents_screen.dart';
-import '../../features/chat/screens/profile_contacts_screen.dart';
+import '../../features/profile_contacts/screens/profile_contacts_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/config/screens/config_screen.dart';
 import '../../features/memory/screens/memory_dashboard_screen.dart';
