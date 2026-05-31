@@ -1,5 +1,6 @@
 import '../../../../../core/channel/navivox_channel.dart';
 import '../../../../../core/protocol/navivox_event.dart';
+import '../shared/transcript_display_text.dart';
 import '../shared/transcript_message_plain_text_presentation.dart';
 
 class TranscriptMessageForwardTargetPresentation {
@@ -59,7 +60,7 @@ class TranscriptMessageActionPresentation {
   final List<TranscriptMessageForwardTargetPresentation> forwardTargets;
 
   String get title => 'Message actions';
-  bool get hasText => text.isNotEmpty;
+  bool get hasText => transcriptHasDisplayText(text);
 
   bool get showPauseStream => canCancelActiveTurn;
   String get pauseLabel => 'Pause stream';

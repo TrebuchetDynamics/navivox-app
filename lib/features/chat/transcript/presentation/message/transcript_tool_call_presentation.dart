@@ -1,4 +1,5 @@
 import '../../../../../core/protocol/navivox_event.dart';
+import '../shared/transcript_display_text.dart';
 
 enum TranscriptToolCallStatusTone { active, success, failure, neutral }
 
@@ -29,8 +30,8 @@ class TranscriptToolArtifactPresentation {
   final String? summary;
   final String? ref;
 
-  bool get showSummary => summary?.isNotEmpty == true;
-  bool get showRef => ref?.isNotEmpty == true;
+  bool get showSummary => transcriptHasDisplayText(summary);
+  bool get showRef => transcriptHasDisplayText(ref);
 }
 
 class TranscriptToolCallPresentation {
@@ -72,8 +73,8 @@ class TranscriptToolCallPresentation {
   final String? approvalRisk;
   final List<TranscriptToolArtifactPresentation> artifacts;
 
-  bool get showSummary => summary.isNotEmpty;
-  bool get showApproval => approvalLabel?.isNotEmpty == true;
+  bool get showSummary => transcriptHasDisplayText(summary);
+  bool get showApproval => transcriptHasDisplayText(approvalLabel);
 
   static TranscriptToolCallStatusTone statusToneFor(String status) {
     return switch (status) {

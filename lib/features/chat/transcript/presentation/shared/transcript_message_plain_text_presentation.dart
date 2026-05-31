@@ -1,5 +1,6 @@
 import '../../../../../core/protocol/navivox_event.dart';
 import '../message/transcript_text_message_presentation.dart';
+import 'transcript_display_text.dart';
 
 class TranscriptMessagePlainTextPresentation {
   const TranscriptMessagePlainTextPresentation({required this.text});
@@ -12,13 +13,13 @@ class TranscriptMessagePlainTextPresentation {
         NavivoxMessageKind.text =>
           TranscriptTextMessagePresentation.fromMessage(message).text,
         NavivoxMessageKind.voice => message.voice?.transcript ?? '',
-        NavivoxMessageKind.toolCall => _joinLines([
+        NavivoxMessageKind.toolCall => transcriptJoinNonEmptyLines([
           message.toolCall?.name,
           message.toolCall?.status,
           message.toolCall?.summary,
         ]),
         NavivoxMessageKind.safetyWarning ||
-        NavivoxMessageKind.approvalRequest => _joinLines([
+        NavivoxMessageKind.approvalRequest => transcriptJoinNonEmptyLines([
           message.safetyNotice?.message,
           message.safetyNotice?.risk,
         ]),
@@ -28,9 +29,5 @@ class TranscriptMessagePlainTextPresentation {
 
   final String text;
 
-  bool get hasText => text.isNotEmpty;
-}
-
-String _joinLines(List<String?> parts) {
-  return parts.whereType<String>().where((part) => part.isNotEmpty).join('\n');
+  bool get hasText => transcriptHasDisplayText(text);
 }

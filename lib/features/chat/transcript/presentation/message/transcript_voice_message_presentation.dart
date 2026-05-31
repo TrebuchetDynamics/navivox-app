@@ -1,4 +1,5 @@
 import '../../../../../core/protocol/navivox_event.dart';
+import '../shared/transcript_display_text.dart';
 
 class TranscriptVoiceMessagePresentation {
   const TranscriptVoiceMessagePresentation({
@@ -24,5 +25,5 @@ class TranscriptVoiceMessagePresentation {
   final String transcript;
   final double morphIntensity;
 
-  bool get showTranscript => transcript.isNotEmpty;
+  bool get showTranscript => transcriptHasDisplayText(transcript);
 }

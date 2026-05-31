@@ -1,6 +1,7 @@
 import '../../../../../core/protocol/navivox_json.dart';
 import '../../../../../shared/presentation/voice_unavailable_presentation.dart'
     as voice_unavailable_policy;
+import '../shared/transcript_display_text.dart';
 
 enum TranscriptComposerVoiceButtonState { capture, stop, unavailable }
 
@@ -66,7 +67,8 @@ class TranscriptComposerPresentation {
     final reason = voice_unavailable_policy.canonicalVoiceUnavailableReason(
       voiceUnavailableReason,
     );
-    final voiceAvailable = voiceCaptureAvailable && reason?.isNotEmpty != true;
+    final voiceAvailable =
+        voiceCaptureAvailable && !transcriptHasDisplayText(reason);
     return TranscriptComposerPresentation(
       showEmoji: emojiOpen,
       voiceAvailable: voiceAvailable,
@@ -127,14 +129,14 @@ class TranscriptComposerPresentation {
   String? get voiceTooltip {
     if (voiceAvailable) return null;
     final reason = voiceUnavailableReason;
-    return reason?.isNotEmpty == true
+    return transcriptHasDisplayText(reason)
         ? 'Voice unavailable: $reason'
         : 'Voice unavailable';
   }
 
   String get voiceUnavailableTitle {
     final reason = voiceUnavailableReason;
-    return reason?.isNotEmpty == true
+    return transcriptHasDisplayText(reason)
         ? reason!
         : voice_unavailable_policy.deviceSttUnavailableReason;
   }

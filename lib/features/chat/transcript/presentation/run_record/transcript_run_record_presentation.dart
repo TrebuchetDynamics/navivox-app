@@ -156,7 +156,10 @@ List<TranscriptRunRecordInfoRow> _voiceRows(Map<String, Object?> voice) {
   if (retention != null) audioParts.add('retention $retention');
   if (audioParts.isNotEmpty) {
     rows.add(
-      TranscriptRunRecordInfoRow(label: 'Audio', value: audioParts.join(' • ')),
+      TranscriptRunRecordInfoRow(
+        label: 'Audio',
+        value: _joinRunRecordInfoParts(audioParts),
+      ),
     );
   }
 
@@ -199,7 +202,7 @@ String? _providerState(
     final voice = navivoxOptionalStringFromJson(value['voice_id']);
     if (voice != null) parts.add('voice $voice');
   }
-  return parts.isEmpty ? null : parts.join(' • ');
+  return _joinOptionalRunRecordInfoParts(parts);
 }
 
 List<TranscriptRunRecordToolRow> _toolRows(Map<String, Object?> raw) {
@@ -246,8 +249,15 @@ String _usageLabel(Map<String, Object?> value) {
   final parts = <String>[];
   if (input != null) parts.add('input $input');
   if (output != null) parts.add('output $output');
-  if (parts.isNotEmpty) return parts.join(' • ');
+  final usage = _joinOptionalRunRecordInfoParts(parts);
+  if (usage != null) return usage;
   return status ?? 'unknown';
+}
+
+String _joinRunRecordInfoParts(List<String> parts) => parts.join(' • ');
+
+String? _joinOptionalRunRecordInfoParts(List<String> parts) {
+  return parts.isEmpty ? null : _joinRunRecordInfoParts(parts);
 }
 
 String _costLabel(Map<String, Object?> value) {

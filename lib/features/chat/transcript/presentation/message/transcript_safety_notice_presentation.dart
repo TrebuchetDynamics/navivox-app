@@ -1,4 +1,5 @@
 import '../../../../../core/protocol/navivox_event.dart';
+import '../shared/transcript_display_text.dart';
 
 enum TranscriptSafetyNoticeTone { warning, approval }
 
@@ -37,7 +38,7 @@ class TranscriptSafetyNoticePresentation {
 
   bool get showSeverity =>
       tone == TranscriptSafetyNoticeTone.warning &&
-      severityLabel?.isNotEmpty == true;
+      transcriptHasDisplayText(severityLabel);
 
-  bool get showRisk => risk?.isNotEmpty == true;
+  bool get showRisk => transcriptHasDisplayText(risk);
 }

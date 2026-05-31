@@ -1,4 +1,5 @@
 import '../../../../../core/protocol/navivox_event.dart';
+import '../shared/transcript_display_text.dart';
 
 class TranscriptTextMessagePresentation {
   const TranscriptTextMessagePresentation({required this.text});
@@ -11,5 +12,5 @@ class TranscriptTextMessagePresentation {
 
   final String text;
 
-  bool get hasText => text.isNotEmpty;
+  bool get hasText => transcriptHasDisplayText(text);
 }
