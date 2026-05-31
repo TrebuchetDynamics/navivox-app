@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/conversations/profile_contact_conversation.dart';
 
 import '../shared/chat_message_test_fixtures.dart';
+import '../shared/voice_run_test_fixtures.dart';
 
 void main() {
   final now = DateTime.utc(2026, 5, 27, 21);
@@ -74,16 +74,11 @@ void main() {
         profileContacts: const [mineru, support],
         selectedProfileContactKey: mineru.key,
         voiceRuns: {
-          'support-voice': NavivoxVoiceRun(
+          'support-voice': chatVoiceRun(
             id: 'support-voice',
-            serverId: 'local',
             profileId: 'support',
-            status: NavivoxVoiceRunStatus.pendingSend,
-            transcriptSource: NavivoxTranscriptSource.device,
-            ttsStatus: NavivoxTtsStatus.unavailable,
             transcript: 'wrong chat',
             createdAt: now,
-            updatedAt: now,
           ),
         },
         activeVoiceRunId: 'support-voice',

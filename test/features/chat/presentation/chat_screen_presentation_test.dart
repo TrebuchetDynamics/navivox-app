@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
-import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
 import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../shared/chat_message_test_fixtures.dart';
 import '../shared/voice_recovery_test_fixtures.dart';
+import '../shared/voice_run_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -77,18 +77,13 @@ void main() {
   });
 
   test('summarizes active profile scope and transcript surface inputs', () {
-    final pendingRun = NavivoxVoiceRun(
+    final pendingRun = chatVoiceRun(
       id: 'voice-1',
       serverId: 'srv1',
-      profileId: 'mineru',
-      status: NavivoxVoiceRunStatus.pendingSend,
-      transcriptSource: NavivoxTranscriptSource.device,
-      ttsStatus: NavivoxTtsStatus.unavailable,
       transcript: 'ship this safely',
       duration: const Duration(seconds: 3),
       confidence: 0.82,
       createdAt: now,
-      updatedAt: now,
     );
     final state = NavivoxChannelState(
       servers: const [local],
