@@ -1,20 +1,25 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:06:52.148Z",
+  "updatedAt": "2026-05-31T11:08:56.955Z",
   "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added parsesSharedTextTokenWrappedInAngleBrackets regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because token delimiter handling supported quotes/backticks but not the same angle wrappers already supported for copied URLs.",
-    "Made shared-text token wrapper policy explicit in features/servers/shared/connection_import/parser.dart by adding angle brackets to the leading/trailing token delimiter contract."
+    "Made shared-text token wrapper policy explicit in features/servers/shared/connection_import/parser.dart by adding angle brackets to the leading/trailing token delimiter contract.",
+    "Added prefersConnectionPathOverEarlierEqualRankMetadataUrl regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before fix because equal-rank metadata-only URLs were resolved by source order, allowing an earlier docs URL to steal a later connection URL's metadata provenance.",
+    "Made shared-text endpoint tie-breaking explicit in features/servers/shared/connection_import/parser.dart with hasConnectionPath and _connectionPathSegments for equal-rank URL candidates."
   ],
   "nextCandidates": [
     "features/servers/setup connect-intent event/initial ordering: ensure stream imports cannot be overwritten by stale initial replay if native emits both",
-    "features/servers/shared/connection_import shared-text URL/token provenance around equal-rank candidates with metadata-only URLs",
     "features/servers/shared/connection_import token grammar visibility: distinguish broad human-entered tokens from accidental prose labels beyond URL-shaped values",
     "features/servers/pairing token edit provenance policy at widget level if product decides credential edits should also clear pairing-link failure copy"
   ],
   "validationReceipts": [
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: angle-bracketed labeled token parsed as <shared_secret instead of shared_secret)",
+    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
+    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: equal-rank metadata URL selected https://docs.example instead of later /connect URL)",
     "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
     "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)"

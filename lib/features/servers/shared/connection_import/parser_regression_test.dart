@@ -13,6 +13,7 @@ void main() {
   readsEarliestLabeledSharedTextTokenAfterSelectedUrl();
   prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl();
   prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
+  prefersConnectionPathOverEarlierEqualRankMetadataUrl();
   doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken();
   doesNotUseUrlAfterSharedTextTokenLabelAsToken();
   preservesGenericWebSocketUrlImports();
@@ -236,6 +237,26 @@ void prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl() {
     'token after a later bare URL should bind to that URL, not an earlier docs URL',
   );
   _expect(result.token == 'nvbx_fresh', 'following token should be preserved');
+}
+
+void prefersConnectionPathOverEarlierEqualRankMetadataUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Read https://docs.example/setup?server_id=docs first. Then open '
+    'https://gateway.example/connect?server_id=srv.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with equal-rank metadata URLs should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'a connection-path metadata URL should beat an earlier documentation URL with the same field score',
+  );
+  _expect(
+    result.serverId == 'srv',
+    'metadata should come from the selected connection-path URL',
+  );
 }
 
 void doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken() {

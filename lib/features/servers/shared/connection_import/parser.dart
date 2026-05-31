@@ -310,6 +310,7 @@ _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
             end: endpoint.tokenSearchEnd,
           ) !=
           null,
+      hasConnectionPath: uri != null && _hasConnectionPath(uri),
     );
     bestCandidate = sharedTextCandidate.isRicherThan(bestCandidate)
         ? sharedTextCandidate
@@ -353,12 +354,14 @@ class _SharedTextEndpointCandidate {
     required this.tokenSearchStart,
     required this.tokenSearchEnd,
     required this.hasFollowingToken,
+    required this.hasConnectionPath,
   });
 
   final _ConnectionImportCandidate candidate;
   final int tokenSearchStart;
   final int tokenSearchEnd;
   final bool hasFollowingToken;
+  final bool hasConnectionPath;
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
     if (other == null) return true;
@@ -372,9 +375,23 @@ class _SharedTextEndpointCandidate {
     // tokens to the URL whose segment actually contains the token. This avoids
     // pairing a later setup token with an earlier documentation URL.
     if (hasFollowingToken != other.hasFollowingToken) return hasFollowingToken;
+
+    // Equal-rank metadata-only URLs can otherwise leave a docs/setup link as
+    // the winner merely because it appeared first. Prefer a candidate whose path
+    // uses the explicit connection route vocabulary already emitted by setup
+    // links before falling back to source order.
+    if (hasConnectionPath != other.hasConnectionPath) return hasConnectionPath;
     return false;
   }
 }
+
+bool _hasConnectionPath(Uri uri) {
+  return uri.pathSegments.any(
+    (segment) => _connectionPathSegments.contains(segment.toLowerCase()),
+  );
+}
+
+const _connectionPathSegments = {'connect', 'connection', 'pair', 'pairing'};
 
 Map<String, String> _genericUriFields(Uri uri) {
   final fields = navivoxFirstNonBlankQueryParameterValues(
