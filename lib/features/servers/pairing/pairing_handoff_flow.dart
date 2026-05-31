@@ -2,6 +2,9 @@ import '../../../core/channel/navivox_channel.dart';
 import '../../../router/navigation_intent.dart';
 import '../models/connection_import.dart';
 import 'pairing_handoff_landing.dart';
+import 'pairing_handoff_manual_edit.dart';
+
+export 'pairing_handoff_manual_edit.dart';
 
 class PairingHandoffFlow {
   const PairingHandoffFlow({
@@ -41,8 +44,15 @@ class PairingHandoffFlow {
     };
   }
 
+  PairingHandoffFlow applyManualConnectionEdit(PairingHandoffManualEdit edit) {
+    if (pairingHandoffManualEditClearsImportedTarget(edit)) {
+      return const PairingHandoffFlow();
+    }
+    return this;
+  }
+
   PairingHandoffFlow resetManualConnectionEdit() {
-    return const PairingHandoffFlow();
+    return applyManualConnectionEdit(PairingHandoffManualEdit.address);
   }
 
   PairingHandoffConnectOutcome afterConnect(NavivoxChannelState state) {

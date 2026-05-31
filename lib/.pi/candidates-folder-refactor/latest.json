@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T10:11:46.451Z",
+  "generatedAt": "2026-05-31T10:13:36.996Z",
   "cwd": "/home/xel/git/gormes/navivox-app/lib",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app/lib",
@@ -11,12 +11,12 @@
       "score": 111.2,
       "files": 12,
       "direct": 11,
-      "churn": 28,
+      "churn": 30,
       "callers": 1,
       "importsOut": 4,
       "tests": 0,
       "roles": 2,
-      "duplicates": 8,
+      "duplicates": 9,
       "subdirs": 1,
       "extensions": [
         ".dart"

@@ -193,7 +193,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
-                            onChanged: (_) => _webSocketUrl = null,
+                            onChanged: _handlePortChanged,
                             onSubmitted: (_) =>
                                 FocusScope.of(context).nextFocus(),
                           ),
@@ -441,13 +441,22 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   void _handleAddressChanged(String value) {
     _webSocketUrl = null;
-    _handoffFlow = _handoffFlow.resetManualConnectionEdit();
+    _handoffFlow = _handoffFlow.applyManualConnectionEdit(
+      PairingHandoffManualEdit.address,
+    );
     final uri = Uri.tryParse(value.trim());
     if (uri != null && navivoxIsEndpointScheme(uri.scheme)) {
       _scheme = navivoxHttpSchemeFromEndpointScheme(uri.scheme);
     } else {
       _scheme = 'http';
     }
+  }
+
+  void _handlePortChanged(String _) {
+    _webSocketUrl = null;
+    _handoffFlow = _handoffFlow.applyManualConnectionEdit(
+      PairingHandoffManualEdit.port,
+    );
   }
 
   Future<void> _confirmActiveGatewayHandoff() async {
