@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/voice/controllers/transcript_voice_capture_flow.dart';
-import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
+import 'package:navivox/shared/voice/voice_capture_failures.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';

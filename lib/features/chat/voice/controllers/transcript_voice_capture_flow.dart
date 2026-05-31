@@ -1,5 +1,5 @@
 import '../../../../core/protocol/voice_unavailable_reason.dart';
-import '../../../voice/services/speech/speech_to_text_voice_capture_service.dart';
+import '../../../../shared/voice/voice_capture_failures.dart';
 import '../../../../shared/voice/voice_capture_service.dart';
 
 enum TranscriptVoiceCaptureStatus { unavailable, captured, failed }

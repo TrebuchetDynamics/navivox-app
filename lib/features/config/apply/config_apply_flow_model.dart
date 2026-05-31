@@ -1,5 +1,6 @@
 import '../form/config_form_model.dart';
 import '../form/config_wire_fields.dart';
+import '../shared/config_value_display.dart';
 
 class ConfigApplyFlowModel {
   const ConfigApplyFlowModel({required this.changes});
@@ -69,7 +70,7 @@ class ConfigDraftChange {
         path: row.field,
         label: row.label,
         oldDisplayValue: row.displayValue,
-        newDisplayValue: 'Secret will be updated',
+        newDisplayValue: configSecretWillBeUpdatedLabel,
         applyValue: secret,
         isSecret: true,
         requiresConfirmation: row.requiresConfirmation,
@@ -112,7 +113,7 @@ class ConfigDraftChange {
 
   static bool _sameValue(Object? left, Object? right) => left == right;
 
-  static String _displayValue(Object? value) => value == null ? '—' : '$value';
+  static String _displayValue(Object? value) => configDisplayValue(value);
 }
 
 class ConfigValidationState {

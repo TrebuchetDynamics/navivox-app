@@ -1,4 +1,5 @@
 import '../../../core/protocol/navivox_json.dart';
+import '../shared/config_value_display.dart';
 import 'config_wire_fields.dart';
 
 class ConfigFormModel {
@@ -236,11 +237,8 @@ class ConfigFormRow {
   Object? get plainValue => _plainValue(rawValue);
 
   String get displayValue {
-    if (isSecret) return _secretDisplayValue(rawValue);
-    final value = _plainValue(rawValue);
-    if (value == null) return '—';
-    if (value is Iterable) return value.join(', ');
-    return '$value';
+    if (isSecret) return configSecretDisplayValue(rawValue);
+    return configDisplayValue(_plainValue(rawValue));
   }
 
   String get editInitialValue {
@@ -267,25 +265,5 @@ class ConfigFormRow {
       return rawValue['value'];
     }
     return rawValue;
-  }
-
-  static String _secretDisplayValue(Object? rawValue) {
-    if (rawValue == null) return 'Secret not set';
-    if (rawValue is Map) {
-      final status = configWireString(rawValue['secret_status'])?.toLowerCase();
-      return switch (status) {
-        'configured' || 'external' || 'set' => _secretConfiguredLabel(rawValue),
-        'unset' => 'Secret not set',
-        'unknown' => 'Secret status unknown',
-        _ => 'Secret configured',
-      };
-    }
-    return 'Secret configured';
-  }
-
-  static String _secretConfiguredLabel(Map rawValue) {
-    final source = configWireString(rawValue['source']);
-    if (source == null) return 'Secret configured';
-    return 'Secret configured ($source)';
   }
 }

@@ -7,14 +7,10 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../../core/protocol/voice_unavailable_reason.dart';
+import '../../../../shared/voice/voice_capture_failures.dart';
 import '../../../../shared/voice/voice_capture_service.dart';
 
-const noSpeechDetectedVoiceCaptureMessage =
-    'No speech was detected. Check microphone permission, device speech recognition, or try speaking closer to the mic.';
-const deviceSpeechUnavailableVoiceCaptureMessage =
-    'Device speech recognition is unavailable. Install or enable device speech recognition, then return to Navivox.';
-const microphonePermissionDeniedVoiceCaptureMessage =
-    'Microphone permission denied. Grant microphone permission in Android App info, then return to Navivox.';
+export '../../../../shared/voice/voice_capture_failures.dart';
 
 typedef SpeechToTextDiagnosticLog = void Function(String message);
 
@@ -35,32 +31,6 @@ class SpeechToTextLocale {
 
   final String localeId;
   final String name;
-}
-
-class DeviceSpeechUnavailable implements Exception {
-  const DeviceSpeechUnavailable([this.message = deviceSttUnavailableReason]);
-
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-class SpeechToTextCaptureFailure implements Exception {
-  const SpeechToTextCaptureFailure(this.cause);
-
-  final Object cause;
-
-  bool get isNoTranscript {
-    final error = cause;
-    if (error is SpeechRecognitionError) {
-      return _isNoTranscriptReason(error.errorMsg);
-    }
-    return _isNoTranscriptReason(error.toString());
-  }
-
-  @override
-  String toString() => 'SpeechToTextCaptureFailure: $cause';
 }
 
 abstract interface class SpeechToTextEngine {
@@ -305,7 +275,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
 
   Object _normalizeError(Object error) {
     if (error is SpeechRecognitionError) {
-      if (_isNoTranscriptReason(error.errorMsg)) {
+      if (isNoTranscriptVoiceCaptureReason(error.errorMsg)) {
         return const SpeechToTextCaptureFailure('no transcript');
       }
       if (error.permanent) {
@@ -341,14 +311,6 @@ String _formatErrorDiagnostic(Object error) {
     return 'error errorMsg=${error.errorMsg} permanent=${error.permanent}';
   }
   return 'error=$error';
-}
-
-bool _isNoTranscriptReason(String reason) {
-  final normalized = reason.trim().toLowerCase();
-  return normalized == 'no transcript' ||
-      normalized == 'empty transcript' ||
-      normalized.contains('error_no_match') ||
-      normalized.contains('error_speech_timeout');
 }
 
 void _defaultDiagnosticLog(String message) {
