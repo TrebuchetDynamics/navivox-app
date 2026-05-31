@@ -235,6 +235,13 @@ _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
     final sharedTextCandidate = _SharedTextEndpointCandidate(
       candidate: candidate,
       tokenSearchStart: endpoint.tokenSearchStart,
+      hasFollowingToken:
+          _firstToken(
+            text,
+            start: endpoint.tokenSearchStart,
+            end: endpoint.tokenSearchEnd,
+          ) !=
+          null,
     );
     bestCandidate = sharedTextCandidate.isRicherThan(bestCandidate)
         ? sharedTextCandidate
@@ -244,14 +251,19 @@ _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
 }
 
 Iterable<_SharedTextEndpoint> _endpointUrls(String text) sync* {
-  for (final match in _endpointUrlPattern.allMatches(text)) {
+  final matches = _endpointUrlPattern.allMatches(text).toList();
+  for (var index = 0; index < matches.length; index++) {
+    final match = matches[index];
     final url = match.group(0);
-    if (url != null) {
-      yield _SharedTextEndpoint(
-        url: _trimCopiedUrlTrailingPunctuation(url),
-        tokenSearchStart: match.end,
-      );
-    }
+    if (url == null) continue;
+    final nextEndpointStart = index + 1 < matches.length
+        ? matches[index + 1].start
+        : text.length;
+    yield _SharedTextEndpoint(
+      url: _trimCopiedUrlTrailingPunctuation(url),
+      tokenSearchStart: match.end,
+      tokenSearchEnd: nextEndpointStart,
+    );
   }
 }
 
@@ -259,23 +271,39 @@ class _SharedTextEndpoint {
   const _SharedTextEndpoint({
     required this.url,
     required this.tokenSearchStart,
+    required this.tokenSearchEnd,
   });
 
   final String url;
   final int tokenSearchStart;
+  final int tokenSearchEnd;
 }
 
 class _SharedTextEndpointCandidate {
   const _SharedTextEndpointCandidate({
     required this.candidate,
     required this.tokenSearchStart,
+    required this.hasFollowingToken,
   });
 
   final _ConnectionImportCandidate candidate;
   final int tokenSearchStart;
+  final bool hasFollowingToken;
 
-  bool isRicherThan(_SharedTextEndpointCandidate? other) =>
-      candidate.isRicherThan(other?.candidate);
+  bool isRicherThan(_SharedTextEndpointCandidate? other) {
+    if (other == null) return true;
+
+    final rank = candidate.rank;
+    final otherRank = other.candidate.rank;
+    if (rank.isRicherThan(otherRank)) return true;
+    if (otherRank.isRicherThan(rank)) return false;
+
+    // When two bare URLs expose the same connection fields, bind shared-text
+    // tokens to the URL whose segment actually contains the token. This avoids
+    // pairing a later setup token with an earlier documentation URL.
+    if (hasFollowingToken != other.hasFollowingToken) return hasFollowingToken;
+    return false;
+  }
 }
 
 Map<String, String> _genericUriFields(Uri uri) {
@@ -421,20 +449,30 @@ String _trimCopiedUrlTrailingPunctuation(String url) {
 // or part of a query token when the URL carries connection credentials.
 const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'`';
 
-String? _firstToken(String text, {int start = 0}) {
-  final labeledToken = _firstLabeledToken(text, start: start);
+String? _firstToken(String text, {int start = 0, int? end}) {
+  final tokenSearchEnd = end ?? text.length;
+  final labeledToken = _firstLabeledToken(
+    text,
+    start: start,
+    end: tokenSearchEnd,
+  );
   if (labeledToken != null) return labeledToken;
 
   final navivoxIndex = text.toLowerCase().indexOf('nvbx_', start);
-  return navivoxIndex < 0 ? null : _readTokenAt(text, navivoxIndex);
+  if (navivoxIndex < 0 || navivoxIndex >= tokenSearchEnd) return null;
+  return _readTokenAt(text, navivoxIndex);
 }
 
-String? _firstLabeledToken(String text, {required int start}) {
+String? _firstLabeledToken(
+  String text, {
+  required int start,
+  required int end,
+}) {
   for (final label in _tokenLabels) {
     final matches = RegExp(
       '${RegExp.escape(label)}\\s*[:=]',
       caseSensitive: false,
-    ).allMatches(text, start);
+    ).allMatches(text, start).where((match) => match.start < end);
     if (matches.isEmpty) continue;
     final token = _readTokenAt(text, matches.first.end);
     if (token != null) return token;

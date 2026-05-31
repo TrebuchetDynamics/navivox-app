@@ -11,6 +11,7 @@ void main() {
   prefersEmbeddedUrlTokenOverEarlierStaleSharedTextToken();
   prefersTokenAfterSelectedEmbeddedUrlOverEarlierStaleSharedTextToken();
   prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl();
+  prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
@@ -194,6 +195,23 @@ void prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl() {
   );
   _expect(result.token == 'nvbx_embedded', 'embedded URL token is preserved');
   _expect(result.serverId == 'srv', 'embedded URL metadata is preserved');
+}
+
+void prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Read https://docs.example/setup first. Then open '
+    'https://gateway.example/connect and use Token: nvbx_fresh.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with multiple bare URLs and one token should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'token after a later bare URL should bind to that URL, not an earlier docs URL',
+  );
+  _expect(result.token == 'nvbx_fresh', 'following token should be preserved');
 }
 
 void preservesGenericWebSocketUrlImports() {

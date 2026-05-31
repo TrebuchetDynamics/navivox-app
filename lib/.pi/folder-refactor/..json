@@ -1,24 +1,26 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T10:34:17.112Z",
+  "updatedAt": "2026-05-31T10:46:12.459Z",
   "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added preservesCorePairingDescriptorRepeatedQueryValuesAfterBlankCopyArtifacts regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because NavivoxPairingDescriptor.parse used Uri.queryParameters and blank duplicate params erased earlier websocket/token values.",
     "Extracted navivoxFirstNonBlankQueryParameterValues/navivoxFirstNonBlankQueryParameterValue in core/protocol/serialization/navivox_json.dart as a shared query contract for copied URLs/descriptors with duplicate blank parameters.",
     "Updated core/protocol/pairing/navivox_pairing_descriptor.dart to parse repeated query fields via the shared first-nonblank query helper.",
     "Updated features/servers/shared/connection_import/parser.dart to use the shared query helper instead of its private duplicate.",
-    "Added stripsAngleBracketFromSharedTextUrl characterization in parser_regression_test.dart; current parser already preserves this behavior."
+    "Added stripsAngleBracketFromSharedTextUrl characterization in parser_regression_test.dart; current parser already preserves this behavior.",
+    "Added prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because equal-rank bare shared-text URLs kept the first URL, pairing a later setup token with an earlier docs URL.",
+    "Made shared-text endpoint candidate ranking explicit about per-endpoint token segments in features/servers/shared/connection_import/parser.dart; equal-rank candidates now prefer the URL whose following segment contains the token before the next URL."
   ],
   "nextCandidates": [
-    "features/servers/shared/connection_import parser ranking tie-breaks for partial candidates with equal scores",
     "features/servers/shared/connection_import JSON default provenance ambiguity when top-level credentials are inherited by multiple entries",
-    "features/servers/pairing token edit provenance policy at widget level if product decides credential edits should also clear pairing-link failure copy"
+    "features/servers/pairing token edit provenance policy at widget level if product decides credential edits should also clear pairing-link failure copy",
+    "features/servers/setup connect-intent payload source precedence and stale direct-app-open payload replay"
   ],
   "validationReceipts": [
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: repeated blank core descriptor query parameters dropped websocket_url/rest_token)",
-    "dart format core/protocol/serialization/navivox_json.dart core/protocol/pairing/navivox_pairing_descriptor.dart features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: later setup token bound to earlier docs URL for equal-rank shared-text URL candidates)",
+    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart analyze core/protocol/serialization/navivox_json.dart core/protocol/pairing/navivox_pairing_descriptor.dart features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)"
+    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)"
   ]
 }
