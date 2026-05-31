@@ -332,6 +332,23 @@ void main() {
     },
   );
 
+  test(
+    'merges pairing channel_ids aliases instead of truncating candidates',
+    () {
+      final descriptor = NavivoxPairingDescriptor.parse(
+        'navivox://connect?'
+        'websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&'
+        'tokenRequired=true&'
+        'restToken=setup-secret-token&'
+        'channel_ids=telegram&'
+        'channelIds=navivox%2Cdiscord&'
+        'channelIds=%20',
+      );
+
+      expect(descriptor.channelIds, ['telegram', 'navivox', 'discord']);
+    },
+  );
+
   test('preserves explicit pairing websocket URL in gateway config', () {
     final descriptor = NavivoxPairingDescriptor.parse(
       'navivox://connect?'

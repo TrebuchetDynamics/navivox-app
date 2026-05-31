@@ -106,9 +106,7 @@ class _PairingDescriptorFields {
   }
 
   List<String> csv(String name) {
-    final values = _allQueryValues(name);
-    if (values == null) return const [];
-    return values
+    return _allNormalizedQueryValues(name)
         .map(navivoxOptionalStringFromJson)
         .whereType<String>()
         .expand((value) => value.split(','))
@@ -117,17 +115,15 @@ class _PairingDescriptorFields {
         .toList(growable: false);
   }
 
-  List<String>? _allQueryValues(String name) {
-    final exact = allValues[name];
-    if (exact != null) return exact;
-
+  List<String> _allNormalizedQueryValues(String name) {
     final normalizedName = _normalizePairingDescriptorFieldName(name);
+    final values = <String>[];
     for (final entry in allValues.entries) {
       if (_normalizePairingDescriptorFieldName(entry.key) == normalizedName) {
-        return entry.value;
+        values.addAll(entry.value);
       }
     }
-    return null;
+    return values;
   }
 }
 
