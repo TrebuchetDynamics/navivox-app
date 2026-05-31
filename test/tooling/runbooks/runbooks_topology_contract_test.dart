@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../shared/file_contract_helpers.dart';
+
 void main() {
   test('runbook index, moved runbooks, and root compatibility facades stay valid', () {
-    final docsIndex = File('docs/README.md').readAsStringSync();
+    final docsIndex = readRequiredFile('docs/README.md');
     final expectedRunbooks = [
       'docs/runbooks/termux/gormes-bootstrap.md',
       'docs/runbooks/android/setup-checklist.md',

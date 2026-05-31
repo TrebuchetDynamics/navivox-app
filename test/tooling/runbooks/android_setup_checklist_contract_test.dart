@@ -1,19 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../shared/file_contract_helpers.dart';
 
 void main() {
   test('Android setup checklist documents device paths and safe tokens', () {
-    final checklist = File('docs/runbooks/android/setup-checklist.md');
-
-    expect(checklist.existsSync(), isTrue);
-
-    final shared = File(
+    final text = readRequiredFiles([
+      'docs/runbooks/android/setup-checklist.md',
       'docs/runbooks/shared/android-device-and-secret-contracts.md',
-    );
-    expect(shared.existsSync(), isTrue);
-
-    final text = '${checklist.readAsStringSync()}\n${shared.readAsStringSync()}';
+    ]);
 
     expect(text, contains('# Android Setup Checklist'));
     expect(text, contains('flutter doctor'));
@@ -38,6 +32,6 @@ void main() {
       ),
     );
     expect(text, contains('Continuous voice ready'));
-    expect(text, isNot(contains('nvbx_')));
+    expectNoSecretPlaceholders(text);
   });
 }

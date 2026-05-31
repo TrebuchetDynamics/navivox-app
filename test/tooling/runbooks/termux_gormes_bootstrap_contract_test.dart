@@ -1,20 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../shared/file_contract_helpers.dart';
 
 void main() {
   test('Termux Gormes bootstrap guide documents safe Android phases', () {
-    final guide = File('docs/runbooks/termux/gormes-bootstrap.md');
-
-    expect(guide.existsSync(), isTrue);
-
-    final shared = File(
+    final text = readRequiredFiles([
+      'docs/runbooks/termux/gormes-bootstrap.md',
       'docs/runbooks/shared/android-device-and-secret-contracts.md',
-    );
-    expect(shared.existsSync(), isTrue);
-
-    final text = '${guide.readAsStringSync()}\n${shared.readAsStringSync()}';
-    final readme = File('README.md').readAsStringSync();
+    ]);
+    final readme = readRequiredFile('README.md');
 
     expect(text, contains('# Termux Gormes Bootstrap'));
     expect(text, contains('Phase 1'));
@@ -58,7 +52,7 @@ void main() {
     expect(text, contains('.termux/boot/gormes-gateway.sh'));
     expect(text, isNot(contains('curl | sh')));
     expect(text, isNot(contains('pm install')));
-    expect(text, isNot(contains('nvbx_')));
+    expectNoSecretPlaceholders(text);
     expect(readme, contains('docs/runbooks/termux/gormes-bootstrap.md'));
   });
 }

@@ -1,19 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import '../shared/file_contract_helpers.dart';
 
 void main() {
   test('Android release handoff documents safe local install artifacts', () {
-    final handoff = File('docs/runbooks/android/release-handoff.md');
-
-    expect(handoff.existsSync(), isTrue);
-
-    final shared = File(
+    final text = readRequiredFiles([
+      'docs/runbooks/android/release-handoff.md',
       'docs/runbooks/shared/android-device-and-secret-contracts.md',
-    );
-    expect(shared.existsSync(), isTrue);
-
-    final text = '${handoff.readAsStringSync()}\n${shared.readAsStringSync()}';
+    ]);
 
     expect(text, contains('# Android Release Handoff'));
     expect(text, contains('flutter build apk --debug'));
@@ -47,6 +41,6 @@ void main() {
       ),
     );
     expect(text, contains('physical USB-debuggable Android device'));
-    expect(text, isNot(contains('nvbx_')));
+    expectNoSecretPlaceholders(text);
   });
 }
