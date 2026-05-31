@@ -54,6 +54,37 @@ void main() {
       expect(session.canAttemptReconnect, isFalse);
     });
 
+    test(
+      'saveConnection rejects blank base URL without touching prefs',
+      () async {
+        resetSessionPreferences({
+          SessionPreferenceKeys.baseUrl: localGatewayBaseUrl,
+          SessionPreferenceKeys.webSocketUrl: localGatewayWebSocketUrl,
+          SessionPreferenceKeys.gatewayId: localGatewayId,
+        });
+        final service = SessionPersistenceService();
+
+        await expectLater(
+          service.saveConnection(baseUrl: '   '),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString(SessionPreferenceKeys.baseUrl),
+          localGatewayBaseUrl,
+        );
+        expect(
+          prefs.getString(SessionPreferenceKeys.webSocketUrl),
+          localGatewayWebSocketUrl,
+        );
+        expect(
+          prefs.getString(SessionPreferenceKeys.gatewayId),
+          localGatewayId,
+        );
+      },
+    );
+
     test('isStale detects old sessions', () async {
       resetSessionPreferences({
         SessionPreferenceKeys.baseUrl: 'http://localhost:8765',

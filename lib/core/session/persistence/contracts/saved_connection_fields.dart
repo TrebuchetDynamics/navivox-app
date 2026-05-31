@@ -1,4 +1,5 @@
 import '../../../protocol/navivox_json.dart';
+import '../../shared/session_text.dart';
 
 class SavedConnectionFields {
   const SavedConnectionFields({
@@ -13,7 +14,7 @@ class SavedConnectionFields {
     String? gatewayId,
   }) {
     return SavedConnectionFields(
-      baseUrl: baseUrl.trim(),
+      baseUrl: requiredSessionText(baseUrl, fieldName: 'baseUrl'),
       webSocketUrl: navivoxOptionalStringFromJson(webSocketUrl),
       gatewayId: navivoxOptionalStringFromJson(gatewayId),
     );

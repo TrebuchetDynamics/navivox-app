@@ -2,6 +2,7 @@ import 'saved_connection_fields.dart';
 
 void main() {
   saveConnectionFieldsClearBlankOptionalValues();
+  saveConnectionFieldsRejectBlankBaseUrl();
 }
 
 void saveConnectionFieldsClearBlankOptionalValues() {
@@ -23,6 +24,15 @@ void saveConnectionFieldsClearBlankOptionalValues() {
     fields.gatewayId == null,
     'absent gateway id must clear stale persisted gateway metadata',
   );
+}
+
+void saveConnectionFieldsRejectBlankBaseUrl() {
+  try {
+    SavedConnectionFields.fromInput(baseUrl: '   ');
+  } on ArgumentError {
+    return;
+  }
+  throw StateError('blank base URL must fail before persistence is touched');
 }
 
 void _expect(bool condition, String message) {
