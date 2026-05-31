@@ -10,6 +10,7 @@ import '../../protocol/navivox_profile_contact_key.dart';
 import '../../protocol/navivox_voice_run.dart';
 import '../../session/session_persistence_service.dart';
 import '../contracts/navivox_channel.dart';
+import '../contracts/navivox_message_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_assistant_message_policy.dart';
 import 'gateway_capability_policy.dart';
@@ -830,9 +831,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     );
   }
 
-  ({String? serverId, String? profileId}) _messageScopeFromEvent(
-    NavivoxGatewayEvent event,
-  ) {
+  NavivoxMessageScope _messageScopeFromEvent(NavivoxGatewayEvent event) {
     return navivoxGatewayMessageScopeFromEvent(
       event: event,
       messages: _state.messages,

@@ -1,13 +1,14 @@
 import '../../gateway/messages/navivox_gateway_event.dart';
 import '../../protocol/navivox_event.dart';
 import '../../protocol/navivox_json.dart';
+import '../contracts/navivox_message_scope.dart';
 
 /// Resolves the server/profile scope for gateway transcript events.
 ///
 /// Gateway events may carry scope directly in metadata, or indirectly through
 /// the request/tool-call message they update. Keeping the lookup policy here
 /// keeps assistant, tool, safety, and approval event handling aligned.
-({String? serverId, String? profileId}) navivoxGatewayMessageScopeFromEvent({
+NavivoxMessageScope navivoxGatewayMessageScopeFromEvent({
   required NavivoxGatewayEvent event,
   required Map<String, NavivoxChatMessage> messages,
 }) {
@@ -18,7 +19,10 @@ import '../../protocol/navivox_json.dart';
     event.metadata['profile_id'],
   );
   if (metadataServerId != null && metadataProfileId != null) {
-    return (serverId: metadataServerId, profileId: metadataProfileId);
+    return navivoxMessageScope(
+      serverId: metadataServerId,
+      profileId: metadataProfileId,
+    );
   }
 
   final requestMessage = event.requestId == null
@@ -33,12 +37,13 @@ import '../../protocol/navivox_json.dart';
   final toolScope = _messageScope(toolMessage);
   if (toolScope != null) return toolScope;
 
-  return (serverId: null, profileId: null);
+  return navivoxUnscopedMessage;
 }
 
-({String? serverId, String? profileId})? _messageScope(
-  NavivoxChatMessage? message,
-) {
+NavivoxMessageScope? _messageScope(NavivoxChatMessage? message) {
   if (message?.profileContactKey == null) return null;
-  return (serverId: message!.serverId, profileId: message.profileId);
+  return navivoxMessageScope(
+    serverId: message!.serverId,
+    profileId: message.profileId,
+  );
 }

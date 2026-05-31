@@ -1,5 +1,6 @@
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../../protocol/navivox_event.dart';
+import '../contracts/navivox_message_scope.dart';
 import 'gateway_safety_notice_policy.dart';
 import 'gateway_tool_artifact_codec.dart';
 
@@ -14,7 +15,7 @@ NavivoxChatMessage navivoxGatewayToolCallMessage({
   required String status,
   required NavivoxChatMessage? priorMessage,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
 }) {
   final prior = priorMessage?.toolCall;
   return NavivoxChatMessage(
@@ -48,7 +49,7 @@ NavivoxChatMessage? navivoxGatewayToolApprovalMessage({
   required NavivoxChatMessage? priorMessage,
   required NavivoxGatewayApprovalNotice notice,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
 }) {
   final priorTool = priorMessage?.toolCall;
   if (priorTool == null) return null;

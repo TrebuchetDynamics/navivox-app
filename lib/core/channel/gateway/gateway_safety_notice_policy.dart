@@ -1,6 +1,7 @@
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../../protocol/navivox_event.dart';
 import '../contracts/navivox_channel.dart';
+import '../contracts/navivox_message_scope.dart';
 
 /// Gateway approval payload shared by stream notifications, tool-call cards,
 /// and durable approval-request messages.
@@ -48,7 +49,7 @@ NavivoxChatMessage navivoxGatewaySafetyWarningMessage({
   required NavivoxGatewayEvent event,
   required String id,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
 }) {
   return NavivoxChatMessage(
     id: id,
@@ -82,7 +83,7 @@ NavivoxChatMessage navivoxGatewayApprovalRequestMessage({
   required NavivoxGatewayEvent event,
   required NavivoxGatewayApprovalNotice notice,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
 }) {
   return NavivoxChatMessage(
     id: notice.id,

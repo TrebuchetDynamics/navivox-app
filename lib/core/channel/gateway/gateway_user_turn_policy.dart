@@ -1,4 +1,5 @@
 import '../contracts/navivox_channel.dart';
+import '../contracts/navivox_message_scope.dart';
 import 'gateway_turn_metadata_policy.dart';
 import '../../protocol/navivox_event.dart';
 
@@ -11,7 +12,7 @@ NavivoxChatMessage navivoxGatewayUserTurnMessage({
   required String id,
   required String text,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
   NavivoxVoiceMessage? voice,
 }) {
   return NavivoxChatMessage(
@@ -46,7 +47,10 @@ NavivoxChatMessage navivoxGatewayUserTurnMessage({
       id: requestId,
       text: text,
       createdAt: createdAt,
-      scope: (serverId: profile?.serverId, profileId: profile?.profileId),
+      scope: navivoxMessageScope(
+        serverId: profile?.serverId,
+        profileId: profile?.profileId,
+      ),
       voice: voice,
     ),
     frame: navivoxGatewayStartTurnFrame(

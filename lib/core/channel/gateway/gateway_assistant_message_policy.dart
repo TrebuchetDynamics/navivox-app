@@ -1,5 +1,6 @@
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../../protocol/navivox_event.dart';
+import '../contracts/navivox_message_scope.dart';
 
 /// Builds assistant transcript messages from gateway events.
 ///
@@ -19,7 +20,7 @@ NavivoxChatMessage navivoxGatewayAssistantTextMessage({
   required NavivoxGatewayEvent event,
   required NavivoxChatMessage? existing,
   required DateTime createdAt,
-  required ({String? serverId, String? profileId}) scope,
+  required NavivoxMessageScope scope,
   required bool appendText,
 }) {
   final incomingText = event.text ?? '';
