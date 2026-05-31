@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import '../models/connection_import.dart';
-import '../shared/connection_import_parser.dart';
+import 'navivox_connect_intent_payload.dart';
 
 class NavivoxConnectIntentSource {
   const NavivoxConnectIntentSource({
@@ -37,7 +37,7 @@ class NavivoxConnectIntentSource {
   Future<SetupQrImageImport?> initialImport() async {
     final payload = await _initialPayload();
     if (payload == null) return null;
-    final result = _parseConnectIntentPayload(payload);
+    final result = parseNavivoxConnectIntentPayload(payload);
     if (result != null) _observer?.record(result);
     return result;
   }
@@ -46,7 +46,7 @@ class NavivoxConnectIntentSource {
     return _eventChannel
         .receiveBroadcastStream()
         .handleError((_) {})
-        .map(_parseConnectIntentPayload)
+        .map(parseNavivoxConnectIntentPayload)
         .where((result) => result != null && result.hasValues)
         .cast<SetupQrImageImport>()
         .map((result) {
@@ -74,24 +74,3 @@ class NavivoxConnectIntentObserver {
   }
 }
 
-SetupQrImageImport? _parseConnectIntentPayload(Object? payload) {
-  if (payload is String) {
-    final text = payload.trim();
-    if (text.isEmpty) return null;
-    return parseNavivoxConnectionImportPayload(text);
-  }
-  if (payload is! Map) return null;
-  final text = payload['payload']?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  final parsed = parseNavivoxConnectionImportPayload(text);
-  if (parsed == null) return null;
-  return parsed.withSource(_sourceFromPayload(payload['source']));
-}
-
-PairingHandoffSource _sourceFromPayload(Object? value) {
-  return switch (value?.toString()) {
-    'direct_app_open' => PairingHandoffSource.directAppOpen,
-    'shared_text' => PairingHandoffSource.sharedText,
-    _ => PairingHandoffSource.manual,
-  };
-}

@@ -1,21 +1,25 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T09:38:05.841Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactor in features/servers/shared/connection_import parser to expose generic URL query metadata preservation when base URL is supplied by URL origin fallback.",
+  "updatedAt": "2026-05-31T09:43:38.679Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added replayable regression in features/servers/shared/connection_import/parser_regression_test.dart for generic URL metadata with origin fallback.",
     "Extracted _ConnectionImportCandidate in features/servers/shared/connection_import/parser.dart to make candidate values and hasImportValues invariant explicit.",
-    "Fixed _importFromFields to include fallbackBaseUrl before the hasImportValues gate, preserving serverId/profileId for generic URL imports whose baseUrl comes from the URL origin."
+    "Fixed _importFromFields to include fallbackBaseUrl before the hasImportValues gate, preserving serverId/profileId for generic URL imports whose baseUrl comes from the URL origin.",
+    "Extracted platform connect-intent payload parsing from features/servers/setup/navivox_connect_intent_source.dart into features/servers/setup/navivox_connect_intent_payload.dart so String-vs-Map payload and source provenance mapping are pure/replayable.",
+    "Added features/servers/setup/navivox_connect_intent_payload_regression_test.dart; it failed before the fix for padded source tokens being downgraded to manual.",
+    "Fixed pairingHandoffSourceFromPlatformPayload to trim platform source tokens before provenance mapping."
   ],
   "nextCandidates": [
-    "features/servers/setup/navivox_connect_intent_source.dart source/provenance handling for String platform payloads vs Map payloads",
-    "core/protocol/endpoint/navivox_endpoint_uri.dart endpoint normalization edge cases around explicit default ports and path preservation"
+    "core/protocol/endpoint/navivox_endpoint_uri.dart endpoint normalization edge cases around explicit default ports and path/query preservation",
+    "features/servers/setup initialImport vs stream filtering invariant around hasValues and observer recording"
   ],
   "validationReceipts": [
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: server_id should be preserved)",
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart analyze features/servers/shared features/servers/models/connection_import.dart (passes)"
+    "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart (failed before fix: platform source token should be trimmed before source mapping)",
+    "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart (passes)",
+    "dart analyze features/servers/setup/navivox_connect_intent_payload.dart features/servers/setup/navivox_connect_intent_source.dart features/servers/setup/navivox_connect_intent_payload_regression_test.dart (passes)",
+    "dart analyze features/servers/setup (passes)"
   ]
 }
