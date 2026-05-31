@@ -4,6 +4,7 @@ import 'config_apply_flow_model.dart';
 void main() {
   attachesValidationErrorListMessagesToDraftChanges();
   attachesCamelCaseValidationSnapshotMessagesToDraftChanges();
+  fallsBackAcrossBlankStringValidationAliases();
 }
 
 void attachesValidationErrorListMessagesToDraftChanges() {
@@ -76,6 +77,42 @@ void attachesCamelCaseValidationSnapshotMessagesToDraftChanges() {
     flow.validationMessagesFor('feature.enabled').join('|') ==
         'Expected a boolean.|Still not a boolean.',
     'camelCase validation snapshot messages should be attached to their field path',
+  );
+}
+
+void fallsBackAcrossBlankStringValidationAliases() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'feature.enabled',
+          'type': 'boolean',
+          'label': 'Feature enabled',
+        },
+      ],
+    },
+    values: {'feature.enabled': false},
+  );
+
+  final flow = ConfigApplyFlowModel.fromDraft(
+    form: form,
+    draftValues: {'feature.enabled': 'maybe'},
+    validationSnapshot: {
+      'validation_errors': [
+        {
+          'path': ' ',
+          'field': 'feature.enabled',
+          'message': ' ',
+          'detail': 'Expected a boolean.',
+        },
+      ],
+    },
+  );
+
+  _expect(
+    flow.validationMessagesFor('feature.enabled').single ==
+        'Expected a boolean.',
+    'blank validation aliases should not hide later non-empty field/detail aliases',
   );
 }
 

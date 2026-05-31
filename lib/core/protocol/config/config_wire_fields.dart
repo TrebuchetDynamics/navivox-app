@@ -28,7 +28,31 @@ Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
 }
 
 String? configWireStringFromAliases(Map raw, Iterable<String> aliases) {
-  return configWireString(configWireValueFromAliases(raw, aliases));
+  for (final value in _configWireAliasCandidates(raw, aliases)) {
+    final text = configWireString(value);
+    if (text != null) return text;
+  }
+  return null;
+}
+
+Iterable<Object?> _configWireAliasCandidates(
+  Map raw,
+  Iterable<String> aliases,
+) sync* {
+  for (final alias in aliases) {
+    if (raw.containsKey(alias)) yield raw[alias];
+  }
+
+  final normalizedAliases = {
+    for (final alias in aliases) _configNormalizeWireFieldName(alias),
+  };
+  for (final entry in raw.entries) {
+    if (normalizedAliases.contains(
+      _configNormalizeWireFieldName('${entry.key}'),
+    )) {
+      yield entry.value;
+    }
+  }
 }
 
 String _configNormalizeWireFieldName(String value) =>

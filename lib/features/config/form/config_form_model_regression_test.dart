@@ -5,6 +5,7 @@ void main() {
   coercesRecognizedBooleanEditTextCaseInsensitively();
   preservesFractionalIntegerEditTextForValidation();
   readsCamelCaseSchemaRiskAndConfirmationFields();
+  fallsBackAcrossBlankStringSchemaAliases();
 }
 
 void preservesUnrecognizedBooleanEditTextForValidation() {
@@ -69,6 +70,33 @@ void readsCamelCaseSchemaRiskAndConfirmationFields() {
   _expect(
     row.riskLevel == 'medium',
     'camelCase riskLevel schema field should be normalized to lowercase',
+  );
+}
+
+void fallsBackAcrossBlankStringSchemaAliases() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': ' ',
+          'key': 'server.host',
+          'label': ' ',
+          'title': 'Server host',
+        },
+      ],
+    },
+    values: {'server.host': 'gateway.example'},
+  );
+
+  final row = form.rows.single;
+
+  _expect(
+    row.field == 'server.host',
+    'blank field path aliases should not drop later non-empty key aliases',
+  );
+  _expect(
+    row.label == 'Server host',
+    'blank label aliases should not hide later non-empty title aliases',
   );
 }
 
