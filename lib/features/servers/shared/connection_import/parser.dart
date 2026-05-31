@@ -376,10 +376,11 @@ String _trimCopiedUrlTrailingPunctuation(String url) {
   return url.substring(0, end);
 }
 
-// Plain-text shares often end a copied URL with sentence/list punctuation. Keep
-// this list explicit because these characters otherwise become part of the
-// parsed origin when the shared URL has no path.
-const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'';
+// Plain-text shares often end a copied URL with sentence/list punctuation or
+// markdown/code delimiters. Keep this list explicit because these characters
+// otherwise become part of the parsed origin when the shared URL has no path,
+// or part of a query token when the URL carries connection credentials.
+const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'`';
 
 String? _firstToken(String text) {
   final labeledToken = _firstLabeledToken(text);

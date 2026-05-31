@@ -20,6 +20,7 @@ void main() {
   parsesSharedTextTokenWrappedInQuotes();
   stripsSentenceTrailingPeriodFromSharedTextUrl();
   stripsAngleBracketFromSharedTextUrl();
+  stripsBacktickFromSharedTextUrl();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
@@ -326,6 +327,22 @@ void stripsAngleBracketFromSharedTextUrl() {
   _expect(
     result.token == 'nvbx_shared',
     'angle bracket after copied URL should not become part of the token',
+  );
+}
+
+void stripsBacktickFromSharedTextUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Run `https://gateway.example/connect?token=nvbx_shared` to finish setup.',
+  );
+
+  _expect(result != null, 'backtick-delimited shared URL should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'backtick after copied URL should not affect the baseUrl',
+  );
+  _expect(
+    result.token == 'nvbx_shared',
+    'backtick after copied URL should not become part of the token',
   );
 }
 
