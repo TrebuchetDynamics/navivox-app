@@ -6,6 +6,14 @@ import '../../protocol/navivox_event.dart';
 /// Assistant delta and final-message events share the same message id, scope,
 /// and run-record merge contract. Keeping this mapping here prevents the two
 /// event paths from drifting as the transcript payload evolves.
+String navivoxGatewayAssistantMessageId({
+  required NavivoxGatewayEvent event,
+  required String Function() fallbackRequestId,
+}) {
+  final requestId = event.requestId ?? fallbackRequestId();
+  return 'assistant-$requestId';
+}
+
 NavivoxChatMessage navivoxGatewayAssistantTextMessage({
   required String id,
   required NavivoxGatewayEvent event,

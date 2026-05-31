@@ -678,7 +678,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ) async {
     final client = _requireConfigAdminClient('validate config');
     final response = await client.validateConfigAdmin(changes);
-    _state = _state.copyWith(configDiff: response.snapshot);
+    _state = navivoxStateWithConfigAdminResponse(
+      state: _state,
+      response: response,
+    );
     notifyListeners();
     return response;
   }
@@ -689,7 +692,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ) async {
     final client = _requireConfigAdminClient('diff config');
     final response = await client.diffConfigAdmin(changes);
-    _state = _state.copyWith(configDiff: response.snapshot);
+    _state = navivoxStateWithConfigAdminResponse(
+      state: _state,
+      response: response,
+    );
     notifyListeners();
     return response;
   }
@@ -700,17 +706,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ) async {
     final client = _requireConfigAdminClient('apply config');
     final response = await client.applyConfigAdmin(changes);
-    Map<String, Object?>? nextValues;
-    if (response.applied) {
-      try {
-        nextValues = (await client.configAdminValues()).toConfigValues();
-      } catch (_) {
-        nextValues = null;
-      }
-    }
-    _state = _state.copyWith(
-      configValues: nextValues,
-      configDiff: response.snapshot,
+    final nextValues = await navivoxConfigAdminValuesAfterAppliedResponse(
+      client: client,
+      response: response,
+    );
+    _state = navivoxStateWithConfigAdminResponse(
+      state: _state,
+      response: response,
+      nextValues: nextValues,
     );
     notifyListeners();
     return response;
@@ -828,8 +831,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _appendAssistantDelta(NavivoxGatewayEvent event) {
-    final requestId = event.requestId ?? _uuid.v4();
-    final messageId = 'assistant-$requestId';
+    final messageId = navivoxGatewayAssistantMessageId(
+      event: event,
+      fallbackRequestId: _uuid.v4,
+    );
     _putMessage(
       navivoxGatewayAssistantTextMessage(
         id: messageId,
@@ -843,8 +848,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _upsertAssistantMessage(NavivoxGatewayEvent event) {
-    final requestId = event.requestId ?? _uuid.v4();
-    final messageId = 'assistant-$requestId';
+    final messageId = navivoxGatewayAssistantMessageId(
+      event: event,
+      fallbackRequestId: _uuid.v4,
+    );
     _putMessage(
       navivoxGatewayAssistantTextMessage(
         id: messageId,
