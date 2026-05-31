@@ -81,6 +81,23 @@ List<T> navivoxGatewayObjectListFromJson<T>(
   return (where == null ? items : items.where(where)).toList(growable: false);
 }
 
+/// Parses a loose gateway JSON list and keeps items whose selected text exists.
+///
+/// Several gateway collections tolerate partial rows but only expose rows with a
+/// usable identity/key. This keeps that non-empty text filter shared with the
+/// same tolerant string-presence contract used by request builders.
+List<T> navivoxGatewayObjectListWhereHasText<T>(
+  Object? value,
+  T Function(Map<String, Object?> json) fromJson,
+  Object? Function(T item) textOf,
+) {
+  return navivoxGatewayObjectListFromJson(
+    value,
+    fromJson,
+    where: (item) => navivoxGatewayHasText(textOf(item)),
+  );
+}
+
 /// Parses a loose gateway JSON object whose values are nested objects.
 ///
 /// Non-map values are ignored so optional reference maps can tolerate forward

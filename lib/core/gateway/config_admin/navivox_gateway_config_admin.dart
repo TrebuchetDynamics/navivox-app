@@ -63,10 +63,10 @@ class NavivoxConfigAdminSchemaResponse {
   factory NavivoxConfigAdminSchemaResponse.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminSchemaResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
-      fields: navivoxGatewayObjectListFromJson(
+      fields: navivoxGatewayObjectListWhereHasText(
         json['fields'],
         NavivoxConfigAdminField.fromJson,
-        where: (field) => field.key.isNotEmpty,
+        (field) => field.key,
       ),
     );
   }
@@ -125,10 +125,10 @@ class NavivoxConfigAdminGetResponse {
   factory NavivoxConfigAdminGetResponse.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminGetResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
-      values: navivoxGatewayObjectListFromJson(
+      values: navivoxGatewayObjectListWhereHasText(
         json['values'],
         NavivoxConfigAdminValue.fromJson,
-        where: (value) => value.key.isNotEmpty,
+        (value) => value.key,
       ),
     );
   }
@@ -266,15 +266,17 @@ class NavivoxConfigAdminResponse {
       reloadApplied: navivoxGatewayBoolField(json, 'reload_applied'),
       pendingRestart: navivoxGatewayBoolField(json, 'pending_restart'),
       reloadError: configWireString(json['reload_error']) ?? '',
-      changes: navivoxGatewayObjectListFromJson(
+      changes: navivoxGatewayObjectListWhereHasText(
         json['changes'],
         NavivoxConfigAdminDiff.fromJson,
-        where: (change) => change.key.isNotEmpty,
+        (change) => change.key,
       ),
       errors: navivoxGatewayObjectListFromJson(
         json['errors'],
         NavivoxConfigAdminFieldError.fromJson,
-        where: (error) => error.key.isNotEmpty || error.message.isNotEmpty,
+        where: (error) =>
+            navivoxGatewayHasText(error.key) ||
+            navivoxGatewayHasText(error.message),
       ),
     );
   }

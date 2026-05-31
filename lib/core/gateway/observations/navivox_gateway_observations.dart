@@ -112,10 +112,10 @@ class NavivoxProfileRoutingReport {
 
   factory NavivoxProfileRoutingReport.fromJson(Map<String, Object?> json) {
     return NavivoxProfileRoutingReport(
-      profiles: navivoxGatewayObjectListFromJson(
+      profiles: navivoxGatewayObjectListWhereHasText(
         json['profiles'],
         NavivoxProfileRoute.fromJson,
-        where: (profile) => profile.profileId.isNotEmpty,
+        (profile) => profile.profileId,
       ),
     );
   }

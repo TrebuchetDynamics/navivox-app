@@ -141,10 +141,10 @@ class NavivoxGatewayClient {
 
   Future<List<NavivoxGatewaySessionSnapshot>> sessions() async {
     final body = await _getJson(config.sessionsUri);
-    return navivoxGatewayObjectListFromJson(
+    return navivoxGatewayObjectListWhereHasText(
       body['sessions'],
       NavivoxGatewaySessionSnapshot.fromJson,
-      where: (session) => session.sessionId.isNotEmpty,
+      (session) => session.sessionId,
     );
   }
 
