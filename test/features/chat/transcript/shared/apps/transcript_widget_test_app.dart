@@ -9,6 +9,7 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart'
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import 'transcript_forwarding_contracts.dart';
+import 'transcript_interaction_contracts.dart';
 import 'transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptBubble] under the shared Material feature-test shell.
@@ -36,7 +37,7 @@ Widget transcriptBubbleTestApp({
 /// Mounts [TranscriptComposer] under the shared Material feature-test shell.
 Widget transcriptComposerTestApp({
   required TextEditingController controller,
-  required ValueChanged<String> onSend,
+  required TranscriptSendCallback onSend,
   bool voiceCaptureAvailable = false,
   String? voiceUnavailableReason,
   String? voiceRecoveryAction,
@@ -67,9 +68,9 @@ Widget transcriptComposerTestApp({
 /// Mounts [TranscriptInputPanel] under the shared Material feature-test shell.
 Widget transcriptInputPanelTestApp({
   required TextEditingController controller,
-  required ValueChanged<String> onSend,
+  required TranscriptSendCallback onSend,
   VoiceCaptureService? voiceCaptureService,
-  ValueChanged<VoiceCapture>? onVoice,
+  TranscriptVoiceCaptureCallback? onVoice,
   VoidCallback? onVoiceCaptureStarted,
   ValueChanged<Object>? onVoiceCaptureFailed,
 }) {
@@ -88,7 +89,7 @@ Widget transcriptInputPanelTestApp({
 /// Mounts [TranscriptSurfaceFrame] under the shared Material feature-test shell.
 Widget transcriptSurfaceFrameTestApp({
   required List<NavivoxChatMessage> messages,
-  ValueChanged<String>? onSend,
+  TranscriptSendCallback? onSend,
   Widget? header,
   double height = 360,
 }) {

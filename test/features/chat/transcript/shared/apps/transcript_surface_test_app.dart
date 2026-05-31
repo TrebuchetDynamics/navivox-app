@@ -6,12 +6,13 @@ import 'package:navivox/shared/voice/voice_capture_service.dart';
 import 'package:navivox/shared/voice/text_to_speech_service.dart';
 
 import 'transcript_forwarding_contracts.dart';
+import 'transcript_interaction_contracts.dart';
 import 'transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptSurface] in the shared feature-test Material scaffold.
 Widget transcriptSurfaceTestApp({
   required List<NavivoxChatMessage> messages,
-  required ValueChanged<String> onSend,
+  required TranscriptSendCallback onSend,
   VoidCallback? onUploadFile,
   VoidCallback? onPickPhotoOrVideo,
   VoidCallback? onOpenWorkspace,
@@ -19,7 +20,7 @@ Widget transcriptSurfaceTestApp({
   String? voiceRecoveryAction,
   VoidCallback? onOpenVoiceSettings,
   VoiceCaptureService? voiceCaptureService,
-  ValueChanged<VoiceCapture>? onVoice,
+  TranscriptVoiceCaptureCallback? onVoice,
   TextToSpeechService? textToSpeechService,
   List<NavivoxProfileContact> forwardTargets = const [],
   TranscriptForwardCallback? onForward,
