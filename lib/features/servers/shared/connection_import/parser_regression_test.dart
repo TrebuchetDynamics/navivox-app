@@ -6,6 +6,7 @@ void main() {
   preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
+  prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
   parsesSharedTextTokenWithSpacedSeparator();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
@@ -91,6 +92,23 @@ void prefersCompleteJsonEntryOverEarlierPartialCandidate() {
     'complete entry token should be preserved',
   );
   _expect(result.serverId == 'srv', 'complete entry metadata should be kept');
+}
+
+void prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"entries":[{"base_url":"https://gateway.example","token":"nvbx_minimal"},{"base_url":"https://gateway.example","token":"nvbx_richer","server_id":"srv","profile_id":"profile"}]}',
+  );
+
+  _expect(result != null, 'JSON entries should parse');
+  _expect(
+    result!.token == 'nvbx_richer',
+    'later richer complete entry should not be hidden by earlier minimal complete entry',
+  );
+  _expect(result.serverId == 'srv', 'richer server_id should be preserved');
+  _expect(
+    result.profileId == 'profile',
+    'richer profile_id should be preserved',
+  );
 }
 
 void parsesSharedTextTokenWithSpacedSeparator() {

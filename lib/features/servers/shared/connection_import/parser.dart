@@ -85,10 +85,10 @@ SetupQrImageImport? _bestImportFromCandidateMaps(
   for (final fields in candidateMaps) {
     final candidate = _connectionImportCandidateFromFields(fields);
     if (candidate == null) continue;
-    if (bestCandidate == null || candidate.score > bestCandidate.score) {
-      bestCandidate = candidate;
-    }
-    if (candidate.isComplete) break;
+    bestCandidate = _richerConnectionImportCandidate(
+      currentBest: bestCandidate,
+      candidate: candidate,
+    );
   }
   return bestCandidate?.toImport();
 }
@@ -192,8 +192,6 @@ class _ConnectionImportCandidate {
 
   bool get hasImportValues => baseUrl != null || token != null;
 
-  bool get isComplete => baseUrl != null && token != null;
-
   int get score {
     var result = 0;
     if (baseUrl != null) result += 2;
@@ -202,6 +200,10 @@ class _ConnectionImportCandidate {
     if (serverId != null) result += 1;
     if (profileId != null) result += 1;
     return result;
+  }
+
+  bool isRicherThan(_ConnectionImportCandidate? other) {
+    return other == null || score > other.score;
   }
 
   SetupQrImageImport toImport() {
@@ -213,6 +215,16 @@ class _ConnectionImportCandidate {
       profileId: profileId,
     );
   }
+}
+
+_ConnectionImportCandidate _richerConnectionImportCandidate({
+  required _ConnectionImportCandidate? currentBest,
+  required _ConnectionImportCandidate candidate,
+}) {
+  // A complete baseUrl+token candidate can still be lower-fidelity than a later
+  // complete candidate carrying provenance metadata. Selection therefore scores
+  // all candidates instead of short-circuiting at the first complete import.
+  return candidate.isRicherThan(currentBest) ? candidate : currentBest!;
 }
 
 const _tokenFieldNames = [
