@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "features/voice/services/platform",
+  "updatedAt": "2026-05-31T09:22:09.083Z",
+  "objective": "Split platform services into root compatibility facades plus focused src contracts/factories/probes. Main reuse objective: isolate shared value types/contracts (VoiceCapturePlatform, DeviceSpeechRecognitionDiagnostics, VoiceCaptureReadiness, DeviceSpeechRecognitionDiagnosticsProbe) for reuse by factory/readiness/probe without coupling callers to method-channel implementation.",
+  "completedSlices": [
+    "Extracted device speech diagnostics/readiness/probe contracts into src/device_speech_recognition_contracts.dart and method-channel probe/parser into src/method_channel_device_speech_recognition_diagnostics_probe.dart; kept device_speech_recognition_availability.dart as compatibility export.",
+    "Extracted VoiceCapturePlatform value type into src/voice_capture_platform_contracts.dart; kept voice_capture_platform.dart as platform detection facade/export.",
+    "Moved default readiness checker implementation into src/default_voice_capture_readiness.dart; kept device_speech_recognition_availability.dart as compatibility export.",
+    "Moved default voice capture service factory into src/default_voice_capture_service_factory.dart; kept default_voice_capture_service.dart as compatibility export."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/voice/services/platform: No issues found",
+    "dart analyze features/chat/screens/chat_screen.dart features/voice/services/platform: No issues found"
+  ]
+}

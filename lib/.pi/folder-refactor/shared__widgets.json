@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "shared/widgets",
+  "updatedAt": "2026-05-31T09:16:56.906Z",
+  "objective": "Split shared/widgets into focused widget responsibility packages while preserving existing root import paths via compatibility exports. Topology: shell/ for app shell UI and presentation contract, sheets/ for bottom-sheet content contracts and presenter, avatars/ for profile contact avatar widget. Root files are facades only.",
+  "completedSlices": [
+    "Moved AppShell and AppShellPresentation to shared/widgets/shell with root export wrappers.",
+    "Moved sheet presenter/content contracts to shared/widgets/sheets with root export wrapper.",
+    "Moved ProfileContactAvatar to shared/widgets/avatars with root export wrapper.",
+    "Ran shared-code scan for sheet/avatar/shell policy and retained existing SheetContent/SheetActionRow/SheetInfoRow contracts as the focused reusable sheet contract."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart format shared/widgets && dart analyze shared/widgets: pass (No issues found).",
+    "dart analyze .: fails due to pre-existing unresolved imports outside shared/widgets: core/gateway/messages/navivox_gateway_message.dart, features/chat/transcript/presentation/action, run_record, features/chat/voice/presentation/voice_readiness_presentation.dart, features/config/apply/config_apply_flow_model.dart."
+  ]
+}

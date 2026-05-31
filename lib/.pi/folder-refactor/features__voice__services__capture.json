@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "target": "features/voice/services/capture",
+  "updatedAt": "2026-05-31T09:20:02.520Z",
+  "objective": "Complete features/voice/services/capture topology with root compatibility facades and focused contracts/sessions/record subpackages. Shared-code reuse objective satisfied by extracting CaptureClock contract and VoiceCaptureFailure into contracts, while preserving old root imports via export wrappers.",
+  "completedSlices": [
+    "Scanned target root with folder_refactor_scan: initial root files were audio_recorder.dart, record_voice_capture_service.dart, voice_capture_service.dart; no root dirs.",
+    "Moved AudioRecorder implementation into contracts/audio_recorder.dart and kept root audio_recorder.dart as compatibility export.",
+    "Extracted VoiceCaptureFailure to contracts/voice_capture_failure.dart, VoiceCaptureSession to sessions/voice_capture_session.dart, and RecordVoiceCaptureService to record/record_voice_capture_service.dart; kept root record_voice_capture_service.dart as compatibility export barrel.",
+    "Extracted CaptureClock typedef to contracts/capture_clock.dart and reused it from both session and record service.",
+    "Audited final target topology: root files are all compatibility facades; no next candidates."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart format features/voice/services/capture && dart analyze features/voice/services/capture — No issues found!",
+    "folder_refactor_audit(features/voice/services/capture) — pass"
+  ]
+}

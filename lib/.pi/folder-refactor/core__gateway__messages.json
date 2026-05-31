@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "core/gateway/messages",
+  "updatedAt": "2026-05-31T09:23:57.776Z",
+  "objective": "Split gateway WebSocket message models into responsibility folders while preserving root import compatibility; extract shared wire field/type constants reused by inbound events and outbound messages.",
+  "completedSlices": [
+    "Moved inbound event model and decoder to messages/events with root facade exports preserved.",
+    "Moved outbound gateway message builder to messages/outbound with root facade export preserved.",
+    "Created messages/contracts/navivox_gateway_wire_fields.dart and reused it from inbound/outbound message code; reused existing shared navivox_gateway_json.dart text helper instead of missing text contract import."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze core/gateway/messages -> No issues found",
+    "dart analyze core/gateway core/channel/gateway core/protocol -> No issues found",
+    "rg in core/gateway/messages found remaining wire literals only in contracts/navivox_gateway_wire_fields.dart"
+  ]
+}

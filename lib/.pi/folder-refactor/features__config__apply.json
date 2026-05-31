@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "features/config/apply",
+  "updatedAt": "2026-05-31T09:27:04.252Z",
+  "objective": "Split config apply into compatibility root facades plus domain/dispatch/presentation subfolders; extract draft-change and validation-state contracts for shared apply consumers.",
+  "completedSlices": [
+    "Moved dispatcher, flow model, and presentation behind root compatibility facades.",
+    "Extracted ConfigDraftChange/ConfigDraftValidationState and ConfigValidationState into focused domain contracts.",
+    "Reused configWireString/configWireStringFromAliases for validation wire helpers instead of missing apply-local wire contract."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/config/apply: No issues found",
+    "dart analyze features/config: No issues found",
+    "folder_refactor_audit features/config/apply: pass"
+  ]
+}

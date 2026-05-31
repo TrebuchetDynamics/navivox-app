@@ -25,7 +25,10 @@ class AppShellPresentation {
 
   AppShellNavigationState stateForLocation(String location) {
     final selectedIndex = destinations.indexWhere(
-      (destination) => location.startsWith(destination.path),
+      (destination) => AppRoutes.isNavigationDestinationLocation(
+        location: location,
+        destinationPath: destination.path,
+      ),
     );
     final selected = selectedIndex < 0 ? 0 : selectedIndex;
     return AppShellNavigationState(
@@ -58,7 +61,10 @@ class AppShellNavigationState {
   int get selectedMobileIndex {
     final selectedPath = selectedDestination.path;
     final primaryIndex = mobileNavigationDestinations.indexWhere(
-      (destination) => selectedPath.startsWith(destination.path),
+      (destination) => AppRoutes.isNavigationDestinationLocation(
+        location: selectedPath,
+        destinationPath: destination.path,
+      ),
     );
     if (primaryIndex >= 0) return primaryIndex;
     return mobileNavigationDestinations.length;

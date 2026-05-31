@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "target": "router",
+  "updatedAt": "2026-05-31T09:31:17.345Z",
+  "objective": "Router folder topology complete with root compatibility facades and implementation subfolders: providers/ for router provider, routes/ for route constants/policies, intents/ for navigation intents. Current slice prioritized shared route selection policy reuse by centralizing navigation destination prefix matching in AppRoutes.",
+  "completedSlices": [
+    "Kept root facades app_router.dart, app_routes.dart, navigation_intent.dart as compatibility exports to providers/, routes/, and intents/.",
+    "Added AppRoutes.isNavigationDestinationLocation as focused shared route matching policy in router/routes/app_routes.dart.",
+    "Reused AppRoutes.isNavigationDestinationLocation from shared/widgets/app_shell_presentation.dart for desktop/mobile destination selection instead of duplicated startsWith route prefix checks."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze router shared/widgets/app_shell_presentation.dart shared/widgets/app_shell.dart features/settings/screens/settings_screen.dart features/settings/presentation/settings_screen_presentation.dart — passed",
+    "dart analyze . — blocked by pre-existing unrelated errors in core/gateway/messages, features/chat/transcript, features/chat/voice, and features/config/apply imports/identifiers"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "features/profile_contacts",
+  "updatedAt": "2026-05-31T09:29:58.078Z",
+  "objective": "Keep features/profile_contacts topology as root compatibility facades plus presentation/, screens/, widgets/. Main objective for this loop was sharing/reuse/contracts: extract reusable widget contracts from the screen while preserving existing root facades.",
+  "completedSlices": [
+    "Extracted ProfileSearchHighlightText from screens/profile_contacts_screen.dart to widgets/profile_search_highlight_text.dart and updated screen call sites.",
+    "Extracted ProfileTypingDots and AttentionCountBadge from screen-private widgets to focused widgets/profile_typing_dots.dart and widgets/attention_count_badge.dart.",
+    "Extracted ProfileContactTile with its private avatar stack/trailing implementation to widgets/profile_contact_tile.dart and updated the screen to depend on the widget contract."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/profile_contacts: No issues found",
+    "rg stale private refs in features/profile_contacts for _ProfileContactTile/_ProfileTypingDots/_AttentionCountBadge/_ProfileSearchHighlightText: none",
+    "folder_refactor_audit target=features/profile_contacts plannedTopologyComplete=true facadeFiles=[profile_contact_avatar.dart,profile_contact_list_presentation.dart,profile_contact_presentation.dart] nextCandidateFiles=[]: pass"
+  ]
+}

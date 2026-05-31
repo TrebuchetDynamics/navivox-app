@@ -1,8 +1,8 @@
 {
   "version": 1,
   "target": "core/protocol/voice",
-  "updatedAt": "2026-05-31T08:28:14.486Z",
-  "objective": "Split core/protocol/voice into focused run and availability contracts while preserving root compatibility facades and reusing the existing shared voice-run status and unavailable-reason canonicalization contracts.",
+  "updatedAt": "2026-05-31T09:24:51.059Z",
+  "objective": "Split core/protocol/voice into focused run and availability contract subfolders while preserving root voice/ compatibility facades and existing core/protocol facade exports.",
   "completedSlices": [
     "Moved voice run value object/status contracts into run/ with root facade exports.",
     "Moved unavailable-reason canonicalization contract into availability/ with root facade export."

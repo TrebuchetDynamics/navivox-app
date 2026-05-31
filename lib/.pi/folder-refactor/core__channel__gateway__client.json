@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "core/channel/gateway/client",
+  "updatedAt": "2026-05-31T09:18:17.202Z",
+  "objective": "Split gateway client policies into focused capability, config-admin, and shared connection-guard packages while preserving old root import paths as compatibility facades.",
+  "completedSlices": [
+    "Moved gateway_capability_policy.dart to capabilities/ with relative imports updated.",
+    "Moved gateway_config_admin_policy.dart to config/ with relative imports updated.",
+    "Moved gateway_client_guard.dart to shared/ for reuse by capability and config-admin policies.",
+    "Recreated root files as compatibility facades exporting moved implementations."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze core/channel/gateway/client core/channel/gateway/runtime/gateway_navivox_channel.dart -> No issues found.",
+    "folder_refactor_audit core/channel/gateway/client -> pass."
+  ]
+}
