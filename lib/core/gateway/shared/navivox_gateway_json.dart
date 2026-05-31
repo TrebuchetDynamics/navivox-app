@@ -17,6 +17,27 @@ Map<String, Object?>? navivoxGatewayOptionalObjectFromJson(Object? value) {
   return Map<String, Object?>.from(value);
 }
 
+/// Reads a gateway wire field as a raw string without trimming.
+///
+/// WebSocket event text fields preserve the gateway's existing coercion
+/// semantics: any non-null value is converted with `toString()`, including
+/// whitespace-only strings and numeric compatibility values.
+String navivoxGatewayRawStringField(
+  Map<String, Object?> json,
+  String key, {
+  String fallback = '',
+}) {
+  return json[key]?.toString() ?? fallback;
+}
+
+/// Reads an optional gateway wire field as a raw string without trimming.
+String? navivoxGatewayOptionalRawStringField(
+  Map<String, Object?> json,
+  String key,
+) {
+  return json[key]?.toString();
+}
+
 /// Reads a literal boolean field from a decoded gateway response.
 ///
 /// Gateway feature flags intentionally preserve strict wire semantics: only the

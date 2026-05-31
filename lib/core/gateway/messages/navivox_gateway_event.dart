@@ -1,5 +1,5 @@
 import '../../protocol/navivox_json.dart'
-    show navivoxMapFromJson, navivoxOptionalStringFromJson;
+    show navivoxMapFieldFromJson, navivoxOptionalStringFromJson;
 import '../shared/navivox_gateway_json.dart';
 
 /// Typed event received from the Navivox gateway WebSocket stream.
@@ -24,22 +24,22 @@ class NavivoxGatewayEvent {
   });
 
   factory NavivoxGatewayEvent.fromJson(Map<String, Object?> json) {
-    final metadata = navivoxMapFromJson(json['metadata']);
+    final metadata = navivoxMapFieldFromJson(json, 'metadata');
     final contact = navivoxGatewayOptionalObjectFromJson(json['contact']);
     return NavivoxGatewayEvent(
-      type: json['type']?.toString() ?? '',
-      requestId: json['request_id']?.toString(),
-      sessionId: json['session_id']?.toString(),
-      text: json['text']?.toString(),
-      code: json['code']?.toString(),
-      message: json['message']?.toString(),
-      toolName: json['tool_name']?.toString(),
-      toolCallId: json['tool_call_id']?.toString(),
-      status: json['status']?.toString(),
-      safetyId: json['safety_id']?.toString(),
-      approvalId: json['approval_id']?.toString(),
-      severity: json['severity']?.toString(),
-      risk: json['risk']?.toString(),
+      type: navivoxGatewayRawStringField(json, 'type'),
+      requestId: navivoxGatewayOptionalRawStringField(json, 'request_id'),
+      sessionId: navivoxGatewayOptionalRawStringField(json, 'session_id'),
+      text: navivoxGatewayOptionalRawStringField(json, 'text'),
+      code: navivoxGatewayOptionalRawStringField(json, 'code'),
+      message: navivoxGatewayOptionalRawStringField(json, 'message'),
+      toolName: navivoxGatewayOptionalRawStringField(json, 'tool_name'),
+      toolCallId: navivoxGatewayOptionalRawStringField(json, 'tool_call_id'),
+      status: navivoxGatewayOptionalRawStringField(json, 'status'),
+      safetyId: navivoxGatewayOptionalRawStringField(json, 'safety_id'),
+      approvalId: navivoxGatewayOptionalRawStringField(json, 'approval_id'),
+      severity: navivoxGatewayOptionalRawStringField(json, 'severity'),
+      risk: navivoxGatewayOptionalRawStringField(json, 'risk'),
       runRecordReference: _runRecordReferenceFromJson(json, metadata),
       metadata: metadata,
       contact: contact,

@@ -69,28 +69,30 @@ class NavivoxCapabilityDocument {
       object: navivoxStringFieldFromJson(json, 'object'),
       protocolVersion: navivoxStringFieldFromJson(json, 'protocol_version'),
       capabilities: navivoxStringListFromJson(json['capabilities']),
-      auth: NavivoxCapabilityAuth.fromJson(navivoxMapFromJson(json['auth'])),
+      auth: NavivoxCapabilityAuth.fromJson(
+        navivoxMapFieldFromJson(json, 'auth'),
+      ),
       healthAliases: navivoxStringListFromJson(
-        navivoxMapFromJson(json['health'])['aliases'],
+        navivoxMapFieldFromJson(json, 'health')['aliases'],
       ),
       endpoints: navivoxGatewayObjectListFromJson(
         json['endpoints'],
         NavivoxCapabilityEndpoint.fromJson,
       ),
       profileManagement: NavivoxProfileManagementCapability.fromJson(
-        navivoxMapFromJson(json['profile_management']),
+        navivoxMapFieldFromJson(json, 'profile_management'),
       ),
       attachments: NavivoxAttachmentCapability.fromJson(
-        navivoxMapFromJson(json['attachments']),
+        navivoxMapFieldFromJson(json, 'attachments'),
       ),
       voice: NavivoxVoiceProtocolCapability.fromJson(
-        navivoxMapFromJson(json['voice']),
+        navivoxMapFieldFromJson(json, 'voice'),
       ),
       streams: NavivoxStreamCapability.fromJson(
-        navivoxMapFromJson(json['streams']),
+        navivoxMapFieldFromJson(json, 'streams'),
       ),
       durableReconnect: NavivoxDurableReconnectCapability.fromJson(
-        navivoxMapFromJson(json['durable_reconnect']),
+        navivoxMapFieldFromJson(json, 'durable_reconnect'),
       ),
     );
   }

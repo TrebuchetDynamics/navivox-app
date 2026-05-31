@@ -110,7 +110,7 @@ class NavivoxVoiceProfileValidation {
     return NavivoxVoiceProfileValidation(
       profileId: navivoxStringFieldFromJson(json, 'profile_id'),
       voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        navivoxMapFromJson(json['voice_profile']),
+        navivoxMapFieldFromJson(json, 'voice_profile'),
       ),
       valid: navivoxGatewayBoolField(json, 'valid'),
       errors: _voiceProfileErrorsFromJson(json['errors']),
@@ -147,7 +147,7 @@ class NavivoxVoiceProfileView {
         fallback: profileId,
       ),
       voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        navivoxMapFromJson(json['voice_profile']),
+        navivoxMapFieldFromJson(json, 'voice_profile'),
       ),
       credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
         json['credential_status_refs'],
@@ -177,7 +177,7 @@ class NavivoxVoiceProfilesResponse {
     return NavivoxVoiceProfilesResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
       providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        navivoxMapFromJson(json['provider_matrix']),
+        navivoxMapFieldFromJson(json, 'provider_matrix'),
       ),
       profiles: navivoxGatewayObjectListFromJson(
         json['profiles'],
@@ -203,7 +203,7 @@ class NavivoxVoiceProfileValidationResponse {
   factory NavivoxVoiceProfileValidationResponse.fromJson(
     Map<String, Object?> json,
   ) {
-    final validationJson = navivoxMapFromJson(json['validation']);
+    final validationJson = navivoxMapFieldFromJson(json, 'validation');
     final validation = validationJson.isEmpty
         ? null
         : NavivoxVoiceProfileValidation.fromJson(validationJson);
@@ -211,7 +211,7 @@ class NavivoxVoiceProfileValidationResponse {
     return NavivoxVoiceProfileValidationResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
       providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        navivoxMapFromJson(json['provider_matrix']),
+        navivoxMapFieldFromJson(json, 'provider_matrix'),
       ),
       validation: validation,
       valid:

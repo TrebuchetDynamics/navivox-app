@@ -88,8 +88,8 @@ class NavivoxProfileSeedResult {
       profileId: navivoxStringFieldFromJson(json, 'profile_id'),
       root: navivoxStringFieldFromJson(json, 'root'),
       workspaceCount: navivoxIntFromJson(json['workspace_count']),
-      draft: navivoxMapFromJson(json['draft']),
-      contact: navivoxMapFromJson(json['contact']),
+      draft: navivoxMapFieldFromJson(json, 'draft'),
+      contact: navivoxMapFieldFromJson(json, 'contact'),
     );
   }
 
