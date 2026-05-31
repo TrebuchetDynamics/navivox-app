@@ -30,6 +30,26 @@ class PairingHandoffIntentParserTest {
     }
 
     @Test
+    fun directAppOpenMatchesSchemeAndHostCaseInsensitively() {
+        val payload = "NAVIVOX://CONNECT?base_url=http://127.0.0.1:8765&token=secret-token"
+
+        val parsed = PairingHandoffIntentParser.parse(
+            action = PairingHandoffIntentParser.ACTION_VIEW,
+            type = null,
+            data = payload,
+            text = null,
+        )
+
+        assertEquals(
+            PairingHandoffPayload(
+                payload = payload,
+                source = PairingHandoffPayload.Source.DirectAppOpen,
+            ),
+            parsed,
+        )
+    }
+
+    @Test
     fun directAppOpenRejectsOtherUris() {
         val parsed = PairingHandoffIntentParser.parse(
             action = PairingHandoffIntentParser.ACTION_VIEW,
@@ -74,6 +94,26 @@ class PairingHandoffIntentParserTest {
         assertEquals(
             mapOf("payload" to payload, "source" to "shared_text"),
             parsed?.toMethodChannelMap(),
+        )
+    }
+
+    @Test
+    fun sharedTextMatchesMimeTypeCaseInsensitively() {
+        val payload = "navivox://connect?base_url=http://127.0.0.1:8765&token=secret-token"
+
+        val parsed = PairingHandoffIntentParser.parse(
+            action = PairingHandoffIntentParser.ACTION_SEND,
+            type = "Text/Plain",
+            data = null,
+            text = payload,
+        )
+
+        assertEquals(
+            PairingHandoffPayload(
+                payload = payload,
+                source = PairingHandoffPayload.Source.SharedText,
+            ),
+            parsed,
         )
     }
 
