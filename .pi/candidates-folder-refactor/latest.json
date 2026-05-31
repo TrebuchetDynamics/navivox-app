@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T06:06:30.101Z",
+  "generatedAt": "2026-05-31T06:08:39.642Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -72,15 +72,15 @@
     },
     {
       "relative": "lib/features",
-      "score": 211,
-      "files": 107,
+      "score": 213,
+      "files": 108,
       "direct": 0,
-      "churn": 551,
+      "churn": 558,
       "callers": 1,
       "importsOut": 27,
       "tests": 0,
       "roles": 6,
-      "duplicates": 240,
+      "duplicates": 241,
       "subdirs": 10,
       "extensions": [
         ".dart"
@@ -104,15 +104,15 @@
     },
     {
       "relative": "lib",
-      "score": 195,
-      "files": 213,
+      "score": 197,
+      "files": 214,
       "direct": 3,
-      "churn": 913,
+      "churn": 920,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 353,
+      "duplicates": 354,
       "subdirs": 7,
       "extensions": [
         ".dart"
@@ -184,16 +184,32 @@
     },
     {
       "relative": "lib/features/chat/transcript/presentation",
-      "score": 170.3,
-      "files": 21,
+      "score": 172.6,
+      "files": 22,
       "direct": 9,
-      "churn": 49,
+      "churn": 56,
       "callers": 7,
       "importsOut": 5,
       "tests": 0,
       "roles": 1,
-      "duplicates": 26,
+      "duplicates": 27,
       "subdirs": 6,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "lib/features/chat",
+      "score": 168.2,
+      "files": 44,
+      "direct": 0,
+      "churn": 296,
+      "callers": 1,
+      "importsOut": 23,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 104,
+      "subdirs": 8,
       "extensions": [
         ".dart"
       ]
@@ -210,22 +226,6 @@
       "roles": 4,
       "duplicates": 30,
       "subdirs": 9,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "lib/features/chat",
-      "score": 165.9,
-      "files": 43,
-      "direct": 0,
-      "churn": 289,
-      "callers": 1,
-      "importsOut": 23,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 103,
-      "subdirs": 8,
       "extensions": [
         ".dart"
       ]
