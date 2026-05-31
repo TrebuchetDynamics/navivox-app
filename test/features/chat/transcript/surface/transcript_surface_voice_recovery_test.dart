@@ -41,7 +41,7 @@ void main() {
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
     await pumpUnavailableTranscriptSurface(
       tester,
-      voiceUnavailableReason: ' Device STT unavailable ',
+      voiceUnavailableReason: rawDeviceSttUnavailableReason,
     );
 
     expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
@@ -63,13 +63,13 @@ void main() {
     await pumpUnavailableTranscriptSurface(
       tester,
       voiceUnavailableReason: deviceSttUnavailableReason,
-      voiceRecoveryAction: 'Enable device speech recognition',
+      voiceRecoveryAction: deviceSttRecoveryAction,
     );
 
     await openVoiceUnavailableSheet(tester);
 
     expect(find.text('Recovery action'), findsOneWidget);
-    expect(find.text('Enable device speech recognition'), findsOneWidget);
+    expect(find.text(deviceSttRecoveryAction), findsOneWidget);
   });
 
   testWidgets('disabled STT mic can open voice settings', (tester) async {
@@ -84,12 +84,7 @@ void main() {
     await openVoiceUnavailableSheet(tester);
 
     expect(find.text('Open voice settings'), findsOneWidget);
-    expect(
-      find.text(
-        'Review continuous voice after enabling device speech recognition.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text(deviceSttSettingsReviewCopy), findsOneWidget);
 
     await tester.tap(find.text('Open voice settings'));
     await tester.pumpAndSettle();

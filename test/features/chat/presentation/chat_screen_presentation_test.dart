@@ -6,6 +6,7 @@ import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart
 import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../shared/chat_message_test_fixtures.dart';
+import '../shared/voice_recovery_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -222,7 +223,7 @@ void main() {
       latestPreview: 'Ready',
       micAvailable: true,
       voiceCapability: NavivoxVoiceCapability(
-        disabledReason: 'device STT unavailable',
+        disabledReason: deviceSttUnavailableReason,
         recoveryAction: 'Enable speech recognition on the Android device.',
       ),
     );
@@ -239,34 +240,34 @@ void main() {
       localVoiceCaptureAvailable: true,
     );
 
-    expect(presentation.voiceMode.disabledReason, 'device STT unavailable');
+    expect(presentation.voiceMode.disabledReason, deviceSttUnavailableReason);
     expect(
       presentation.voiceMode.recoveryAction,
       'Enable speech recognition on the Android device.',
     );
     expect(
       presentation.voiceMode.bannerText,
-      'Continuous voice unavailable: device STT unavailable',
+      'Continuous voice unavailable: $deviceSttUnavailableReason',
     );
     expect(
       presentation.voiceMode.voiceSettingsSubtitle,
-      'Review continuous voice after enabling device speech recognition.',
+      deviceSttSettingsReviewCopy,
     );
     expect(presentation.voiceMode.showSttDiagnostics, isTrue);
     expect(
       presentation.voiceMode.gatewayProfileSttStatus,
-      'Gateway reported device STT unavailable for this profile.',
+      gatewayProfileSttUnavailableCopy,
     );
     expect(_voiceRows(presentation.voiceMode), [
-      'status:Continuous voice unavailable:device STT unavailable:none',
+      'status:Continuous voice unavailable:$deviceSttUnavailableReason:none',
       'recoveryAction:Recovery action:Enable speech recognition on the Android device.:none',
-      'openVoiceSettings:Open voice settings:Review continuous voice after enabling device speech recognition.:openVoiceSettings',
+      'openVoiceSettings:Open voice settings:$deviceSttSettingsReviewCopy:openVoiceSettings',
       'diagnostics:Voice diagnostics:Android recognizer, microphone permission, and gateway profile STT are separate checks.:none',
       'androidRecognizer:Android recognizer:Ready in Navivox; gateway STT status is separate.:none',
       'microphonePermission:Microphone permission:Not denied by Android in this session; checked when capture starts.:none',
-      'gatewayProfileStt:Gateway profile STT:Gateway reported device STT unavailable for this profile.:none',
+      'gatewayProfileStt:Gateway profile STT:$gatewayProfileSttUnavailableCopy:none',
       'commandWord:Command word:navi:none',
-      'howItWorks:How it works:Reason: device STT unavailable. Continuous voice stays off until resolved.:none',
+      'howItWorks:How it works:Reason: $deviceSttUnavailableReason. Continuous voice stays off until resolved.:none',
     ]);
   });
 
@@ -282,19 +283,19 @@ void main() {
       localVoiceCaptureAvailable: false,
     );
 
-    expect(presentation.voiceMode.disabledReason, 'device STT unavailable');
+    expect(presentation.voiceMode.disabledReason, deviceSttUnavailableReason);
     expect(
       presentation.voiceMode.androidRecognizerStatus,
       'No local speech recognizer is active in Navivox.',
     );
     expect(
       presentation.voiceMode.gatewayProfileSttStatus,
-      'Gateway profile STT is not checked because Android speech recognition is unavailable.',
+      gatewayProfileSttBlockedByDeviceCopy,
     );
     expect(
       _voiceRows(presentation.voiceMode),
       contains(
-        'gatewayProfileStt:Gateway profile STT:Gateway profile STT is not checked because Android speech recognition is unavailable.:none',
+        'gatewayProfileStt:Gateway profile STT:$gatewayProfileSttBlockedByDeviceCopy:none',
       ),
     );
   });

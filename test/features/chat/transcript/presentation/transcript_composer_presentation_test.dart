@@ -1,12 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_composer_presentation.dart';
 
+import '../../shared/voice_recovery_test_fixtures.dart';
+
 void main() {
   test('canonicalizes device STT unavailable recovery copy', () {
     final presentation = TranscriptComposerPresentation.fromState(
       voiceCaptureAvailable: true,
-      voiceUnavailableReason: ' Device STT unavailable ',
-      voiceRecoveryAction: '  Enable Android speech recognition  ',
+      voiceUnavailableReason: rawDeviceSttUnavailableReason,
+      voiceRecoveryAction: '  $androidSpeechRecognitionRecoveryAction  ',
       canOpenVoiceSettings: true,
       capturing: false,
       emojiOpen: false,
@@ -17,25 +19,19 @@ void main() {
       TranscriptComposerVoiceButtonState.unavailable,
     );
     expect(presentation.voiceAvailable, isFalse);
-    expect(presentation.voiceUnavailableReason, 'device STT unavailable');
+    expect(presentation.voiceUnavailableReason, deviceSttUnavailableReason);
     expect(
       presentation.voiceTooltip,
-      'Voice unavailable: device STT unavailable',
+      'Voice unavailable: $deviceSttUnavailableReason',
     );
-    expect(presentation.voiceUnavailableTitle, 'device STT unavailable');
-    expect(
-      presentation.voiceUnavailableHelpText,
-      'Install or enable device speech recognition, then return to Navivox.',
-    );
+    expect(presentation.voiceUnavailableTitle, deviceSttUnavailableReason);
+    expect(presentation.voiceUnavailableHelpText, deviceSttRecoveryCopy);
     expect(
       presentation.voiceRecoveryAction,
-      'Enable Android speech recognition',
+      androidSpeechRecognitionRecoveryAction,
     );
     expect(presentation.showVoiceSettings, isTrue);
-    expect(
-      presentation.voiceSettingsSubtitle,
-      'Review continuous voice after enabling device speech recognition.',
-    );
+    expect(presentation.voiceSettingsSubtitle, deviceSttSettingsReviewCopy);
     expect(presentation.voiceSheetTitle, 'Voice unavailable');
     expect(
       presentation.voiceSheetRows.map(
@@ -43,9 +39,9 @@ void main() {
             '${row.kind.name}:${row.title}:${row.subtitle}:${row.actionKind?.name ?? 'none'}',
       ),
       [
-        'status:device STT unavailable:Install or enable device speech recognition, then return to Navivox.:none',
-        'recoveryAction:Recovery action:Enable Android speech recognition:none',
-        'openVoiceSettings:Open voice settings:Review continuous voice after enabling device speech recognition.:openVoiceSettings',
+        'status:$deviceSttUnavailableReason:$deviceSttRecoveryCopy:none',
+        'recoveryAction:Recovery action:$androidSpeechRecognitionRecoveryAction:none',
+        'openVoiceSettings:Open voice settings:$deviceSttSettingsReviewCopy:openVoiceSettings',
       ],
     );
   });
@@ -53,7 +49,7 @@ void main() {
   test('derives microphone permission and generic unavailable copy', () {
     final permission = TranscriptComposerPresentation.fromState(
       voiceCaptureAvailable: true,
-      voiceUnavailableReason: 'microphone permission denied',
+      voiceUnavailableReason: microphonePermissionDeniedReason,
       voiceRecoveryAction: '  ',
       canOpenVoiceSettings: true,
       capturing: false,
@@ -68,15 +64,15 @@ void main() {
       emojiOpen: false,
     );
 
-    expect(permission.voiceUnavailableTitle, 'microphone permission denied');
+    expect(permission.voiceUnavailableTitle, microphonePermissionDeniedReason);
     expect(
       permission.voiceUnavailableHelpText,
-      'Grant microphone permission in Android App info, then return to Navivox.',
+      microphonePermissionRecoveryCopy,
     );
     expect(permission.voiceRecoveryAction, isNull);
     expect(
       permission.voiceSettingsSubtitle,
-      'Review continuous voice after granting microphone permission.',
+      microphonePermissionSettingsReviewCopy,
     );
     expect(generic.voiceUnavailableTitle, 'select a profile contact');
     expect(

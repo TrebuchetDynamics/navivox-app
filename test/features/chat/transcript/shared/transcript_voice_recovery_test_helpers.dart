@@ -40,20 +40,10 @@ void expectVoiceUnavailableTooltip(String reason) {
 
 void expectDeviceSttRecoveryCopy() {
   expect(find.text(deviceSttUnavailableReason), findsOneWidget);
-  expect(
-    find.text(
-      'Install or enable device speech recognition, then return to Navivox.',
-    ),
-    findsOneWidget,
-  );
+  expect(find.text(deviceSttRecoveryCopy), findsOneWidget);
 }
 
 void expectMicrophonePermissionRecoveryCopy() {
   expect(find.text(microphonePermissionDeniedReason), findsOneWidget);
-  expect(
-    find.text(
-      'Grant microphone permission in Android App info, then return to Navivox.',
-    ),
-    findsOneWidget,
-  );
+  expect(find.text(microphonePermissionRecoveryCopy), findsOneWidget);
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T03:36:43.187Z",
+  "generatedAt": "2026-05-31T03:38:42.354Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -121,9 +121,9 @@
     {
       "relative": "test/features",
       "score": 187,
-      "files": 93,
+      "files": 94,
       "direct": 0,
-      "churn": 580,
+      "churn": 585,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
@@ -137,9 +137,9 @@
     {
       "relative": "test",
       "score": 186,
-      "files": 131,
+      "files": 132,
       "direct": 0,
-      "churn": 688,
+      "churn": 693,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -201,9 +201,9 @@
     {
       "relative": "test/features/chat",
       "score": 159,
-      "files": 51,
+      "files": 52,
       "direct": 0,
-      "churn": 305,
+      "churn": 310,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
@@ -319,6 +319,22 @@
       ]
     },
     {
+      "relative": "test/features/chat/transcript/shared",
+      "score": 118.8,
+      "files": 6,
+      "direct": 6,
+      "churn": 15,
+      "callers": 19,
+      "importsOut": 3,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 0,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/router",
       "score": 117.8,
       "files": 6,
@@ -330,22 +346,6 @@
       "roles": 1,
       "duplicates": 13,
       "subdirs": 3,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/chat/transcript/shared",
-      "score": 117.8,
-      "files": 6,
-      "direct": 6,
-      "churn": 14,
-      "callers": 19,
-      "importsOut": 2,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 0,
-      "subdirs": 0,
       "extensions": [
         ".dart"
       ]
@@ -369,12 +369,12 @@
     },
     {
       "relative": "test/features/chat/transcript",
-      "score": 113.7,
+      "score": 114.7,
       "files": 29,
       "direct": 0,
-      "churn": 107,
+      "churn": 108,
       "callers": 3,
-      "importsOut": 8,
+      "importsOut": 9,
       "tests": 0,
       "roles": 3,
       "duplicates": 9,
@@ -401,17 +401,17 @@
       ]
     },
     {
-      "relative": "test/features/servers",
-      "score": 97.6,
-      "files": 12,
-      "direct": 0,
-      "churn": 73,
-      "callers": 0,
-      "importsOut": 6,
+      "relative": "test/features/chat/shared",
+      "score": 101.7,
+      "files": 5,
+      "direct": 5,
+      "churn": 6,
+      "callers": 15,
+      "importsOut": 4,
       "tests": 0,
       "roles": 3,
-      "duplicates": 9,
-      "subdirs": 5,
+      "duplicates": 0,
+      "subdirs": 0,
       "extensions": [
         ".dart"
       ]

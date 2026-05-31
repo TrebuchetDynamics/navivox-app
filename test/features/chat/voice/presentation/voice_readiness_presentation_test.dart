@@ -109,7 +109,7 @@ void main() {
     );
     expect(
       device.gatewayProfileSttStatus,
-      'Gateway profile STT is not checked because Android speech recognition is unavailable.',
+      gatewayProfileSttBlockedByDeviceCopy,
     );
     expect(
       gatewayProfile.blockerKind,
@@ -118,7 +118,7 @@ void main() {
     expect(gatewayProfile.recoveryAction, 'Enable profile STT');
     expect(
       gatewayProfile.gatewayProfileSttStatus,
-      'Gateway reported device STT unavailable for this profile.',
+      gatewayProfileSttUnavailableCopy,
     );
   });
 
@@ -153,10 +153,7 @@ void main() {
       VoiceReadinessBlockerKind.microphonePermissionDenied,
     );
     expect(readiness.disabledReason, microphonePermissionDeniedReason);
-    expect(
-      readiness.recoveryAction,
-      'Grant microphone permission in Android App info, then return to Navivox.',
-    );
+    expect(readiness.recoveryAction, microphonePermissionRecoveryCopy);
     expect(
       readiness.microphonePermissionStatus,
       'Denied by Android. Grant microphone permission in App info.',

@@ -65,7 +65,7 @@ void main() {
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
     await pumpUnavailableTranscriptSurface(
       tester,
-      voiceUnavailableReason: ' Device STT unavailable ',
+      voiceUnavailableReason: rawDeviceSttUnavailableReason,
     );
 
     expectVoiceUnavailableTooltip(deviceSttUnavailableReason);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../shared/voice_recovery_test_fixtures.dart';
 import '../shared/transcript_attachment_test_helpers.dart';
 import '../shared/transcript_controller_test_helpers.dart';
 import '../shared/transcript_widget_test_app.dart';
@@ -72,15 +73,15 @@ void main() {
       transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
-        voiceUnavailableReason: ' Device STT unavailable ',
-        voiceRecoveryAction: 'Enable device speech recognition',
+        voiceUnavailableReason: rawDeviceSttUnavailableReason,
+        voiceRecoveryAction: deviceSttRecoveryAction,
         onOpenVoiceSettings: () => openedSettings = true,
       ),
     );
 
     expect(find.byIcon(Icons.mic_off), findsOneWidget);
     expect(
-      find.byTooltip('Voice unavailable: device STT unavailable'),
+      find.byTooltip('Voice unavailable: $deviceSttUnavailableReason'),
       findsOneWidget,
     );
 
@@ -88,10 +89,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Voice unavailable'), findsOneWidget);
-    expect(find.text('device STT unavailable'), findsOneWidget);
+    expect(find.text(deviceSttUnavailableReason), findsOneWidget);
     expect(find.text('Device STT unavailable'), findsNothing);
     expect(find.text('Recovery action'), findsOneWidget);
-    expect(find.text('Enable device speech recognition'), findsOneWidget);
+    expect(find.text(deviceSttRecoveryAction), findsOneWidget);
     expect(find.text('Open voice settings'), findsOneWidget);
 
     await tester.tap(find.text('Open voice settings'));
