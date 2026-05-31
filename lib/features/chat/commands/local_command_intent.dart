@@ -83,6 +83,12 @@ class LocalCommandIntent {
   bool get consumesInput => action != LocalCommandAction.none;
 }
 
+class _CommandPrefixMatch {
+  const _CommandPrefixMatch({required this.body});
+
+  final String body;
+}
+
 class LocalCommandResolver {
   const LocalCommandResolver();
 
@@ -128,12 +134,11 @@ class LocalCommandResolver {
     if (text.isEmpty) return null;
     final word = commandWord.trim().toLowerCase();
     if (word.isEmpty) return null;
-    final lower = text.toLowerCase();
-    if (commandMode && fromVoice && !_startsWithCommandWord(lower, word)) {
+    final prefix = _matchCommandPrefix(text, word);
+    if (commandMode && fromVoice && prefix == null) {
       return text;
     }
-    if (!_startsWithCommandWord(lower, word)) return null;
-    return text.length == word.length ? '' : text.substring(word.length).trim();
+    return prefix?.body;
   }
 
   LocalCommandIntent _resolveProfileCommand({
@@ -161,11 +166,42 @@ class LocalCommandResolver {
     return {normalize(contact.profileId), normalize(contact.displayName)};
   }
 
-  bool _startsWithCommandWord(String lower, String commandWord) {
+  _CommandPrefixMatch? _matchCommandPrefix(String text, String commandWord) {
+    final lower = text.toLowerCase();
     if (lower == commandWord) {
-      return true;
+      return const _CommandPrefixMatch(body: '');
     }
-    return lower.startsWith('$commandWord ');
+    if (!lower.startsWith(commandWord)) return null;
+    if (text.length == commandWord.length) {
+      return const _CommandPrefixMatch(body: '');
+    }
+
+    final separator = text.substring(commandWord.length);
+    final bodyStart = _commandBodyStart(separator);
+    if (bodyStart == null) return null;
+    return _CommandPrefixMatch(body: separator.substring(bodyStart).trim());
+  }
+
+  int? _commandBodyStart(String separatorAndBody) {
+    for (var index = 0; index < separatorAndBody.length; index += 1) {
+      final codeUnit = separatorAndBody.codeUnitAt(index);
+      if (_isCommandWordSeparator(codeUnit)) continue;
+      return index == 0 ? null : index;
+    }
+    return separatorAndBody.isEmpty ? null : separatorAndBody.length;
+  }
+
+  bool _isCommandWordSeparator(int codeUnit) {
+    return codeUnit == 0x20 || // space
+        codeUnit == 0x09 || // tab
+        codeUnit == 0x0a || // line feed
+        codeUnit == 0x0d || // carriage return
+        codeUnit == 0x2c || // comma
+        codeUnit == 0x2e || // period
+        codeUnit == 0x3a || // colon
+        codeUnit == 0x3b || // semicolon
+        codeUnit == 0x21 || // exclamation mark
+        codeUnit == 0x3f; // question mark
   }
 
   String normalize(String value) {

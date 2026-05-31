@@ -37,6 +37,23 @@ void main() {
     expect(intent.consumesInput, isTrue);
   });
 
+  test(
+    'accepts punctuation after the command word from speech transcripts',
+    () {
+      final intent = resolver.resolve(
+        raw: 'navi, cancel',
+        commandWord: 'navi',
+        commandMode: false,
+        fromVoice: true,
+        profileSwitchingEnabled: true,
+        contacts: contacts,
+      );
+
+      expect(intent.action, LocalCommandAction.cancel);
+      expect(intent.consumesInput, isTrue);
+    },
+  );
+
   test('uses command mode to resolve a bare voice profile command', () {
     final intent = resolver.resolve(
       raw: 'support',
