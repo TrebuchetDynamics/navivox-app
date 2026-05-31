@@ -53,11 +53,11 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return null;
-    final baseUrl = prefs.getString(_keyBaseUrl);
-    if (baseUrl == null || baseUrl.trim().isEmpty) return null;
+    final baseUrl = navivoxOptionalStringFromJson(prefs.getString(_keyBaseUrl));
+    if (baseUrl == null) return null;
 
     return SavedSession(
-      baseUrl: baseUrl.trim(),
+      baseUrl: baseUrl,
       webSocketUrl: navivoxOptionalStringFromJson(
         prefs.getString(_keyWebSocketUrl),
       ),

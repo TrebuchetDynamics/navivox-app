@@ -1022,8 +1022,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ({String? serverId, String? profileId}) _messageScopeFromEvent(
     NavivoxGatewayEvent event,
   ) {
-    final metadataServerId = _trimmedString(event.metadata['server_id']);
-    final metadataProfileId = _trimmedString(event.metadata['profile_id']);
+    final metadataServerId = navivoxOptionalStringFromJson(
+      event.metadata['server_id'],
+    );
+    final metadataProfileId = navivoxOptionalStringFromJson(
+      event.metadata['profile_id'],
+    );
     if (metadataServerId != null && metadataProfileId != null) {
       return (serverId: metadataServerId, profileId: metadataProfileId);
     }
@@ -1094,37 +1098,33 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   NavivoxToolArtifact? _toolArtifactFromMap(Map<String, Object?> json) {
-    final id = _trimmedString(json['id']);
-    final kind = _trimmedString(json['kind']);
-    final title = _trimmedString(json['title']);
+    final id = navivoxOptionalStringFromJson(json['id']);
+    final kind = navivoxOptionalStringFromJson(json['kind']);
+    final title = navivoxOptionalStringFromJson(json['title']);
     if (id == null || kind == null || title == null) return null;
     return NavivoxToolArtifact(
       id: id,
       kind: kind,
       title: title,
-      summary: _trimmedString(json['summary']),
-      ref: _trimmedString(json['ref']),
+      summary: navivoxOptionalStringFromJson(json['summary']),
+      ref: navivoxOptionalStringFromJson(json['ref']),
     );
   }
 
   NavivoxToolArtifact? _toolArtifactFromFlatMetadata(
     Map<String, Object?> metadata,
   ) {
-    final id = _trimmedString(metadata['artifact_id']);
-    final kind = _trimmedString(metadata['artifact_kind']);
-    final title = _trimmedString(metadata['artifact_title']);
+    final id = navivoxOptionalStringFromJson(metadata['artifact_id']);
+    final kind = navivoxOptionalStringFromJson(metadata['artifact_kind']);
+    final title = navivoxOptionalStringFromJson(metadata['artifact_title']);
     if (id == null || kind == null || title == null) return null;
     return NavivoxToolArtifact(
       id: id,
       kind: kind,
       title: title,
-      summary: _trimmedString(metadata['artifact_summary']),
-      ref: _trimmedString(metadata['artifact_ref']),
+      summary: navivoxOptionalStringFromJson(metadata['artifact_summary']),
+      ref: navivoxOptionalStringFromJson(metadata['artifact_ref']),
     );
-  }
-
-  String? _trimmedString(Object? value) {
-    return navivoxOptionalStringFromJson(value);
   }
 
   String _safeMetadataSummary(Map<String, Object?> metadata) {
@@ -1436,52 +1436,57 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   NavivoxProfileContact _profileContactFromJson(Map<String, Object?> json) {
-    final serverId = _stringFromJson(
+    final serverId = navivoxStringFromJson(
       json['server_id'],
       fallback: 'navivox-gateway',
     );
-    final profileId = _stringFromJson(json['profile_id'], fallback: 'default');
-    final serverLabel = _stringFromJson(
+    final profileId = navivoxStringFromJson(
+      json['profile_id'],
+      fallback: 'default',
+    );
+    final serverLabel = navivoxStringFromJson(
       json['server_label'],
       fallback: 'Gormes Gateway',
     );
-    final micAvailable = _boolFromJson(json['mic_available']);
+    final micAvailable = navivoxStrictBoolFromJson(json['mic_available']);
     return NavivoxProfileContact(
       serverId: serverId,
       profileId: profileId,
-      displayName: _stringFromJson(
+      displayName: navivoxStringFromJson(
         json['display_name'],
         fallback: profileId == 'default' ? 'Default profile' : profileId,
       ),
       serverLabel: serverLabel,
-      health: _profileHealthFromJson(json['health']),
-      latestPreview: _stringFromJson(
+      health: navivoxProfileHealthFromJson(json['health']),
+      latestPreview: navivoxStringFromJson(
         json['latest_preview'],
         fallback: 'Profile ready',
       ),
-      latestPreviewKind: _stringFromJson(
+      latestPreviewKind: navivoxStringFromJson(
         json['latest_preview_kind'],
         fallback: 'status',
       ),
-      latestAt: _dateFromJson(json['latest_preview_at']),
-      workspaceRootCount: _intFromJson(json['workspace_root_count']),
-      workspaceRootsOk: _boolFromJson(
+      latestAt: navivoxDateTimeFromJson(json['latest_preview_at']),
+      workspaceRootCount: navivoxIntFromJson(json['workspace_root_count']),
+      workspaceRootsOk: navivoxStrictBoolFromJson(
         json['workspace_roots_ok'],
         fallback: true,
       ),
-      workspaceRootsWarning: _intFromJson(json['workspace_roots_warning']),
-      workspaceRootsError: _intFromJson(json['workspace_roots_error']),
-      attentionBadges: _stringListFromJson(json['attention_badges']),
+      workspaceRootsWarning: navivoxIntFromJson(
+        json['workspace_roots_warning'],
+      ),
+      workspaceRootsError: navivoxIntFromJson(json['workspace_roots_error']),
+      attentionBadges: navivoxStringListFromJson(json['attention_badges']),
       micAvailable: micAvailable,
       voiceCapability: _voiceCapabilityFromJson(
         json['voice_capability'],
         micAvailable: micAvailable,
       ),
-      activeTurnState: _stringFromJson(
+      activeTurnState: navivoxStringFromJson(
         json['active_turn_state'],
         fallback: 'idle',
       ),
-      avatarSeed: _stringFromJson(
+      avatarSeed: navivoxStringFromJson(
         json['avatar_seed'],
         fallback: '$serverId:$profileId',
       ),
@@ -1494,23 +1499,26 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }) {
     if (value is Map) {
       return NavivoxVoiceCapability(
-        deviceStt: _stringFromJson(
+        deviceStt: navivoxStringFromJson(
           value['device_stt'],
           fallback: micAvailable ? 'available' : 'unavailable',
         ),
-        serverStt: _stringFromJson(
+        serverStt: navivoxStringFromJson(
           value['server_stt'],
           fallback: 'unavailable',
         ),
-        serverTts: _stringFromJson(
+        serverTts: navivoxStringFromJson(
           value['server_tts'],
           fallback: 'unavailable',
         ),
-        disabledReason: _stringFromJson(
+        disabledReason: navivoxStringFromJson(
           value['disabled_reason'],
           fallback: micAvailable ? '' : 'mic unavailable',
         ),
-        recoveryAction: _stringFromJson(value['recovery_action'], fallback: ''),
+        recoveryAction: navivoxStringFromJson(
+          value['recovery_action'],
+          fallback: '',
+        ),
         isReported: true,
       );
     }
@@ -1518,29 +1526,5 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       deviceStt: micAvailable ? 'available' : 'unavailable',
       disabledReason: micAvailable ? '' : 'mic unavailable',
     );
-  }
-
-  NavivoxProfileHealth _profileHealthFromJson(Object? value) {
-    return navivoxProfileHealthFromJson(value);
-  }
-
-  DateTime? _dateFromJson(Object? value) {
-    return navivoxDateTimeFromJson(value);
-  }
-
-  String _stringFromJson(Object? value, {required String fallback}) {
-    return navivoxStringFromJson(value, fallback: fallback);
-  }
-
-  int _intFromJson(Object? value) {
-    return navivoxIntFromJson(value);
-  }
-
-  bool _boolFromJson(Object? value, {bool fallback = false}) {
-    return navivoxStrictBoolFromJson(value, fallback: fallback);
-  }
-
-  List<String> _stringListFromJson(Object? value) {
-    return navivoxStringListFromJson(value);
   }
 }
