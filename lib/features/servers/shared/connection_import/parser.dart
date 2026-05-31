@@ -71,9 +71,24 @@ bool _isCorePairingDescriptorUri(Uri uri) =>
 Iterable<Map<dynamic, dynamic>> _jsonCandidateMaps(
   Map<dynamic, dynamic> decoded,
 ) sync* {
-  yield decoded;
   final entries = decoded['entries'];
-  if (entries is! List) return;
+  if (entries is! List) {
+    yield decoded;
+    return;
+  }
+
+  var yieldedEntry = false;
+  for (final fields in _entryCandidateMaps(decoded, entries)) {
+    yieldedEntry = true;
+    yield fields;
+  }
+  if (!yieldedEntry) yield decoded;
+}
+
+Iterable<Map<dynamic, dynamic>> _entryCandidateMaps(
+  Map<dynamic, dynamic> decoded,
+  List<dynamic> entries,
+) sync* {
   for (final entry in entries) {
     if (entry is Map) yield _entryFieldsWithJsonDefaults(decoded, entry);
   }

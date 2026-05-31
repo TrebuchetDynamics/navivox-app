@@ -8,6 +8,7 @@ void main() {
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
   appliesTopLevelJsonConnectionDefaultsToEntries();
+  prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
   parsesSharedTextTokenWithSpacedSeparator();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
@@ -127,6 +128,18 @@ void appliesTopLevelJsonConnectionDefaultsToEntries() {
   _expect(
     result.profileId == 'profile',
     'entry profile_id should be preserved',
+  );
+}
+
+void prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"base_url":"https://gateway.example","token":"nvbx_stale_default","entries":[{"token":"nvbx_fresh_entry"}]}',
+  );
+
+  _expect(result != null, 'JSON entry with importable defaults should parse');
+  _expect(
+    result!.token == 'nvbx_fresh_entry',
+    'nonblank entry fields should override equally complete top-level defaults',
   );
 }
 
