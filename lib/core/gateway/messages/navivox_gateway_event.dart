@@ -1,4 +1,6 @@
-import '../../protocol/navivox_json.dart' show navivoxMapFromJson, navivoxOptionalStringFromJson;
+import '../../protocol/navivox_json.dart'
+    show navivoxMapFromJson, navivoxOptionalStringFromJson;
+import '../shared/navivox_gateway_json.dart';
 
 /// Typed event received from the Navivox gateway WebSocket stream.
 class NavivoxGatewayEvent {
@@ -22,7 +24,8 @@ class NavivoxGatewayEvent {
   });
 
   factory NavivoxGatewayEvent.fromJson(Map<String, Object?> json) {
-    final contact = json['contact'];
+    final metadata = navivoxMapFromJson(json['metadata']);
+    final contact = navivoxGatewayOptionalObjectFromJson(json['contact']);
     return NavivoxGatewayEvent(
       type: json['type']?.toString() ?? '',
       requestId: json['request_id']?.toString(),
@@ -37,9 +40,9 @@ class NavivoxGatewayEvent {
       approvalId: json['approval_id']?.toString(),
       severity: json['severity']?.toString(),
       risk: json['risk']?.toString(),
-      runRecordReference: _runRecordReferenceFromJson(json),
-      metadata: navivoxMapFromJson(json['metadata']),
-      contact: contact is Map ? Map<String, Object?>.from(contact) : null,
+      runRecordReference: _runRecordReferenceFromJson(json, metadata),
+      metadata: metadata,
+      contact: contact,
     );
   }
 
@@ -63,13 +66,12 @@ class NavivoxGatewayEvent {
   bool get isError => type == 'error';
 }
 
-String? _runRecordReferenceFromJson(Map<String, Object?> json) {
+String? _runRecordReferenceFromJson(
+  Map<String, Object?> json,
+  Map<String, Object?> metadata,
+) {
   return navivoxOptionalStringFromJson(json['run_record_ref']) ??
       navivoxOptionalStringFromJson(json['run_record_reference']) ??
-      navivoxOptionalStringFromJson(
-        navivoxMapFromJson(json['metadata'])['run_record_ref'],
-      ) ??
-      navivoxOptionalStringFromJson(
-        navivoxMapFromJson(json['metadata'])['run_record_reference'],
-      );
+      navivoxOptionalStringFromJson(metadata['run_record_ref']) ??
+      navivoxOptionalStringFromJson(metadata['run_record_reference']);
 }

@@ -7,6 +7,7 @@ import 'navivox_gateway_config.dart';
 import '../capabilities/navivox_gateway_capabilities.dart';
 import '../config_admin/navivox_gateway_config_admin.dart';
 import '../messages/navivox_gateway_event.dart';
+import '../messages/navivox_gateway_event_decoder.dart';
 import '../observations/navivox_gateway_observations.dart';
 import '../shared/navivox_gateway_json.dart';
 import '../voice/navivox_gateway_voice.dart';
@@ -241,17 +242,7 @@ class NavivoxGatewayClient {
   }
 
   Stream<NavivoxGatewayEvent> decodeEvents(Stream<dynamic> wireEvents) {
-    return wireEvents.map((event) {
-      final decoded = event is String ? jsonDecode(event) : event;
-      if (decoded is! Map) {
-        return const NavivoxGatewayEvent(
-          type: 'error',
-          code: 'bad_response',
-          message: 'Invalid gateway event',
-        );
-      }
-      return NavivoxGatewayEvent.fromJson(Map<String, Object?>.from(decoded));
-    });
+    return wireEvents.map(navivoxGatewayEventFromWire);
   }
 
   Map<String, Object?> _configAdminBody(

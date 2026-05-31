@@ -12,6 +12,7 @@ export 'client/navivox_gateway_client.dart';
 export 'client/navivox_gateway_config.dart';
 export 'config_admin/navivox_gateway_config_admin.dart';
 export 'messages/navivox_gateway_event.dart';
+export 'messages/navivox_gateway_event_decoder.dart';
 export 'messages/navivox_gateway_message.dart';
 export 'observations/navivox_gateway_observations.dart';
 export 'shared/navivox_gateway_constants.dart';

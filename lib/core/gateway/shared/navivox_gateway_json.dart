@@ -9,16 +9,22 @@ Map<String, Object?> navivoxGatewayDecodeObject(String body) {
   return Map<String, Object?>.from(decoded);
 }
 
+/// Converts a loose gateway JSON value into an object map when possible.
+Map<String, Object?>? navivoxGatewayOptionalObjectFromJson(Object? value) {
+  if (value is! Map) return null;
+  return Map<String, Object?>.from(value);
+}
+
 /// Reads a required JSON object field from a decoded gateway response.
 Map<String, Object?> navivoxGatewayObjectField(
   Map<String, Object?> body,
   String key,
 ) {
-  final value = body[key];
-  if (value is! Map) {
+  final object = navivoxGatewayOptionalObjectFromJson(body[key]);
+  if (object == null) {
     throw FormatException('expected JSON object field $key');
   }
-  return Map<String, Object?>.from(value);
+  return object;
 }
 
 /// Parses a loose gateway JSON object whose values are nested objects.
@@ -32,10 +38,9 @@ Map<String, T> navivoxGatewayObjectValueMapFromJson<T>(
   if (value is! Map) return const {};
   final parsed = <String, T>{};
   for (final entry in value.entries) {
-    if (entry.value is Map) {
-      parsed[entry.key.toString()] = fromJson(
-        Map<String, Object?>.from(entry.value as Map),
-      );
+    final object = navivoxGatewayOptionalObjectFromJson(entry.value);
+    if (object != null) {
+      parsed[entry.key.toString()] = fromJson(object);
     }
   }
   return parsed;
