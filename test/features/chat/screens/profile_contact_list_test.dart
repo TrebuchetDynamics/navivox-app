@@ -83,11 +83,11 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     expect(
-      find.byKey(const ValueKey('profile-contact-presence-local-mineru')),
+      find.byKey(ValueKey(chatProfilePresenceKey(chatMineruProfileScope))),
       findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('profile-contact-voice-ready-local-mineru')),
+      find.byKey(ValueKey(chatProfileVoiceReadyKey(chatMineruProfileScope))),
       findsNothing,
     );
     expect(
@@ -95,11 +95,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-contact-presence-office-support')),
+      find.byKey(ValueKey(chatProfilePresenceKey(chatSupportProfileScope))),
       findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('profile-contact-voice-ready-office-support')),
+      find.byKey(ValueKey(chatProfileVoiceReadyKey(chatSupportProfileScope))),
       findsNothing,
     );
   });
