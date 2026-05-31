@@ -21,14 +21,8 @@ class ConnectionImportParser {
         return _parseCorePairingDescriptor(text, uri);
       }
 
-      final queryImport = _importFromFields(
-        uri.queryParameters,
-        fallbackBaseUrl: _httpOriginFromHttpUri(uri),
-      );
-      if (queryImport != null) return queryImport;
-      if (uri.scheme == 'http' || uri.scheme == 'https') {
-        return SetupQrImageImport(baseUrl: navivoxOriginFromUri(uri));
-      }
+      final uriImport = _importFromGenericUri(uri);
+      if (uriImport != null) return uriImport;
     }
 
     final baseUrl = _normalizeBaseUrl(_firstUrl(text));
@@ -111,11 +105,50 @@ SetupQrImageImport? _importFromFields(
   return candidate.toImport();
 }
 
-String? _httpOriginFromHttpUri(Uri uri) {
+SetupQrImageImport? _importFromGenericUri(Uri uri) {
+  final import = _importFromFields(
+    _genericUriFields(uri),
+    fallbackBaseUrl: _baseUrlFromGenericUri(uri),
+  );
+  if (import != null) return import;
+  if (uri.scheme == 'http' || uri.scheme == 'https') {
+    return SetupQrImageImport(baseUrl: navivoxOriginFromUri(uri));
+  }
+  if (_isWebSocketUri(uri)) {
+    return SetupQrImageImport(
+      baseUrl: _webSocketUriBaseUrl(uri),
+      webSocketUrl: uri.toString(),
+    );
+  }
+  return null;
+}
+
+Map<String, String> _genericUriFields(Uri uri) {
+  final fields = Map<String, String>.of(uri.queryParameters);
+  if (_isWebSocketUri(uri) &&
+      navivoxFirstStringFieldFromJson(fields, _webSocketUrlFieldNames) ==
+          null) {
+    fields['websocket_url'] = uri.toString();
+  }
+  return fields;
+}
+
+String? _baseUrlFromGenericUri(Uri uri) {
   return switch (uri.scheme) {
     'http' || 'https' => navivoxOriginFromUri(uri),
+    'ws' || 'wss' => _webSocketUriBaseUrl(uri),
     _ => null,
   };
+}
+
+bool _isWebSocketUri(Uri uri) => uri.scheme == 'ws' || uri.scheme == 'wss';
+
+String? _webSocketUriBaseUrl(Uri uri) {
+  try {
+    return navivoxHttpBaseUrlFromEndpointUri(uri);
+  } on FormatException {
+    return null;
+  }
 }
 
 class _ConnectionImportCandidate {

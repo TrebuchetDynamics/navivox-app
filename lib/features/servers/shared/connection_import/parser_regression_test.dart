@@ -4,6 +4,7 @@ void main() {
   parsesValidCorePairingDescriptor();
   parsesGenericTokenUrlOutsideCoreDescriptorProtocol();
   preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
+  preservesGenericWebSocketUrlImports();
   parsesSharedTextTokenWithSpacedSeparator();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
 }
@@ -52,6 +53,24 @@ void preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin() {
   );
   _expect(result.serverId == 'srv', 'server_id should be preserved');
   _expect(result.profileId == 'profile', 'profile_id should be preserved');
+}
+
+void preservesGenericWebSocketUrlImports() {
+  final result = parseNavivoxConnectionImportPayload(
+    'wss://gateway.example/navivox/ws?token=nvbx_generic',
+  );
+
+  _expect(result != null, 'generic websocket URL import should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'generic websocket URL should derive HTTP baseUrl',
+  );
+  _expect(
+    result.webSocketUrl ==
+        'wss://gateway.example/navivox/ws?token=nvbx_generic',
+    'generic websocket URL should be preserved',
+  );
+  _expect(result.token == 'nvbx_generic', 'generic websocket token preserved');
 }
 
 void parsesSharedTextTokenWithSpacedSeparator() {
