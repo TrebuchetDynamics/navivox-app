@@ -1,6 +1,7 @@
-import '../../test_support/regression_expect.dart';
+import '../../../test_support/regression_expect.dart';
+import '../contracts/navivox_platform_connect_intent_payload.dart';
+import '../test_support/navivox_connect_intent_payload_fixtures.dart';
 import 'navivox_connect_intent_initial_payload.dart';
-import 'navivox_platform_connect_intent_payload.dart';
 
 void main() {
   preservesPayloadObservedDuringAvailabilityProbe();
@@ -10,10 +11,7 @@ void main() {
 
 void preservesPayloadObservedDuringAvailabilityProbe() {
   final cache = NavivoxInitialConnectIntentPayloadCache();
-  final payload = {
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': sharedTextPairingHandoffPlatformSource,
-  };
+  final payload = navivoxPlatformConnectIntentPayloadFixture();
 
   cache.remember(payload);
 
@@ -52,10 +50,9 @@ void remembersNullAvailabilityProbePayload() {
 
 void keepsFirstUnconsumedProbePayloadAcrossRepeatedAvailabilityChecks() {
   final cache = NavivoxInitialConnectIntentPayloadCache();
-  final firstPayload = {
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': directAppOpenPairingHandoffPlatformSource,
-  };
+  final firstPayload = navivoxPlatformConnectIntentPayloadFixture(
+    source: directAppOpenPairingHandoffPlatformSource,
+  );
 
   cache.remember(firstPayload);
   cache.remember(null);

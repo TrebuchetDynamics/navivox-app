@@ -1,6 +1,7 @@
-import '../../../models/connection_import.dart';
-import '../../test_support/regression_expect.dart';
+import '../../../../models/connection_import.dart';
+import '../../../test_support/regression_expect.dart';
 import 'navivox_platform_connect_intent_payload.dart';
+import '../test_support/navivox_connect_intent_payload_fixtures.dart';
 
 void main() {
   normalizesPlainStringPayloadAsManualSource();
@@ -11,12 +12,12 @@ void main() {
 
 void normalizesPlainStringPayloadAsManualSource() {
   final result = NavivoxPlatformConnectIntentPayload.from(
-    ' https://gateway.example/connect?token=nvbx_token ',
+    ' $navivoxRegressionConnectIntentPayload ',
   );
 
   regressionExpect(result != null, 'plain string payload should normalize');
   regressionExpect(
-    result!.text == 'https://gateway.example/connect?token=nvbx_token',
+    result!.text == navivoxRegressionConnectIntentPayload,
     'plain string payload text should be trimmed',
   );
   regressionExpect(
@@ -26,14 +27,16 @@ void normalizesPlainStringPayloadAsManualSource() {
 }
 
 void normalizesStructuredPayloadAndSourceToken() {
-  final result = NavivoxPlatformConnectIntentPayload.from({
-    'payload': ' https://gateway.example/connect?token=nvbx_token ',
-    'source': directAppOpenPairingHandoffPlatformSource.toUpperCase(),
-  });
+  final result = NavivoxPlatformConnectIntentPayload.from(
+    navivoxPlatformConnectIntentPayloadFixture(
+      payload: ' $navivoxRegressionConnectIntentPayload ',
+      source: directAppOpenPairingHandoffPlatformSource.toUpperCase(),
+    ),
+  );
 
   regressionExpect(result != null, 'structured payload should normalize');
   regressionExpect(
-    result!.text == 'https://gateway.example/connect?token=nvbx_token',
+    result!.text == navivoxRegressionConnectIntentPayload,
     'structured payload text should be trimmed',
   );
   regressionExpect(
@@ -43,10 +46,9 @@ void normalizesStructuredPayloadAndSourceToken() {
 }
 
 void fallsBackToManualForUnknownPlatformSourceToken() {
-  final result = NavivoxPlatformConnectIntentPayload.from({
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': 'clipboard',
-  });
+  final result = NavivoxPlatformConnectIntentPayload.from(
+    navivoxPlatformConnectIntentPayloadFixture(source: 'clipboard'),
+  );
 
   regressionExpect(
     result != null,
@@ -59,10 +61,11 @@ void fallsBackToManualForUnknownPlatformSourceToken() {
 }
 
 void rejectsNonStringPayloadFields() {
-  final result = NavivoxPlatformConnectIntentPayload.from({
-    'payload': {'url': 'https://gateway.example/connect?token=nvbx_token'},
-    'source': sharedTextPairingHandoffPlatformSource,
-  });
+  final result = NavivoxPlatformConnectIntentPayload.from(
+    navivoxPlatformConnectIntentPayloadFixture(
+      payload: {'url': navivoxRegressionConnectIntentPayload},
+    ),
+  );
 
   regressionExpect(
     result == null,

@@ -1,7 +1,8 @@
-import '../../../models/connection_import.dart';
-import '../../test_support/regression_expect.dart';
+import '../../../../models/connection_import.dart';
+import '../../../test_support/regression_expect.dart';
+import '../contracts/navivox_platform_connect_intent_payload.dart';
+import '../test_support/navivox_connect_intent_payload_fixtures.dart';
 import 'navivox_connect_intent_payload.dart';
-import 'navivox_platform_connect_intent_payload.dart';
 
 void main() {
   parsesPlainStringPayloadAsManualImport();
@@ -14,7 +15,7 @@ void main() {
 
 void parsesPlainStringPayloadAsManualImport() {
   final result = parseNavivoxConnectIntentPayload(
-    ' https://gateway.example/connect?token=nvbx_token ',
+    ' $navivoxRegressionConnectIntentPayload ',
   );
 
   regressionExpect(result != null, 'plain string payload should parse');
@@ -33,10 +34,9 @@ void parsesPlainStringPayloadAsManualImport() {
 }
 
 void preservesMapPayloadSourceProvenance() {
-  final result = parseNavivoxConnectIntentPayload({
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': sharedTextPairingHandoffPlatformSource,
-  });
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(),
+  );
 
   regressionExpect(result != null, 'map payload should parse');
   regressionExpect(
@@ -46,10 +46,11 @@ void preservesMapPayloadSourceProvenance() {
 }
 
 void trimsPlatformSourceTokenBeforeMappingProvenance() {
-  final result = parseNavivoxConnectIntentPayload({
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': ' $sharedTextPairingHandoffPlatformSource ',
-  });
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      source: ' $sharedTextPairingHandoffPlatformSource ',
+    ),
+  );
 
   regressionExpect(
     result != null,
@@ -62,10 +63,11 @@ void trimsPlatformSourceTokenBeforeMappingProvenance() {
 }
 
 void mapsPlatformSourceTokenCaseInsensitively() {
-  final result = parseNavivoxConnectIntentPayload({
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': ' ${sharedTextPairingHandoffPlatformSource.toUpperCase()} ',
-  });
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      source: ' ${sharedTextPairingHandoffPlatformSource.toUpperCase()} ',
+    ),
+  );
 
   regressionExpect(
     result != null,
@@ -78,10 +80,11 @@ void mapsPlatformSourceTokenCaseInsensitively() {
 }
 
 void rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings() {
-  final result = parseNavivoxConnectIntentPayload({
-    'payload': {'url': 'https://gateway.example/connect?token=nvbx_token'},
-    'source': sharedTextPairingHandoffPlatformSource,
-  });
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      payload: {'url': navivoxRegressionConnectIntentPayload},
+    ),
+  );
 
   regressionExpect(
     result == null,
@@ -90,10 +93,11 @@ void rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings() {
 }
 
 void rejectsStructuredSourceValuesInsteadOfParsingObjectStrings() {
-  final result = parseNavivoxConnectIntentPayload({
-    'payload': 'https://gateway.example/connect?token=nvbx_token',
-    'source': _StringLikePlatformSource(),
-  });
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      source: _StringLikePlatformSource(),
+    ),
+  );
 
   regressionExpect(
     result != null,
