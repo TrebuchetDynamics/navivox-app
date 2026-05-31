@@ -3,6 +3,7 @@ import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
 import '../../shared/profiles/profile_contact_chat_test_fixtures.dart';
+import '../../shared/protocol/chat_message_test_fixtures.dart';
 
 /// Shared Profile contact target used by transcript forwarding/action tests.
 const transcriptSupportContact = chatSupportTriageContact;
@@ -54,11 +55,10 @@ NavivoxChatMessage transcriptTextMessage({
   String? serverId,
   String? profileId,
 }) {
-  return transcriptChatMessage(
+  return chatTextMessage(
     id: id,
     author: author,
-    kind: NavivoxMessageKind.text,
-    createdAt: createdAt,
+    createdAt: createdAt ?? DateTime.utc(2026, 5, 23, 11, 15),
     text: text,
     runRecordReference: runRecordReference,
     serverId: serverId,
