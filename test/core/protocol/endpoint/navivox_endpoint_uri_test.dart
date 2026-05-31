@@ -4,7 +4,9 @@ import 'package:navivox/core/protocol/navivox_endpoint_uri.dart';
 void main() {
   test('normalizes http origins while preserving non-http base URL values', () {
     expect(
-      navivoxHttpOriginOrOriginalFromString(' https://gateway.example:9443/path '),
+      navivoxHttpOriginOrOriginalFromString(
+        ' https://gateway.example:9443/path ',
+      ),
       'https://gateway.example:9443',
     );
     expect(
@@ -20,7 +22,10 @@ void main() {
       navivoxWebSocketUrlFromEndpointString(' wss://gateway.example/socket '),
       'wss://gateway.example/socket',
     );
-    expect(navivoxWebSocketUrlFromEndpointString('https://gateway.example'), isNull);
+    expect(
+      navivoxWebSocketUrlFromEndpointString('https://gateway.example'),
+      isNull,
+    );
     expect(
       navivoxHttpBaseUrlFromEndpointString('wss://gateway.example/socket'),
       'https://gateway.example',

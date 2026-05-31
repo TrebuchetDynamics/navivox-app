@@ -1,14 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
+import 'support/navivox_voice_run_test_support.dart';
+
 void main() {
   test('creates a recording voice run for a profile contact', () {
-    final run = NavivoxVoiceRun.recording(
-      id: 'voice-1',
-      serverId: 'local',
-      profileId: 'mineru',
-      createdAt: DateTime.utc(2026, 5, 21, 12),
-    );
+    final run = recordingVoiceRun();
 
     expect(run.id, 'voice-1');
     expect(run.serverId, 'local');
@@ -20,18 +17,12 @@ void main() {
   });
 
   test('moves a device transcript to pending send without losing metadata', () {
-    final run =
-        NavivoxVoiceRun.recording(
-          id: 'voice-1',
-          serverId: 'local',
-          profileId: 'mineru',
-          createdAt: DateTime.utc(2026, 5, 21, 12),
-        ).withDeviceTranscript(
-          transcript: 'check status',
-          duration: const Duration(milliseconds: 900),
-          confidence: 0.91,
-          updatedAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
-        );
+    final run = recordingVoiceRun().withDeviceTranscript(
+      transcript: 'check status',
+      duration: const Duration(milliseconds: 900),
+      confidence: 0.91,
+      updatedAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
+    );
 
     expect(run.status, NavivoxVoiceRunStatus.pendingSend);
     expect(run.transcript, 'check status');
@@ -43,18 +34,12 @@ void main() {
   test(
     'submitted completed cancelled and failed statuses are terminal-aware',
     () {
-      final base =
-          NavivoxVoiceRun.recording(
-            id: 'voice-1',
-            serverId: 'local',
-            profileId: 'mineru',
-            createdAt: DateTime.utc(2026, 5, 21, 12),
-          ).withDeviceTranscript(
-            transcript: 'hello',
-            duration: const Duration(seconds: 1),
-            confidence: 1,
-            updatedAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
-          );
+      final base = recordingVoiceRun().withDeviceTranscript(
+        transcript: 'hello',
+        duration: const Duration(seconds: 1),
+        confidence: 1,
+        updatedAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
+      );
 
       expect(base.markSubmitted(requestId: 'req-1').isTerminal, isFalse);
       expect(base.markCompleted().isTerminal, isTrue);
