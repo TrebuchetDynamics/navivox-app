@@ -223,11 +223,14 @@ _ConnectionImportCandidate? _connectionImportCandidateFromFields(
   String? fallbackBaseUrl,
   bool hasExplicitConnectionFields = true,
 }) {
-  final token = navivoxFirstStringFieldFromJson(fields, _tokenFieldNames);
+  final explicitToken = navivoxFirstStringFieldFromJson(
+    fields,
+    _tokenFieldNames,
+  );
   final endpointFields = _connectionImportEndpointFields(fields);
   final candidate = _ConnectionImportCandidate(
     baseUrl: endpointFields.baseUrl ?? fallbackBaseUrl,
-    token: token,
+    token: explicitToken ?? endpointFields.queryToken,
     webSocketUrl: endpointFields.webSocketUrl,
     serverId: navivoxFirstStringFieldFromJson(fields, _serverIdFieldNames),
     profileId: navivoxFirstStringFieldFromJson(fields, _profileIdFieldNames),
@@ -253,14 +256,30 @@ _ConnectionImportEndpointFields _connectionImportEndpointFields(
         ) ??
         _normalizeBaseUrlFromWebSocketUrl(normalizedWebSocketUrl),
     webSocketUrl: normalizedWebSocketUrl,
+    queryToken: _tokenFromNormalizedEndpointQuery(normalizedWebSocketUrl),
   );
 }
 
 class _ConnectionImportEndpointFields {
-  const _ConnectionImportEndpointFields({this.baseUrl, this.webSocketUrl});
+  const _ConnectionImportEndpointFields({
+    this.baseUrl,
+    this.webSocketUrl,
+    this.queryToken,
+  });
 
   final String? baseUrl;
   final String? webSocketUrl;
+  final String? queryToken;
+}
+
+String? _tokenFromNormalizedEndpointQuery(String? normalizedUrl) {
+  if (normalizedUrl == null) return null;
+  final uri = Uri.tryParse(normalizedUrl);
+  if (uri == null) return null;
+  return navivoxFirstStringFieldFromJson(
+    navivoxFirstNonBlankQueryParameterValues(uri.queryParametersAll),
+    _tokenFieldNames,
+  );
 }
 
 SetupQrImageImport? _importFromGenericUri(Uri uri) {

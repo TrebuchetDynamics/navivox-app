@@ -7,6 +7,7 @@ void main() {
   parsesGenericTokenUrlOutsideCoreDescriptorProtocol();
   preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
   preservesGenericUrlRepeatedQueryValuesAfterBlankCopyArtifacts();
+  preservesTokenFromJsonWebSocketUrlQuery();
   preservesMetadataFromUrlEmbeddedInSharedText();
   preservesWebSocketUrlEmbeddedInSharedText();
   parsesUppercaseSchemeUrlEmbeddedInSharedText();
@@ -144,6 +145,29 @@ void preservesGenericUrlRepeatedQueryValuesAfterBlankCopyArtifacts() {
   );
   _expect(result!.token == 'nvbx_ok', 'first nonblank repeated token wins');
   _expect(result.serverId == 'srv', 'metadata beside repeated fields is kept');
+}
+
+void preservesTokenFromJsonWebSocketUrlQuery() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"websocket_url":"wss://gateway.example/navivox/ws?token=nvbx_json"}',
+  );
+
+  _expect(
+    result != null,
+    'JSON websocket_url imports with query credentials should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'JSON websocket_url should still derive the HTTP baseUrl',
+  );
+  _expect(
+    result.webSocketUrl == 'wss://gateway.example/navivox/ws?token=nvbx_json',
+    'JSON websocket_url should preserve the full websocket endpoint',
+  );
+  _expect(
+    result.token == 'nvbx_json',
+    'JSON websocket_url query token should not be dropped',
+  );
 }
 
 void preservesMetadataFromUrlEmbeddedInSharedText() {
