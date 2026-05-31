@@ -8,7 +8,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
-import '../support/gateway_routing_test_support.dart';
+import '../../support/gateway_routing_test_support.dart';
 
 void main() {
   test('connects to gateway and streams a chat turn', () async {
