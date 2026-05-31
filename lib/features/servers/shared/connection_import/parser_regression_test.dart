@@ -8,6 +8,7 @@ void main() {
   preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
   preservesGenericUrlRepeatedQueryValuesAfterBlankCopyArtifacts();
   preservesTokenFromJsonWebSocketUrlQuery();
+  preservesTokenFromJsonBaseUrlQuery();
   preservesMetadataFromUrlEmbeddedInSharedText();
   preservesWebSocketUrlEmbeddedInSharedText();
   parsesUppercaseSchemeUrlEmbeddedInSharedText();
@@ -168,6 +169,25 @@ void preservesTokenFromJsonWebSocketUrlQuery() {
   _expect(
     result.token == 'nvbx_json',
     'JSON websocket_url query token should not be dropped',
+  );
+}
+
+void preservesTokenFromJsonBaseUrlQuery() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"base_url":"https://gateway.example/connect?token=nvbx_json_base"}',
+  );
+
+  _expect(
+    result != null,
+    'JSON base_url imports with query credentials should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'JSON base_url should normalize to the endpoint origin',
+  );
+  _expect(
+    result.token == 'nvbx_json_base',
+    'JSON base_url query token should not be dropped',
   );
 }
 

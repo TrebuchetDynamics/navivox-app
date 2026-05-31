@@ -79,6 +79,17 @@ void main() {
     expect(result?.token, 'nvbx_json_token');
   });
 
+  test('preserves JSON base URL query tokens', () {
+    final result = parseNavivoxQrPayload('''
+{
+  "base_url": "https://gateway.example/connect?token=nvbx_json_base"
+}
+''');
+
+    expect(result?.baseUrl, 'https://gateway.example');
+    expect(result?.token, 'nvbx_json_base');
+  });
+
   test('parses Gormes pair JSON descriptors with websocket URL', () {
     final result = parseNavivoxQrPayload('''
 {

@@ -244,19 +244,25 @@ _ConnectionImportCandidate? _connectionImportCandidateFromFields(
 _ConnectionImportEndpointFields _connectionImportEndpointFields(
   Map<dynamic, dynamic> fields,
 ) {
-  final webSocketUrl = navivoxFirstStringFieldFromJson(
+  final rawBaseUrl = navivoxFirstStringFieldFromJson(
+    fields,
+    _baseUrlFieldNames,
+  );
+  final rawWebSocketUrl = navivoxFirstStringFieldFromJson(
     fields,
     _webSocketUrlFieldNames,
   );
-  final normalizedWebSocketUrl = _normalizeWebSocketUrl(webSocketUrl);
+  final normalizedWebSocketUrl = _normalizeWebSocketUrl(rawWebSocketUrl);
+  final normalizedBaseUrl = _normalizeBaseUrl(rawBaseUrl);
   return _ConnectionImportEndpointFields(
     baseUrl:
-        _normalizeBaseUrl(
-          navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames),
-        ) ??
+        normalizedBaseUrl ??
         _normalizeBaseUrlFromWebSocketUrl(normalizedWebSocketUrl),
     webSocketUrl: normalizedWebSocketUrl,
-    queryToken: _tokenFromNormalizedEndpointQuery(normalizedWebSocketUrl),
+    queryToken: _firstEndpointQueryToken(
+      rawBaseUrl: normalizedBaseUrl == null ? null : rawBaseUrl,
+      normalizedWebSocketUrl: normalizedWebSocketUrl,
+    ),
   );
 }
 
@@ -272,10 +278,18 @@ class _ConnectionImportEndpointFields {
   final String? queryToken;
 }
 
-String? _tokenFromNormalizedEndpointQuery(String? normalizedUrl) {
-  if (normalizedUrl == null) return null;
-  final uri = Uri.tryParse(normalizedUrl);
-  if (uri == null) return null;
+String? _firstEndpointQueryToken({
+  required String? rawBaseUrl,
+  required String? normalizedWebSocketUrl,
+}) {
+  return _tokenFromEndpointQuery(rawBaseUrl) ??
+      _tokenFromEndpointQuery(normalizedWebSocketUrl);
+}
+
+String? _tokenFromEndpointQuery(String? url) {
+  if (url == null) return null;
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.hasQuery) return null;
   return navivoxFirstStringFieldFromJson(
     navivoxFirstNonBlankQueryParameterValues(uri.queryParametersAll),
     _tokenFieldNames,
