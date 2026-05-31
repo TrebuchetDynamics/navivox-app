@@ -24,13 +24,14 @@ Start with `../CONTEXT.md` for stable product language, then use this index to f
 
 ## Runbooks And Handoffs
 
-- [Termux Gormes bootstrap](runbooks/termux-gormes-bootstrap.md)
-- [Android setup checklist](runbooks/android-setup-checklist.md)
-- [Android pairing handoff smoke](runbooks/android-pairing-handoff-smoke.md)
-- [Android pairing handoff instrumentation](runbooks/android-pairing-handoff-instrumentation.md)
-- [Android durable keystore smoke](runbooks/android-durable-keystore-smoke.md)
-- [Android release handoff](runbooks/android-release-handoff.md)
-- [Web QA handoff](runbooks/web-qa-dl-mphmcspi-bb46a2.md)
+- [Termux Gormes bootstrap](runbooks/termux/gormes-bootstrap.md)
+- [Android setup checklist](runbooks/android/setup-checklist.md)
+- [Android pairing handoff smoke](runbooks/android/pairing-handoff-smoke.md)
+- [Android pairing handoff instrumentation](runbooks/android/pairing-handoff-instrumentation.md)
+- [Android durable keystore smoke](runbooks/android/durable-keystore-smoke.md)
+- [Android release handoff](runbooks/android/release-handoff.md)
+- [Android device and secret handling contracts](runbooks/shared/android-device-and-secret-contracts.md)
+- [Web QA handoff](runbooks/web-qa/dl-mphmcspi-bb46a2.md)
 
 ## Assets
 

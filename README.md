@@ -145,7 +145,7 @@ Android target notes:
 
 - Android emulator: use `http://10.0.2.2:<port>` when the Gormes gateway is running on the host machine.
 - A physical Android device cannot reach the host through `127.0.0.1`; use the host LAN, VPN, or Tailscale URL printed by `gormes navivox pair` or the `gormes navivox connect-info` fallback.
-- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/runbooks/termux-gormes-bootstrap.md`.
+- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/runbooks/termux/gormes-bootstrap.md`.
 - Recommended setup path: `gormes navivox pair`.
 - Keep the pairing token inside Navivox only; never paste it into issue reports, logs, screenshots, or chat transcripts.
 
@@ -193,7 +193,7 @@ Start with:
 
 - `CONTEXT.md`
 - `docs/README.md`
-- `docs/runbooks/termux-gormes-bootstrap.md`
+- `docs/runbooks/termux/gormes-bootstrap.md`
 - [Gormes Navivox CLI docs](https://docs.gormes.ai/cli/navivox/)
 - `docs/product/prd.md`
 - `docs/architecture/architecture.md`

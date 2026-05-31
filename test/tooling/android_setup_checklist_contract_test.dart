@@ -4,11 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Android setup checklist documents device paths and safe tokens', () {
-    final checklist = File('docs/runbooks/android-setup-checklist.md');
+    final checklist = File('docs/runbooks/android/setup-checklist.md');
 
     expect(checklist.existsSync(), isTrue);
 
-    final text = checklist.readAsStringSync();
+    final shared = File(
+      'docs/runbooks/shared/android-device-and-secret-contracts.md',
+    );
+    expect(shared.existsSync(), isTrue);
+
+    final text = '${checklist.readAsStringSync()}\n${shared.readAsStringSync()}';
 
     expect(text, contains('# Android Setup Checklist'));
     expect(text, contains('flutter doctor'));

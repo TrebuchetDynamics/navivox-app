@@ -4,11 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Android release handoff documents safe local install artifacts', () {
-    final handoff = File('docs/runbooks/android-release-handoff.md');
+    final handoff = File('docs/runbooks/android/release-handoff.md');
 
     expect(handoff.existsSync(), isTrue);
 
-    final text = handoff.readAsStringSync();
+    final shared = File(
+      'docs/runbooks/shared/android-device-and-secret-contracts.md',
+    );
+    expect(shared.existsSync(), isTrue);
+
+    final text = '${handoff.readAsStringSync()}\n${shared.readAsStringSync()}';
 
     expect(text, contains('# Android Release Handoff'));
     expect(text, contains('flutter build apk --debug'));
@@ -17,7 +22,8 @@ void main() {
     expect(text, contains('adb install -r'));
     expect(text, contains('flutter build appbundle --release'));
     expect(text, contains('build/app/outputs/bundle/release/app-release.aab'));
-    expect(text, contains('Do not ship pairing tokens'));
+    expect(text, contains('pairing secrets contract'));
+    expect(text, contains('Do not paste tokens'));
     expect(text, contains('trusted tester'));
     expect(text, contains('## Continuous voice smoke after install'));
     expect(
