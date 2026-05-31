@@ -22,6 +22,7 @@ import 'gateway_profile_contact_policy.dart';
 import 'gateway_safety_notice_policy.dart';
 import 'gateway_tool_call_policy.dart';
 import 'gateway_turn_metadata_policy.dart';
+import 'gateway_user_turn_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   GatewayNavivoxChannel({Uuid? uuid, DateTime Function()? clock})
@@ -112,17 +113,20 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             onDone: () => _setServerStatus('Gateway disconnected'),
           );
     }
-    _state = _state.copyWith(
-      servers: navivoxServersFromProfileContacts(contacts, config),
-      activeServerId: contacts.first.serverId,
-      profileContacts: contacts,
-      selectedProfileContactKey: navivoxSelectedProfileContactKey(contacts),
-      profileRouting: profileRouting,
-      runRecordInspectionAvailable: navivoxRunRecordsSupported(capabilities),
-      configSchema: configAdminState?.schema ?? const {},
-      configValues: configAdminState?.values ?? const {},
-      configDiff: const {},
-    );
+    _state =
+        navivoxStateWithProfileContacts(
+          state: _state,
+          contacts: contacts,
+          config: config,
+        ).copyWith(
+          profileRouting: profileRouting,
+          runRecordInspectionAvailable: navivoxRunRecordsSupported(
+            capabilities,
+          ),
+          configSchema: configAdminState?.schema ?? const {},
+          configValues: configAdminState?.values ?? const {},
+          configDiff: const {},
+        );
     notifyListeners();
     // Persist connection parameters so the app can reconnect automatically.
     unawaited(
@@ -236,14 +240,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final requestId = _uuid.v4();
     final activeProfile = _state.activeProfileContact;
     _putMessage(
-      NavivoxChatMessage(
+      navivoxGatewayUserTurnMessage(
         id: requestId,
-        author: NavivoxMessageAuthor.user,
-        kind: NavivoxMessageKind.text,
-        createdAt: _clock(),
         text: trimmed,
-        serverId: activeProfile?.serverId,
-        profileId: activeProfile?.profileId,
+        createdAt: _clock(),
+        scope: (
+          serverId: activeProfile?.serverId,
+          profileId: activeProfile?.profileId,
+        ),
       ),
     );
     socket.add(
@@ -354,14 +358,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _putVoiceRun(submitted, active: true);
     final activeProfile = _state.activeProfileContact;
     _putMessage(
-      NavivoxChatMessage(
+      navivoxGatewayUserTurnMessage(
         id: requestId,
-        author: NavivoxMessageAuthor.user,
-        kind: NavivoxMessageKind.voice,
-        createdAt: _clock(),
         text: trimmed,
-        serverId: activeProfile?.serverId,
-        profileId: activeProfile?.profileId,
+        createdAt: _clock(),
+        scope: (
+          serverId: activeProfile?.serverId,
+          profileId: activeProfile?.profileId,
+        ),
         voice: NavivoxVoiceMessage(
           voiceRunId: voiceRunId,
           duration: submitted.duration ?? Duration.zero,
@@ -497,15 +501,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       final contacts = navivoxProfileContactsFromGatewayPayloads(
         contactPayloads,
       );
-      final selectedKey = navivoxSelectedProfileContactKey(
-        contacts,
+      _state = navivoxStateWithProfileContacts(
+        state: _state,
+        contacts: contacts,
+        config: client.config,
         preferredKey: _state.selectedProfileContactKey,
-      );
-      _state = _state.copyWith(
-        servers: navivoxServersFromProfileContacts(contacts, client.config),
-        activeServerId: contacts.first.serverId,
-        profileContacts: contacts,
-        selectedProfileContactKey: selectedKey,
       );
       notifyListeners();
     } catch (_) {

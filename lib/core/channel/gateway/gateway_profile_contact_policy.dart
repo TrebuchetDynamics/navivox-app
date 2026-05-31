@@ -61,6 +61,23 @@ String navivoxSelectedProfileContactKey(
   return contacts.first.key;
 }
 
+NavivoxChannelState navivoxStateWithProfileContacts({
+  required NavivoxChannelState state,
+  required List<NavivoxProfileContact> contacts,
+  required NavivoxGatewayConfig config,
+  String? preferredKey,
+}) {
+  return state.copyWith(
+    servers: navivoxServersFromProfileContacts(contacts, config),
+    activeServerId: contacts.first.serverId,
+    profileContacts: contacts,
+    selectedProfileContactKey: navivoxSelectedProfileContactKey(
+      contacts,
+      preferredKey: preferredKey,
+    ),
+  );
+}
+
 List<NavivoxServer> navivoxServersFromProfileContacts(
   List<NavivoxProfileContact> contacts,
   NavivoxGatewayConfig config,
