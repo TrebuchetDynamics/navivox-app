@@ -1,7 +1,7 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T09:49:08.448Z",
+  "updatedAt": "2026-05-31T09:52:11.827Z",
   "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added replayable regression in features/servers/shared/connection_import/parser_regression_test.dart for generic URL metadata with origin fallback.",
@@ -12,11 +12,14 @@
     "Fixed pairingHandoffSourceFromPlatformPayload to trim platform source tokens before provenance mapping.",
     "Added core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart to characterize endpoint origin derivation, websocket path/query preservation, and non-HTTP compatibility behavior.",
     "Exposed endpoint origin formatting via private _navivoxOrigin helper so HTTP scheme remapping does not depend on Uri.replace port normalization.",
-    "Fixed navivoxHttpBaseUrlFromEndpointUri to preserve explicit default ports (for example wss://host:443 -> https://host:443) while mapping websocket schemes to HTTP schemes."
+    "Fixed navivoxHttpBaseUrlFromEndpointUri to preserve explicit default ports (for example wss://host:443 -> https://host:443) while mapping websocket schemes to HTTP schemes.",
+    "Added features/servers/shared/connection_gateway/presentation_regression_test.dart; it failed before the fix for bare IPv6 addresses and then for explicit default websocket ports being dropped by Uri.parse(...).toString().",
+    "Extracted _GatewayAddressPortInput plus authority/endpoint URI helpers in connection_gateway/presentation.dart to make address-to-URI and selected-port steps explicit.",
+    "Fixed connection gateway parsing so bare IPv6 address fields are bracketed for URI parsing and explicit default ports from URI-looking addresses remain visible in baseUrl."
   ],
   "nextCandidates": [
     "features/servers/setup initialImport vs stream filtering invariant around hasValues and observer recording",
-    "features/servers/shared/connection_gateway/presentation.dart parseAddressPort default scheme / URI-looking address invariants"
+    "features/servers/screens setup_screen _safeHandoffHostSummary display vs IPv6 bracket formatting"
   ],
   "validationReceipts": [
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
@@ -27,6 +30,10 @@
     "dart run core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (failed before fix: explicit default websocket port was dropped during HTTP base URL derivation)",
     "dart run core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (passes)",
     "dart analyze core/protocol/endpoint/navivox_endpoint_uri.dart core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (passes)",
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)"
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
+    "dart run features/servers/shared/connection_gateway/presentation_regression_test.dart (failed before fix: bare IPv6 gateway addresses should parse; after first fix failed again: explicit default websocket port dropped)",
+    "dart run features/servers/shared/connection_gateway/presentation_regression_test.dart (passes)",
+    "dart analyze features/servers/shared/connection_gateway/presentation.dart features/servers/shared/connection_gateway/presentation_regression_test.dart (passes)",
+    "dart run core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (passes)"
   ]
 }

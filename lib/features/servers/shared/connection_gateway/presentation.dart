@@ -44,11 +44,11 @@ class GatewayConnectionPresentation {
       );
     }
 
-    final defaultScheme = _supportedInputScheme(scheme) ?? 'http';
-    final parseInput = _addressLooksLikeUri(rawAddress)
-        ? rawAddress
-        : '$defaultScheme://$rawAddress';
-    final uri = Uri.tryParse(parseInput);
+    final input = _GatewayAddressPortInput(
+      rawAddress: rawAddress,
+      defaultScheme: _supportedInputScheme(scheme) ?? 'http',
+    );
+    final uri = Uri.tryParse(input.uriText);
     if (uri == null || uri.host.isEmpty) {
       return const GatewayConnectionAddressPort.error(
         'Enter a valid Gormes gateway address.',
@@ -68,13 +68,16 @@ class GatewayConnectionPresentation {
       );
     }
 
-    final baseUri = Uri.parse(
-      navivoxHttpBaseUrlFromEndpointUri(uri.replace(port: selectedPort)),
+    final endpointUri = _endpointUriWithSelectedPort(
+      uri: uri,
+      selectedPort: selectedPort,
+      detectedPortFromAddress: detectedPort != null,
     );
+    final baseUrl = navivoxHttpBaseUrlFromEndpointUri(endpointUri);
     return GatewayConnectionAddressPort(
       address: uri.host,
       port: '$selectedPort',
-      baseUrl: baseUri.toString(),
+      baseUrl: baseUrl,
       detectedPortFromAddress: detectedPort != null,
     );
   }
@@ -120,8 +123,47 @@ class GatewayConnectionPresentation {
   }
 }
 
+class _GatewayAddressPortInput {
+  const _GatewayAddressPortInput({
+    required this.rawAddress,
+    required this.defaultScheme,
+  });
+
+  final String rawAddress;
+  final String defaultScheme;
+
+  String get uriText {
+    if (_addressLooksLikeUri(rawAddress)) return rawAddress;
+    return '$defaultScheme://${_authorityAddress(rawAddress)}';
+  }
+}
+
 bool _addressLooksLikeUri(String value) =>
     RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://').hasMatch(value);
+
+String _authorityAddress(String value) {
+  if (_looksLikeBareIpv6Address(value)) return '[$value]';
+  return value;
+}
+
+Uri _endpointUriWithSelectedPort({
+  required Uri uri,
+  required int selectedPort,
+  required bool detectedPortFromAddress,
+}) {
+  if (detectedPortFromAddress) return uri;
+  return Uri.parse('${uri.scheme}://${_authorityHost(uri.host)}:$selectedPort');
+}
+
+String _authorityHost(String host) {
+  if (host.contains(':')) return '[$host]';
+  return host;
+}
+
+bool _looksLikeBareIpv6Address(String value) {
+  if (value.startsWith('[') || value.endsWith(']')) return false;
+  return ':'.allMatches(value).length > 1;
+}
 
 int? _parsePort(String value) {
   if (value.isEmpty) return null;
