@@ -5,6 +5,7 @@ import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/router/app_routes.dart';
 
 import '../shared/profile_contact_chat_test_fixtures.dart';
+import '../shared/profile_scope_test_helpers.dart';
 
 void main() {
   const dispatcher = LocalCommandDispatcher();
@@ -107,10 +108,11 @@ void main() {
         LocalCommandIntent.switchProfile(chatSupportTriageContact),
       );
 
-      expect(channel.selectedProfileScope, (
+      expectSelectedProfileScope(
+        channel,
         serverId: 'office',
         profileId: 'support',
-      ));
+      );
       expect(result.routeLocation, '/chats/office/support');
       expect(result.message, 'Switched to Support Triage.');
     },

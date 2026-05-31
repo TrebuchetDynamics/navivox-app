@@ -4,6 +4,7 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/forwarding/forward_message_intent.dart';
 
 import '../transcript/shared/transcript_test_fixtures.dart';
+import '../shared/profile_scope_test_helpers.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
@@ -36,15 +37,17 @@ void main() {
     expect(result.text, 'send this to support');
     expect(result.routeLocation, '/chats/office%20team/support%20desk');
     expect(result.snackbarMessage, 'Forwarded to Support Desk');
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office team',
       profileId: 'support desk',
-    ));
-    expect(channel.sentTextCalls.last, (
+    );
+    expectLastSentTextCall(
+      channel,
       text: 'send this to support',
       serverId: 'office team',
       profileId: 'support desk',
-    ));
+    );
   });
 
   test('forwards voice transcripts', () {

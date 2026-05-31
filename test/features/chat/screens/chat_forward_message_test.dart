@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import '../transcript/shared/transcript_test_fixtures.dart';
 import '../shared/chat_screen_test_fixtures.dart';
+import '../shared/profile_scope_test_helpers.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
@@ -39,15 +40,17 @@ void main() {
     await tester.tap(find.text('Support Triage'));
     await tester.pumpAndSettle();
 
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office',
       profileId: 'support',
-    ));
-    expect(channel.sentTextCalls.last, (
+    );
+    expectLastSentTextCall(
+      channel,
       text: 'send this to support',
       serverId: 'office',
       profileId: 'support',
-    ));
+    );
     expect(find.text('Forwarded to Support Triage'), findsOneWidget);
   });
 }

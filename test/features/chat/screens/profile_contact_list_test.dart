@@ -4,6 +4,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../shared/inline_span_test_helpers.dart';
 import '../shared/chat_screen_test_fixtures.dart';
+import '../shared/profile_scope_test_helpers.dart';
 import 'shared/profile_contact_screen_test_fixtures.dart';
 
 void main() {
@@ -310,10 +311,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office',
       profileId: 'support',
-    ));
+    );
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-active-profile')), findsNothing);
     expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);
@@ -326,11 +328,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.sentTexts, ['triage latest ticket']);
-    expect(channel.sentTextCalls.last, (
+    expectLastSentTextCall(
+      channel,
       text: 'triage latest ticket',
       serverId: 'office',
       profileId: 'support',
-    ));
+    );
   });
 
   testWidgets('selecting a profile encodes chat route path segments', (
@@ -362,10 +365,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Route not found'), findsNothing);
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office team',
       profileId: 'support/desk',
-    ));
+    );
     expect(find.text('Support Escalation'), findsOneWidget);
 
     await tester.enterText(
@@ -375,11 +379,12 @@ void main() {
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
-    expect(channel.sentTextCalls.last, (
+    expectLastSentTextCall(
+      channel,
       text: 'triage escalation',
       serverId: 'office team',
       profileId: 'support/desk',
-    ));
+    );
   });
 
   testWidgets('chat back button returns to profile contacts', (tester) async {
@@ -476,10 +481,7 @@ void main() {
     await tester.tap(find.text('Open memory'));
     await tester.pumpAndSettle();
 
-    expect(channel.selectedProfileScope, (
-      serverId: 'local',
-      profileId: 'mineru',
-    ));
+    expectSelectedProfileScope(channel, serverId: 'local', profileId: 'mineru');
     expect(find.text('Memory'), findsWidgets);
     expect(find.text('Profile: Mineru Builder'), findsOneWidget);
   });
@@ -508,10 +510,11 @@ void main() {
     await tester.tap(find.text('Edit profile'));
     await tester.pumpAndSettle();
 
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office',
       profileId: 'support',
-    ));
+    );
     expect(find.text('Config'), findsWidgets);
     expect(find.text('Profile: Support Triage'), findsOneWidget);
   });
@@ -529,18 +532,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(channel.selectedProfileScope, (
+    expectSelectedProfileScope(
+      channel,
       serverId: 'office',
       profileId: 'support',
-    ));
+    );
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-active-profile')), findsNothing);
     expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('chat-context-action')));
-    await tester.pumpAndSettle();
+    await openChatInfoSheet(tester);
 
-    expect(find.text('Chat info'), findsOneWidget);
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Support Triage'), findsWidgets);
     expect(find.text('office'), findsOneWidget);

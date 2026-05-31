@@ -50,11 +50,7 @@ void main() {
     expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
     expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('chat-context-action')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Chat info'), findsOneWidget);
-    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+    await openChatInfoSheet(tester);
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Architect'), findsOneWidget);
   });
@@ -91,11 +87,7 @@ void main() {
 
     await pumpChatScreen(tester, channel: channel);
 
-    await tester.tap(find.byKey(const ValueKey('chat-context-action')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Chat info'), findsOneWidget);
-    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+    await openChatInfoSheet(tester);
     expect(find.text('Profile ID'), findsOneWidget);
     expect(find.text('mineru'), findsOneWidget);
     expect(find.text('Server ID'), findsOneWidget);
@@ -170,11 +162,7 @@ void main() {
     // action, and assert the GoRouter navigated to [expectedRoute].
     // Returns the GoRouter so the caller can navigate back between actions.
     Future<void> tapInfoAction(String actionLabel, String expectedRoute) async {
-      await tester.tap(find.byKey(const ValueKey('chat-context-action')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Chat info'), findsOneWidget);
-      expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+      await openChatInfoSheet(tester);
 
       // Scroll aggressively to reveal actions below profile info rows
       await tester.drag(
