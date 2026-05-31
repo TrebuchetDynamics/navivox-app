@@ -9,22 +9,12 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/protocol/voice_unavailable_reason.dart';
 import '../../../../shared/voice/voice_capture_failures.dart';
 import '../../../../shared/voice/voice_capture_service.dart';
+import 'speech_to_text_capture_policy.dart';
 
 export '../../../../shared/voice/voice_capture_failures.dart';
+export 'speech_to_text_capture_policy.dart' show SpeechToTextSnapshot;
 
 typedef SpeechToTextDiagnosticLog = void Function(String message);
-
-class SpeechToTextSnapshot {
-  const SpeechToTextSnapshot({
-    required this.words,
-    required this.confidence,
-    required this.finalResult,
-  });
-
-  final String words;
-  final double confidence;
-  final bool finalResult;
-}
 
 class SpeechToTextLocale {
   const SpeechToTextLocale({required this.localeId, required this.name});
@@ -162,9 +152,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
         onError: completeWithError,
         onStatus: (status) {
           log('status=$status');
-          final normalized = status.trim().toLowerCase();
-          if ((normalized == 'done' || normalized == 'notlistening') &&
-              !completion.isCompleted) {
+          if (isTerminalSpeechToTextStatus(status) && !completion.isCompleted) {
             final snapshot = latestTranscript;
             if (snapshot != null) {
               completion.complete(snapshot);
@@ -200,13 +188,13 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
             'result recognizedWords="${snapshot.words}" '
             'confidence=${snapshot.confidence} finalResult=${snapshot.finalResult}',
           );
-          latestTranscript = _latestUsableTranscript(
+          latestTranscript = latestUsableSpeechToTextTranscript(
             current: latestTranscript,
             candidate: snapshot,
           );
           if (snapshot.finalResult && !completion.isCompleted) {
             completion.complete(
-              _completionTranscript(
+              completionSpeechToTextTranscript(
                 terminalSnapshot: snapshot,
                 latestUsableSnapshot: latestTranscript,
               ),
@@ -310,22 +298,6 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
     }
     return deviceSttUnavailableReason;
   }
-}
-
-SpeechToTextSnapshot? _latestUsableTranscript({
-  required SpeechToTextSnapshot? current,
-  required SpeechToTextSnapshot candidate,
-}) {
-  if (candidate.words.trim().isEmpty) return current;
-  return candidate;
-}
-
-SpeechToTextSnapshot _completionTranscript({
-  required SpeechToTextSnapshot terminalSnapshot,
-  required SpeechToTextSnapshot? latestUsableSnapshot,
-}) {
-  if (terminalSnapshot.words.trim().isNotEmpty) return terminalSnapshot;
-  return latestUsableSnapshot ?? terminalSnapshot;
 }
 
 String _formatErrorDiagnostic(Object error) {

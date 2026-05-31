@@ -1,10 +1,58 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:navivox/features/voice/services/speech/speech_to_text_capture_policy.dart';
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
 
 void main() {
+  group('speech capture completion policy', () {
+    test('recognizes terminal engine statuses case-insensitively', () {
+      expect(isTerminalSpeechToTextStatus('done'), isTrue);
+      expect(isTerminalSpeechToTextStatus(' notListening '), isTrue);
+      expect(isTerminalSpeechToTextStatus('listening'), isFalse);
+    });
+
+    test('keeps the latest non-blank partial transcript', () {
+      const previous = SpeechToTextSnapshot(
+        words: 'hello mineru',
+        confidence: 0.64,
+        finalResult: false,
+      );
+
+      expect(
+        latestUsableSpeechToTextTranscript(
+          current: previous,
+          candidate: const SpeechToTextSnapshot(
+            words: '   ',
+            confidence: 0,
+            finalResult: false,
+          ),
+        ),
+        same(previous),
+      );
+    });
+
+    test('falls back to latest partial when the terminal final is blank', () {
+      const previous = SpeechToTextSnapshot(
+        words: 'hello mineru',
+        confidence: 0.64,
+        finalResult: false,
+      );
+
+      final selected = completionSpeechToTextTranscript(
+        terminalSnapshot: const SpeechToTextSnapshot(
+          words: ' ',
+          confidence: 0,
+          finalResult: true,
+        ),
+        latestUsableSnapshot: previous,
+      );
+
+      expect(selected, same(previous));
+    });
+  });
+
   test('returns a final transcript from the platform speech engine', () async {
     final engine = _FakeSpeechToTextEngine();
     var now = DateTime.utc(2026, 5, 22, 17);
