@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../protocol/navivox_json.dart';
 import '../shared/session_text.dart';
 import 'saved_connection_fields.dart';
+import 'session_staleness.dart';
 
 /// Persists non-secret gateway metadata for later reconnect flows.
 ///
@@ -116,10 +117,10 @@ class SavedSession {
   final DateTime? lastConnectedAt;
 
   /// Whether the session is stale (no recent connection).
-  bool get isStale {
-    if (lastConnectedAt == null) return true;
-    return DateTime.now().toUtc().difference(lastConnectedAt!).inDays > 7;
-  }
+  bool get isStale => isSavedSessionStale(
+    lastConnectedAt: lastConnectedAt,
+    now: DateTime.now(),
+  );
 
   /// Whether this metadata can currently perform silent reconnect.
   ///
