@@ -6,3 +6,7 @@
 {"ts":"2026-05-31T02:32:33-06:00","candidate":"core/channel/gateway","reason":"no metric progress rollback","scope":"candidate","temporary":false}
 {"ts":"2026-05-31T02:34:18-06:00","candidate":"core/protocol","reason":"no metric progress rollback","scope":"candidate","temporary":false}
 {"ts":"2026-05-31T02:35:57-06:00","candidate":"features/chat/transcript/presentation","reason":"no metric progress rollback","scope":"candidate","temporary":false}
+{"ts":"2026-05-31T02:46:10-06:00","candidate":"features/chat/transcript/presentation","reason":"no metric progress rollback","scope":"candidate","temporary":false}
+{"ts":"2026-05-31T02:47:47-06:00","candidate":"core/protocol","reason":"no metric progress rollback","scope":"candidate","temporary":false}
+{"ts":"2026-05-31T02:49:05-06:00","candidate":"features/chat/transcript/widgets","reason":"no metric progress rollback","scope":"candidate","temporary":false}
+{"ts":"2026-05-31T02:51:26-06:00","candidate":"shared/presentation","reason":"no metric progress rollback","scope":"candidate","temporary":false}

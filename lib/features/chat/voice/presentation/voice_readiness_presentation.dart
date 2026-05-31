@@ -47,7 +47,7 @@ class VoiceReadinessPresentation {
     if (activeProfile == null) {
       return _blocked(
         VoiceReadinessBlockerKind.selectProfileContact,
-        'select a profile contact',
+        selectProfileContactVoiceUnavailableReason,
         localVoiceCaptureAvailable: localVoiceCaptureAvailable,
         localMicrophonePermissionGranted: localMicrophonePermissionGranted,
       );
@@ -160,7 +160,7 @@ class VoiceReadinessPresentation {
   String get voiceSettingsSubtitle {
     return voiceSettingsSubtitleForUnavailableReason(
       blockerKind == VoiceReadinessBlockerKind.selectProfileContact
-          ? 'select a profile contact'
+          ? selectProfileContactVoiceUnavailableReason
           : disabledReason,
     );
   }
