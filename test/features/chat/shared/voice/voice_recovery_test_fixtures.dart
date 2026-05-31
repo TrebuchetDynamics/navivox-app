@@ -1,19 +1,26 @@
+import 'package:navivox/shared/presentation/voice_unavailable_presentation.dart'
+    as voice_unavailable_policy;
+
 /// Shared voice recovery reason and copy fixtures used by chat presentation and control tests.
-const deviceSttUnavailableReason = 'device STT unavailable';
+const deviceSttUnavailableReason =
+    voice_unavailable_policy.deviceSttUnavailableReason;
 const rawDeviceSttUnavailableReason = ' Device STT unavailable ';
-const microphonePermissionDeniedReason = 'microphone permission denied';
+const microphonePermissionDeniedReason =
+    voice_unavailable_policy.microphonePermissionDeniedReason;
 
 const deviceSttRecoveryAction = 'Enable device speech recognition';
 const androidSpeechRecognitionRecoveryAction =
     'Enable Android speech recognition';
-const deviceSttRecoveryCopy =
-    'Install or enable device speech recognition, then return to Navivox.';
-const microphonePermissionRecoveryCopy =
-    'Grant microphone permission in Android App info, then return to Navivox.';
-const deviceSttSettingsReviewCopy =
-    'Review continuous voice after enabling device speech recognition.';
-const microphonePermissionSettingsReviewCopy =
-    'Review continuous voice after granting microphone permission.';
+final deviceSttRecoveryCopy = voice_unavailable_policy
+    .defaultVoiceUnavailableRecoveryAction(deviceSttUnavailableReason)!;
+final microphonePermissionRecoveryCopy = voice_unavailable_policy
+    .defaultVoiceUnavailableRecoveryAction(microphonePermissionDeniedReason)!;
+final deviceSttSettingsReviewCopy = voice_unavailable_policy
+    .voiceSettingsSubtitleForUnavailableReason(deviceSttUnavailableReason);
+final microphonePermissionSettingsReviewCopy = voice_unavailable_policy
+    .voiceSettingsSubtitleForUnavailableReason(
+      microphonePermissionDeniedReason,
+    );
 const gatewayProfileSttBlockedByDeviceCopy =
     'Gateway profile STT is not checked because Android speech recognition is unavailable.';
 const gatewayProfileSttUnavailableCopy =
