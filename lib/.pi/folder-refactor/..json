@@ -1,21 +1,20 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:10:58.134Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor in config apply validation wire parsing: expose validation snapshot key lookup assumptions and preserve snake/camel-case compatibility for validation_errors/field_errors.",
+  "updatedAt": "2026-05-31T11:12:33.586Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor in config form schema parsing: expose schema key alias assumptions for risk/confirmation/restart flags and preserve snake/camel-case compatibility.",
   "completedSlices": [
-    "Added focused regression for camelCase validationErrors/fieldErrors snapshots marking config drafts invalid.",
-    "Extracted configWireValueFromAliases in core/protocol/config/config_wire_fields.dart and routed configWireStringFromAliases through it.",
-    "Updated ConfigValidationState.fromSnapshot to use alias/normalized lookup for validation_errors and field_errors snapshot keys."
+    "Added focused regression for camelCase restartRequired/requiresConfirmation/riskLevel schema fields in ConfigFormModel.fromSchema.",
+    "Extracted field flag/risk parsing in features/config/form/config_form_model.dart through existing normalized config wire alias helpers.",
+    "Fixed schema parsing so camelCase restartRequired, requiresConfirmation, and riskLevel are honored without changing snake_case behavior."
   ],
   "nextCandidates": [
-    "features/config/form/config_form_model.dart schema field booleans/risk keys: expose snake/camel-case schema-key assumptions for restartRequired/requiresConfirmation/riskLevel.",
-    "features/config/apply/config_apply_flow_model.dart validation message value shapes: characterize whether field_errors map values can be nested maps with message/detail/error."
+    "features/config/apply/config_apply_flow_model.dart validation message value shapes: characterize whether field_errors map values can be nested maps with message/detail/error.",
+    "features/config/form/config_form_model.dart reload/reloadMode schema aliases: expose whether camelCase reloadMode should drive reload display/restart inference."
   ],
   "validationReceipts": [
+    "dart features/config/form/config_form_model_regression_test.dart: initially failed on camelCase restartRequired, then passed after fix",
     "dart features/config/apply/config_apply_flow_model_regression_test.dart: pass",
-    "dart features/config/form/config_form_model_regression_test.dart: pass",
-    "dart core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart: pass",
-    "dart analyze core/protocol/config/config_wire_fields.dart features/config/apply/config_apply_flow_model.dart features/config/apply/config_apply_flow_model_regression_test.dart: No issues found"
+    "dart analyze core/protocol/config/config_wire_fields.dart features/config/form/config_form_model.dart features/config/form/config_form_model_regression_test.dart features/config/apply/config_apply_flow_model.dart: No issues found"
   ]
 }

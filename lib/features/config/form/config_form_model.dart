@@ -30,20 +30,20 @@ class ConfigFormModel {
       final type = ConfigFormFieldType.fromWire(raw['type']?.toString());
       final secret =
           raw['secret'] == true || type == ConfigFormFieldType.secret;
+      final riskLevel = _fieldRiskLevel(raw);
       rows.add(
         ConfigFormRow(
           field: field,
           label: _fieldLabel(raw, field),
           type: secret ? ConfigFormFieldType.secret : type,
-          required: raw['required'] == true,
+          required: _fieldBool(raw, const ['required']),
           restartRequired:
-              raw['restart_required'] == true ||
+              _fieldBool(raw, const ['restart_required']) ||
               raw['reload']?.toString().contains('restart') == true,
-          riskLevel:
-              configWireString(raw['risk_level'])?.toLowerCase() ?? 'low',
+          riskLevel: riskLevel,
           requiresConfirmation:
-              raw['requires_confirmation'] == true ||
-              configWireString(raw['risk_level'])?.toLowerCase() == 'high',
+              _fieldBool(raw, const ['requires_confirmation']) ||
+              riskLevel == 'high',
           rawValue: values[field],
           allowedValues: _stringList(raw['allowed']),
           actions: _stringList(raw['actions']),
@@ -128,6 +128,16 @@ class ConfigFormModel {
   static String _fieldLabel(Map raw, String fallback) {
     return configWireStringFromAliases(raw, const ['label', 'title']) ??
         fallback;
+  }
+
+  static bool _fieldBool(Map raw, Iterable<String> aliases) {
+    return configWireValueFromAliases(raw, aliases) == true;
+  }
+
+  static String _fieldRiskLevel(Map raw) {
+    return configWireStringFromAliases(raw, const ['risk_level'])
+            ?.toLowerCase() ??
+        'low';
   }
 
   static List<String> _stringList(Object? raw) {

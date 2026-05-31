@@ -4,6 +4,7 @@ void main() {
   preservesUnrecognizedBooleanEditTextForValidation();
   coercesRecognizedBooleanEditTextCaseInsensitively();
   preservesFractionalIntegerEditTextForValidation();
+  readsCamelCaseSchemaRiskAndConfirmationFields();
 }
 
 void preservesUnrecognizedBooleanEditTextForValidation() {
@@ -35,6 +36,39 @@ void preservesFractionalIntegerEditTextForValidation() {
   _expect(
     result == '1.5',
     'fractional text entered for an integer field should be preserved for validation instead of coerced to a number',
+  );
+}
+
+void readsCamelCaseSchemaRiskAndConfirmationFields() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'server.port',
+          'type': 'integer',
+          'label': 'Server port',
+          'restartRequired': true,
+          'requiresConfirmation': true,
+          'riskLevel': 'Medium',
+        },
+      ],
+    },
+    values: {'server.port': 8080},
+  );
+
+  final row = form.rows.single;
+
+  _expect(
+    row.restartRequired,
+    'camelCase restartRequired schema flag should require restart',
+  );
+  _expect(
+    row.requiresConfirmation,
+    'camelCase requiresConfirmation schema flag should require confirmation',
+  );
+  _expect(
+    row.riskLevel == 'medium',
+    'camelCase riskLevel schema field should be normalized to lowercase',
   );
 }
 
