@@ -145,4 +145,36 @@ void main() {
     expect(flow.hasPendingChanges, isFalse);
     expect(flow.changes, isEmpty);
   });
+
+  test('does not treat equal structured draft values as pending changes', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'tools.enabled', 'type': 'array'},
+          {'path': 'providers.options', 'type': 'object'},
+        ],
+      },
+      values: const {
+        'tools.enabled': ['shell', 'memory'],
+        'providers.options': {
+          'openai': {'enabled': true},
+          'local': {'enabled': false},
+        },
+      },
+    );
+
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: {
+        'tools.enabled': List<String>.of(['shell', 'memory']),
+        'providers.options': {
+          'openai': Map<String, Object?>.of({'enabled': true}),
+          'local': Map<String, Object?>.of({'enabled': false}),
+        },
+      },
+    );
+
+    expect(flow.hasPendingChanges, isFalse);
+    expect(flow.changes, isEmpty);
+  });
 }

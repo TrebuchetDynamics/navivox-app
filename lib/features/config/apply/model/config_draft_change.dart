@@ -1,6 +1,7 @@
 import '../../form/config_form_model.dart';
 import '../../form/config_wire_fields.dart';
 import '../../shared/config_value_display.dart';
+import 'config_draft_value_equality.dart';
 
 const configApplyChangeSummarySeparator = ' -> ';
 
@@ -73,7 +74,8 @@ class ConfigDraftChange {
 
   bool get isInvalid => validationState == ConfigDraftValidationState.invalid;
 
-  static bool _sameValue(Object? left, Object? right) => left == right;
+  static bool _sameValue(Object? left, Object? right) =>
+      configDraftValuesEqual(left, right);
 
   static String _displayValue(Object? value) => configDisplayValue(value);
 }
