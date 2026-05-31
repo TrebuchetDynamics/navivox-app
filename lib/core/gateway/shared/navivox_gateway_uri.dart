@@ -15,10 +15,23 @@ Uri navivoxGatewayUriWithOptionalQuery(
   );
 }
 
+/// Returns a trimmed required gateway value or fails before an ambiguous call.
+///
+/// Required dynamic IDs must not collapse to empty strings because that can
+/// turn a detail/action request into a collection-like endpoint or an empty
+/// query field whose failing resource is no longer replayable from the URI.
+String navivoxGatewayRequiredTrimmedValue(String value, String name) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    throw ArgumentError.value(value, name, 'must not be blank');
+  }
+  return trimmed;
+}
+
 /// Encodes a path segment after applying the gateway's tolerant trim policy.
 ///
 /// Dynamic endpoint segments use trimmed wire IDs before percent-encoding so
 /// session and run-record routes cannot drift in whitespace or escaping rules.
-String navivoxGatewayTrimmedPathSegment(String value) {
-  return Uri.encodeComponent(value.trim());
+String navivoxGatewayTrimmedPathSegment(String value, {String name = 'value'}) {
+  return Uri.encodeComponent(navivoxGatewayRequiredTrimmedValue(value, name));
 }

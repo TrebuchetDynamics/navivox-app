@@ -80,7 +80,7 @@ class NavivoxGatewayConfig {
         'server_id': serverId,
         'profile_id': profileId,
       }),
-      'id': id.trim(),
+      'id': navivoxGatewayRequiredTrimmedValue(id, 'id'),
       if (type != NavivoxMemoryType.all) 'type': type.wireValue,
     };
     return _withPath(
@@ -90,10 +90,10 @@ class NavivoxGatewayConfig {
 
   Uri get sessionsUri => _withPath('/v1/navivox/sessions');
   Uri sessionUri(String sessionId) => _withPath(
-    '/v1/navivox/sessions/${navivoxGatewayTrimmedPathSegment(sessionId)}',
+    '/v1/navivox/sessions/${navivoxGatewayTrimmedPathSegment(sessionId, name: 'sessionId')}',
   );
   Uri runRecordUri(String runIdOrSessionId) => _withPath(
-    '/v1/navivox/run-records/${navivoxGatewayTrimmedPathSegment(runIdOrSessionId)}',
+    '/v1/navivox/run-records/${navivoxGatewayTrimmedPathSegment(runIdOrSessionId, name: 'runIdOrSessionId')}',
   );
   Uri get turnUri => _withPath('/v1/navivox/turn');
 

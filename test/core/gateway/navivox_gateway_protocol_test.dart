@@ -91,6 +91,37 @@ void main() {
     expect(config.headers, {'Authorization': 'Bearer nvbx_test_token'});
   });
 
+  test('rejects blank required gateway identifiers before ambiguous calls', () {
+    final config = NavivoxGatewayConfig.fromBaseUrl('http://127.0.0.1:8765');
+
+    expect(() => config.sessionUri('  '), throwsArgumentError);
+    expect(() => config.runRecordUri('\t'), throwsArgumentError);
+    expect(
+      () =>
+          config.memoryDetailUri(id: ' ', type: NavivoxMemoryType.memoryItems),
+      throwsArgumentError,
+    );
+
+    final bodies = <Map<String, Object?>>[];
+    final client = NavivoxGatewayClient(
+      config: config,
+      post: (uri, headers, body) async {
+        bodies.add(Map<String, Object?>.from(jsonDecode(body) as Map));
+        return jsonEncode({'accepted': true});
+      },
+    );
+
+    expect(
+      () => client.memoryAction(
+        id: '',
+        type: NavivoxMemoryType.memoryItems,
+        action: NavivoxMemoryActionType.addCorrection,
+      ),
+      throwsArgumentError,
+    );
+    expect(bodies, isEmpty);
+  });
+
   test('builds shared gateway auth header and websocket protocols', () {
     final headers = {
       navivoxGatewayAuthorizationHeader: navivoxGatewayBearerAuthorization(
