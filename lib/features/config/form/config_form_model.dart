@@ -1,6 +1,10 @@
 import '../../../core/protocol/navivox_json.dart';
 import '../shared/config_value_display.dart';
+import 'config_edit_value_coercion.dart';
+import 'config_form_field_type.dart';
 import 'config_wire_fields.dart';
+
+export 'config_form_field_type.dart';
 
 class ConfigFormModel {
   const ConfigFormModel({required this.rows, required this.sections});
@@ -183,28 +187,6 @@ class ConfigFormSection {
   final List<ConfigFormRow> rows;
 }
 
-enum ConfigFormFieldType {
-  string,
-  number,
-  integer,
-  boolean,
-  secret;
-
-  factory ConfigFormFieldType.fromWire(String? raw) {
-    return switch (raw?.trim().toLowerCase()) {
-      'number' => ConfigFormFieldType.number,
-      'integer' || 'int' => ConfigFormFieldType.integer,
-      'boolean' || 'bool' => ConfigFormFieldType.boolean,
-      'secret' => ConfigFormFieldType.secret,
-      'enum' || 'string_list' => ConfigFormFieldType.string,
-      _ => ConfigFormFieldType.string,
-    };
-  }
-
-  bool get isNumeric =>
-      this == ConfigFormFieldType.number || this == ConfigFormFieldType.integer;
-}
-
 class ConfigFormRow {
   const ConfigFormRow({
     required this.field,
@@ -248,7 +230,7 @@ class ConfigFormRow {
   }
 
   Object? coerceEditValue(String raw) =>
-      _coerceConfigEditValue(raw: raw, type: type, isSecret: isSecret);
+      coerceConfigEditValue(raw: raw, type: type, isSecret: isSecret);
 
   static Object? _plainValue(Object? rawValue) {
     if (rawValue is Map && rawValue.containsKey('value')) {
@@ -256,29 +238,4 @@ class ConfigFormRow {
     }
     return rawValue;
   }
-}
-
-Object? _coerceConfigEditValue({
-  required String raw,
-  required ConfigFormFieldType type,
-  required bool isSecret,
-}) {
-  final text = raw.trim();
-  if (isSecret) return text;
-  return switch (type) {
-    ConfigFormFieldType.number => num.tryParse(text) ?? raw,
-    ConfigFormFieldType.integer =>
-      int.tryParse(text) ?? num.tryParse(text) ?? raw,
-    ConfigFormFieldType.boolean => _coerceBooleanEditValue(text) ?? raw,
-    ConfigFormFieldType.string => raw,
-    ConfigFormFieldType.secret => text,
-  };
-}
-
-bool? _coerceBooleanEditValue(String text) {
-  return switch (text.toLowerCase()) {
-    'true' => true,
-    'false' => false,
-    _ => null,
-  };
 }

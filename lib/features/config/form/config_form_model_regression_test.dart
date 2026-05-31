@@ -3,6 +3,7 @@ import 'config_form_model.dart';
 void main() {
   preservesUnrecognizedBooleanEditTextForValidation();
   coercesRecognizedBooleanEditTextCaseInsensitively();
+  preservesFractionalIntegerEditTextForValidation();
 }
 
 void preservesUnrecognizedBooleanEditTextForValidation() {
@@ -23,6 +24,17 @@ void coercesRecognizedBooleanEditTextCaseInsensitively() {
   _expect(
     row.coerceEditValue(' false ') == false,
     'false should coerce to false',
+  );
+}
+
+void preservesFractionalIntegerEditTextForValidation() {
+  final row = _row(type: ConfigFormFieldType.integer, rawValue: 1);
+
+  final result = row.coerceEditValue('1.5');
+
+  _expect(
+    result == '1.5',
+    'fractional text entered for an integer field should be preserved for validation instead of coerced to a number',
   );
 }
 
