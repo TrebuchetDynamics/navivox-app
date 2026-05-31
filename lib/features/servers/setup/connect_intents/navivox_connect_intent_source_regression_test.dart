@@ -3,8 +3,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../models/connection_import.dart';
-import 'connect_intents/navivox_connect_intent_channels.dart';
+import '../../models/connection_import.dart';
+import 'navivox_connect_intent_channels.dart';
 import 'navivox_connect_intent_source.dart';
 import 'navivox_platform_connect_intent_payload.dart';
 

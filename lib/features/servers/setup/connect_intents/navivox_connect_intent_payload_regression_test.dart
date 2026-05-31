@@ -1,4 +1,5 @@
-import '../models/connection_import.dart';
+import '../../models/connection_import.dart';
+import '../test_support/regression_expect.dart';
 import 'navivox_connect_intent_payload.dart';
 import 'navivox_platform_connect_intent_payload.dart';
 
@@ -16,13 +17,16 @@ void parsesPlainStringPayloadAsManualImport() {
     ' https://gateway.example/connect?token=nvbx_token ',
   );
 
-  _expect(result != null, 'plain string payload should parse');
-  _expect(
+  regressionExpect(result != null, 'plain string payload should parse');
+  regressionExpect(
     result!.baseUrl == 'https://gateway.example',
     'plain string base URL should be derived from URL origin',
   );
-  _expect(result.token == 'nvbx_token', 'plain string token should parse');
-  _expect(
+  regressionExpect(
+    result.token == 'nvbx_token',
+    'plain string token should parse',
+  );
+  regressionExpect(
     result.source == PairingHandoffSource.manual,
     'plain string payloads have no platform provenance metadata',
   );
@@ -34,8 +38,8 @@ void preservesMapPayloadSourceProvenance() {
     'source': sharedTextPairingHandoffPlatformSource,
   });
 
-  _expect(result != null, 'map payload should parse');
-  _expect(
+  regressionExpect(result != null, 'map payload should parse');
+  regressionExpect(
     result!.source == PairingHandoffSource.sharedText,
     'shared_text source should be preserved',
   );
@@ -47,8 +51,11 @@ void trimsPlatformSourceTokenBeforeMappingProvenance() {
     'source': ' $sharedTextPairingHandoffPlatformSource ',
   });
 
-  _expect(result != null, 'map payload with padded source should parse');
-  _expect(
+  regressionExpect(
+    result != null,
+    'map payload with padded source should parse',
+  );
+  regressionExpect(
     result!.source == PairingHandoffSource.sharedText,
     'platform source token should be trimmed before source mapping',
   );
@@ -60,8 +67,11 @@ void mapsPlatformSourceTokenCaseInsensitively() {
     'source': ' ${sharedTextPairingHandoffPlatformSource.toUpperCase()} ',
   });
 
-  _expect(result != null, 'map payload with uppercase source should parse');
-  _expect(
+  regressionExpect(
+    result != null,
+    'map payload with uppercase source should parse',
+  );
+  regressionExpect(
     result!.source == PairingHandoffSource.sharedText,
     'platform source tokens should be case-insensitive after trimming',
   );
@@ -73,7 +83,7 @@ void rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings() {
     'source': sharedTextPairingHandoffPlatformSource,
   });
 
-  _expect(
+  regressionExpect(
     result == null,
     'platform map payload field must be a string, not Object.toString() text',
   );
@@ -85,8 +95,11 @@ void rejectsStructuredSourceValuesInsteadOfParsingObjectStrings() {
     'source': _StringLikePlatformSource(),
   });
 
-  _expect(result != null, 'map payload with structured source should parse');
-  _expect(
+  regressionExpect(
+    result != null,
+    'map payload with structured source should parse',
+  );
+  regressionExpect(
     result!.source == PairingHandoffSource.manual,
     'platform source field must be a string, not Object.toString() text',
   );
@@ -95,8 +108,4 @@ void rejectsStructuredSourceValuesInsteadOfParsingObjectStrings() {
 class _StringLikePlatformSource {
   @override
   String toString() => sharedTextPairingHandoffPlatformSource;
-}
-
-void _expect(bool condition, String message) {
-  if (!condition) throw StateError(message);
 }

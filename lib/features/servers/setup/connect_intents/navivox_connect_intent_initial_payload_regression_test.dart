@@ -1,3 +1,4 @@
+import '../test_support/regression_expect.dart';
 import 'navivox_connect_intent_initial_payload.dart';
 import 'navivox_platform_connect_intent_payload.dart';
 
@@ -16,15 +17,15 @@ void preservesPayloadObservedDuringAvailabilityProbe() {
 
   cache.remember(payload);
 
-  _expect(
+  regressionExpect(
     cache.hasPayload,
     'availability probe payload should be marked cached',
   );
-  _expect(
+  regressionExpect(
     identical(cache.take(), payload),
     'initial import should consume the payload returned by the availability probe',
   );
-  _expect(
+  regressionExpect(
     !cache.hasPayload,
     'availability probe payload should be consumed only once',
   );
@@ -35,15 +36,18 @@ void remembersNullAvailabilityProbePayload() {
 
   cache.remember(null);
 
-  _expect(
+  regressionExpect(
     cache.hasPayload,
     'null availability probe result should still be treated as a completed probe',
   );
-  _expect(
+  regressionExpect(
     cache.take() == null,
     'null availability probe result should be replayable without a second probe',
   );
-  _expect(!cache.hasPayload, 'null probe result should be consumed only once');
+  regressionExpect(
+    !cache.hasPayload,
+    'null probe result should be consumed only once',
+  );
 }
 
 void keepsFirstUnconsumedProbePayloadAcrossRepeatedAvailabilityChecks() {
@@ -56,12 +60,8 @@ void keepsFirstUnconsumedProbePayloadAcrossRepeatedAvailabilityChecks() {
   cache.remember(firstPayload);
   cache.remember(null);
 
-  _expect(
+  regressionExpect(
     identical(cache.take(), firstPayload),
     'repeated availability probes should not overwrite the first cached initial intent',
   );
-}
-
-void _expect(bool condition, String message) {
-  if (!condition) throw StateError(message);
 }

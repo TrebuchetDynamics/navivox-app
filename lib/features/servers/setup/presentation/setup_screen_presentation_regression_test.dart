@@ -1,3 +1,4 @@
+import '../test_support/regression_expect.dart';
 import 'setup_screen_presentation.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void summarizesMissingHandoffHostWithoutUrl() {
     port: '8765',
   );
 
-  _expect(
+  regressionExpect(
     result == 'the new gateway',
     'missing handoff host should use a safe generic label',
   );
@@ -30,7 +31,7 @@ void summarizesHostAndPortForActiveGatewayConfirmation() {
     port: ' 8765 ',
   );
 
-  _expect(
+  regressionExpect(
     result == 'https://gateway.example:8765',
     'handoff host summary should trim scheme, host, and port',
   );
@@ -45,12 +46,8 @@ void bracketsBareIpv6HostInActiveGatewayConfirmationSummary() {
     port: '8765',
   );
 
-  _expect(
+  regressionExpect(
     result == 'http://[2001:db8::1]:8765',
     'bare IPv6 handoff host should be bracketed before adding a port',
   );
-}
-
-void _expect(bool condition, String message) {
-  if (!condition) throw StateError(message);
 }
