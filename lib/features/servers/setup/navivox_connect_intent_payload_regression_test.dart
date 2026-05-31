@@ -5,6 +5,7 @@ void main() {
   parsesPlainStringPayloadAsManualImport();
   preservesMapPayloadSourceProvenance();
   trimsPlatformSourceTokenBeforeMappingProvenance();
+  rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings();
 }
 
 void parsesPlainStringPayloadAsManualImport() {
@@ -47,6 +48,18 @@ void trimsPlatformSourceTokenBeforeMappingProvenance() {
   _expect(
     result!.source == PairingHandoffSource.sharedText,
     'platform source token should be trimmed before source mapping',
+  );
+}
+
+void rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings() {
+  final result = parseNavivoxConnectIntentPayload({
+    'payload': {'url': 'https://gateway.example/connect?token=nvbx_token'},
+    'source': 'shared_text',
+  });
+
+  _expect(
+    result == null,
+    'platform map payload field must be a string, not Object.toString() text',
   );
 }
 

@@ -6,17 +6,48 @@ import '../shared/connection_import_parser.dart';
 /// Native code may deliver either a plain payload string or a map containing
 /// the payload plus handoff provenance metadata.
 SetupQrImageImport? parseNavivoxConnectIntentPayload(Object? payload) {
-  if (payload is String) {
+  final normalized = _NavivoxPlatformConnectIntentPayload.from(payload);
+  if (normalized == null) return null;
+
+  final parsed = parseNavivoxConnectionImportPayload(normalized.text);
+  if (parsed == null) return null;
+  return parsed.withSource(normalized.source);
+}
+
+class _NavivoxPlatformConnectIntentPayload {
+  const _NavivoxPlatformConnectIntentPayload({
+    required this.text,
+    required this.source,
+  });
+
+  final String text;
+  final PairingHandoffSource source;
+
+  static _NavivoxPlatformConnectIntentPayload? from(Object? payload) {
+    if (payload is String) return _fromString(payload);
+    if (payload is Map) return _fromMap(payload);
+    return null;
+  }
+
+  static _NavivoxPlatformConnectIntentPayload? _fromString(String payload) {
     final text = payload.trim();
     if (text.isEmpty) return null;
-    return parseNavivoxConnectionImportPayload(text);
+    return _NavivoxPlatformConnectIntentPayload(
+      text: text,
+      source: PairingHandoffSource.manual,
+    );
   }
-  if (payload is! Map) return null;
-  final text = payload['payload']?.toString().trim();
-  if (text == null || text.isEmpty) return null;
-  final parsed = parseNavivoxConnectionImportPayload(text);
-  if (parsed == null) return null;
-  return parsed.withSource(pairingHandoffSourceFromPlatformPayload(payload['source']));
+
+  static _NavivoxPlatformConnectIntentPayload? _fromMap(Map payload) {
+    final rawText = payload['payload'];
+    if (rawText is! String) return null;
+    final text = rawText.trim();
+    if (text.isEmpty) return null;
+    return _NavivoxPlatformConnectIntentPayload(
+      text: text,
+      source: pairingHandoffSourceFromPlatformPayload(payload['source']),
+    );
+  }
 }
 
 PairingHandoffSource pairingHandoffSourceFromPlatformPayload(Object? value) {
