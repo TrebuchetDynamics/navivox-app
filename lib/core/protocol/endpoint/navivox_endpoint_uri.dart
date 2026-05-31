@@ -24,9 +24,21 @@ String navivoxHttpSchemeFromEndpointScheme(
 }
 
 String navivoxOriginFromUri(Uri uri) {
-  final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
-  final port = uri.hasPort ? ':${uri.port}' : '';
-  return '${uri.scheme}://$host$port';
+  return _navivoxOrigin(
+    scheme: uri.scheme,
+    host: uri.host,
+    explicitPort: uri.hasPort ? uri.port : null,
+  );
+}
+
+String _navivoxOrigin({
+  required String scheme,
+  required String host,
+  required int? explicitPort,
+}) {
+  final formattedHost = host.contains(':') ? '[$host]' : host;
+  final formattedPort = explicitPort == null ? '' : ':$explicitPort';
+  return '$scheme://$formattedHost$formattedPort';
 }
 
 String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
@@ -40,7 +52,11 @@ String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
       descriptor,
     );
   }
-  return navivoxOriginFromUri(uri.replace(scheme: scheme));
+  return _navivoxOrigin(
+    scheme: scheme,
+    host: uri.host,
+    explicitPort: uri.hasPort ? uri.port : null,
+  );
 }
 
 String? navivoxHttpOriginOrOriginalFromString(String? raw) {

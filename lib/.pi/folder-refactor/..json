@@ -1,25 +1,32 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T09:43:38.679Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance assumptions without changing public behavior except proven regressions.",
+  "updatedAt": "2026-05-31T09:49:08.448Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added replayable regression in features/servers/shared/connection_import/parser_regression_test.dart for generic URL metadata with origin fallback.",
     "Extracted _ConnectionImportCandidate in features/servers/shared/connection_import/parser.dart to make candidate values and hasImportValues invariant explicit.",
     "Fixed _importFromFields to include fallbackBaseUrl before the hasImportValues gate, preserving serverId/profileId for generic URL imports whose baseUrl comes from the URL origin.",
     "Extracted platform connect-intent payload parsing from features/servers/setup/navivox_connect_intent_source.dart into features/servers/setup/navivox_connect_intent_payload.dart so String-vs-Map payload and source provenance mapping are pure/replayable.",
     "Added features/servers/setup/navivox_connect_intent_payload_regression_test.dart; it failed before the fix for padded source tokens being downgraded to manual.",
-    "Fixed pairingHandoffSourceFromPlatformPayload to trim platform source tokens before provenance mapping."
+    "Fixed pairingHandoffSourceFromPlatformPayload to trim platform source tokens before provenance mapping.",
+    "Added core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart to characterize endpoint origin derivation, websocket path/query preservation, and non-HTTP compatibility behavior.",
+    "Exposed endpoint origin formatting via private _navivoxOrigin helper so HTTP scheme remapping does not depend on Uri.replace port normalization.",
+    "Fixed navivoxHttpBaseUrlFromEndpointUri to preserve explicit default ports (for example wss://host:443 -> https://host:443) while mapping websocket schemes to HTTP schemes."
   ],
   "nextCandidates": [
-    "core/protocol/endpoint/navivox_endpoint_uri.dart endpoint normalization edge cases around explicit default ports and path/query preservation",
-    "features/servers/setup initialImport vs stream filtering invariant around hasValues and observer recording"
+    "features/servers/setup initialImport vs stream filtering invariant around hasValues and observer recording",
+    "features/servers/shared/connection_gateway/presentation.dart parseAddressPort default scheme / URI-looking address invariants"
   ],
   "validationReceipts": [
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
     "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart (failed before fix: platform source token should be trimmed before source mapping)",
     "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart (passes)",
     "dart analyze features/servers/setup/navivox_connect_intent_payload.dart features/servers/setup/navivox_connect_intent_source.dart features/servers/setup/navivox_connect_intent_payload_regression_test.dart (passes)",
-    "dart analyze features/servers/setup (passes)"
+    "dart analyze features/servers/setup (passes)",
+    "dart run core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (failed before fix: explicit default websocket port was dropped during HTTP base URL derivation)",
+    "dart run core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (passes)",
+    "dart analyze core/protocol/endpoint/navivox_endpoint_uri.dart core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart (passes)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)"
   ]
 }
