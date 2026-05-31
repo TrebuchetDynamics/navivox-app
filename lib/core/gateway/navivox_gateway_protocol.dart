@@ -19,6 +19,7 @@ export 'shared/navivox_gateway_auth.dart';
 export 'shared/navivox_gateway_constants.dart';
 export 'shared/navivox_gateway_http.dart';
 export 'shared/navivox_gateway_json.dart';
+export 'shared/navivox_gateway_membership.dart';
 export 'shared/navivox_gateway_uri.dart';
 export 'transport/navivox_gateway_socket_contract.dart';
 export 'voice/navivox_gateway_voice.dart';

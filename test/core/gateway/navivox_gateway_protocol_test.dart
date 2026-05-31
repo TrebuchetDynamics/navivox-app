@@ -469,6 +469,14 @@ void main() {
       capabilities.profileManagement.supportsAction('create_from_seed'),
       isTrue,
     );
+    expect(capabilities.profileManagement.supportsAction('create'), isFalse);
+    expect(
+      navivoxGatewayContainsAdvertisedToken(
+        capabilities.profileManagement.supportedActions,
+        'contact_snapshot',
+      ),
+      isTrue,
+    );
     expect(capabilities.profileManagement.profileContractParts, [
       'profile_contacts',
       'profile_routing',

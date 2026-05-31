@@ -1,3 +1,5 @@
+import '../shared/navivox_gateway_membership.dart';
+
 /// Capability-list membership helpers shared by status and capability-document
 /// models.
 ///
@@ -9,5 +11,5 @@ bool navivoxGatewaySupportsCapability(
   Iterable<String> capabilities,
   String capability,
 ) {
-  return capabilities.contains(capability);
+  return navivoxGatewayContainsAdvertisedToken(capabilities, capability);
 }

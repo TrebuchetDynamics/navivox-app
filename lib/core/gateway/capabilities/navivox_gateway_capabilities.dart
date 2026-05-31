@@ -1,6 +1,7 @@
 import '../../protocol/navivox_json.dart';
 import '../shared/navivox_gateway_constants.dart';
 import '../shared/navivox_gateway_json.dart';
+import '../shared/navivox_gateway_membership.dart';
 import 'navivox_gateway_capability_support.dart';
 
 /// Status response from the Navivox gateway health/status endpoint.
@@ -289,7 +290,9 @@ class NavivoxProfileManagementCapability {
   final List<String> unsupportedActions;
   final List<String> profileContractParts;
 
-  bool supportsAction(String action) => supportedActions.contains(action);
+  bool supportsAction(String action) {
+    return navivoxGatewayContainsAdvertisedToken(supportedActions, action);
+  }
 }
 
 class NavivoxAttachmentCapability {
