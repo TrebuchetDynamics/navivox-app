@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import '../../gateway/navivox_gateway_protocol.dart';
 import '../contracts/navivox_channel.dart';
 
 /// Builds gateway turn metadata consistently for text and voice submissions.
@@ -19,4 +22,25 @@ Map<String, Object?> navivoxGatewayTurnMetadata({
     if (routing?.provider != null) 'provider_id': routing!.provider,
     if (routing?.channel != null) 'channel_id': routing!.channel,
   };
+}
+
+/// Encodes the shared gateway start-turn wire contract.
+///
+/// Text and voice submissions differ in their local message state, but both must
+/// send the same start_turn envelope and metadata shape to the gateway.
+String navivoxGatewayStartTurnFrame({
+  required String requestId,
+  required String? sessionId,
+  required String text,
+  required NavivoxProfileContact? profile,
+  required NavivoxProfileRoutingSelection? routing,
+}) {
+  return jsonEncode(
+    NavivoxGatewayMessage.startTurn(
+      requestId: requestId,
+      sessionId: sessionId,
+      text: text,
+      metadata: navivoxGatewayTurnMetadata(profile: profile, routing: routing),
+    ).body,
+  );
 }

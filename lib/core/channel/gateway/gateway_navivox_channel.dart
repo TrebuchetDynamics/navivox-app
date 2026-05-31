@@ -245,13 +245,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       ),
     );
     socket.add(
-      jsonEncode(
-        NavivoxGatewayMessage.startTurn(
-          requestId: requestId,
-          sessionId: _activeSessionId,
-          text: trimmed,
-          metadata: _turnMetadata(activeProfile),
-        ).body,
+      navivoxGatewayStartTurnFrame(
+        requestId: requestId,
+        sessionId: _activeSessionId,
+        text: trimmed,
+        profile: activeProfile,
+        routing: _state.activeProfileRoutingSelection,
       ),
     );
   }
@@ -371,13 +370,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       ),
     );
     socket.add(
-      jsonEncode(
-        NavivoxGatewayMessage.startTurn(
-          requestId: requestId,
-          sessionId: _activeSessionId,
-          text: trimmed,
-          metadata: _turnMetadata(activeProfile),
-        ).body,
+      navivoxGatewayStartTurnFrame(
+        requestId: requestId,
+        sessionId: _activeSessionId,
+        text: trimmed,
+        profile: activeProfile,
+        routing: _state.activeProfileRoutingSelection,
       ),
     );
   }
@@ -1119,13 +1117,6 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       stop
           ? 'Stop requested. Started side effects may still exist.'
           : 'Cancel requested. Started side effects may still exist.',
-    );
-  }
-
-  Map<String, Object?> _turnMetadata(NavivoxProfileContact? profile) {
-    return navivoxGatewayTurnMetadata(
-      profile: profile,
-      routing: _state.activeProfileRoutingSelection,
     );
   }
 }
