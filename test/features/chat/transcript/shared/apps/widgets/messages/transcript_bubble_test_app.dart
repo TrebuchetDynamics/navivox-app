@@ -3,8 +3,8 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_bubble.dart';
 
-import '../../contracts/transcript_forwarding_contracts.dart';
-import '../scaffold/transcript_test_scaffold.dart';
+import '../../../contracts/transcript_forwarding_contracts.dart';
+import '../../scaffold/transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptBubble] under the shared Material feature-test shell.
 Widget transcriptBubbleTestApp({
