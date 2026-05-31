@@ -1,27 +1,21 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:08:56.955Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
+  "updatedAt": "2026-05-31T11:10:58.134Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor in config apply validation wire parsing: expose validation snapshot key lookup assumptions and preserve snake/camel-case compatibility for validation_errors/field_errors.",
   "completedSlices": [
-    "Added parsesSharedTextTokenWrappedInAngleBrackets regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because token delimiter handling supported quotes/backticks but not the same angle wrappers already supported for copied URLs.",
-    "Made shared-text token wrapper policy explicit in features/servers/shared/connection_import/parser.dart by adding angle brackets to the leading/trailing token delimiter contract.",
-    "Added prefersConnectionPathOverEarlierEqualRankMetadataUrl regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before fix because equal-rank metadata-only URLs were resolved by source order, allowing an earlier docs URL to steal a later connection URL's metadata provenance.",
-    "Made shared-text endpoint tie-breaking explicit in features/servers/shared/connection_import/parser.dart with hasConnectionPath and _connectionPathSegments for equal-rank URL candidates."
+    "Added focused regression for camelCase validationErrors/fieldErrors snapshots marking config drafts invalid.",
+    "Extracted configWireValueFromAliases in core/protocol/config/config_wire_fields.dart and routed configWireStringFromAliases through it.",
+    "Updated ConfigValidationState.fromSnapshot to use alias/normalized lookup for validation_errors and field_errors snapshot keys."
   ],
   "nextCandidates": [
-    "features/servers/setup connect-intent event/initial ordering: ensure stream imports cannot be overwritten by stale initial replay if native emits both",
-    "features/servers/shared/connection_import token grammar visibility: distinguish broad human-entered tokens from accidental prose labels beyond URL-shaped values",
-    "features/servers/pairing token edit provenance policy at widget level if product decides credential edits should also clear pairing-link failure copy"
+    "features/config/form/config_form_model.dart schema field booleans/risk keys: expose snake/camel-case schema-key assumptions for restartRequired/requiresConfirmation/riskLevel.",
+    "features/config/apply/config_apply_flow_model.dart validation message value shapes: characterize whether field_errors map values can be nested maps with message/detail/error."
   ],
   "validationReceipts": [
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: angle-bracketed labeled token parsed as <shared_secret instead of shared_secret)",
-    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: equal-rank metadata URL selected https://docs.example instead of later /connect URL)",
-    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
-    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
-    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)"
+    "dart features/config/apply/config_apply_flow_model_regression_test.dart: pass",
+    "dart features/config/form/config_form_model_regression_test.dart: pass",
+    "dart core/protocol/endpoint/navivox_endpoint_uri_regression_test.dart: pass",
+    "dart analyze core/protocol/config/config_wire_fields.dart features/config/apply/config_apply_flow_model.dart features/config/apply/config_apply_flow_model_regression_test.dart: No issues found"
   ]
 }

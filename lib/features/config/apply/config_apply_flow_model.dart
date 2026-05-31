@@ -123,9 +123,15 @@ class ConfigValidationState {
   factory ConfigValidationState.fromSnapshot(Map<String, Object?>? snapshot) {
     final messages = <String, List<String>>{};
     if (snapshot == null) return ConfigValidationState(messages);
-    _addValidationErrorList(messages, snapshot['validation_errors']);
+    _addValidationErrorList(
+      messages,
+      configWireValueFromAliases(snapshot, const ['validation_errors']),
+    );
     _addValidationErrorList(messages, snapshot['errors']);
-    _addFieldErrorMap(messages, snapshot['field_errors']);
+    _addFieldErrorMap(
+      messages,
+      configWireValueFromAliases(snapshot, const ['field_errors']),
+    );
     return ConfigValidationState(messages);
   }
 

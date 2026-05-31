@@ -3,6 +3,7 @@ import 'config_apply_flow_model.dart';
 
 void main() {
   attachesValidationErrorListMessagesToDraftChanges();
+  attachesCamelCaseValidationSnapshotMessagesToDraftChanges();
 }
 
 void attachesValidationErrorListMessagesToDraftChanges() {
@@ -37,6 +38,44 @@ void attachesValidationErrorListMessagesToDraftChanges() {
     flow.validationMessagesFor('feature.enabled').single ==
         'Expected a boolean.',
     'validation error message should be attached to its field path',
+  );
+}
+
+void attachesCamelCaseValidationSnapshotMessagesToDraftChanges() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'feature.enabled',
+          'type': 'boolean',
+          'label': 'Feature enabled',
+        },
+      ],
+    },
+    values: {'feature.enabled': false},
+  );
+
+  final flow = ConfigApplyFlowModel.fromDraft(
+    form: form,
+    draftValues: {'feature.enabled': 'maybe'},
+    validationSnapshot: {
+      'validationErrors': [
+        {'field': 'feature.enabled', 'detail': 'Expected a boolean.'},
+      ],
+      'fieldErrors': {
+        'feature.enabled': ['Still not a boolean.'],
+      },
+    },
+  );
+
+  _expect(
+    flow.hasInvalidChanges,
+    'camelCase validation snapshots should mark the draft invalid',
+  );
+  _expect(
+    flow.validationMessagesFor('feature.enabled').join('|') ==
+        'Expected a boolean.|Still not a boolean.',
+    'camelCase validation snapshot messages should be attached to their field path',
   );
 }
 

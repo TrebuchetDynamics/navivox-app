@@ -9,10 +9,27 @@ import '../serialization/navivox_json.dart';
 /// call site's accepted aliases.
 String? configWireString(Object? raw) => navivoxOptionalStringFromJson(raw);
 
-String? configWireStringFromAliases(Map raw, Iterable<String> aliases) {
+Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
   for (final alias in aliases) {
-    final text = configWireString(raw[alias]);
-    if (text != null) return text;
+    if (raw.containsKey(alias)) return raw[alias];
+  }
+
+  final normalizedAliases = {
+    for (final alias in aliases) _configNormalizeWireFieldName(alias),
+  };
+  for (final entry in raw.entries) {
+    if (normalizedAliases.contains(
+      _configNormalizeWireFieldName('${entry.key}'),
+    )) {
+      return entry.value;
+    }
   }
   return null;
 }
+
+String? configWireStringFromAliases(Map raw, Iterable<String> aliases) {
+  return configWireString(configWireValueFromAliases(raw, aliases));
+}
+
+String _configNormalizeWireFieldName(String value) =>
+    value.toLowerCase().replaceAll('_', '');
