@@ -12,6 +12,7 @@ import '../../protocol/navivox_profile_contact_key.dart';
 import '../../protocol/navivox_voice_run.dart';
 import '../../session/session_persistence_service.dart';
 import '../contracts/navivox_channel.dart';
+import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_capability_policy.dart';
 
@@ -527,24 +528,26 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     String? serverId,
     String? profileId,
   }) async {
-    final activeProfile = _state.activeProfileContact;
-    final scopedServerId = serverId ?? activeProfile?.serverId;
-    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final scope = navivoxMemoryScopeFor(
+      activeProfile: _state.activeProfileContact,
+      serverId: serverId,
+      profileId: profileId,
+    );
     final client = _client;
     if (client == null) {
       return NavivoxMemoryOverview.degraded(
-        profileId: scopedProfileId,
+        profileId: scope.profileId,
         reason: 'Connect to Gormes to load Goncho memory.',
       );
     }
     try {
       return await client.memoryOverview(
-        serverId: scopedServerId,
-        profileId: scopedProfileId,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
       );
     } catch (_) {
       return NavivoxMemoryOverview.degraded(
-        profileId: scopedProfileId,
+        profileId: scope.profileId,
         reason: 'Gormes memory API is unavailable.',
       );
     }
@@ -559,9 +562,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     int limit = 20,
     String? pageToken,
   }) async {
-    final activeProfile = _state.activeProfileContact;
-    final scopedServerId = serverId ?? activeProfile?.serverId;
-    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final scope = navivoxMemoryScopeFor(
+      activeProfile: _state.activeProfileContact,
+      serverId: serverId,
+      profileId: profileId,
+    );
     final client = _client;
     if (client == null) {
       return const NavivoxMemorySearchResult.degraded(
@@ -570,8 +575,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     try {
       return await client.memorySearch(
-        serverId: scopedServerId,
-        profileId: scopedProfileId,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
         query: query,
         type: type,
         limit: limit,
@@ -591,9 +596,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required String id,
     required NavivoxMemoryType type,
   }) async {
-    final activeProfile = _state.activeProfileContact;
-    final scopedServerId = serverId ?? activeProfile?.serverId;
-    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final scope = navivoxMemoryScopeFor(
+      activeProfile: _state.activeProfileContact,
+      serverId: serverId,
+      profileId: profileId,
+    );
     final client = _client;
     if (client == null) {
       return NavivoxMemoryDetail.degraded(
@@ -603,8 +610,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     try {
       return await client.memoryDetail(
-        serverId: scopedServerId,
-        profileId: scopedProfileId,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
         id: id,
         type: type,
       );
@@ -625,9 +632,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required NavivoxMemoryActionType action,
     String? correction,
   }) async {
-    final activeProfile = _state.activeProfileContact;
-    final scopedServerId = serverId ?? activeProfile?.serverId;
-    final scopedProfileId = profileId ?? activeProfile?.profileId ?? 'default';
+    final scope = navivoxMemoryScopeFor(
+      activeProfile: _state.activeProfileContact,
+      serverId: serverId,
+      profileId: profileId,
+    );
     final client = _client;
     if (client == null) {
       return NavivoxMemoryActionResult.degraded(
@@ -637,8 +646,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     try {
       return await client.memoryAction(
-        serverId: scopedServerId,
-        profileId: scopedProfileId,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
         id: id,
         type: type,
         action: action,
