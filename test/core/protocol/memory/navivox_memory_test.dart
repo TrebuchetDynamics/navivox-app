@@ -38,6 +38,15 @@ void main() {
       expect(overview.databaseLabel, '~/.gormes/profiles/mineru/memory.db');
       expect(overview.databaseLabel, isNot(contains(r'C:\Users\xel')));
     });
+
+    test('redacts relative database paths with directory provenance', () {
+      final overview = NavivoxMemoryOverview.fromJson({
+        'database_path': 'profiles/mineru/memory.db',
+      });
+
+      expect(overview.databaseLabel, 'redacted/memory.db');
+      expect(overview.databaseLabel, isNot(contains('profiles/mineru')));
+    });
   });
 
   test('overview counts clamp impossible negative gateway values', () {

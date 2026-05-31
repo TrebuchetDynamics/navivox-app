@@ -1,4 +1,5 @@
 import '../serialization/navivox_json.dart';
+import 'navivox_memory_database_label.dart';
 import 'navivox_memory_degradation.dart';
 
 enum NavivoxMemoryHealth { active, degraded, unavailable }
@@ -301,7 +302,7 @@ class NavivoxMemoryOverview {
     return NavivoxMemoryOverview(
       profileId: navivoxStringFromJson(json['profile_id'], fallback: 'default'),
       workspaceId: navivoxStringFromJson(json['workspace_id'], fallback: ''),
-      databaseLabel: _safeDatabaseLabel(
+      databaseLabel: navivoxMemorySafeDatabaseLabel(
         json['database_label'] ?? json['database_path'],
       ),
       health: health,
@@ -354,35 +355,4 @@ class NavivoxMemoryOverview {
 int navivoxMemoryCountFromJson(Object? value) {
   final count = navivoxIntFromJson(value);
   return count < 0 ? 0 : count;
-}
-
-String _safeDatabaseLabel(Object? value) {
-  final text = navivoxOptionalStringFromJson(value);
-  if (text == null) return 'redacted';
-
-  final gormesSuffix = _gormesPathSuffix(text);
-  if (gormesSuffix != null) return '~/.gormes/$gormesSuffix';
-
-  if (_isAbsolutePath(text)) return 'redacted/${_pathBasename(text)}';
-
-  return text;
-}
-
-String? _gormesPathSuffix(String value) {
-  final normalized = value.replaceAll(r'\', '/');
-  const gormesMarker = '/.gormes/';
-  final markerIndex = normalized.indexOf(gormesMarker);
-  if (markerIndex < 0) return null;
-  return normalized.substring(markerIndex + gormesMarker.length);
-}
-
-bool _isAbsolutePath(String value) {
-  return value.startsWith('/') ||
-      value.startsWith(r'\\') ||
-      RegExp(r'^[A-Za-z]:[\\/]').hasMatch(value);
-}
-
-String _pathBasename(String value) {
-  final parts = value.split(RegExp(r'[\\/]')).where((part) => part.isNotEmpty);
-  return parts.isEmpty ? 'memory.db' : parts.last;
 }
