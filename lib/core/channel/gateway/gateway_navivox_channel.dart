@@ -13,6 +13,7 @@ import '../../protocol/navivox_voice_run.dart';
 import '../../session/session_persistence_service.dart';
 import '../contracts/navivox_channel.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
+import 'gateway_capability_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   GatewayNavivoxChannel({Uuid? uuid, DateTime Function()? clock})
@@ -82,27 +83,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       return;
     }
 
-    final contacts =
-        _capabilityAllows(
-          capabilities,
-          'profile_contacts',
-          'GET',
-          '/v1/navivox/profile-contacts',
-        )
+    final contacts = navivoxProfileContactsAvailable(capabilities)
         ? await _loadProfileContacts(client)
         : [_fallbackProfileContact()];
-    final profileRouting =
-        _capabilityAllows(
-          capabilities,
-          'profile_routing',
-          'GET',
-          '/v1/navivox/profile-routing',
-        )
+    final profileRouting = navivoxProfileRoutingAvailable(capabilities)
         ? await client.profileRouting()
         : const NavivoxProfileRoutingReport();
     final configAdminState = await _loadConfigAdminState(client, capabilities);
     _configAdminAvailable = configAdminState != null;
-    final streamAvailable = _streamAvailable(capabilities);
+    final streamAvailable = navivoxStreamAvailable(capabilities);
     if (streamAvailable) {
       final socket = await client.connectStream();
       _socket = socket;
@@ -121,7 +110,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       profileContacts: contacts,
       selectedProfileContactKey: contacts.first.key,
       profileRouting: profileRouting,
-      runRecordInspectionAvailable: _runRecordsSupported(capabilities),
+      runRecordInspectionAvailable: navivoxRunRecordsSupported(capabilities),
       configSchema: configAdminState?.schema ?? const {},
       configValues: configAdminState?.values ?? const {},
       configDiff: const {},
@@ -169,64 +158,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ) async {
     try {
       final capabilities = await client.capabilities();
-      return _capabilityDocumentValid(capabilities) ? capabilities : null;
+      return navivoxCapabilityDocumentUsable(capabilities)
+          ? capabilities
+          : null;
     } catch (_) {
       return null;
     }
-  }
-
-  bool _capabilityDocumentValid(NavivoxCapabilityDocument capabilities) {
-    return capabilities.object == 'gormes.navivox.capabilities' &&
-        capabilities.protocolVersion == navivoxWebSocketProtocol &&
-        capabilities.auth.mode.trim().isNotEmpty &&
-        capabilities.advertisesEndpoint('GET', '/v1/navivox/capabilities') &&
-        capabilities.streams.canonicalEndpoint.trim().isNotEmpty;
-  }
-
-  bool _capabilityAllows(
-    NavivoxCapabilityDocument capabilities,
-    String capability,
-    String method,
-    String path,
-  ) {
-    return capabilities.supports(capability) &&
-        capabilities.advertisesEndpoint(method, path);
-  }
-
-  bool _streamAvailable(NavivoxCapabilityDocument capabilities) {
-    return _capabilityAllows(
-          capabilities,
-          'stream_turns',
-          'WS',
-          '/v1/navivox/stream',
-        ) &&
-        capabilities.streams.canonicalEndpoint == '/v1/navivox/stream';
-  }
-
-  bool _runRecordsSupported(NavivoxCapabilityDocument capabilities) {
-    return capabilities.voice.runRecordsEndpoint.trim().isNotEmpty;
-  }
-
-  bool _configAdminSupported(NavivoxCapabilityDocument capabilities) {
-    return _capabilityAllows(
-          capabilities,
-          'config_admin',
-          'GET',
-          '/v1/navivox/config-admin/schema',
-        ) &&
-        capabilities.advertisesEndpoint('GET', '/v1/navivox/config-admin') &&
-        capabilities.advertisesEndpoint(
-          'POST',
-          '/v1/navivox/config-admin/diff',
-        ) &&
-        capabilities.advertisesEndpoint(
-          'POST',
-          '/v1/navivox/config-admin/validate',
-        ) &&
-        capabilities.advertisesEndpoint(
-          'POST',
-          '/v1/navivox/config-admin/apply',
-        );
   }
 
   Future<({Map<String, Object?> schema, Map<String, Object?> values})?>
@@ -234,7 +171,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     NavivoxGatewayClient client,
     NavivoxCapabilityDocument capabilities,
   ) async {
-    if (!_configAdminSupported(capabilities)) return null;
+    if (!navivoxConfigAdminSupported(capabilities)) return null;
     try {
       final schema = await client.configAdminSchema();
       final values = await client.configAdminValues();
@@ -477,13 +414,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       throw StateError('Connect to Gormes to create profiles from seed.');
     }
     final capabilities = _capabilities;
-    if (capabilities == null ||
-        !_capabilityAllows(
-          capabilities,
-          'profile_seed',
-          'POST',
-          '/v1/navivox/profile-seed',
-        )) {
+    if (capabilities == null || !navivoxProfileSeedAvailable(capabilities)) {
       throw StateError('Gormes profile seed is not advertised.');
     }
     final result = await client.profileSeed(
@@ -514,13 +445,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       throw StateError('Connect to Gormes to load voice profiles.');
     }
     final capabilities = _capabilities;
-    if (capabilities == null ||
-        !_capabilityAllows(
-          capabilities,
-          'voice_profiles',
-          'GET',
-          '/v1/navivox/voice-profiles',
-        )) {
+    if (capabilities == null || !navivoxVoiceProfilesAvailable(capabilities)) {
       throw StateError('Gormes voice profiles are not advertised.');
     }
     return client.voiceProfiles();
@@ -537,12 +462,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     final capabilities = _capabilities;
     if (capabilities == null ||
-        !_capabilityAllows(
-          capabilities,
-          'voice_profiles',
-          'POST',
-          '/v1/navivox/voice-profiles/validate',
-        )) {
+        !navivoxVoiceProfileValidationAvailable(capabilities)) {
       throw StateError('Gormes voice profile validation is not advertised.');
     }
     return client.validateVoiceProfile(
@@ -558,7 +478,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       throw StateError('Connect to Gormes to load run records.');
     }
     final capabilities = _capabilities;
-    if (capabilities == null || !_runRecordsSupported(capabilities)) {
+    if (capabilities == null || !navivoxRunRecordsSupported(capabilities)) {
       throw StateError('Gormes run records are not advertised.');
     }
     return client.runRecord(runIdOrSessionId);
@@ -572,12 +492,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     final capabilities = _capabilities;
     if (capabilities == null ||
-        !_capabilityAllows(
-          capabilities,
-          'profile_contacts',
-          'GET',
-          '/v1/navivox/profile-contacts',
-        )) {
+        !navivoxProfileContactsAvailable(capabilities)) {
       _appendSystemMessage('Gormes profile contacts are not advertised.');
       return;
     }
