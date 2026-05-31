@@ -8,6 +8,7 @@ void main() {
   readsReloadModeAliasesForDisplayAndRestartInference();
   readsAllowedValuesAndActionsWireAliases();
   fallsBackAcrossBlankStringSchemaAliases();
+  fallsBackAcrossNullBooleanSchemaAliases();
 }
 
 void preservesUnrecognizedBooleanEditTextForValidation() {
@@ -152,6 +153,35 @@ void fallsBackAcrossBlankStringSchemaAliases() {
   _expect(
     row.label == 'Server host',
     'blank label aliases should not hide later non-empty title aliases',
+  );
+}
+
+void fallsBackAcrossNullBooleanSchemaAliases() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'server.port',
+          'type': 'integer',
+          'restart_required': null,
+          'restartRequired': true,
+          'requires_confirmation': null,
+          'requiresConfirmation': true,
+        },
+      ],
+    },
+    values: {'server.port': 8080},
+  );
+
+  final row = form.rows.single;
+
+  _expect(
+    row.restartRequired,
+    'null snake_case restart_required alias should not hide later camelCase restartRequired',
+  );
+  _expect(
+    row.requiresConfirmation,
+    'null snake_case requires_confirmation alias should not hide later camelCase requiresConfirmation',
   );
 }
 

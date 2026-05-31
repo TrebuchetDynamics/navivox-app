@@ -131,12 +131,13 @@ class ConfigFormModel {
   }
 
   static bool _fieldBool(Map raw, Iterable<String> aliases) {
-    return configWireValueFromAliases(raw, aliases) == true;
+    return configWireBoolFromAliases(raw, aliases) == true;
   }
 
   static String _fieldRiskLevel(Map raw) {
-    return configWireStringFromAliases(raw, const ['risk_level'])
-            ?.toLowerCase() ??
+    return configWireStringFromAliases(raw, const [
+          'risk_level',
+        ])?.toLowerCase() ??
         'low';
   }
 
