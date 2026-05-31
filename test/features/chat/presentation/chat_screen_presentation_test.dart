@@ -3,7 +3,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
-import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 

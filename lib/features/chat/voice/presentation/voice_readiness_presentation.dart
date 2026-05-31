@@ -1,7 +1,7 @@
 import '../../../../core/channel/navivox_channel.dart';
 import '../../../../shared/presentation/profile_health_labels.dart';
 import '../../../../shared/presentation/voice_unavailable_presentation.dart';
-import '../../../settings/providers/voice_settings_provider.dart';
+import '../../../../shared/voice/voice_settings.dart';
 
 enum VoiceReadinessStatus { ready, checking, blocked }
 

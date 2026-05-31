@@ -3,7 +3,7 @@ import '../../../core/protocol/navivox_event.dart';
 import '../../../core/protocol/navivox_voice_run.dart';
 import '../../../shared/presentation/profile_contact_labels.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
-import '../../settings/providers/voice_settings_provider.dart';
+import '../../../shared/voice/voice_settings.dart';
 import '../conversations/profile_contact_conversation.dart';
 import '../voice/presentation/voice_readiness_presentation.dart';
 

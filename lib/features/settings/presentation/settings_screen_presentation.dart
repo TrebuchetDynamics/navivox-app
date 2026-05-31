@@ -3,7 +3,7 @@ import '../../../router/app_routes.dart';
 import '../../../shared/presentation/count_labels.dart';
 import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
-import '../providers/voice_settings_provider.dart';
+import '../../../shared/voice/voice_settings.dart';
 
 class SettingsScreenPresentation {
   const SettingsScreenPresentation();

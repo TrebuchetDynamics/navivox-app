@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
 import 'package:navivox/features/settings/settings_screen_presentation.dart';
+import 'package:navivox/shared/voice/voice_settings.dart';
 import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/shared/presentation/profile_health_labels.dart';
 

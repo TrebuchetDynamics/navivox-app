@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/voice/presentation/voice_readiness_presentation.dart';
-import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
 

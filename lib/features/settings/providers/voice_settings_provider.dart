@@ -1,37 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class NavivoxVoiceSettings {
-  const NavivoxVoiceSettings({
-    this.continuousVoiceEnabled = true,
-    this.profileSwitchingEnabled = true,
-    this.commandWord = 'navi',
-    this.trustedServerIds = const {},
-  });
+import '../../../shared/voice/voice_settings.dart';
 
-  final bool continuousVoiceEnabled;
-  final bool profileSwitchingEnabled;
-  final String commandWord;
-  final Set<String> trustedServerIds;
-
-  bool isTrusted(String serverId) => trustedServerIds.contains(serverId);
-
-  NavivoxVoiceSettings copyWith({
-    bool? continuousVoiceEnabled,
-    bool? profileSwitchingEnabled,
-    String? commandWord,
-    Set<String>? trustedServerIds,
-  }) {
-    return NavivoxVoiceSettings(
-      continuousVoiceEnabled:
-          continuousVoiceEnabled ?? this.continuousVoiceEnabled,
-      profileSwitchingEnabled:
-          profileSwitchingEnabled ?? this.profileSwitchingEnabled,
-      commandWord: commandWord ?? this.commandWord,
-      trustedServerIds: trustedServerIds ?? this.trustedServerIds,
-    );
-  }
-}
+export '../../../shared/voice/voice_settings.dart';
 
 class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
   static const _keyVoiceEnabled = 'navivox.voice.continuous_enabled';
