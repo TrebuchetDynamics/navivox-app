@@ -1,17 +1,18 @@
 {
   "version": 1,
   "target": "features/servers/shared/connection_import",
-  "updatedAt": "2026-05-31T11:21:01.868Z",
-  "objective": "Bug-finding visibility refactor for connection import copied URL normalization: make wrapper/trailing delimiter stripping explicit and characterize direct wrapped copied URL imports.",
+  "updatedAt": "2026-05-31T11:55:23.035Z",
+  "objective": "Bug-finding through visibility refactor in connection import shared-text descriptor parsing; expose multiple core descriptor candidates instead of first-only hidden assumption.",
   "completedSlices": [
-    "Extracted copied endpoint URL trimming into explicit start/end pure helpers in parser.dart.",
-    "Added characterization coverage for angle-bracketed and backtick-delimited plain copied URL payloads."
+    "Extracted shared-text core pairing descriptor discovery from first-match String? helper to Iterable<String> helper.",
+    "Added regression for a malformed embedded navivox://connect descriptor followed by a later valid descriptor.",
+    "Fixed candidate drop by evaluating all embedded core descriptors and accepting the first valid descriptor while preserving malformed-only rejection behavior."
   ],
   "nextCandidates": [
-    "Connection import candidate ranking/data-flow remains a likely seam for future bug-finding, especially JSON entry fallback/default provenance and explicit invalid base_url versus websocket-derived base URL precedence."
+    "Shared-text URL/token window binding remains next likely bug-finding seam if continuing."
   ],
   "validationReceipts": [
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (pass)",
-    "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart && dart run features/servers/setup/navivox_connect_intent_initial_payload_regression_test.dart (pass)"
+    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (pass)"
   ]
 }

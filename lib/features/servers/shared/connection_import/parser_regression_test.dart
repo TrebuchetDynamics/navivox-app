@@ -40,6 +40,7 @@ void main() {
   stripsBacktickFromSharedTextUrl();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   parsesValidCorePairingDescriptorEmbeddedInSharedText();
+  parsesLaterValidCorePairingDescriptorAfterMalformedSharedTextDescriptor();
   rejectsSharedTextMalformedCoreDescriptorBeforeTokenFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
@@ -688,6 +689,27 @@ void parsesValidCorePairingDescriptorEmbeddedInSharedText() {
   );
   _expect(result.token == 'nvbx_shared', 'embedded descriptor token preserved');
   _expect(result.serverId == 'srv', 'embedded descriptor metadata preserved');
+}
+
+void parsesLaterValidCorePairingDescriptorAfterMalformedSharedTextDescriptor() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Ignore stale navivox://connect?rest_token=nvbx_stale and open '
+    'navivox://connect?websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fws&rest_token=nvbx_fresh&server_id=srv to pair.',
+  );
+
+  _expect(
+    result != null,
+    'a later valid navivox://connect descriptor should not be dropped after an earlier malformed descriptor',
+  );
+  _expect(
+    result!.baseUrl == 'http://127.0.0.1:8765',
+    'later valid descriptor should provide the baseUrl',
+  );
+  _expect(
+    result.token == 'nvbx_fresh',
+    'later valid descriptor should provide the token',
+  );
+  _expect(result.serverId == 'srv', 'later descriptor metadata preserved');
 }
 
 void rejectsSharedTextMalformedCoreDescriptorBeforeTokenFallback() {

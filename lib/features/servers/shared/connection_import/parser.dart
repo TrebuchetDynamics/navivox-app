@@ -265,10 +265,11 @@ _ConnectionImportCandidate? _connectionImportCandidateFromGenericUri(Uri uri) {
 }
 
 SetupQrImageImport? _importFromSharedText(String text) {
-  final embeddedCoreDescriptor = _corePairingDescriptorPayloadFromSharedText(
-    text,
-  );
-  if (embeddedCoreDescriptor != null) {
+  final embeddedCoreDescriptorPayloads =
+      _corePairingDescriptorPayloadsFromSharedText(
+        text,
+      ).toList(growable: false);
+  for (final embeddedCoreDescriptor in embeddedCoreDescriptorPayloads) {
     final coreImport = _parseCorePairingDescriptorPayload(
       embeddedCoreDescriptor,
     );
@@ -276,7 +277,8 @@ SetupQrImageImport? _importFromSharedText(String text) {
   }
 
   final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(text);
-  if (embeddedUrlCandidate == null && embeddedCoreDescriptor != null) {
+  if (embeddedUrlCandidate == null &&
+      embeddedCoreDescriptorPayloads.isNotEmpty) {
     return null;
   }
   final token = _sharedTextImportToken(
@@ -457,11 +459,14 @@ SetupQrImageImport? _parseCorePairingDescriptorPayload(String text) {
   }
 }
 
-String? _corePairingDescriptorPayloadFromSharedText(String text) {
-  final match = _corePairingDescriptorUriPattern.firstMatch(text);
-  final matchedText = match?.group(0);
-  if (matchedText == null) return null;
-  return _trimCopiedEndpointUrl(matchedText);
+Iterable<String> _corePairingDescriptorPayloadsFromSharedText(
+  String text,
+) sync* {
+  for (final match in _corePairingDescriptorUriPattern.allMatches(text)) {
+    final matchedText = match.group(0);
+    if (matchedText == null) continue;
+    yield _trimCopiedEndpointUrl(matchedText);
+  }
 }
 
 final _corePairingDescriptorUriPattern = RegExp(
