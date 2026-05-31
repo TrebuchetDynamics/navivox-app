@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T04:35:19.345Z",
+  "generatedAt": "2026-05-31T04:37:16.722Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -103,6 +103,38 @@
       ]
     },
     {
+      "relative": "test/features",
+      "score": 189,
+      "files": 114,
+      "direct": 0,
+      "churn": 710,
+      "callers": 0,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 7,
+      "duplicates": 69,
+      "subdirs": 10,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "test/features/chat/transcript/shared",
+      "score": 188.9,
+      "files": 13,
+      "direct": 7,
+      "churn": 40,
+      "callers": 23,
+      "importsOut": 4,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 6,
+      "subdirs": 4,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "test/features/chat/shared",
       "score": 188.4,
       "files": 18,
@@ -119,32 +151,16 @@
       ]
     },
     {
-      "relative": "test/features",
-      "score": 187,
-      "files": 108,
-      "direct": 0,
-      "churn": 696,
-      "callers": 0,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 7,
-      "duplicates": 63,
-      "subdirs": 10,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "test",
-      "score": 186,
-      "files": 146,
+      "score": 188,
+      "files": 152,
       "direct": 0,
-      "churn": 804,
+      "churn": 818,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 76,
+      "duplicates": 82,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -216,15 +232,15 @@
     },
     {
       "relative": "test/features/chat",
-      "score": 162,
-      "files": 66,
+      "score": 164,
+      "files": 72,
       "direct": 0,
-      "churn": 421,
+      "churn": 435,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
       "roles": 4,
-      "duplicates": 22,
+      "duplicates": 28,
       "subdirs": 9,
       "extensions": [
         ".dart"
@@ -257,22 +273,6 @@
       "tests": 0,
       "roles": 3,
       "duplicates": 2,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/chat/transcript/shared",
-      "score": 138.1,
-      "files": 7,
-      "direct": 7,
-      "churn": 26,
-      "callers": 23,
-      "importsOut": 4,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 1,
       "subdirs": 0,
       "extensions": [
         ".dart"
@@ -335,6 +335,22 @@
       ]
     },
     {
+      "relative": "test/features/chat/transcript",
+      "score": 123.8,
+      "files": 36,
+      "direct": 0,
+      "churn": 156,
+      "callers": 3,
+      "importsOut": 10,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 13,
+      "subdirs": 5,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/features/config",
       "score": 119.3,
       "files": 11,
@@ -384,22 +400,6 @@
       ]
     },
     {
-      "relative": "test/features/chat/transcript",
-      "score": 114,
-      "files": 30,
-      "direct": 0,
-      "churn": 142,
-      "callers": 3,
-      "importsOut": 10,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 7,
-      "subdirs": 5,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "playwright/probes",
       "score": 105.6,
       "files": 12,
@@ -424,6 +424,16 @@
       "reason": "generated/vendor/artifact path pattern; folder name 'fixtures' is usually non-refactorable",
       "confidence": 6,
       "files": 4,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "path": "test/features/chat/transcript/shared/fixtures",
+      "pattern": "test/features/chat/transcript/shared/fixtures/",
+      "reason": "generated/vendor/artifact path pattern; folder name 'fixtures' is usually non-refactorable",
+      "confidence": 6,
+      "files": 1,
       "extensions": [
         ".dart"
       ]

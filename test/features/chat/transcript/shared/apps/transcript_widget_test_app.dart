@@ -8,6 +8,7 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_surface_fram
 import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
+import 'transcript_forwarding_contracts.dart';
 import 'transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptBubble] under the shared Material feature-test shell.
@@ -16,8 +17,7 @@ Widget transcriptBubbleTestApp({
   required bool isUser,
   bool showTail = true,
   List<NavivoxProfileContact> forwardTargets = const [],
-  void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
-  onForward,
+  TranscriptForwardCallback? onForward,
   VoidCallback? onCancelActiveTurn,
   Widget Function(Widget bubble)? wrapBubble,
 }) {
@@ -116,8 +116,7 @@ Widget transcriptThreadTestApp({
   String? assistantTypingLabel,
   DateTime? dateLabelNow,
   List<NavivoxProfileContact> forwardTargets = const [],
-  void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
-  onForward,
+  TranscriptForwardCallback? onForward,
   VoidCallback? onCancelActiveTurn,
 }) {
   return transcriptTestScaffold(
