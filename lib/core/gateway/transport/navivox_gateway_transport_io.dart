@@ -2,16 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../shared/navivox_gateway_http.dart';
+import 'navivox_gateway_socket_contract.dart';
 
-class NavivoxGatewaySocket {
+class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
   NavivoxGatewaySocket(this._socket);
 
   final WebSocket _socket;
 
+  @override
   Stream<dynamic> get events => _socket;
 
+  @override
   void add(String message) => _socket.add(message);
 
+  @override
   Future<void> close() => _socket.close();
 }
 

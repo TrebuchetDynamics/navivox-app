@@ -1,10 +1,15 @@
-class NavivoxGatewaySocket {
+import 'navivox_gateway_socket_contract.dart';
+
+class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
+  @override
   Stream<dynamic> get events => const Stream<dynamic>.empty();
 
+  @override
   void add(String message) {
     throw UnsupportedError('Navivox gateway WebSocket is not supported here.');
   }
 
+  @override
   Future<void> close() async {}
 }
 

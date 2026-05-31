@@ -6,8 +6,9 @@ import 'package:web/web.dart' as web;
 
 import '../shared/navivox_gateway_auth.dart';
 import '../shared/navivox_gateway_http.dart';
+import 'navivox_gateway_socket_contract.dart';
 
-class NavivoxGatewaySocket {
+class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
   NavivoxGatewaySocket._(this._socket) {
     _socket.onmessage = ((web.MessageEvent event) {
       _events.add((event.data as JSString).toDart);
@@ -23,10 +24,13 @@ class NavivoxGatewaySocket {
   final web.WebSocket _socket;
   final StreamController<dynamic> _events = StreamController<dynamic>();
 
+  @override
   Stream<dynamic> get events => _events.stream;
 
+  @override
   void add(String message) => _socket.send(message.toJS);
 
+  @override
   Future<void> close() async {
     _socket.close();
     if (!_events.isClosed) await _events.close();
