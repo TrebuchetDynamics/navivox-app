@@ -321,14 +321,23 @@ const _serverIdFieldNames = ['server_id', 'serverId'];
 const _profileIdFieldNames = ['profile_id', 'profileId'];
 
 String? _firstUrl(String text) {
-  var value = RegExp(r'https?://\S+').firstMatch(text)?.group(0);
-  while (value != null &&
-      value.isNotEmpty &&
-      ',;)]}"'.contains(value[value.length - 1])) {
-    value = value.substring(0, value.length - 1);
-  }
-  return value;
+  final value = RegExp(r'https?://\S+').firstMatch(text)?.group(0);
+  if (value == null) return null;
+  return _trimCopiedUrlTrailingPunctuation(value);
 }
+
+String _trimCopiedUrlTrailingPunctuation(String url) {
+  var end = url.length;
+  while (end > 0 && _copiedUrlTrailingPunctuation.contains(url[end - 1])) {
+    end--;
+  }
+  return url.substring(0, end);
+}
+
+// Plain-text shares often end a copied URL with sentence/list punctuation. Keep
+// this list explicit because these characters otherwise become part of the
+// parsed origin when the shared URL has no path.
+const _copiedUrlTrailingPunctuation = '.,;:!?)]}"\'';
 
 String? _firstToken(String text) {
   final labeledToken = _firstLabeledToken(text);
