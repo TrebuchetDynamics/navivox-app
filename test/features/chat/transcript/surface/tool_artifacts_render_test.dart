@@ -11,7 +11,7 @@ void main() {
       final message = transcriptToolMessage(
         id: 'm-1',
         createdAt: DateTime(2026, 5, 7, 10),
-        toolCall: const NavivoxToolCall(
+        toolCall: transcriptToolCall(
           name: 'shell.run',
           status: 'completed',
           summary: 'ls -la',
@@ -35,17 +35,17 @@ void main() {
       final message = transcriptToolMessage(
         id: 'm-2',
         createdAt: DateTime(2026, 5, 7, 10),
-        toolCall: const NavivoxToolCall(
+        toolCall: transcriptToolCall(
           name: 'shell.run',
           status: 'completed',
           summary: 'ran git diff',
-          approval: NavivoxToolApproval(
+          approval: const NavivoxToolApproval(
             id: 'approval-shell',
             status: 'approval_required',
             prompt: 'Approve shell.run?',
             risk: 'Writes files',
           ),
-          artifacts: [
+          artifacts: const [
             NavivoxToolArtifact(
               id: 'a-1',
               kind: 'file',

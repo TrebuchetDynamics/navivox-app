@@ -21,13 +21,7 @@ void main() {
 
   test('projects tool cards into name, status, and summary lines', () {
     final presentation = TranscriptMessagePlainTextPresentation.fromMessage(
-      transcriptToolMessage(
-        toolCall: const NavivoxToolCall(
-          name: 'grep',
-          status: 'finished',
-          summary: 'Matched 2 files',
-        ),
-      ),
+      transcriptToolMessage(toolCall: transcriptToolCall()),
     );
 
     expect(presentation.text, 'grep\nfinished\nMatched 2 files');
@@ -65,7 +59,7 @@ void main() {
   test('omits empty optional lines and exposes empty state', () {
     final tool = TranscriptMessagePlainTextPresentation.fromMessage(
       transcriptToolMessage(
-        toolCall: const NavivoxToolCall(name: '', status: '', summary: ''),
+        toolCall: transcriptToolCall(name: '', status: '', summary: ''),
       ),
     );
     final missingVoice = TranscriptMessagePlainTextPresentation.fromMessage(

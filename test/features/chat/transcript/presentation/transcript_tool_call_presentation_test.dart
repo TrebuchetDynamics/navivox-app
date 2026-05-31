@@ -2,20 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_tool_call_presentation.dart';
 
+import '../shared/transcript_test_fixtures.dart';
+
 void main() {
   test('derives tool call display state and artifact rows', () {
     final presentation = TranscriptToolCallPresentation.fromToolCall(
-      const NavivoxToolCall(
+      transcriptToolCall(
         name: 'shell.run',
         status: 'finished',
         summary: 'ran git diff',
-        approval: NavivoxToolApproval(
+        approval: const NavivoxToolApproval(
           id: 'approval-shell',
           status: 'approval_required',
           prompt: 'Approve shell.run?',
           risk: 'Writes files',
         ),
-        artifacts: [
+        artifacts: const [
           NavivoxToolArtifact(
             id: 'a-1',
             kind: 'file',
@@ -55,7 +57,7 @@ void main() {
   test('maps known tool statuses to stable tones', () {
     TranscriptToolCallStatusTone toneFor(String status) {
       return TranscriptToolCallPresentation.fromToolCall(
-        NavivoxToolCall(name: 'tool', status: status, summary: ''),
+        transcriptToolCall(name: 'tool', status: status, summary: ''),
       ).statusTone;
     }
 
@@ -68,11 +70,11 @@ void main() {
 
   test('omits summary rows when tool and artifact summaries are empty', () {
     final presentation = TranscriptToolCallPresentation.fromToolCall(
-      const NavivoxToolCall(
+      transcriptToolCall(
         name: 'grep',
         status: 'completed',
         summary: '',
-        artifacts: [
+        artifacts: const [
           NavivoxToolArtifact(id: 'a-1', kind: 'text', title: 'result.txt'),
           NavivoxToolArtifact(
             id: 'a-2',

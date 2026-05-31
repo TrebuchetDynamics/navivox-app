@@ -15,13 +15,7 @@ void main() {
         transcriptVoiceMessage(transcript: 'captured voice'),
       );
       final tool = TranscriptMessageActionPresentation.fromMessage(
-        transcriptToolMessage(
-          toolCall: const NavivoxToolCall(
-            name: 'grep',
-            status: 'finished',
-            summary: 'Matched 2 files',
-          ),
-        ),
+        transcriptToolMessage(toolCall: transcriptToolCall()),
       );
       final safety = TranscriptMessageActionPresentation.fromMessage(
         transcriptNoticeMessage(

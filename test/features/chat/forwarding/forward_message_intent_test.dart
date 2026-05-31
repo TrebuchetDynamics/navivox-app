@@ -75,8 +75,7 @@ void main() {
     final result = intent.forward(
       channel,
       message: transcriptToolMessage(
-        toolCall: const NavivoxToolCall(
-          name: 'grep',
+        toolCall: transcriptToolCall(
           status: 'completed',
           summary: 'Found 3 TODOs',
         ),

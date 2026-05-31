@@ -87,6 +87,22 @@ NavivoxChatMessage transcriptVoiceMessage({
   );
 }
 
+NavivoxToolCall transcriptToolCall({
+  String name = 'grep',
+  String status = 'finished',
+  String summary = 'Matched 2 files',
+  NavivoxToolApproval? approval,
+  List<NavivoxToolArtifact> artifacts = const [],
+}) {
+  return NavivoxToolCall(
+    name: name,
+    status: status,
+    summary: summary,
+    approval: approval,
+    artifacts: artifacts,
+  );
+}
+
 NavivoxChatMessage transcriptToolMessage({
   String id = 'tool-1',
   required NavivoxToolCall toolCall,
