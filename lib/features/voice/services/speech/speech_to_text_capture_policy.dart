@@ -34,12 +34,35 @@ SpeechToTextSnapshot completionSpeechToTextTranscript({
 }
 
 String speechToTextDeviceUnavailableReasonFromMessage(String message) {
-  final normalized = message.trim().toLowerCase();
-  final compact = normalized.replaceAll(RegExp(r'[^a-z0-9]'), '');
-  if (normalized.contains('permission') ||
-      normalized.contains('denied') ||
-      compact.contains('notallowed')) {
+  final signal = SpeechToTextAvailabilityMessageSignal.fromMessage(message);
+  if (signal.indicatesPermissionDenied) {
     return microphonePermissionDeniedReason;
   }
   return deviceSttUnavailableReason;
+}
+
+class SpeechToTextAvailabilityMessageSignal {
+  SpeechToTextAvailabilityMessageSignal._({
+    required this.normalized,
+    required this.compact,
+  });
+
+  factory SpeechToTextAvailabilityMessageSignal.fromMessage(String message) {
+    final normalized = message.trim().toLowerCase();
+    return SpeechToTextAvailabilityMessageSignal._(
+      normalized: normalized,
+      compact: normalized.replaceAll(RegExp(r'[^a-z0-9]'), ''),
+    );
+  }
+
+  final String normalized;
+  final String compact;
+
+  bool get indicatesPermissionDenied {
+    return normalized.contains('permission') ||
+        normalized.contains('denied') ||
+        normalized.contains('not authorized') ||
+        compact.contains('notallowed') ||
+        compact.contains('unauthorized');
+  }
 }

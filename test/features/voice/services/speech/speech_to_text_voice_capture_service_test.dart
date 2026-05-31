@@ -63,6 +63,12 @@ void main() {
         microphonePermissionDeniedReason,
       );
       expect(
+        speechToTextDeviceUnavailableReasonFromMessage(
+          'speech recognition not authorized',
+        ),
+        microphonePermissionDeniedReason,
+      );
+      expect(
         speechToTextDeviceUnavailableReasonFromMessage('recognizer missing'),
         deviceSttUnavailableReason,
       );
