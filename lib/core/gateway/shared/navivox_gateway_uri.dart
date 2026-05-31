@@ -1,5 +1,20 @@
 // URI helpers shared by gateway endpoint builders.
 
+/// Builds a gateway endpoint URI from the configured origin and a canonical path.
+///
+/// `Uri.replace(query: null)` keeps the previous query/fragment, so endpoint
+/// builders use this explicit constructor to avoid leaking pairing/setup query
+/// state into every gateway request.
+Uri navivoxGatewayEndpointUri(Uri baseUri, String path) {
+  return Uri(
+    scheme: baseUri.scheme,
+    userInfo: baseUri.userInfo,
+    host: baseUri.host,
+    port: baseUri.hasPort ? baseUri.port : null,
+    path: path,
+  );
+}
+
 /// Adds query parameters to a gateway URI only when at least one parameter is
 /// present.
 ///

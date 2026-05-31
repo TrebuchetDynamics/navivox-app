@@ -121,7 +121,5 @@ class NavivoxGatewayConfig {
     };
   }
 
-  Uri _withPath(String path) {
-    return baseUri.replace(path: path, query: null);
-  }
+  Uri _withPath(String path) => navivoxGatewayEndpointUri(baseUri, path);
 }

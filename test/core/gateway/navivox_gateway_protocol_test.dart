@@ -122,6 +122,27 @@ void main() {
     expect(bodies, isEmpty);
   });
 
+  test('builds endpoint URIs from base origin without stale query state', () {
+    final config = NavivoxGatewayConfig.fromBaseUrl(
+      'https://gateway.example:9443/setup?token=stale#pairing',
+      token: 'nvbx_test_token',
+    );
+
+    expect(config.healthUri.toString(), 'https://gateway.example:9443/healthz');
+    expect(
+      config.statusUri.toString(),
+      'https://gateway.example:9443/v1/navivox/status',
+    );
+    expect(
+      config.memoryOverviewUri(serverId: 'local').toString(),
+      'https://gateway.example:9443/v1/navivox/memory/overview?server_id=local',
+    );
+    expect(
+      config.streamUri.toString(),
+      'wss://gateway.example:9443/v1/navivox/stream',
+    );
+  });
+
   test('builds shared gateway auth header and websocket protocols', () {
     final headers = {
       navivoxGatewayAuthorizationHeader: navivoxGatewayBearerAuthorization(
