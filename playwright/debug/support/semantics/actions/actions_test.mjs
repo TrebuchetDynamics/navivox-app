@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clickSemanticButtonContaining, setNativeInputValue } from '../semantic_actions.mjs';
-import { NATIVE_INPUT_VALUE_EVENT_TYPES, SEMANTIC_CLICK_EVENT_TYPES } from './contracts.mjs';
+import { clickSemanticButtonContaining, setNativeInputValue } from '../../semantic_actions.mjs';
+import { NATIVE_INPUT_VALUE_EVENT_TYPES, SEMANTIC_CLICK_EVENT_TYPES } from '../contracts/index.mjs';
 
 function withGlobals(globals, run) {
   const previous = new Map(Object.keys(globals).map(key => [key, globalThis[key]]));

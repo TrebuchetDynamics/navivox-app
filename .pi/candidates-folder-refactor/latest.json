@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T06:40:58.437Z",
+  "generatedAt": "2026-05-31T06:56:23.303Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -316,6 +316,25 @@
       ]
     },
     {
+      "relative": "playwright",
+      "score": 133.7,
+      "files": 39,
+      "direct": 2,
+      "churn": 162,
+      "callers": 0,
+      "importsOut": 0,
+      "tests": 1,
+      "roles": 4,
+      "duplicates": 62,
+      "subdirs": 5,
+      "extensions": [
+        ".json",
+        ".md",
+        ".mjs",
+        ".sh"
+      ]
+    },
+    {
       "relative": "docs",
       "score": 131.5,
       "files": 25,
@@ -332,22 +351,20 @@
       ]
     },
     {
-      "relative": "playwright",
-      "score": 130.8,
-      "files": 36,
-      "direct": 2,
-      "churn": 156,
+      "relative": "playwright/debug",
+      "score": 119.3,
+      "files": 21,
+      "direct": 1,
+      "churn": 69,
       "callers": 0,
-      "importsOut": 0,
-      "tests": 1,
-      "roles": 4,
-      "duplicates": 62,
-      "subdirs": 5,
+      "importsOut": 2,
+      "tests": 0,
+      "roles": 2,
+      "duplicates": 31,
+      "subdirs": 6,
       "extensions": [
-        ".json",
         ".md",
-        ".mjs",
-        ".sh"
+        ".mjs"
       ]
     },
     {
@@ -380,23 +397,6 @@
       "subdirs": 3,
       "extensions": [
         ".dart"
-      ]
-    },
-    {
-      "relative": "playwright/debug",
-      "score": 116.4,
-      "files": 18,
-      "direct": 1,
-      "churn": 63,
-      "callers": 0,
-      "importsOut": 2,
-      "tests": 0,
-      "roles": 2,
-      "duplicates": 31,
-      "subdirs": 6,
-      "extensions": [
-        ".md",
-        ".mjs"
       ]
     },
     {
