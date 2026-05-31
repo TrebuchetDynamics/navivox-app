@@ -1,3 +1,4 @@
+import '../../../core/protocol/navivox_json.dart';
 import '../models/connection_import.dart';
 import '../shared/setup_screen_notice.dart';
 
@@ -110,8 +111,8 @@ class SetupScreenPresentation {
 }
 
 String _safeDetailOrFallback(String? detail, String fallback) {
-  final text = detail?.trim();
-  if (text == null || text.isEmpty) return fallback;
+  final text = navivoxOptionalStringFromJson(detail);
+  if (text == null) return fallback;
   if (text.toLowerCase().contains('nvbx_')) return fallback;
   return text;
 }

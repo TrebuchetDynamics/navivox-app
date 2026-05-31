@@ -1,4 +1,5 @@
 import '../../../core/channel/navivox_channel.dart';
+import '../../../core/protocol/navivox_json.dart';
 import '../../../router/navigation_intent.dart';
 
 class PairingHandoffLanding {
@@ -8,11 +9,12 @@ class PairingHandoffLanding {
   final String? profileId;
 
   bool get hasProfileTarget =>
-      _nonEmpty(serverId) != null && _nonEmpty(profileId) != null;
+      navivoxOptionalStringFromJson(serverId) != null &&
+      navivoxOptionalStringFromJson(profileId) != null;
 
   NavivoxProfileContact? reportedProfileContact(NavivoxChannelState state) {
-    final server = _nonEmpty(serverId);
-    final profile = _nonEmpty(profileId);
+    final server = navivoxOptionalStringFromJson(serverId);
+    final profile = navivoxOptionalStringFromJson(profileId);
     if (server == null || profile == null) return null;
     final key = '$server::$profile';
     for (final contact in state.profileContacts) {
@@ -25,10 +27,5 @@ class PairingHandoffLanding {
     final contact = reportedProfileContact(state);
     if (contact == null) return const OpenChatsList();
     return OpenChatThread(contact.serverId, contact.profileId);
-  }
-
-  static String? _nonEmpty(String? value) {
-    final text = value?.trim();
-    return text == null || text.isEmpty ? null : text;
   }
 }

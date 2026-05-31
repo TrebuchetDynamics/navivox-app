@@ -6,7 +6,6 @@ import 'package:navivox/router/navigation_intent.dart';
 import '../../shared/fixtures/test_constants.dart';
 
 void main() {
-
   test('opens requested Profile contact only when gateway reports it', () {
     const landing = PairingHandoffLanding(
       serverId: 'local',
@@ -14,6 +13,23 @@ void main() {
     );
     const state = NavivoxChannelState(profileContacts: [mineru]);
 
+    expect(landing.reportedProfileContact(state), mineru);
+    expect(
+      landing.navigationIntentAfterConnect(state),
+      isA<OpenChatThread>()
+          .having((intent) => intent.serverId, 'serverId', 'local')
+          .having((intent) => intent.profileId, 'profileId', 'mineru'),
+    );
+  });
+
+  test('trims pairing target ids before matching reported contacts', () {
+    const landing = PairingHandoffLanding(
+      serverId: ' local ',
+      profileId: ' mineru ',
+    );
+    const state = NavivoxChannelState(profileContacts: [mineru]);
+
+    expect(landing.hasProfileTarget, isTrue);
     expect(landing.reportedProfileContact(state), mineru);
     expect(
       landing.navigationIntentAfterConnect(state),

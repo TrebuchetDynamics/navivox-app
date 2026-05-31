@@ -167,9 +167,6 @@ const _baseUrlFieldNames = ['base_url', 'baseUrl', 'gateway_url', 'url'];
 const _serverIdFieldNames = ['server_id', 'serverId'];
 const _profileIdFieldNames = ['profile_id', 'profileId'];
 
-String? _asNonEmptyString(Object? value) =>
-    navivoxOptionalLiteralStringFromJson(value);
-
 String? _firstUrl(String text) {
   var value = RegExp(r'https?://\S+').firstMatch(text)?.group(0);
   while (value != null &&
@@ -240,11 +237,16 @@ bool _isTokenChar(int codeUnit) {
       codeUnit == 0x2b;
 }
 
-String? _normalizeBaseUrl(String? raw) =>
-    navivoxHttpOriginOrOriginalFromString(_asNonEmptyString(raw));
+String? _normalizeBaseUrl(String? raw) => navivoxHttpOriginOrOriginalFromString(
+  navivoxOptionalLiteralStringFromJson(raw),
+);
 
 String? _normalizeWebSocketUrl(String? raw) =>
-    navivoxWebSocketUrlFromEndpointString(_asNonEmptyString(raw));
+    navivoxWebSocketUrlFromEndpointString(
+      navivoxOptionalLiteralStringFromJson(raw),
+    );
 
 String? _normalizeWebSocketBaseUrl(String? raw) =>
-    navivoxHttpBaseUrlFromEndpointString(_asNonEmptyString(raw));
+    navivoxHttpBaseUrlFromEndpointString(
+      navivoxOptionalLiteralStringFromJson(raw),
+    );
