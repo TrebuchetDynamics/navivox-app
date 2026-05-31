@@ -1,6 +1,7 @@
 import '../../protocol/navivox_json.dart';
 import '../shared/navivox_gateway_constants.dart';
 import '../shared/navivox_gateway_json.dart';
+import 'navivox_gateway_capability_support.dart';
 
 /// Status response from the Navivox gateway health/status endpoint.
 class NavivoxGatewayStatus {
@@ -44,7 +45,9 @@ class NavivoxGatewayStatus {
 
   bool get hasGatewayIdentity => navivoxGatewayHasText(gatewayId);
 
-  bool supports(String capability) => capabilities.contains(capability);
+  bool supports(String capability) {
+    return navivoxGatewaySupportsCapability(capabilities, capability);
+  }
 }
 
 /// Parsed capability document from the gateway.
@@ -120,7 +123,9 @@ class NavivoxCapabilityDocument {
   final NavivoxStreamCapability streams;
   final NavivoxDurableReconnectCapability durableReconnect;
 
-  bool supports(String capability) => capabilities.contains(capability);
+  bool supports(String capability) {
+    return navivoxGatewaySupportsCapability(capabilities, capability);
+  }
 
   bool advertisesEndpoint(String method, String path) {
     return endpoints.any(
