@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:navivox/core/session/session_persistence_service.dart';
+import 'package:navivox/core/session/persistence/storage/session_preference_keys.dart';
 
 import '../support/session_persistence_test_support.dart';
 
@@ -55,8 +56,8 @@ void main() {
 
     test('isStale detects old sessions', () async {
       resetSessionPreferences({
-        'navivox.session.base_url': 'http://localhost:8765',
-        'navivox.session.last_connected_at': DateTime.now()
+        SessionPreferenceKeys.baseUrl: 'http://localhost:8765',
+        SessionPreferenceKeys.lastConnectedAt: DateTime.now()
             .toUtc()
             .subtract(const Duration(days: 10))
             .toIso8601String(),
@@ -70,13 +71,13 @@ void main() {
 
     test('does not persist pairing tokens or QR payloads', () async {
       resetSessionPreferences({
-        'navivox.session.token': 'nvbx_legacy_token',
+        SessionPreferenceKeys.legacyToken: 'nvbx_legacy_token',
       });
       final service = SessionPersistenceService();
       await service.saveConnection(baseUrl: localGatewayBaseUrl);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('navivox.session.token'), isNull);
+      expect(prefs.getString(SessionPreferenceKeys.legacyToken), isNull);
       for (final key in prefs.getKeys()) {
         final value = prefs.getString(key);
         if (value != null) {
