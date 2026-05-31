@@ -3,9 +3,10 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../models/connection_import.dart';
-import '../payloads/navivox_platform_connect_intent_payload.dart';
-import 'navivox_connect_intent_channels.dart';
+import '../../../../models/connection_import.dart';
+import '../../payloads/navivox_platform_connect_intent_payload.dart';
+import '../contracts/navivox_connect_intent_observer.dart';
+import '../platform/navivox_connect_intent_channels.dart';
 import 'navivox_connect_intent_source.dart';
 
 void main() {
