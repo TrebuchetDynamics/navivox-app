@@ -173,9 +173,12 @@ class ConfigValidationState {
     if (raw is List) {
       return raw.map(_messageFrom).nonNulls.toList(growable: false);
     }
-    final message = configWireString(raw);
+    final message = _messageFrom(raw);
     return message == null ? const [] : [message];
   }
 
-  static String? _messageFrom(Object? raw) => configWireString(raw);
+  static String? _messageFrom(Object? raw) {
+    if (raw is Map) return configFormValidationMessageFromWire(raw);
+    return configWireString(raw);
+  }
 }

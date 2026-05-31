@@ -5,6 +5,7 @@ void main() {
   attachesValidationErrorListMessagesToDraftChanges();
   attachesCamelCaseValidationSnapshotMessagesToDraftChanges();
   fallsBackAcrossBlankStringValidationAliases();
+  attachesNestedFieldErrorMessageObjectsToDraftChanges();
 }
 
 void attachesValidationErrorListMessagesToDraftChanges() {
@@ -81,18 +82,7 @@ void attachesCamelCaseValidationSnapshotMessagesToDraftChanges() {
 }
 
 void fallsBackAcrossBlankStringValidationAliases() {
-  final form = ConfigFormModel.fromSchema(
-    schema: {
-      'fields': [
-        {
-          'path': 'feature.enabled',
-          'type': 'boolean',
-          'label': 'Feature enabled',
-        },
-      ],
-    },
-    values: {'feature.enabled': false},
-  );
+  final form = _singleBooleanFieldForm();
 
   final flow = ConfigApplyFlowModel.fromDraft(
     form: form,
@@ -113,6 +103,41 @@ void fallsBackAcrossBlankStringValidationAliases() {
     flow.validationMessagesFor('feature.enabled').single ==
         'Expected a boolean.',
     'blank validation aliases should not hide later non-empty field/detail aliases',
+  );
+}
+
+void attachesNestedFieldErrorMessageObjectsToDraftChanges() {
+  final form = _singleBooleanFieldForm();
+
+  final flow = ConfigApplyFlowModel.fromDraft(
+    form: form,
+    draftValues: {'feature.enabled': 'maybe'},
+    validationSnapshot: {
+      'field_errors': {
+        'feature.enabled': {'detail': 'Expected a boolean.'},
+      },
+    },
+  );
+
+  _expect(
+    flow.validationMessagesFor('feature.enabled').single ==
+        'Expected a boolean.',
+    'field_errors map values with nested detail/message/error objects should attach to their field path',
+  );
+}
+
+ConfigFormModel _singleBooleanFieldForm() {
+  return ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'feature.enabled',
+          'type': 'boolean',
+          'label': 'Feature enabled',
+        },
+      ],
+    },
+    values: {'feature.enabled': false},
   );
 }
 
