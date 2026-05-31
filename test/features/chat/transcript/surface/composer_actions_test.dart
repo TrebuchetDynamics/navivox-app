@@ -1,49 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
+import '../shared/transcript_attachment_test_helpers.dart';
 import '../shared/transcript_surface_test_app.dart';
 
 void main() {
   testWidgets('composer attachment button opens Telegram-style upload sheet', (
     tester,
   ) async {
-    var uploadedFile = false;
-    var pickedMedia = false;
-    var openedWorkspace = false;
+    final attachmentActions = TranscriptAttachmentActions();
 
     await tester.pumpWidget(
       transcriptSurfaceTestApp(
         messages: const <NavivoxChatMessage>[],
         onSend: (_) {},
-        onUploadFile: () => uploadedFile = true,
-        onPickPhotoOrVideo: () => pickedMedia = true,
-        onOpenWorkspace: () => openedWorkspace = true,
+        onUploadFile: attachmentActions.uploadFile,
+        onPickPhotoOrVideo: attachmentActions.pickPhotoOrVideo,
+        onOpenWorkspace: attachmentActions.openWorkspace,
       ),
     );
 
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Share'), findsOneWidget);
-    expect(find.text('Upload file'), findsOneWidget);
-    expect(find.text('Photo or video'), findsOneWidget);
-    expect(find.text('Workspace file'), findsOneWidget);
-
-    await tester.tap(find.text('Upload file'));
-    await tester.pumpAndSettle();
-    expect(uploadedFile, isTrue);
-
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Photo or video'));
-    await tester.pumpAndSettle();
-    expect(pickedMedia, isTrue);
-
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Workspace file'));
-    await tester.pumpAndSettle();
-    expect(openedWorkspace, isTrue);
+    await expectTranscriptAttachmentSheetActions(tester, attachmentActions);
   });
 
   testWidgets('composer emoji picker inserts emoji before sending', (

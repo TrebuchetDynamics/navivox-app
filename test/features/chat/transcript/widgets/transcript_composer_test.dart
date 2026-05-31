@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../shared/transcript_attachment_test_helpers.dart';
+import '../shared/transcript_controller_test_helpers.dart';
 import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and inserts quick emoji', (tester) async {
     final sent = <String>[];
-    final controller = TextEditingController(text: 'hello');
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController(text: 'hello');
 
     await tester.pumpWidget(
       transcriptComposerTestApp(controller: controller, onSend: sent.add),
@@ -27,52 +28,26 @@ void main() {
   });
 
   testWidgets('opens and plugs the shared attachment sheet', (tester) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
-    var uploadedFile = false;
-    var pickedMedia = false;
-    var openedWorkspace = false;
+    final controller = transcriptTextController();
+    final attachmentActions = TranscriptAttachmentActions();
 
     await tester.pumpWidget(
       transcriptComposerTestApp(
         controller: controller,
         onSend: (_) {},
-        onUploadFile: () => uploadedFile = true,
-        onPickPhotoOrVideo: () => pickedMedia = true,
-        onOpenWorkspace: () => openedWorkspace = true,
+        onUploadFile: attachmentActions.uploadFile,
+        onPickPhotoOrVideo: attachmentActions.pickPhotoOrVideo,
+        onOpenWorkspace: attachmentActions.openWorkspace,
       ),
     );
 
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Share'), findsOneWidget);
-    expect(find.text('Upload file'), findsOneWidget);
-    expect(find.text('Photo or video'), findsOneWidget);
-    expect(find.text('Workspace file'), findsOneWidget);
-
-    await tester.tap(find.text('Upload file'));
-    await tester.pumpAndSettle();
-    expect(uploadedFile, isTrue);
-
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Photo or video'));
-    await tester.pumpAndSettle();
-    expect(pickedMedia, isTrue);
-
-    await tester.tap(find.byTooltip('Attach'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Workspace file'));
-    await tester.pumpAndSettle();
-    expect(openedWorkspace, isTrue);
+    await expectTranscriptAttachmentSheetActions(tester, attachmentActions);
   });
 
   testWidgets('unplugged attachment rows explain unavailable upload support', (
     tester,
   ) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
 
     await tester.pumpWidget(
       transcriptComposerTestApp(controller: controller, onSend: (_) {}),
@@ -90,8 +65,7 @@ void main() {
   testWidgets('explains unavailable voice and opens voice settings', (
     tester,
   ) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     var openedSettings = false;
 
     await tester.pumpWidget(
@@ -129,8 +103,7 @@ void main() {
   testWidgets('shows capture and stop states through the same toggle intent', (
     tester,
   ) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     var toggles = 0;
 
     await tester.pumpWidget(

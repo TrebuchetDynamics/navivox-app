@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
+import '../shared/transcript_controller_test_helpers.dart';
 import '../shared/transcript_test_fixtures.dart';
 import '../shared/transcript_widget_test_app.dart';
 
@@ -10,8 +11,7 @@ void main() {
   testWidgets('renders the shared empty Transcript surface state', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
 
     await tester.pumpWidget(
       transcriptThreadTestApp(
@@ -27,8 +27,7 @@ void main() {
   testWidgets('adds Telegram-style date chips at calendar boundaries', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
 
     await tester.pumpWidget(
       transcriptThreadTestApp(
@@ -64,8 +63,7 @@ void main() {
   testWidgets('renders system text as a Telegram-style service chip', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
 
     await tester.pumpWidget(
       transcriptThreadTestApp(
@@ -90,8 +88,7 @@ void main() {
   testWidgets('uses Telegram-style Today and Yesterday date chip labels', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
     final now = DateTime.utc(2026, 5, 23, 14);
 
     await tester.pumpWidget(
@@ -124,8 +121,7 @@ void main() {
   testWidgets('renders typing indicator and exposes pause for active stream', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
     var paused = false;
 
     await tester.pumpWidget(
@@ -177,8 +173,7 @@ void main() {
   testWidgets('keeps forward targets wired from the shared thread', (
     tester,
   ) async {
-    final scrollController = ScrollController();
-    addTearDown(scrollController.dispose);
+    final scrollController = transcriptScrollController();
     NavivoxProfileContact? forwardedTo;
 
     await tester.pumpWidget(

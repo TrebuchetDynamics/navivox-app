@@ -4,14 +4,14 @@ import 'package:navivox/shared/voice/voice_capture_failures.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
+import '../shared/transcript_controller_test_helpers.dart';
 import '../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and clears the composer controller', (
     tester,
   ) async {
-    final controller = TextEditingController(text: 'hello Gormes');
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController(text: 'hello Gormes');
     final sent = <String>[];
 
     await tester.pumpWidget(
@@ -28,8 +28,7 @@ void main() {
   testWidgets('captures voice and reports start before captured voice', (
     tester,
   ) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     final events = <String>[];
     VoiceCapture? captured;
 
@@ -56,8 +55,7 @@ void main() {
   testWidgets('shows capture failure copy and reports failed capture', (
     tester,
   ) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     Object? failed;
 
     await tester.pumpWidget(
@@ -82,8 +80,7 @@ void main() {
   });
 
   testWidgets('shows actionable no-speech recovery copy', (tester) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     Object? failed;
 
     await tester.pumpWidget(
@@ -105,8 +102,7 @@ void main() {
   });
 
   testWidgets('shows actionable permission recovery copy', (tester) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
     Object? failed;
 
     await tester.pumpWidget(
@@ -131,8 +127,7 @@ void main() {
   });
 
   testWidgets('shows stop state while capture is in flight', (tester) async {
-    final controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final controller = transcriptTextController();
 
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
