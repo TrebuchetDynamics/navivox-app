@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T03:17:08.705Z",
+  "generatedAt": "2026-05-31T03:22:38.076Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -104,11 +104,11 @@
     },
     {
       "relative": "test/features/shared",
-      "score": 193.5,
+      "score": 190.5,
       "files": 5,
       "direct": 0,
       "churn": 23,
-      "callers": 41,
+      "callers": 40,
       "importsOut": 1,
       "tests": 0,
       "roles": 3,
@@ -121,14 +121,14 @@
     {
       "relative": "test/features",
       "score": 187,
-      "files": 85,
+      "files": 87,
       "direct": 0,
-      "churn": 547,
+      "churn": 558,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
       "roles": 7,
-      "duplicates": 62,
+      "duplicates": 60,
       "subdirs": 10,
       "extensions": [
         ".dart"
@@ -137,14 +137,14 @@
     {
       "relative": "test",
       "score": 186,
-      "files": 123,
+      "files": 125,
       "direct": 0,
-      "churn": 655,
+      "churn": 666,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 74,
+      "duplicates": 72,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -200,15 +200,15 @@
     },
     {
       "relative": "test/features/chat",
-      "score": 159.9,
-      "files": 43,
+      "score": 160.5,
+      "files": 45,
       "direct": 0,
-      "churn": 272,
+      "churn": 283,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
       "roles": 4,
-      "duplicates": 23,
+      "duplicates": 21,
       "subdirs": 9,
       "extensions": [
         ".dart"
@@ -353,15 +353,15 @@
     },
     {
       "relative": "test/features/chat/transcript",
-      "score": 108.8,
+      "score": 107.8,
       "files": 26,
       "direct": 0,
-      "churn": 91,
+      "churn": 96,
       "callers": 3,
       "importsOut": 6,
       "tests": 0,
       "roles": 2,
-      "duplicates": 14,
+      "duplicates": 13,
       "subdirs": 5,
       "extensions": [
         ".dart"

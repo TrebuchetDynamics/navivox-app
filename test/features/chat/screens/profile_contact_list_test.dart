@@ -6,23 +6,14 @@ import 'package:navivox/features/chat/screens/chat_screen.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
 import '../../shared/app/test_router_app.dart';
-import '../../shared/fixtures/profile_contact_fixtures.dart';
-
-final _servers = localOfficeServers();
-
-final _contacts = [
-  mineruBuilderProfile(latestAt: DateTime(2026, 5, 16, 9, 41)),
-  supportTriageProfile(latestAt: DateTime(2026, 5, 16, 9, 22)),
-  personalProfile(latestAt: DateTime(2026, 5, 15, 18)),
-];
+import '../shared/inline_span_test_helpers.dart';
+import 'shared/profile_contact_screen_test_fixtures.dart';
 
 void main() {
   testWidgets('renders profiles as a flat multi-server contact list', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -70,9 +61,7 @@ void main() {
   testWidgets('selected contact is highlighted like the active Telegram chat', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts, selectedKey: 'local::mineru');
+    final channel = profileContactListChannel(selectedKey: 'local::mineru');
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -91,9 +80,7 @@ void main() {
   testWidgets('contacts move voice and attention state out of the avatar', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -121,9 +108,7 @@ void main() {
   });
 
   testWidgets('server filter chips narrow contacts by gateway', (tester) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -144,9 +129,7 @@ void main() {
   testWidgets('profile list overflow menu plugs top-level routes', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -167,9 +150,7 @@ void main() {
   });
 
   testWidgets('add profile menu rows are plugged into actions', (tester) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -195,9 +176,7 @@ void main() {
   testWidgets('search highlights matching contact title text like Telegram', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -217,16 +196,17 @@ void main() {
     final span = highlighted.textSpan! as TextSpan;
 
     expect(span.toPlainText(), 'Mineru Builder');
-    expect(_spanFor(span, 'Mineru')?.style?.fontWeight, FontWeight.w700);
-    expect(_spanFor(span, 'Mineru')?.style?.color, isNotNull);
+    expect(
+      spanForInlineText(span, 'Mineru')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(spanForInlineText(span, 'Mineru')?.style?.color, isNotNull);
   });
 
   testWidgets('search filters profile contacts like Telegram chat search', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -247,9 +227,7 @@ void main() {
   testWidgets('search matches profile health and capability diagnostics', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -276,9 +254,7 @@ void main() {
   });
 
   testWidgets('search shows a no results state', (tester) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -297,21 +273,21 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
+      ..seedServers(chatProfileListServers, activeServerId: 'local')
       ..seedProfileContacts([
         NavivoxProfileContact(
-          serverId: _contacts.first.serverId,
-          profileId: _contacts.first.profileId,
-          displayName: _contacts.first.displayName,
-          serverLabel: _contacts.first.serverLabel,
-          health: _contacts.first.health,
-          latestPreview: _contacts.first.latestPreview,
-          latestAt: _contacts.first.latestAt,
-          workspaceRootCount: _contacts.first.workspaceRootCount,
-          micAvailable: _contacts.first.micAvailable,
+          serverId: chatProfileListContacts.first.serverId,
+          profileId: chatProfileListContacts.first.profileId,
+          displayName: chatProfileListContacts.first.displayName,
+          serverLabel: chatProfileListContacts.first.serverLabel,
+          health: chatProfileListContacts.first.health,
+          latestPreview: chatProfileListContacts.first.latestPreview,
+          latestAt: chatProfileListContacts.first.latestAt,
+          workspaceRootCount: chatProfileListContacts.first.workspaceRootCount,
+          micAvailable: chatProfileListContacts.first.micAvailable,
           activeTurnState: 'streaming',
         ),
-        ..._contacts.skip(1),
+        ...chatProfileListContacts.skip(1),
       ]);
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
@@ -339,9 +315,7 @@ void main() {
   testWidgets('selecting a profile opens scoped chat and sends in that scope', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -428,9 +402,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -466,9 +438,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(900, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -538,9 +508,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(900, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
@@ -570,9 +538,7 @@ void main() {
   testWidgets('deep-linked chat route selects the profile scope', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(_servers, activeServerId: 'local')
-      ..seedProfileContacts(_contacts);
+    final channel = profileContactListChannel();
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(
@@ -598,15 +564,4 @@ void main() {
     expect(find.text('Support Triage'), findsWidgets);
     expect(find.text('office'), findsOneWidget);
   });
-}
-
-TextSpan? _spanFor(InlineSpan root, String text) {
-  if (root is TextSpan) {
-    if (root.text == text) return root;
-    for (final child in root.children ?? const <InlineSpan>[]) {
-      final match = _spanFor(child, text);
-      if (match != null) return match;
-    }
-  }
-  return null;
 }

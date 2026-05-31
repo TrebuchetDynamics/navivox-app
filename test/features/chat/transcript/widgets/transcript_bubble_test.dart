@@ -5,6 +5,7 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 
 import '../shared/transcript_test_fixtures.dart';
 import '../shared/transcript_widget_test_app.dart';
+import '../../shared/inline_span_test_helpers.dart';
 
 void main() {
   testWidgets('renders message text and opens assistant pause action', (
@@ -82,11 +83,17 @@ void main() {
     final rootSpan = formatted.textSpan!;
 
     expect(rootSpan.toPlainText(), 'Use bold, italic, code, and old safely.');
-    expect(_spanFor(rootSpan, 'bold')?.style?.fontWeight, FontWeight.w700);
-    expect(_spanFor(rootSpan, 'italic')?.style?.fontStyle, FontStyle.italic);
-    expect(_spanFor(rootSpan, 'code')?.style?.fontFamily, 'monospace');
     expect(
-      _spanFor(rootSpan, 'old')?.style?.decoration,
+      spanForInlineText(rootSpan, 'bold')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(
+      spanForInlineText(rootSpan, 'italic')?.style?.fontStyle,
+      FontStyle.italic,
+    );
+    expect(spanForInlineText(rootSpan, 'code')?.style?.fontFamily, 'monospace');
+    expect(
+      spanForInlineText(rootSpan, 'old')?.style?.decoration,
       TextDecoration.lineThrough,
     );
   });
@@ -117,15 +124,15 @@ void main() {
       'Open https://navivox.dev, mail ops@navivox.dev, or call +1 555 010 1212.',
     );
     expect(
-      _spanFor(rootSpan, 'https://navivox.dev')?.style?.fontWeight,
+      spanForInlineText(rootSpan, 'https://navivox.dev')?.style?.fontWeight,
       FontWeight.w700,
     );
     expect(
-      _spanFor(rootSpan, 'ops@navivox.dev')?.style?.fontWeight,
+      spanForInlineText(rootSpan, 'ops@navivox.dev')?.style?.fontWeight,
       FontWeight.w700,
     );
     expect(
-      _spanFor(rootSpan, '+1 555 010 1212')?.style?.fontWeight,
+      spanForInlineText(rootSpan, '+1 555 010 1212')?.style?.fontWeight,
       FontWeight.w700,
     );
   });
@@ -151,8 +158,11 @@ void main() {
     final rootSpan = formatted.textSpan!;
 
     expect(rootSpan.toPlainText(), 'Route this to @Mineru now.');
-    expect(_spanFor(rootSpan, '@Mineru')?.style?.fontWeight, FontWeight.w700);
-    expect(_spanFor(rootSpan, '@Mineru')?.style?.color, isNotNull);
+    expect(
+      spanForInlineText(rootSpan, '@Mineru')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(spanForInlineText(rootSpan, '@Mineru')?.style?.color, isNotNull);
   });
 
   testWidgets('renders Telegram-style mention and hashtag highlights', (
@@ -176,9 +186,15 @@ void main() {
     final rootSpan = formatted.textSpan!;
 
     expect(rootSpan.toPlainText(), 'Route this to @mineru for #deploy review.');
-    expect(_spanFor(rootSpan, '@mineru')?.style?.fontWeight, FontWeight.w700);
-    expect(_spanFor(rootSpan, '#deploy')?.style?.fontWeight, FontWeight.w700);
-    expect(_spanFor(rootSpan, '@mineru')?.style?.color, isNotNull);
+    expect(
+      spanForInlineText(rootSpan, '@mineru')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(
+      spanForInlineText(rootSpan, '#deploy')?.style?.fontWeight,
+      FontWeight.w700,
+    );
+    expect(spanForInlineText(rootSpan, '@mineru')?.style?.color, isNotNull);
   });
 
   testWidgets('renders Telegram-style blockquotes in text bubbles', (
@@ -210,7 +226,7 @@ void main() {
     final quoteSpan = quoteText.textSpan!;
     expect(quoteSpan.toPlainText(), 'Keep deployment reversible');
     expect(
-      _spanFor(quoteSpan, 'deployment')?.style?.fontWeight,
+      spanForInlineText(quoteSpan, 'deployment')?.style?.fontWeight,
       FontWeight.w700,
     );
   });
@@ -250,7 +266,10 @@ void main() {
     );
     final listSpan = listText.textSpan!;
     expect(listSpan.toPlainText(), 'Back up config');
-    expect(_spanFor(listSpan, 'config')?.style?.fontFamily, 'monospace');
+    expect(
+      spanForInlineText(listSpan, 'config')?.style?.fontFamily,
+      'monospace',
+    );
     expect(find.text('Restart service'), findsOneWidget);
   });
 
@@ -485,15 +504,4 @@ void main() {
 
     expect(forwardedTo, transcriptSupportContact);
   });
-}
-
-TextSpan? _spanFor(InlineSpan root, String text) {
-  if (root is TextSpan) {
-    if (root.text == text) return root;
-    for (final child in root.children ?? const <InlineSpan>[]) {
-      final match = _spanFor(child, text);
-      if (match != null) return match;
-    }
-  }
-  return null;
 }
