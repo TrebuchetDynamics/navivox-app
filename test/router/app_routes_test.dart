@@ -2,6 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/router/app_routes.dart';
 
 void main() {
+  test('defines route patterns from shared parameter names', () {
+    expect(AppRoutes.chatThread, '/chats/:serverId/:profileId');
+    expect(AppRoutes.configSection, '/config/:section');
+    expect(RouteParameters.serverId, 'serverId');
+    expect(RouteParameters.profileId, 'profileId');
+    expect(RouteParameters.configSection, 'section');
+  });
+
   test('builds encoded Profile contact chat locations', () {
     expect(
       AppRoutes.chatLocation(
