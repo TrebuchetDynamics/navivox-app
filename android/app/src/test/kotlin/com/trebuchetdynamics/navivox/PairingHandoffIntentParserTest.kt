@@ -1,6 +1,7 @@
 package com.trebuchetdynamics.navivox
 
 import com.trebuchetdynamics.navivox.pairing.PairingHandoffIntentParser
+import com.trebuchetdynamics.navivox.pairing.PairingHandoffPayload
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -18,8 +19,15 @@ class PairingHandoffIntentParserTest {
         )
 
         assertEquals(
-            mapOf("payload" to payload, "source" to "direct_app_open"),
+            PairingHandoffPayload(
+                payload = payload,
+                source = PairingHandoffPayload.Source.DirectAppOpen,
+            ),
             parsed,
+        )
+        assertEquals(
+            mapOf("payload" to payload, "source" to "direct_app_open"),
+            parsed?.toMethodChannelMap(),
         )
     }
 
@@ -59,8 +67,15 @@ class PairingHandoffIntentParserTest {
         )
 
         assertEquals(
-            mapOf("payload" to payload, "source" to "shared_text"),
+            PairingHandoffPayload(
+                payload = payload,
+                source = PairingHandoffPayload.Source.SharedText,
+            ),
             parsed,
+        )
+        assertEquals(
+            mapOf("payload" to payload, "source" to "shared_text"),
+            parsed?.toMethodChannelMap(),
         )
     }
 
