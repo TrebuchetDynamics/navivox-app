@@ -44,10 +44,7 @@ void main() {
     );
 
     expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
-    expect(
-      find.byTooltip('Voice unavailable: Device STT unavailable'),
-      findsNothing,
-    );
+    expectNoRawDeviceSttUnavailableTooltip();
 
     await openVoiceUnavailableSheet(tester);
 
@@ -65,8 +62,7 @@ void main() {
 
     await openVoiceUnavailableSheet(tester);
 
-    expect(find.text('Recovery action'), findsOneWidget);
-    expect(find.text(deviceSttRecoveryAction), findsOneWidget);
+    expectDeviceSttRecoveryAction();
   });
 
   testWidgets('disabled STT mic can open voice settings', (tester) async {
@@ -80,11 +76,9 @@ void main() {
 
     await openVoiceUnavailableSheet(tester);
 
-    expect(find.text('Open voice settings'), findsOneWidget);
-    expect(find.text(deviceSttSettingsReviewCopy), findsOneWidget);
+    expectOpenVoiceSettingsAction();
 
-    await tester.tap(find.text('Open voice settings'));
-    await tester.pumpAndSettle();
+    await tapOpenVoiceSettingsAction(tester);
 
     expect(opened, isTrue);
   });

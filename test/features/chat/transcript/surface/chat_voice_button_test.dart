@@ -68,10 +68,7 @@ void main() {
     );
 
     expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
-    expect(
-      find.byTooltip('Voice unavailable: Device STT unavailable'),
-      findsNothing,
-    );
+    expectNoRawDeviceSttUnavailableTooltip();
 
     await openVoiceUnavailableSheet(tester);
 

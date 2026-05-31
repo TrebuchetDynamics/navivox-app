@@ -60,6 +60,28 @@ void expectCanonicalDeviceSttRecoverySheet() {
   expectDeviceSttRecoveryCopy();
 }
 
+void expectNoRawDeviceSttUnavailableTooltip() {
+  expect(
+    find.byTooltip('Voice unavailable: Device STT unavailable'),
+    findsNothing,
+  );
+}
+
+void expectDeviceSttRecoveryAction() {
+  expect(find.text('Recovery action'), findsOneWidget);
+  expect(find.text(deviceSttRecoveryAction), findsOneWidget);
+}
+
+void expectOpenVoiceSettingsAction() {
+  expect(find.text('Open voice settings'), findsOneWidget);
+  expect(find.text(deviceSttSettingsReviewCopy), findsOneWidget);
+}
+
+Future<void> tapOpenVoiceSettingsAction(WidgetTester tester) async {
+  await tester.tap(find.text('Open voice settings'));
+  await tester.pumpAndSettle();
+}
+
 void expectMicrophonePermissionRecoveryCopy() {
   expect(find.text(microphonePermissionDeniedReason), findsOneWidget);
   expect(find.text(microphonePermissionRecoveryCopy), findsOneWidget);

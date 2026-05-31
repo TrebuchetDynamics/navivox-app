@@ -90,12 +90,10 @@ void main() {
 
     expectVoiceUnavailableSheetTitle();
     expectCanonicalDeviceSttRecoverySheet();
-    expect(find.text('Recovery action'), findsOneWidget);
-    expect(find.text(deviceSttRecoveryAction), findsOneWidget);
-    expect(find.text('Open voice settings'), findsOneWidget);
+    expectDeviceSttRecoveryAction();
+    expectOpenVoiceSettingsAction();
 
-    await tester.tap(find.text('Open voice settings'));
-    await tester.pumpAndSettle();
+    await tapOpenVoiceSettingsAction(tester);
 
     expect(openedSettings, isTrue);
   });
