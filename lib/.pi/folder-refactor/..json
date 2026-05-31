@@ -1,19 +1,19 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:22:23.059Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor in config apply validation snapshot parsing: expose field_errors value-shape assumptions and preserve existing string/list behavior while accepting nested message/detail/error maps.",
+  "updatedAt": "2026-05-31T11:31:20.647Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactors under lib: expose hidden config wire-schema assumptions with focused characterization tests before fixes, preserving public behavior and compatibility.",
   "completedSlices": [
-    "Added focused regression for field_errors values shaped as nested {message/detail/error} maps in ConfigApplyFlowModel.fromDraft.",
-    "Extracted field error scalar/list conversion through a single _messageFrom helper.",
-    "Fixed ConfigValidationState so field_errors map values and list entries can reuse the existing configFormValidationMessageFromWire contract for nested message/detail/error objects."
+    "Added focused regression for nested field_errors validation messages in ConfigApplyFlowModel.fromDraft and fixed shared validation message extraction.",
+    "Added focused regression for camelCase reloadMode schema alias in ConfigFormModel.fromSchema; extracted reload-mode parsing/restart inference helpers and fixed presentation/restart flow to use the alias-aware value."
   ],
   "nextCandidates": [
-    "features/config/form/config_form_model.dart reload/reloadMode schema aliases: expose whether camelCase reloadMode should drive reload display/restart inference.",
-    "features/config/apply/config_apply_flow_model.dart validation snapshots with multiple aliases for the same field: characterize duplicate/provenance ordering if server sends both validation_errors and field_errors."
+    "features/config/apply/config_apply_flow_model.dart validation snapshots with multiple aliases for the same field: characterize duplicate/provenance ordering if server sends both validation_errors and field_errors.",
+    "features/config/form/config_form_model.dart section field references and allowed/actions wire aliases: characterize whether singular/plural or options/choices drift drops candidates."
   ],
   "validationReceipts": [
-    "dart features/config/apply/config_apply_flow_model_regression_test.dart: failed before fix on nested field_errors detail map, passed after fix",
-    "dart analyze features/config/apply/config_apply_flow_model.dart features/config/apply/config_apply_flow_model_regression_test.dart: No issues found"
+    "dart features/config/form/config_form_model_regression_test.dart: failed before fix on camelCase reloadMode not retained for presentation, passed after fix",
+    "dart analyze features/config/form/config_form_model.dart features/config/form/config_form_model_regression_test.dart: No issues found",
+    "for test in features/config/apply/config_apply_flow_model_regression_test.dart features/config/form/config_draft_session_regression_test.dart features/config/form/config_form_model_regression_test.dart features/config/shared/config_value_display_regression_test.dart; do dart \"$test\" || exit $?; done: passed"
   ]
 }

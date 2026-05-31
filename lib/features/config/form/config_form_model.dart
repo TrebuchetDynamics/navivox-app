@@ -31,6 +31,7 @@ class ConfigFormModel {
       final secret =
           raw['secret'] == true || type == ConfigFormFieldType.secret;
       final riskLevel = _fieldRiskLevel(raw);
+      final reloadMode = _fieldReloadMode(raw);
       rows.add(
         ConfigFormRow(
           field: field,
@@ -39,7 +40,7 @@ class ConfigFormModel {
           required: _fieldBool(raw, const ['required']),
           restartRequired:
               _fieldBool(raw, const ['restart_required']) ||
-              raw['reload']?.toString().contains('restart') == true,
+              _reloadModeRequiresRestart(reloadMode),
           riskLevel: riskLevel,
           requiresConfirmation:
               _fieldBool(raw, const ['requires_confirmation']) ||
@@ -47,7 +48,7 @@ class ConfigFormModel {
           rawValue: values[field],
           allowedValues: _stringList(raw['allowed']),
           actions: _stringList(raw['actions']),
-          reloadMode: configWireString(raw['reload']) ?? '',
+          reloadMode: reloadMode,
         ),
       );
     }
@@ -138,6 +139,15 @@ class ConfigFormModel {
     return configWireStringFromAliases(raw, const ['risk_level'])
             ?.toLowerCase() ??
         'low';
+  }
+
+  static String _fieldReloadMode(Map raw) {
+    return configWireStringFromAliases(raw, const ['reload', 'reload_mode']) ??
+        '';
+  }
+
+  static bool _reloadModeRequiresRestart(String reloadMode) {
+    return reloadMode.toLowerCase().contains('restart');
   }
 
   static List<String> _stringList(Object? raw) {

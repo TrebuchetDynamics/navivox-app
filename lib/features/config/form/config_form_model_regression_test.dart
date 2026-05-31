@@ -5,6 +5,7 @@ void main() {
   coercesRecognizedBooleanEditTextCaseInsensitively();
   preservesFractionalIntegerEditTextForValidation();
   readsCamelCaseSchemaRiskAndConfirmationFields();
+  readsReloadModeAliasesForDisplayAndRestartInference();
   fallsBackAcrossBlankStringSchemaAliases();
 }
 
@@ -70,6 +71,32 @@ void readsCamelCaseSchemaRiskAndConfirmationFields() {
   _expect(
     row.riskLevel == 'medium',
     'camelCase riskLevel schema field should be normalized to lowercase',
+  );
+}
+
+void readsReloadModeAliasesForDisplayAndRestartInference() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        {
+          'path': 'audio.output_device',
+          'type': 'string',
+          'reloadMode': 'restart-required',
+        },
+      ],
+    },
+    values: {'audio.output_device': 'default'},
+  );
+
+  final row = form.rows.single;
+
+  _expect(
+    row.reloadMode == 'restart-required',
+    'camelCase reloadMode schema alias should be retained for presentation',
+  );
+  _expect(
+    row.restartRequired,
+    'camelCase reloadMode containing restart should infer restartRequired',
   );
 }
 
