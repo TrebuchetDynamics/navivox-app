@@ -117,21 +117,30 @@ class ConfigDraftChange {
   static String _displayValue(Object? value) => configDisplayValue(value);
 }
 
+class ConfigValidationSnapshotWire {
+  const ConfigValidationSnapshotWire(this.snapshot);
+
+  final Map<String, Object?> snapshot;
+
+  Object? get validationErrors =>
+      configWireValueFromAliases(snapshot, const ['validation_errors']);
+
+  Object? get genericErrors => snapshot['errors'];
+
+  Object? get fieldErrors =>
+      configWireValueFromAliases(snapshot, const ['field_errors']);
+}
+
 class ConfigValidationState {
   const ConfigValidationState(this._messagesByPath);
 
   factory ConfigValidationState.fromSnapshot(Map<String, Object?>? snapshot) {
     final messages = <String, List<String>>{};
     if (snapshot == null) return ConfigValidationState(messages);
-    _addValidationErrorList(
-      messages,
-      configWireValueFromAliases(snapshot, const ['validation_errors']),
-    );
-    _addValidationErrorList(messages, snapshot['errors']);
-    _addFieldErrorMap(
-      messages,
-      configWireValueFromAliases(snapshot, const ['field_errors']),
-    );
+    final wire = ConfigValidationSnapshotWire(snapshot);
+    _addValidationErrorList(messages, wire.validationErrors);
+    _addValidationErrorList(messages, wire.genericErrors);
+    _addFieldErrorMap(messages, wire.fieldErrors);
     return ConfigValidationState(messages);
   }
 

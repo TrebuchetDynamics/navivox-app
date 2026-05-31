@@ -10,19 +10,8 @@ import '../serialization/navivox_json.dart';
 String? configWireString(Object? raw) => navivoxOptionalStringFromJson(raw);
 
 Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
-  for (final alias in aliases) {
-    if (raw.containsKey(alias)) return raw[alias];
-  }
-
-  final normalizedAliases = {
-    for (final alias in aliases) _configNormalizeWireFieldName(alias),
-  };
-  for (final entry in raw.entries) {
-    if (normalizedAliases.contains(
-      _configNormalizeWireFieldName('${entry.key}'),
-    )) {
-      return entry.value;
-    }
+  for (final value in _configWireAliasCandidates(raw, aliases)) {
+    if (value != null) return value;
   }
   return null;
 }
