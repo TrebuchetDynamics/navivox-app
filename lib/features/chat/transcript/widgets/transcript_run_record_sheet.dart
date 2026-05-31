@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/gateway/navivox_gateway_protocol.dart';
-import '../../transcript/presentation/run_record/transcript_run_record_presentation.dart';
+import '../../transcript/presentation/transcript_run_record_presentation.dart';
 
 class TranscriptRunRecordSheet extends StatelessWidget {
   const TranscriptRunRecordSheet({

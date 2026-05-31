@@ -21,7 +21,7 @@ import '../presentation/chat_screen_presentation.dart';
 import '../forwarding/forward_message_intent.dart';
 import '../commands/local_command_dispatcher.dart';
 import '../commands/local_command_intent.dart';
-import '../transcript/presentation/action/transcript_message_action_presentation.dart';
+import '../transcript/presentation/transcript_message_action_presentation.dart';
 import '../voice/controllers/voice_run_controller.dart';
 import '../approval/widgets/approval_banner.dart';
 import '../transcript/widgets/transcript_run_record_sheet.dart';
