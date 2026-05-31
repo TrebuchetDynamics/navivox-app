@@ -532,16 +532,30 @@ String? _firstLabeledToken(
   required int start,
   required int end,
 }) {
+  _LabeledTokenMatch? earliestMatch;
   for (final label in _tokenLabels) {
     final matches = RegExp(
       '${RegExp.escape(label)}\\s*[:=]',
       caseSensitive: false,
     ).allMatches(text, start).where((match) => match.start < end);
-    if (matches.isEmpty) continue;
-    final token = _readTokenAt(text, matches.first.end);
-    if (token != null) return token;
+    for (final match in matches) {
+      final token = _readTokenAt(text, match.end);
+      if (token == null) continue;
+      final candidate = _LabeledTokenMatch(start: match.start, token: token);
+      if (candidate.isBefore(earliestMatch)) earliestMatch = candidate;
+    }
   }
-  return null;
+  return earliestMatch?.token;
+}
+
+class _LabeledTokenMatch {
+  const _LabeledTokenMatch({required this.start, required this.token});
+
+  final int start;
+  final String token;
+
+  bool isBefore(_LabeledTokenMatch? other) =>
+      other == null || start < other.start;
 }
 
 const _tokenLabels = [
