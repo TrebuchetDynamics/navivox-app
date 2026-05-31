@@ -593,22 +593,45 @@ class _SharedTextEndpointCandidate {
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
     if (other == null) return true;
+    return _SharedTextEndpointSelectionSignals.fromCandidate(
+      this,
+    ).isPreferredOver(_SharedTextEndpointSelectionSignals.fromCandidate(other));
+  }
+}
 
-    final rank = candidate.rank;
-    final otherRank = other.candidate.rank;
-    if (rank.isRicherThan(otherRank)) return true;
-    if (otherRank.isRicherThan(rank)) return false;
+class _SharedTextEndpointSelectionSignals {
+  const _SharedTextEndpointSelectionSignals({
+    required this.rank,
+    required this.hasFollowingToken,
+    required this.hasConnectionPath,
+  });
 
-    // When two bare URLs expose the same connection fields, bind shared-text
-    // tokens to the URL whose segment actually contains the token. This avoids
-    // pairing a later setup token with an earlier documentation URL.
+  factory _SharedTextEndpointSelectionSignals.fromCandidate(
+    _SharedTextEndpointCandidate candidate,
+  ) {
+    return _SharedTextEndpointSelectionSignals(
+      rank: candidate.candidate.rank,
+      hasFollowingToken: candidate.hasFollowingToken,
+      hasConnectionPath: candidate.hasConnectionPath,
+    );
+  }
+
+  final _ConnectionImportCandidateRank rank;
+  final bool hasFollowingToken;
+  final bool hasConnectionPath;
+
+  bool isPreferredOver(_SharedTextEndpointSelectionSignals other) {
+    // Shared text often contains documentation URLs before the actual pairing
+    // handoff URL. Prefer explicit connection-route vocabulary before generic
+    // richness so a stale docs query token cannot outrank the real endpoint.
+    if (hasConnectionPath != other.hasConnectionPath) return hasConnectionPath;
+
+    // When two URLs expose the same connection-route signal, bind prose tokens
+    // to the URL whose following segment actually contains the token.
     if (hasFollowingToken != other.hasFollowingToken) return hasFollowingToken;
 
-    // Equal-rank metadata-only URLs can otherwise leave a docs/setup link as
-    // the winner merely because it appeared first. Prefer a candidate whose path
-    // uses the explicit connection route vocabulary already emitted by setup
-    // links before falling back to source order.
-    if (hasConnectionPath != other.hasConnectionPath) return hasConnectionPath;
+    if (rank.isRicherThan(other.rank)) return true;
+    if (other.rank.isRicherThan(rank)) return false;
     return false;
   }
 }

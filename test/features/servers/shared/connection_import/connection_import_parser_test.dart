@@ -23,4 +23,15 @@ void main() {
       expect(result.profileId, 'mineru');
     },
   );
+
+  test('does not let an earlier docs token outrank a later connection URL', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Read https://docs.example/reset?token=nvbx_docs first. Then open '
+      'https://gateway.example/connect to pair Navivox.',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, isNull);
+  });
 }
