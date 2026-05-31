@@ -1,4 +1,5 @@
 import '../apply/config_apply_flow_model.dart';
+import 'config_draft_edit_value.dart';
 import 'config_field_presentation.dart';
 
 class ConfigDraftSession {
@@ -10,7 +11,10 @@ class ConfigDraftSession {
   bool isEditing(ConfigFieldPresentation field) => editingField == field.path;
 
   String editInitialValueFor(ConfigFieldPresentation field) {
-    return field.editInitialValue;
+    if (field.obscureText || !draftValues.containsKey(field.path)) {
+      return field.editInitialValue;
+    }
+    return configDraftEditInitialValue(draftValues[field.path]);
   }
 
   ConfigDraftSession beginEditing(ConfigFieldPresentation field) {
