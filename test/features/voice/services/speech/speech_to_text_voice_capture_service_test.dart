@@ -61,6 +61,39 @@ void main() {
     expect(engine.cancelCalls, 0);
   });
 
+  test(
+    'uses the latest partial transcript when the final result is blank',
+    () async {
+      final engine = _FakeSpeechToTextEngine();
+      final service = SpeechToTextVoiceCaptureService(engine: engine);
+
+      final future = service.capture(timeout: const Duration(seconds: 5));
+      await Future<void>.delayed(Duration.zero);
+
+      engine.emit(
+        const SpeechToTextSnapshot(
+          words: 'hello mineru',
+          confidence: 0.64,
+          finalResult: false,
+        ),
+      );
+      engine.emit(
+        const SpeechToTextSnapshot(
+          words: ' ',
+          confidence: 0,
+          finalResult: true,
+        ),
+      );
+
+      final capture = await future;
+
+      expect(capture.transcript, 'hello mineru');
+      expect(capture.confidence, 0.64);
+      expect(engine.stopCalls, 1);
+      expect(engine.cancelCalls, 0);
+    },
+  );
+
   test('reports no transcript when done arrives without words', () async {
     final engine = _FakeSpeechToTextEngine();
     final service = SpeechToTextVoiceCaptureService(engine: engine);

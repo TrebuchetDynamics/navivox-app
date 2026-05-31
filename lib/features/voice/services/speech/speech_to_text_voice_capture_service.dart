@@ -200,11 +200,17 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
             'result recognizedWords="${snapshot.words}" '
             'confidence=${snapshot.confidence} finalResult=${snapshot.finalResult}',
           );
-          if (snapshot.words.trim().isNotEmpty) {
-            latestTranscript = snapshot;
-          }
+          latestTranscript = _latestUsableTranscript(
+            current: latestTranscript,
+            candidate: snapshot,
+          );
           if (snapshot.finalResult && !completion.isCompleted) {
-            completion.complete(snapshot);
+            completion.complete(
+              _completionTranscript(
+                terminalSnapshot: snapshot,
+                latestUsableSnapshot: latestTranscript,
+              ),
+            );
           }
         },
       );
@@ -304,6 +310,22 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
     }
     return deviceSttUnavailableReason;
   }
+}
+
+SpeechToTextSnapshot? _latestUsableTranscript({
+  required SpeechToTextSnapshot? current,
+  required SpeechToTextSnapshot candidate,
+}) {
+  if (candidate.words.trim().isEmpty) return current;
+  return candidate;
+}
+
+SpeechToTextSnapshot _completionTranscript({
+  required SpeechToTextSnapshot terminalSnapshot,
+  required SpeechToTextSnapshot? latestUsableSnapshot,
+}) {
+  if (terminalSnapshot.words.trim().isNotEmpty) return terminalSnapshot;
+  return latestUsableSnapshot ?? terminalSnapshot;
 }
 
 String _formatErrorDiagnostic(Object error) {
