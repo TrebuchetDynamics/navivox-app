@@ -1,4 +1,4 @@
-package com.trebuchetdynamics.navivox
+package com.trebuchetdynamics.navivox.pairing
 
 import java.net.URI
 

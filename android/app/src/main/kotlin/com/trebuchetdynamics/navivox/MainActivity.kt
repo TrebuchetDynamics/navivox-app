@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionService
+import com.trebuchetdynamics.navivox.durablekeys.DurableKeyStoreChannel
+import com.trebuchetdynamics.navivox.pairing.PairingHandoffIntentParser
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel

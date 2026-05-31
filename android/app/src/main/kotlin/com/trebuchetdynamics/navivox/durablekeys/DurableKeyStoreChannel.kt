@@ -1,4 +1,4 @@
-package com.trebuchetdynamics.navivox
+package com.trebuchetdynamics.navivox.durablekeys
 
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
