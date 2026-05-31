@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../shared/presentation/profile_contact_avatar_presentation.dart';
+import '../../../shared/presentation/profile_contact_labels.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
 
 export '../../../shared/presentation/profile_contact_scope_presentation.dart';
@@ -15,58 +16,20 @@ class ProfileContactPresentation {
 
   String get compactHealthLabel => compactProfileHealthLabel(contact.health);
 
-  String get workspaceLabel {
-    if (!contact.workspaceRootsOk) return 'workspace issue';
-    if (contact.workspaceRootCount == 1) return '1 root';
-    return '${contact.workspaceRootCount} roots';
-  }
+  String get workspaceLabel => profileContactWorkspaceLabel(contact);
 
-  String get voiceLabel {
-    if (!contact.micAvailable) return 'mic unavailable';
-    return 'mic available';
-  }
+  String get voiceLabel => profileContactVoiceLabel(contact);
 
-  String get channelsLabel {
-    return contact.micAvailable ? 'local/web chat, voice' : 'local/web chat';
-  }
+  String get channelsLabel => profileContactChannelsLabel(contact);
 
-  String get memoryLabel {
-    if (!contact.workspaceRootsOk) return 'Goncho needs workspace attention';
-    return 'Goncho available';
-  }
+  String get memoryLabel => profileContactMemoryLabel(contact);
 
-  String get gonchoStatusLabel {
-    if (!contact.workspaceRootsOk) return 'needs workspace attention';
-    if (contact.workspaceRootCount > 0) return 'available';
-    return 'not reported by API';
-  }
+  String get gonchoStatusLabel => profileContactGonchoStatusLabel(contact);
 
-  String get latestLabel {
-    if (contact.activeTurnState == 'streaming') return 'typing…';
-    final preview = contact.latestPreview.trim();
-    return preview.isEmpty ? 'no recent activity' : preview;
-  }
+  String get latestLabel => profileContactLatestLabel(contact);
 
-  String get chatListPreviewLabel {
-    final lead = _chatListLeadLabel;
-    final segments = <String>[lead];
-    final health = healthLabel;
-    if (health != lead) segments.add(health);
-    if (contact.workspaceRootsOk) {
-      segments.add(workspaceLabel);
-    } else if (lead != '⚠ Workspace issue') {
-      segments.add('⚠ Workspace issue');
-    }
-    return segments.join(' · ');
-  }
-
-  String get _chatListLeadLabel {
-    if (contact.activeTurnState == 'streaming') return 'typing…';
-    final preview = contact.latestPreview.trim();
-    if (preview.isNotEmpty) return preview;
-    if (!contact.workspaceRootsOk) return '⚠ Workspace issue';
-    return 'Profile ready';
-  }
+  String get chatListPreviewLabel =>
+      profileContactChatListPreviewLabel(contact);
 
   String get latestTimeLabel {
     final latestAt = contact.latestAt;
@@ -189,35 +152,10 @@ class ProfileContactPresentation {
     ),
   ];
 
-  List<String> get agentFallbackSummaryLines {
-    final lines = [
-      contact.profileId,
-      'Status: $healthLabel',
-      'Channels: $channelsLabel',
-      'Memory: $memoryLabel',
-      'Skills: profile skills pending API',
-      'Config: profile scoped',
-    ];
-    final latestPreview = contact.latestPreview.trim();
-    if (latestPreview.isNotEmpty) lines.add('Latest: $latestPreview');
-    return lines;
-  }
+  List<String> get agentFallbackSummaryLines =>
+      profileContactAgentFallbackSummaryLines(contact);
 
-  List<String> get searchTerms => [
-    contact.displayName,
-    contact.profileId,
-    contact.serverId,
-    contact.serverLabel,
-    contact.latestPreview,
-    healthLabel,
-    compactHealthLabel,
-    workspaceLabel,
-    voiceLabel,
-    latestLabel,
-    chatListPreviewLabel,
-    contact.activeTurnState,
-    ...contact.attentionBadges,
-  ];
+  List<String> get searchTerms => profileContactSearchTerms(contact);
 }
 
 class ProfileContactsScreenPresentation {

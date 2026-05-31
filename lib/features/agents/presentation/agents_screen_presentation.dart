@@ -1,5 +1,5 @@
 import '../../../core/channel/navivox_channel.dart';
-import '../../profile_contacts/presentation/profile_contact_list_presentation.dart';
+import '../../../shared/presentation/profile_contact_list_scope_presentation.dart';
 
 class AgentsScreenPresentation {
   const AgentsScreenPresentation({
@@ -11,7 +11,7 @@ class AgentsScreenPresentation {
   });
 
   factory AgentsScreenPresentation.fromState(NavivoxChannelState state) {
-    final profileList = ProfileContactListPresentation.fromContacts(
+    final profileList = ProfileContactListScopePresentation.fromContacts(
       servers: state.servers,
       contacts: state.profileContacts,
       selectedServerId: state.activeServerId,

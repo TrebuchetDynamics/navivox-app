@@ -12,7 +12,7 @@ import '../../../core/protocol/navivox_event.dart';
 import '../../../core/protocol/navivox_profile_contact_key.dart';
 import '../../../core/protocol/voice_unavailable_reason.dart';
 import '../../../router/app_routes.dart';
-import '../../profile_contacts/widgets/profile_contact_avatar.dart';
+import '../../../shared/widgets/profile_contact_avatar.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../../voice/services/platform/default_voice_capture_service.dart';
 import '../../voice/services/tts/text_to_speech_service.dart';

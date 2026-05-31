@@ -63,3 +63,90 @@ String profileContactStatusBarLabel(NavivoxProfileContact profile) {
     ...profileContactProjectStatusSegments(profile),
   ].join(' • ');
 }
+
+String profileContactWorkspaceLabel(NavivoxProfileContact contact) {
+  if (!contact.workspaceRootsOk) return 'workspace issue';
+  if (contact.workspaceRootCount == 1) return '1 root';
+  return '${contact.workspaceRootCount} roots';
+}
+
+String profileContactVoiceLabel(NavivoxProfileContact contact) {
+  if (!contact.micAvailable) return 'mic unavailable';
+  return 'mic available';
+}
+
+String profileContactChannelsLabel(NavivoxProfileContact contact) {
+  return contact.micAvailable ? 'local/web chat, voice' : 'local/web chat';
+}
+
+String profileContactMemoryLabel(NavivoxProfileContact contact) {
+  if (!contact.workspaceRootsOk) return 'Goncho needs workspace attention';
+  return 'Goncho available';
+}
+
+String profileContactGonchoStatusLabel(NavivoxProfileContact contact) {
+  if (!contact.workspaceRootsOk) return 'needs workspace attention';
+  if (contact.workspaceRootCount > 0) return 'available';
+  return 'not reported by API';
+}
+
+String profileContactLatestLabel(NavivoxProfileContact contact) {
+  if (contact.activeTurnState == 'streaming') return 'typing…';
+  final preview = contact.latestPreview.trim();
+  return preview.isEmpty ? 'no recent activity' : preview;
+}
+
+String profileContactChatListPreviewLabel(NavivoxProfileContact contact) {
+  final lead = _profileContactChatListLeadLabel(contact);
+  final segments = <String>[lead];
+  final health = profileHealthLabel(contact.health);
+  if (health != lead) segments.add(health);
+  if (contact.workspaceRootsOk) {
+    segments.add(profileContactWorkspaceLabel(contact));
+  } else if (lead != '⚠ Workspace issue') {
+    segments.add('⚠ Workspace issue');
+  }
+  return segments.join(' · ');
+}
+
+String _profileContactChatListLeadLabel(NavivoxProfileContact contact) {
+  if (contact.activeTurnState == 'streaming') return 'typing…';
+  final preview = contact.latestPreview.trim();
+  if (preview.isNotEmpty) return preview;
+  if (!contact.workspaceRootsOk) return '⚠ Workspace issue';
+  return 'Profile ready';
+}
+
+List<String> profileContactAgentFallbackSummaryLines(
+  NavivoxProfileContact contact,
+) {
+  final lines = [
+    contact.profileId,
+    'Status: ${profileHealthLabel(contact.health)}',
+    'Channels: ${profileContactChannelsLabel(contact)}',
+    'Memory: ${profileContactMemoryLabel(contact)}',
+    'Skills: profile skills pending API',
+    'Config: profile scoped',
+  ];
+  final latestPreview = contact.latestPreview.trim();
+  if (latestPreview.isNotEmpty) lines.add('Latest: $latestPreview');
+  return lines;
+}
+
+List<String> profileContactSearchTerms(NavivoxProfileContact contact) {
+  return [
+    contact.displayName,
+    contact.profileId,
+    contact.serverId,
+    contact.serverLabel,
+    contact.latestPreview,
+    profileHealthLabel(contact.health),
+    compactProfileHealthLabel(contact.health),
+    profileContactWorkspaceLabel(contact),
+    profileContactVoiceLabel(contact),
+    profileContactLatestLabel(contact),
+    profileContactChatListPreviewLabel(contact),
+    contact.activeTurnState,
+    ...contact.attentionBadges,
+  ];
+}

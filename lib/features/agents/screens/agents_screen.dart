@@ -5,8 +5,8 @@ import '../../../router/navigation_intent.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../profile_contacts/presentation/profile_contact_presentation.dart';
-import '../../profile_contacts/widgets/profile_contact_avatar.dart';
+import '../../../shared/presentation/profile_contact_labels.dart';
+import '../../../shared/widgets/profile_contact_avatar.dart';
 import '../../profiles/widgets/profile_seed_sheet.dart';
 import '../presentation/agents_screen_presentation.dart';
 
@@ -226,11 +226,11 @@ class _ProfileSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ProfileContactPresentation(profile);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final line in summary.agentFallbackSummaryLines) Text(line),
+        for (final line in profileContactAgentFallbackSummaryLines(profile))
+          Text(line),
       ],
     );
   }
