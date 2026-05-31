@@ -48,7 +48,7 @@ void main() {
     await pumpChatScreen(tester, channel: channel);
 
     expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
-    expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);
+    expect(find.byKey(const ValueKey(chatContextActionKey)), findsOneWidget);
 
     await openChatInfoSheet(tester);
     expect(find.text('Agent'), findsOneWidget);
@@ -65,12 +65,12 @@ void main() {
     await pumpChatScreen(tester, channel: channel);
 
     expect(
-      find.byKey(const ValueKey('chat-active-profile-avatar')),
+      find.byKey(const ValueKey(chatActiveProfileAvatarKey)),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('chat-active-profile-avatar')),
+        of: find.byKey(const ValueKey(chatActiveProfileAvatarKey)),
         matching: find.text('M'),
       ),
       findsOneWidget,
