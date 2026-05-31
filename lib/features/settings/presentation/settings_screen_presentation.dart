@@ -1,6 +1,7 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../router/app_routes.dart';
 import '../../../shared/presentation/count_labels.dart';
+import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
 import '../providers/voice_settings_provider.dart';
 
@@ -70,6 +71,20 @@ class SettingsScreenPresentation {
     required NavivoxServer? activeServer,
     required NavivoxProfileContact? activeProfile,
   }) {
+    return currentScopeForProfileScope(
+      ProfileContactScopePresentation(
+        activeServer: activeServer,
+        activeServerId: activeServer?.id ?? activeProfile?.serverId,
+        activeProfile: activeProfile,
+      ),
+    );
+  }
+
+  SettingsCurrentScopePresentation? currentScopeForProfileScope(
+    ProfileContactScopePresentation scope,
+  ) {
+    final activeServer = scope.activeServer;
+    final activeProfile = scope.activeProfile;
     if (activeServer == null && activeProfile == null) return null;
     return SettingsCurrentScopePresentation(
       title: 'Current session scope',
@@ -93,7 +108,6 @@ class SettingsScreenPresentation {
             ),
     );
   }
-
 }
 
 class SettingsManagementRoutePresentation {

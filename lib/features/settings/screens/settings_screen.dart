@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../router/navigation_intent.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
+import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../providers/voice_settings_provider.dart';
 import '../presentation/settings_screen_presentation.dart';
 
@@ -27,9 +28,12 @@ class SettingsScreen extends ConsumerWidget {
     final activeServerTrust = activeServer == null
         ? null
         : _settingsPresentation.trustRowFor(activeServer, settings: settings);
-    final currentScope = _settingsPresentation.currentScopeFor(
-      activeServer: activeServer,
-      activeProfile: activeProfile,
+    final currentScope = _settingsPresentation.currentScopeForProfileScope(
+      ProfileContactScopePresentation(
+        activeServer: activeServer,
+        activeServerId: channel.state.activeServerId,
+        activeProfile: activeProfile,
+      ),
     );
 
     return Scaffold(

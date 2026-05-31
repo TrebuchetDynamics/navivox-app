@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
-import '../../profile_contacts/presentation/profile_contact_presentation.dart';
+import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../../profiles/widgets/profile_voice_profile_card.dart';
 import '../apply/config_apply_dispatcher.dart';
 import '../apply/config_apply_flow_model.dart';
