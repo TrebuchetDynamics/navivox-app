@@ -8,6 +8,7 @@ void main() {
   parsesSharedTextTokenWithSpacedSeparator();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
+  rejectsCorePairingDescriptorWithNonHttpBaseUrl();
 }
 
 void parsesValidCorePairingDescriptor() {
@@ -110,6 +111,17 @@ void rejectsCorePairingDescriptorWithHttpWebSocketUrl() {
   _expect(
     result == null,
     'core pairing websocket_url must be a ws/wss endpoint, not an HTTP URL',
+  );
+}
+
+void rejectsCorePairingDescriptorWithNonHttpBaseUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'navivox://connect?websocket_url=ws%3A%2F%2Fgateway.example%2Fws&base_url=ftp%3A%2F%2Fgateway.example&rest_token=nvbx_ok',
+  );
+
+  _expect(
+    result == null,
+    'core pairing base_url must be an HTTP(S) endpoint, not an arbitrary URI',
   );
 }
 

@@ -32,9 +32,10 @@ class NavivoxPairingDescriptor {
       _requiredPairingParam(query, 'websocket_url', value),
       descriptor: value,
     );
-    final baseUri = Uri.parse(
-      _optionalPairingParam(query['base_url']) ??
-          _baseUrlFromWebSocketUri(webSocketUri, value),
+    final baseUri = _baseUriFromPairingParams(
+      explicitBaseUrl: _optionalPairingParam(query['base_url']),
+      webSocketUri: webSocketUri,
+      descriptor: value,
     );
     return NavivoxPairingDescriptor(
       baseUri: baseUri,
@@ -86,6 +87,29 @@ String _requiredPairingParam(
 
 String? _optionalPairingParam(String? value) {
   return navivoxOptionalStringFromJson(value);
+}
+
+Uri _baseUriFromPairingParams({
+  required String? explicitBaseUrl,
+  required Uri webSocketUri,
+  required String descriptor,
+}) {
+  if (explicitBaseUrl != null) {
+    return _httpBaseUriFromPairingParam(explicitBaseUrl, descriptor);
+  }
+  return Uri.parse(_baseUrlFromWebSocketUri(webSocketUri, descriptor));
+}
+
+Uri _httpBaseUriFromPairingParam(String value, String descriptor) {
+  final uri = Uri.parse(value);
+  final scheme = uri.scheme.toLowerCase();
+  if ((scheme != 'http' && scheme != 'https') || uri.host.isEmpty) {
+    throw FormatException(
+      'Pairing descriptor base_url must use http or https',
+      descriptor,
+    );
+  }
+  return uri;
 }
 
 String _baseUrlFromWebSocketUri(Uri uri, String descriptor) {
