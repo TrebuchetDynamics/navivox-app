@@ -1,4 +1,5 @@
 import '../../protocol/navivox_json.dart';
+import '../shared/navivox_gateway_json.dart';
 
 class NavivoxProfileVoiceProfile {
   const NavivoxProfileVoiceProfile({
@@ -32,15 +33,13 @@ class NavivoxProfileVoiceProfile {
   final String fallbackVoice;
 
   Map<String, Object?> toJson() {
-    return {
-      if (sttProvider.trim().isNotEmpty) 'stt_provider': sttProvider.trim(),
-      if (ttsProvider.trim().isNotEmpty) 'tts_provider': ttsProvider.trim(),
-      if (voiceId.trim().isNotEmpty) 'voice_id': voiceId.trim(),
-      if (languagePolicy.trim().isNotEmpty)
-        'language_policy': languagePolicy.trim(),
-      if (fallbackVoice.trim().isNotEmpty)
-        'fallback_voice': fallbackVoice.trim(),
-    };
+    return navivoxTrimmedStringFields({
+      'stt_provider': sttProvider,
+      'tts_provider': ttsProvider,
+      'voice_id': voiceId,
+      'language_policy': languagePolicy,
+      'fallback_voice': fallbackVoice,
+    });
   }
 }
 
@@ -121,8 +120,9 @@ class NavivoxVoiceProfileValidation {
       ),
       valid: json['valid'] == true,
       errors: _voiceProfileErrorsFromJson(json['errors']),
-      credentialStatusRefs: _voiceCredentialRefsFromJson(
+      credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
         json['credential_status_refs'],
+        NavivoxVoiceCredentialStatus.fromJson,
       ),
     );
   }
@@ -155,8 +155,9 @@ class NavivoxVoiceProfileView {
       voiceProfile: NavivoxProfileVoiceProfile.fromJson(
         navivoxMapFromJson(json['voice_profile']),
       ),
-      credentialStatusRefs: _voiceCredentialRefsFromJson(
+      credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
         json['credential_status_refs'],
+        NavivoxVoiceCredentialStatus.fromJson,
       ),
       valid: json['valid'] == true,
       errors: _voiceProfileErrorsFromJson(json['errors']),
@@ -228,21 +229,6 @@ class NavivoxVoiceProfileValidationResponse {
   final NavivoxVoiceProfileValidation? validation;
   final bool valid;
   final List<NavivoxVoiceProfileFieldError> errors;
-}
-
-Map<String, NavivoxVoiceCredentialStatus> _voiceCredentialRefsFromJson(
-  Object? value,
-) {
-  if (value is! Map) return const {};
-  final refs = <String, NavivoxVoiceCredentialStatus>{};
-  for (final entry in value.entries) {
-    if (entry.value is Map) {
-      refs[entry.key.toString()] = NavivoxVoiceCredentialStatus.fromJson(
-        Map<String, Object?>.from(entry.value as Map),
-      );
-    }
-  }
-  return refs;
 }
 
 List<NavivoxVoiceProfileFieldError> _voiceProfileErrorsFromJson(Object? value) {

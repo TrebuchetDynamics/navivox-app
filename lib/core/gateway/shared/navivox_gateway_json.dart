@@ -20,3 +20,23 @@ Map<String, Object?> navivoxGatewayObjectField(
   }
   return Map<String, Object?>.from(value);
 }
+
+/// Parses a loose gateway JSON object whose values are nested objects.
+///
+/// Non-map values are ignored so optional reference maps can tolerate forward
+/// compatible wire payloads without each parser reimplementing the same loop.
+Map<String, T> navivoxGatewayObjectValueMapFromJson<T>(
+  Object? value,
+  T Function(Map<String, Object?> json) fromJson,
+) {
+  if (value is! Map) return const {};
+  final parsed = <String, T>{};
+  for (final entry in value.entries) {
+    if (entry.value is Map) {
+      parsed[entry.key.toString()] = fromJson(
+        Map<String, Object?>.from(entry.value as Map),
+      );
+    }
+  }
+  return parsed;
+}
