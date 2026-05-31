@@ -82,8 +82,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.mic_off), findsOneWidget);
-    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
+    expectVoiceUnavailableMic(deviceSttUnavailableReason);
 
     await tester.tap(find.byIcon(Icons.mic_off));
     await tester.pumpAndSettle();
@@ -113,7 +112,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.mic), findsOneWidget);
+    expectVoiceCaptureReadyIndicator();
     await tester.tap(find.byIcon(Icons.mic));
     await tester.pump();
     expect(toggles, 1);
@@ -128,7 +127,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.stop), findsOneWidget);
+    expectVoiceCaptureInFlightIndicator();
     await tester.tap(find.byIcon(Icons.stop));
     await tester.pump();
     expect(toggles, 2);

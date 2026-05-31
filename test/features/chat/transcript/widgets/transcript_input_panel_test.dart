@@ -5,6 +5,7 @@ import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
 import '../shared/transcript_controller_test_helpers.dart';
+import '../shared/transcript_voice_recovery_test_helpers.dart';
 import '../shared/transcript_widget_test_app.dart';
 
 void main() {
@@ -146,8 +147,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 30));
 
-    expect(find.byIcon(Icons.stop), findsOneWidget);
-    expect(find.byIcon(Icons.mic), findsNothing);
+    expectVoiceCaptureInFlightIndicator();
 
     await tester.pumpAndSettle();
   });

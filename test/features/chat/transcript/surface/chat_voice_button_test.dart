@@ -37,9 +37,8 @@ void main() {
       voiceUnavailableReason: deviceSttUnavailableReason,
     );
 
-    expect(find.byIcon(Icons.mic_off), findsOneWidget);
+    expectVoiceUnavailableMic(deviceSttUnavailableReason);
     expect(find.byIcon(Icons.send), findsOneWidget);
-    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
 
     await openVoiceUnavailableSheet(tester);
 
@@ -78,28 +77,7 @@ void main() {
   testWidgets('unavailable STT reason disables mic even with a voice service', (
     tester,
   ) async {
-    final service = successfulVoiceCaptureService(
-      transcript: 'should not capture',
-      duration: const Duration(milliseconds: 1),
-      confidence: 1,
-    );
-    VoiceCapture? captured;
-
-    await pumpUnavailableTranscriptSurface(
-      tester,
-      voiceUnavailableReason: deviceSttUnavailableReason,
-      voiceCaptureService: service,
-      onVoice: (capture) => captured = capture,
-    );
-
-    expect(find.byIcon(Icons.mic), findsNothing);
-    expect(find.byIcon(Icons.mic_off), findsOneWidget);
-    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
-
-    await openVoiceUnavailableSheet(tester);
-
-    expectVoiceUnavailableSheetTitle();
-    expect(captured, isNull);
+    await expectUnavailableVoiceServiceDoesNotCapture(tester);
   });
 
   testWidgets(
@@ -117,7 +95,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expectVoiceCaptureReadyIndicator();
 
       await tester.tap(find.byIcon(Icons.mic));
       await tester.pumpAndSettle();
@@ -153,13 +131,11 @@ void main() {
 
     // While recording the mic icon flips to a stop icon and the surface label
     // announces the active state.
-    expect(find.byIcon(Icons.stop), findsOneWidget);
-    expect(find.byIcon(Icons.mic), findsNothing);
+    expectVoiceCaptureInFlightIndicator();
 
     await tester.pumpAndSettle();
 
     // After the capture resolves the mic icon is back.
-    expect(find.byIcon(Icons.mic), findsOneWidget);
-    expect(find.byIcon(Icons.stop), findsNothing);
+    expectVoiceCaptureReadyIndicator();
   });
 }

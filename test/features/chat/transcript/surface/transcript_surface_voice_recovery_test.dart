@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/shared/voice/voice_capture_service.dart';
-
-import '../../../shared/fakes/voice_capture_service_fakes.dart';
 import '../shared/transcript_voice_recovery_test_helpers.dart';
 
 void main() {
@@ -14,8 +11,7 @@ void main() {
       voiceUnavailableReason: deviceSttUnavailableReason,
     );
 
-    expect(find.byIcon(Icons.mic_off), findsOneWidget);
-    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
+    expectVoiceUnavailableMic(deviceSttUnavailableReason);
 
     await openVoiceUnavailableSheet(tester);
 
@@ -86,27 +82,6 @@ void main() {
   testWidgets('unavailable STT reason disables mic even with a voice service', (
     tester,
   ) async {
-    final service = successfulVoiceCaptureService(
-      transcript: 'should not capture',
-      duration: const Duration(milliseconds: 1),
-      confidence: 1,
-    );
-    VoiceCapture? captured;
-
-    await pumpUnavailableTranscriptSurface(
-      tester,
-      voiceUnavailableReason: deviceSttUnavailableReason,
-      voiceCaptureService: service,
-      onVoice: (capture) => captured = capture,
-    );
-
-    expect(find.byIcon(Icons.mic), findsNothing);
-    expect(find.byIcon(Icons.mic_off), findsOneWidget);
-    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
-
-    await openVoiceUnavailableSheet(tester);
-
-    expectVoiceUnavailableSheetTitle();
-    expect(captured, isNull);
+    await expectUnavailableVoiceServiceDoesNotCapture(tester);
   });
 }
