@@ -28,8 +28,9 @@ class NavivoxPairingDescriptor {
     if (tokenRequired && token == null) {
       throw FormatException('Pairing descriptor requires rest_token', value);
     }
-    final webSocketUri = Uri.parse(
+    final webSocketUri = navivoxWebSocketUriFromEndpointString(
       _requiredPairingParam(query, 'websocket_url', value),
+      descriptor: value,
     );
     final baseUri = Uri.parse(
       _optionalPairingParam(query['base_url']) ??

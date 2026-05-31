@@ -7,6 +7,7 @@ void main() {
   preservesGenericWebSocketUrlImports();
   parsesSharedTextTokenWithSpacedSeparator();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
+  rejectsCorePairingDescriptorWithHttpWebSocketUrl();
 }
 
 void parsesValidCorePairingDescriptor() {
@@ -98,6 +99,17 @@ void rejectsMalformedCorePairingDescriptorBeforeGenericFallback() {
     result == null,
     'malformed navivox://connect descriptors must be rejected instead of '
     'falling back to a token-only generic import',
+  );
+}
+
+void rejectsCorePairingDescriptorWithHttpWebSocketUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'navivox://connect?websocket_url=https%3A%2F%2Fgateway.example%2Fws&rest_token=nvbx_ok',
+  );
+
+  _expect(
+    result == null,
+    'core pairing websocket_url must be a ws/wss endpoint, not an HTTP URL',
   );
 }
 
