@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import '../../protocol/navivox_json.dart' show navivoxMapListFromJson;
+import '../../protocol/navivox_json.dart'
+    show navivoxMapFieldFromJson, navivoxMapListFromJson;
 
 /// Decodes a gateway response body that must contain a JSON object.
 Map<String, Object?> navivoxGatewayDecodeObject(String body) {
@@ -65,6 +66,20 @@ Map<String, Object?> navivoxGatewayObjectField(
     throw FormatException('expected JSON object field $key');
   }
   return object;
+}
+
+/// Parses a nested gateway object field into a typed value.
+///
+/// Gateway response models use the protocol map-field contract for optional
+/// nested objects: missing or malformed objects decode as an empty map, leaving
+/// each typed parser responsible for its own defaults. This helper keeps that
+/// object-field-to-value seam shared without changing wire tolerance.
+T navivoxGatewayObjectFromField<T>(
+  Map<String, Object?> json,
+  String key,
+  T Function(Map<String, Object?> json) fromJson,
+) {
+  return fromJson(navivoxMapFieldFromJson(json, key));
 }
 
 /// Parses a loose gateway JSON list into typed values.

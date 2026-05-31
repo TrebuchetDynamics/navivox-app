@@ -68,8 +68,10 @@ class NavivoxCapabilityDocument {
       object: navivoxStringFieldFromJson(json, 'object'),
       protocolVersion: navivoxStringFieldFromJson(json, 'protocol_version'),
       capabilities: navivoxStringListFromJson(json['capabilities']),
-      auth: NavivoxCapabilityAuth.fromJson(
-        navivoxMapFieldFromJson(json, 'auth'),
+      auth: navivoxGatewayObjectFromField(
+        json,
+        'auth',
+        NavivoxCapabilityAuth.fromJson,
       ),
       healthAliases: navivoxStringListFromJson(
         navivoxMapFieldFromJson(json, 'health')['aliases'],
@@ -78,20 +80,30 @@ class NavivoxCapabilityDocument {
         json['endpoints'],
         NavivoxCapabilityEndpoint.fromJson,
       ),
-      profileManagement: NavivoxProfileManagementCapability.fromJson(
-        navivoxMapFieldFromJson(json, 'profile_management'),
+      profileManagement: navivoxGatewayObjectFromField(
+        json,
+        'profile_management',
+        NavivoxProfileManagementCapability.fromJson,
       ),
-      attachments: NavivoxAttachmentCapability.fromJson(
-        navivoxMapFieldFromJson(json, 'attachments'),
+      attachments: navivoxGatewayObjectFromField(
+        json,
+        'attachments',
+        NavivoxAttachmentCapability.fromJson,
       ),
-      voice: NavivoxVoiceProtocolCapability.fromJson(
-        navivoxMapFieldFromJson(json, 'voice'),
+      voice: navivoxGatewayObjectFromField(
+        json,
+        'voice',
+        NavivoxVoiceProtocolCapability.fromJson,
       ),
-      streams: NavivoxStreamCapability.fromJson(
-        navivoxMapFieldFromJson(json, 'streams'),
+      streams: navivoxGatewayObjectFromField(
+        json,
+        'streams',
+        NavivoxStreamCapability.fromJson,
       ),
-      durableReconnect: NavivoxDurableReconnectCapability.fromJson(
-        navivoxMapFieldFromJson(json, 'durable_reconnect'),
+      durableReconnect: navivoxGatewayObjectFromField(
+        json,
+        'durable_reconnect',
+        NavivoxDurableReconnectCapability.fromJson,
       ),
     );
   }

@@ -109,8 +109,10 @@ class NavivoxVoiceProfileValidation {
   factory NavivoxVoiceProfileValidation.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProfileValidation(
       profileId: navivoxStringFieldFromJson(json, 'profile_id'),
-      voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        navivoxMapFieldFromJson(json, 'voice_profile'),
+      voiceProfile: navivoxGatewayObjectFromField(
+        json,
+        'voice_profile',
+        NavivoxProfileVoiceProfile.fromJson,
       ),
       valid: navivoxGatewayBoolField(json, 'valid'),
       errors: _voiceProfileErrorsFromJson(json['errors']),
@@ -146,8 +148,10 @@ class NavivoxVoiceProfileView {
         json['display_name'],
         fallback: profileId,
       ),
-      voiceProfile: NavivoxProfileVoiceProfile.fromJson(
-        navivoxMapFieldFromJson(json, 'voice_profile'),
+      voiceProfile: navivoxGatewayObjectFromField(
+        json,
+        'voice_profile',
+        NavivoxProfileVoiceProfile.fromJson,
       ),
       credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
         json['credential_status_refs'],
@@ -176,8 +180,10 @@ class NavivoxVoiceProfilesResponse {
   factory NavivoxVoiceProfilesResponse.fromJson(Map<String, Object?> json) {
     return NavivoxVoiceProfilesResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
-      providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        navivoxMapFieldFromJson(json, 'provider_matrix'),
+      providerMatrix: navivoxGatewayObjectFromField(
+        json,
+        'provider_matrix',
+        NavivoxVoiceProviderMatrix.fromJson,
       ),
       profiles: navivoxGatewayObjectListFromJson(
         json['profiles'],
@@ -210,8 +216,10 @@ class NavivoxVoiceProfileValidationResponse {
     final topErrors = _voiceProfileErrorsFromJson(json['errors']);
     return NavivoxVoiceProfileValidationResponse(
       action: navivoxStringFieldFromJson(json, 'action'),
-      providerMatrix: NavivoxVoiceProviderMatrix.fromJson(
-        navivoxMapFieldFromJson(json, 'provider_matrix'),
+      providerMatrix: navivoxGatewayObjectFromField(
+        json,
+        'provider_matrix',
+        NavivoxVoiceProviderMatrix.fromJson,
       ),
       validation: validation,
       valid:
