@@ -7,6 +7,14 @@ import '../serialization/navivox_json.dart';
 /// These helpers keep alias lookup and non-empty string coercion consistent
 /// across gateway protocol models and UI form models without broadening each
 /// call site's accepted aliases.
+const configAllowedValuesFieldAliases = [
+  'allowed',
+  'allowed_values',
+  'enum_values',
+  'choices',
+  'options',
+];
+
 String? configWireString(Object? raw) => navivoxOptionalStringFromJson(raw);
 
 Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {

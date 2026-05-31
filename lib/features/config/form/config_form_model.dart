@@ -151,12 +151,10 @@ class ConfigFormModel {
   }
 
   static List<String> _fieldAllowedValues(Map raw) {
-    return configWireStringListFromAliases(raw, const [
-      'allowed',
-      'allowed_values',
-      'choices',
-      'options',
-    ]);
+    return configWireStringListFromAliases(
+      raw,
+      configAllowedValuesFieldAliases,
+    );
   }
 
   static List<String> _fieldActions(Map raw) {

@@ -78,6 +78,23 @@ void main() {
     expect(model.sections[2].rows.single.field, 'tools.allow_shell');
   });
 
+  test('parses enum_values as allowed values from schema fields', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {
+            'path': 'navivox.exposure_mode',
+            'type': 'enum',
+            'enum_values': ['local', 'tunnel'],
+          },
+        ],
+      },
+      values: const {'navivox.exposure_mode': 'local'},
+    );
+
+    expect(model.rows.single.allowedValues, ['local', 'tunnel']);
+  });
+
   test('redacts secret values and prepares write-only secret edits', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
