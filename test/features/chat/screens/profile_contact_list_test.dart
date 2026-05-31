@@ -58,7 +58,9 @@ void main() {
   testWidgets('selected contact is highlighted like the active Telegram chat', (
     tester,
   ) async {
-    final channel = profileContactListChannel(selectedKey: 'local::mineru');
+    final channel = profileContactListChannel(
+      selectedKey: chatProfileScopeKey(chatMineruProfileScope),
+    );
 
     await pumpProfileContactList(tester, channel: channel);
 
@@ -324,11 +326,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.sentTexts, ['triage latest ticket']);
-    expectLastSentTextCall(
+    expectLastSentTextToChatProfileScope(
       channel,
       text: 'triage latest ticket',
-      serverId: 'office',
-      profileId: 'support',
+      scope: chatSupportProfileScope,
     );
   });
 
@@ -519,8 +520,8 @@ void main() {
     await pumpChatScreen(
       tester,
       channel: channel,
-      serverId: 'office',
-      profileId: 'support',
+      serverId: chatSupportServerId,
+      profileId: chatSupportProfileId,
     );
     await tester.pumpAndSettle();
 
@@ -533,6 +534,6 @@ void main() {
 
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Support Triage'), findsWidgets);
-    expect(find.text('office'), findsOneWidget);
+    expect(find.text(chatSupportServerId), findsOneWidget);
   });
 }

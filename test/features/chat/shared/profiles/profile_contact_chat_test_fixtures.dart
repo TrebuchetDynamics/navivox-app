@@ -3,11 +3,12 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import '../../../../support/test_navivox_channel.dart';
 import '../../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
+import 'profile_scope_test_contracts.dart';
 
 /// Shared local Mineru Profile contact used by chat command/selection tests.
 const chatMineruBuilderContact = NavivoxProfileContact(
-  serverId: 'local',
-  profileId: 'mineru',
+  serverId: chatMineruServerId,
+  profileId: chatMineruProfileId,
   displayName: 'Mineru Builder',
   serverLabel: 'local',
   health: NavivoxProfileHealth.online,
@@ -16,8 +17,8 @@ const chatMineruBuilderContact = NavivoxProfileContact(
 
 /// Shared office Support Triage Profile contact used by forwarding/actions tests.
 const chatSupportTriageContact = NavivoxProfileContact(
-  serverId: 'office',
-  profileId: 'support',
+  serverId: chatSupportServerId,
+  profileId: chatSupportProfileId,
   displayName: 'Support Triage',
   serverLabel: 'office',
   health: NavivoxProfileHealth.online,
@@ -28,7 +29,11 @@ const chatSupportTriageContact = NavivoxProfileContact(
 TestNavivoxChannel mineruReadyProfileChannel({bool micAvailable = false}) {
   return profileContactChannel(
     servers: const [
-      NavivoxServer(id: 'local', name: 'local', status: 'connected'),
+      NavivoxServer(
+        id: chatMineruServerId,
+        name: chatMineruServerId,
+        status: 'connected',
+      ),
     ],
     contacts: [
       mineruBuilderProfile(

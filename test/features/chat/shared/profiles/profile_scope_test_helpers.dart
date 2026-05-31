@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 
 import '../../../../support/test_navivox_channel.dart';
+import 'profile_scope_test_contracts.dart';
+
+export 'profile_scope_test_contracts.dart';
 
 /// Asserts the chat channel selected the expected Profile-scoped conversation.
 void expectSelectedProfileScope(
@@ -13,6 +16,18 @@ void expectSelectedProfileScope(
     serverId: serverId,
     profileId: profileId,
   ));
+}
+
+/// Asserts the chat channel selected [scope].
+void expectSelectedChatProfileScope(
+  TestNavivoxChannel channel,
+  ChatProfileScope scope,
+) {
+  expectSelectedProfileScope(
+    channel,
+    serverId: scope.serverId,
+    profileId: scope.profileId,
+  );
 }
 
 /// Asserts the channel selected the same scope as [contact].
@@ -39,6 +54,20 @@ void expectLastSentTextCall(
     serverId: serverId,
     profileId: profileId,
   ));
+}
+
+/// Asserts the last text send was routed to [scope].
+void expectLastSentTextToChatProfileScope(
+  TestNavivoxChannel channel, {
+  required String text,
+  required ChatProfileScope scope,
+}) {
+  expectLastSentTextCall(
+    channel,
+    text: text,
+    serverId: scope.serverId,
+    profileId: scope.profileId,
+  );
 }
 
 /// Asserts the last text send was routed to [contact].
