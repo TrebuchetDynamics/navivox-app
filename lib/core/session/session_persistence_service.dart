@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../protocol/navivox_json.dart';
+import 'saved_connection_fields.dart';
 
 /// Persists non-secret gateway metadata for later reconnect flows.
 ///
@@ -34,13 +35,22 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return;
-    await prefs.setString(_keyBaseUrl, baseUrl.trim());
+    final fields = SavedConnectionFields.fromInput(
+      baseUrl: baseUrl,
+      webSocketUrl: webSocketUrl,
+      gatewayId: gatewayId,
+    );
+    await prefs.setString(_keyBaseUrl, fields.baseUrl);
     await prefs.remove(_legacyKeyToken);
-    if (webSocketUrl != null && webSocketUrl.trim().isNotEmpty) {
-      await prefs.setString(_keyWebSocketUrl, webSocketUrl.trim());
+    if (fields.webSocketUrl != null) {
+      await prefs.setString(_keyWebSocketUrl, fields.webSocketUrl!);
+    } else {
+      await prefs.remove(_keyWebSocketUrl);
     }
-    if (gatewayId != null && gatewayId.trim().isNotEmpty) {
-      await prefs.setString(_keyGatewayId, gatewayId.trim());
+    if (fields.gatewayId != null) {
+      await prefs.setString(_keyGatewayId, fields.gatewayId!);
+    } else {
+      await prefs.remove(_keyGatewayId);
     }
     await prefs.setString(
       _keyLastConnectedAt,
