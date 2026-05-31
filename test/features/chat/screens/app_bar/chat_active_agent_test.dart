@@ -12,9 +12,6 @@ import '../../../shared/fixtures/profile_contact_fixtures.dart';
 import '../../../shared/fixtures/seed_fixtures.dart';
 import '../../shared/widgets/chat_screen_test_fixtures.dart';
 
-const _chatContextActionKey = 'chat-context-action';
-const _chatActiveProfileAvatarKey = 'chat-active-profile-avatar';
-
 const _seedServers = [
   NavivoxServer(id: 'srv1', name: 'Local', status: 'ready'),
 ];
@@ -51,7 +48,7 @@ void main() {
     await pumpChatScreen(tester, channel: channel);
 
     expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
-    expect(find.byKey(const ValueKey(_chatContextActionKey)), findsOneWidget);
+    expect(find.byKey(const ValueKey(chatContextActionKey)), findsOneWidget);
 
     await openChatInfoSheet(tester);
     expect(find.text('Agent'), findsOneWidget);
@@ -68,12 +65,12 @@ void main() {
     await pumpChatScreen(tester, channel: channel);
 
     expect(
-      find.byKey(const ValueKey(_chatActiveProfileAvatarKey)),
+      find.byKey(const ValueKey(chatActiveProfileAvatarKey)),
       findsOneWidget,
     );
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey(_chatActiveProfileAvatarKey)),
+        of: find.byKey(const ValueKey(chatActiveProfileAvatarKey)),
         matching: find.text('M'),
       ),
       findsOneWidget,
