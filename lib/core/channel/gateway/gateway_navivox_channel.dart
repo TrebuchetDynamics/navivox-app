@@ -6,7 +6,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../../protocol/navivox_event.dart';
-import '../../protocol/navivox_json.dart';
 import '../../protocol/navivox_memory.dart';
 import '../../protocol/navivox_profile_contact_key.dart';
 import '../../protocol/navivox_voice_run.dart';
@@ -15,6 +14,7 @@ import '../contracts/navivox_channel.dart';
 import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_capability_policy.dart';
+import 'gateway_message_scope_policy.dart';
 import 'gateway_profile_contact_policy.dart';
 import 'gateway_tool_artifact_codec.dart';
 
@@ -949,37 +949,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   ({String? serverId, String? profileId}) _messageScopeFromEvent(
     NavivoxGatewayEvent event,
   ) {
-    final metadataServerId = navivoxOptionalStringFromJson(
-      event.metadata['server_id'],
+    return navivoxGatewayMessageScopeFromEvent(
+      event: event,
+      messages: _state.messages,
     );
-    final metadataProfileId = navivoxOptionalStringFromJson(
-      event.metadata['profile_id'],
-    );
-    if (metadataServerId != null && metadataProfileId != null) {
-      return (serverId: metadataServerId, profileId: metadataProfileId);
-    }
-
-    final requestMessage = event.requestId == null
-        ? null
-        : _state.messages[event.requestId!];
-    if (requestMessage?.profileContactKey != null) {
-      return (
-        serverId: requestMessage!.serverId,
-        profileId: requestMessage.profileId,
-      );
-    }
-
-    final toolMessage = event.toolCallId == null
-        ? null
-        : _state.messages[event.toolCallId!];
-    if (toolMessage?.profileContactKey != null) {
-      return (
-        serverId: toolMessage!.serverId,
-        profileId: toolMessage.profileId,
-      );
-    }
-
-    return (serverId: null, profileId: null);
   }
 
   List<NavivoxToolArtifact> _toolArtifactsFromEvent(
