@@ -1,6 +1,6 @@
-import '../../../core/channel/navivox_channel.dart';
-import '../../../shared/presentation/count_labels.dart';
-import '../../../shared/presentation/profile_health_labels.dart';
+import '../../../../core/channel/navivox_channel.dart';
+import '../../../../shared/presentation/count_labels.dart';
+import '../../../../shared/presentation/profile_health_labels.dart';
 
 class ServersScreenPresentation {
   const ServersScreenPresentation({required this.gateways});
@@ -104,7 +104,6 @@ class ServerGatewayPresentation {
       if (activeTurns > 0) countLabel(activeTurns, 'active turn'),
     ];
   }
-
 }
 
 class GatewayProfileContactPresentation {

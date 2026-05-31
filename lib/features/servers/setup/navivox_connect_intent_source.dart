@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import '../models/connection_import.dart';
-import 'setup_qr_import_presentation.dart';
+import '../shared/connection_import_parser.dart';
 
 class NavivoxConnectIntentSource {
   const NavivoxConnectIntentSource({
@@ -78,12 +78,12 @@ SetupQrImageImport? _parseConnectIntentPayload(Object? payload) {
   if (payload is String) {
     final text = payload.trim();
     if (text.isEmpty) return null;
-    return parseNavivoxQrPayload(text);
+    return parseNavivoxConnectionImportPayload(text);
   }
   if (payload is! Map) return null;
   final text = payload['payload']?.toString().trim();
   if (text == null || text.isEmpty) return null;
-  final parsed = parseNavivoxQrPayload(text);
+  final parsed = parseNavivoxConnectionImportPayload(text);
   if (parsed == null) return null;
   return parsed.withSource(_sourceFromPayload(payload['source']));
 }
