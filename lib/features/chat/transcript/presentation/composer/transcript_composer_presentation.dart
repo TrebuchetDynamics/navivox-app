@@ -1,7 +1,7 @@
 import '../../../../../core/protocol/navivox_json.dart';
 import '../../../../../shared/presentation/voice_unavailable_presentation.dart'
     as voice_unavailable_policy;
-import '../shared/transcript_display_text.dart';
+import '../shared/text/transcript_display_text.dart';
 
 enum TranscriptComposerVoiceButtonState { capture, stop, unavailable }
 

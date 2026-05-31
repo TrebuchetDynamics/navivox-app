@@ -1,5 +1,5 @@
 import '../../../../../core/protocol/navivox_event.dart';
-import '../shared/transcript_display_text.dart';
+import '../shared/text/transcript_display_text.dart';
 
 enum TranscriptSafetyNoticeTone { warning, approval }
 
