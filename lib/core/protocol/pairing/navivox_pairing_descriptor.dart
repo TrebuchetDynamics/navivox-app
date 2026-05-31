@@ -22,35 +22,36 @@ class NavivoxPairingDescriptor {
     if (uri.scheme != 'navivox' || uri.host != 'connect') {
       throw FormatException('Expected navivox://connect descriptor', value);
     }
-    final query = navivoxFirstNonBlankQueryParameterValues(
-      uri.queryParametersAll,
+    final fields = _PairingDescriptorFields(
+      descriptor: value,
+      queryParametersAll: uri.queryParametersAll,
     );
-    final tokenRequired = _boolFromPairingParam(query['token_required']);
-    final token = _optionalPairingParam(query['rest_token']);
+    final tokenRequired = fields.boolean('token_required');
+    final token = fields.optional('rest_token');
     if (tokenRequired && token == null) {
       throw FormatException('Pairing descriptor requires rest_token', value);
     }
     final webSocketUri = navivoxWebSocketUriFromEndpointString(
-      _requiredPairingParam(query, 'websocket_url', value),
+      fields.required('websocket_url'),
       descriptor: value,
     );
     final baseUri = _baseUriFromPairingParams(
-      explicitBaseUrl: _optionalPairingParam(query['base_url']),
+      explicitBaseUrl: fields.optional('base_url'),
       webSocketUri: webSocketUri,
       descriptor: value,
     );
     return NavivoxPairingDescriptor(
       baseUri: baseUri,
       webSocketUri: webSocketUri,
-      authMode: _optionalPairingParam(query['auth_mode']) ?? '',
-      exposureMode: _optionalPairingParam(query['exposure_mode']) ?? '',
+      authMode: fields.optional('auth_mode') ?? '',
+      exposureMode: fields.optional('exposure_mode') ?? '',
       tokenRequired: tokenRequired,
       token: token,
-      serverId: _optionalPairingParam(query['server_id']),
-      profileId: _optionalPairingParam(query['profile_id']),
-      workspaceId: _optionalPairingParam(query['workspace_id']),
-      providerId: _optionalPairingParam(query['provider_id']),
-      channelIds: _csvPairingParam(query['channel_ids']),
+      serverId: fields.optional('server_id'),
+      profileId: fields.optional('profile_id'),
+      workspaceId: fields.optional('workspace_id'),
+      providerId: fields.optional('provider_id'),
+      channelIds: fields.csv('channel_ids'),
     );
   }
 
@@ -75,20 +76,46 @@ class NavivoxPairingDescriptor {
   }
 }
 
-String _requiredPairingParam(
-  Map<String, String> query,
-  String name,
-  String descriptor,
-) {
-  final value = _optionalPairingParam(query[name]);
-  if (value == null) {
-    throw FormatException('Pairing descriptor missing $name', descriptor);
-  }
-  return value;
-}
+class _PairingDescriptorFields {
+  _PairingDescriptorFields({
+    required this.descriptor,
+    required Map<String, List<String>> queryParametersAll,
+  }) : firstValues = navivoxFirstNonBlankQueryParameterValues(
+         queryParametersAll,
+       ),
+       allValues = queryParametersAll;
 
-String? _optionalPairingParam(String? value) {
-  return navivoxOptionalStringFromJson(value);
+  final String descriptor;
+  final Map<String, String> firstValues;
+  final Map<String, List<String>> allValues;
+
+  String required(String name) {
+    final value = optional(name);
+    if (value == null) {
+      throw FormatException('Pairing descriptor missing $name', descriptor);
+    }
+    return value;
+  }
+
+  String? optional(String name) {
+    return navivoxOptionalStringFromJson(firstValues[name]);
+  }
+
+  bool boolean(String name) {
+    return navivoxStrictBoolFromJson(firstValues[name]);
+  }
+
+  List<String> csv(String name) {
+    final values = allValues[name];
+    if (values == null) return const [];
+    return values
+        .map(navivoxOptionalStringFromJson)
+        .whereType<String>()
+        .expand((value) => value.split(','))
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
 }
 
 Uri _baseUriFromPairingParams({
@@ -123,14 +150,4 @@ String _baseUrlFromWebSocketUri(Uri uri, String descriptor) {
       descriptor,
     );
   }
-}
-
-bool _boolFromPairingParam(String? value) {
-  return navivoxStrictBoolFromJson(value);
-}
-
-List<String> _csvPairingParam(String? value) {
-  final trimmed = navivoxOptionalStringFromJson(value);
-  if (trimmed == null) return const [];
-  return navivoxTrimmedStringList(trimmed.split(','));
 }
