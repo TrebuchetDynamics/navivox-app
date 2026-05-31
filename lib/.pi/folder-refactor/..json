@@ -1,7 +1,7 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T10:52:37.409Z",
+  "updatedAt": "2026-05-31T10:54:18.576Z",
   "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactors under lib to expose hidden import/provenance/endpoint assumptions without changing public behavior except proven regressions.",
   "completedSlices": [
     "Added preservesCorePairingDescriptorRepeatedQueryValuesAfterBlankCopyArtifacts regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because NavivoxPairingDescriptor.parse used Uri.queryParameters and blank duplicate params erased earlier websocket/token values.",
@@ -16,13 +16,15 @@
     "Added prefersEntryAliasOverrideOverTopLevelJsonDefaultAlias regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because entry aliases such as baseUrl/pairingToken coexisted with top-level default base_url/token and canonical alias lookup chose the stale defaults.",
     "Made JSON default inheritance alias-aware in features/servers/shared/connection_import/parser.dart by extracting _removeDefaultJsonAliasesOverriddenByEntry and explicit _jsonConnectionImportFieldAliasGroups; nonblank entry aliases now clear same-field default aliases before candidate construction.",
     "Added readsEarliestLabeledSharedTextTokenAfterSelectedUrl regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because _firstLabeledToken prioritized label spelling order over text order, so a later 'Pairing token' beat an earlier 'Token'.",
-    "Extracted _LabeledTokenMatch in features/servers/shared/connection_import/parser.dart; labeled shared-text token selection now compares candidate match offsets so the earliest token mention wins independent of label alias order."
+    "Extracted _LabeledTokenMatch in features/servers/shared/connection_import/parser.dart; labeled shared-text token selection now compares candidate match offsets so the earliest token mention wins independent of label alias order.",
+    "Added doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken regression in features/servers/shared/connection_import/parser_regression_test.dart; it failed before the fix because a dangling label in one endpoint segment could skip across the next URL and make the earlier endpoint appear to have that later token.",
+    "Made shared-text token segment bounds explicit by carrying tokenSearchEnd on _SharedTextEndpointCandidate and passing it through _sharedTextImportToken/_firstToken/_readTokenAt so labels cannot consume token text outside the selected endpoint segment."
   ],
   "nextCandidates": [
-    "features/servers/shared/connection_import labeled token segment bound: constrain token read to selected endpoint segment end so labels before a later URL cannot consume tokens after it",
     "features/servers/pairing token edit provenance policy at widget level if product decides credential edits should also clear pairing-link failure copy",
     "features/servers/setup connect-intent payload source precedence and stale direct-app-open payload replay",
-    "features/servers/shared/connection_import shared-text URL/token provenance around equal-rank candidates with metadata-only URLs"
+    "features/servers/shared/connection_import shared-text URL/token provenance around equal-rank candidates with metadata-only URLs",
+    "features/servers/shared/connection_import token grammar visibility: distinguish broad human-entered tokens from accidental prose/URLs after token labels"
   ],
   "validationReceipts": [
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: later setup token bound to earlier docs URL for equal-rank shared-text URL candidates)",
@@ -38,6 +40,10 @@
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
     "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)",
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: label alias order selected later 'Pairing token' over earlier 'Token')",
+    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
+    "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)",
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: dangling token label before later URL made earlier endpoint consume the later URL/token segment)",
     "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (formatted)",
     "dart run features/servers/shared/connection_import/parser_regression_test.dart (passes)",
     "dart analyze features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart (passes)"

@@ -267,6 +267,7 @@ String? _sharedTextImportToken({
   return _firstToken(
         text,
         start: embeddedUrlCandidate?.tokenSearchStart ?? 0,
+        end: embeddedUrlCandidate?.tokenSearchEnd,
       ) ??
       _firstToken(text);
 }
@@ -284,6 +285,7 @@ _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
     final sharedTextCandidate = _SharedTextEndpointCandidate(
       candidate: candidate,
       tokenSearchStart: endpoint.tokenSearchStart,
+      tokenSearchEnd: endpoint.tokenSearchEnd,
       hasFollowingToken:
           _firstToken(
             text,
@@ -332,11 +334,13 @@ class _SharedTextEndpointCandidate {
   const _SharedTextEndpointCandidate({
     required this.candidate,
     required this.tokenSearchStart,
+    required this.tokenSearchEnd,
     required this.hasFollowingToken,
   });
 
   final _ConnectionImportCandidate candidate;
   final int tokenSearchStart;
+  final int tokenSearchEnd;
   final bool hasFollowingToken;
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
@@ -524,7 +528,7 @@ String? _firstToken(String text, {int start = 0, int? end}) {
 
   final navivoxIndex = text.toLowerCase().indexOf('nvbx_', start);
   if (navivoxIndex < 0 || navivoxIndex >= tokenSearchEnd) return null;
-  return _readTokenAt(text, navivoxIndex);
+  return _readTokenAt(text, navivoxIndex, end: tokenSearchEnd);
 }
 
 String? _firstLabeledToken(
@@ -539,7 +543,7 @@ String? _firstLabeledToken(
       caseSensitive: false,
     ).allMatches(text, start).where((match) => match.start < end);
     for (final match in matches) {
-      final token = _readTokenAt(text, match.end);
+      final token = _readTokenAt(text, match.end, end: end);
       if (token == null) continue;
       final candidate = _LabeledTokenMatch(start: match.start, token: token);
       if (candidate.isBefore(earliestMatch)) earliestMatch = candidate;
@@ -568,20 +572,24 @@ const _tokenLabels = [
   'token',
 ];
 
-String? _readTokenAt(String text, int start) {
+String? _readTokenAt(String text, int start, {int? end}) {
+  final tokenSearchEnd = end ?? text.length;
   var index = start;
-  index = _skipTokenLeadingIgnoredChars(text, index);
+  index = _skipTokenLeadingIgnoredChars(text, index, end: tokenSearchEnd);
   final tokenStart = index;
-  while (index < text.length && _isTokenChar(text.codeUnitAt(index))) {
+  while (index < tokenSearchEnd &&
+      index < text.length &&
+      _isTokenChar(text.codeUnitAt(index))) {
     index++;
   }
   if (index == tokenStart) return null;
   return _trimTokenTrailingPunctuation(text.substring(tokenStart, index));
 }
 
-int _skipTokenLeadingIgnoredChars(String text, int start) {
+int _skipTokenLeadingIgnoredChars(String text, int start, {int? end}) {
+  final tokenSearchEnd = end ?? text.length;
   var index = start;
-  while (index < text.length) {
+  while (index < tokenSearchEnd && index < text.length) {
     final codeUnit = text.codeUnitAt(index);
     if (codeUnit <= 32 || _tokenLeadingDelimiters.contains(text[index])) {
       index++;

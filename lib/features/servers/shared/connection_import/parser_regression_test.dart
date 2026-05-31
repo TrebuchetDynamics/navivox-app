@@ -13,6 +13,7 @@ void main() {
   readsEarliestLabeledSharedTextTokenAfterSelectedUrl();
   prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl();
   prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
+  doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken();
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
@@ -231,6 +232,26 @@ void prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl() {
     'token after a later bare URL should bind to that URL, not an earlier docs URL',
   );
   _expect(result.token == 'nvbx_fresh', 'following token should be preserved');
+}
+
+void doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Read https://docs.example/setup first. Token:\n'
+    'https://gateway.example/connect then use Token: nvbx_fresh.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with a dangling token label before a later URL should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'a token label before a later URL must not bind that later URL to the earlier endpoint',
+  );
+  _expect(
+    result.token == 'nvbx_fresh',
+    'the selected later endpoint should keep its following token',
+  );
 }
 
 void preservesGenericWebSocketUrlImports() {
