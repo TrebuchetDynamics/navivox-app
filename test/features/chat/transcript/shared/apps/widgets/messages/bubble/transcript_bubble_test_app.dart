@@ -3,8 +3,8 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_bubble.dart';
 
-import '../../../contracts/transcript_forwarding_contracts.dart';
-import '../shared/transcript_widget_test_host.dart';
+import '../../../../contracts/transcript_forwarding_contracts.dart';
+import '../shared/transcript_message_test_host.dart';
 
 /// Mounts [TranscriptBubble] under the shared Material feature-test shell.
 Widget transcriptBubbleTestApp({
@@ -14,7 +14,7 @@ Widget transcriptBubbleTestApp({
   List<NavivoxProfileContact> forwardTargets = const [],
   TranscriptForwardCallback? onForward,
   VoidCallback? onCancelActiveTurn,
-  Widget Function(Widget bubble)? wrapBubble,
+  TranscriptMessageHostWrapper? wrapBubble,
 }) {
   final bubble = TranscriptBubble(
     message: message,
@@ -25,5 +25,5 @@ Widget transcriptBubbleTestApp({
     onCancelActiveTurn: onCancelActiveTurn,
   );
 
-  return transcriptWidgetTestHost(wrapBubble?.call(bubble) ?? bubble);
+  return transcriptMessageTestHost(bubble, wrap: wrapBubble);
 }
