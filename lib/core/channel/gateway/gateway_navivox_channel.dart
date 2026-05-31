@@ -683,9 +683,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   void sendConfigSet({required String field, required Object? value}) {
     if (!_configAdminAvailable) {
-      _appendSystemMessage(
-        'Config editing is not available on this channel yet.',
-      );
+      _appendSystemMessage(navivoxConfigEditUnavailableMessage(secret: false));
       return;
     }
     unawaited(_applyConfigSetInBackground(field: field, value: value));
@@ -694,9 +692,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   void sendConfigSecretSet({required String name, required String secret}) {
     if (!_configAdminAvailable) {
-      _appendSystemMessage(
-        'Secret editing is not available on this channel yet.',
-      );
+      _appendSystemMessage(navivoxConfigEditUnavailableMessage(secret: true));
       return;
     }
     unawaited(_applyConfigSetInBackground(field: name, value: secret));

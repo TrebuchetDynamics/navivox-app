@@ -8,6 +8,12 @@ import 'gateway_client_guard.dart';
 /// Config refresh/diff/validate/apply share the same connection and advertised
 /// availability contract. Keeping the guard outside the channel keeps those
 /// call sites aligned without exposing config-admin state mutation.
+String navivoxConfigEditUnavailableMessage({required bool secret}) {
+  return secret
+      ? 'Secret editing is not available on this channel yet.'
+      : 'Config editing is not available on this channel yet.';
+}
+
 NavivoxGatewayClient navivoxRequireGatewayConfigAdminClient({
   required NavivoxGatewayClient? client,
   required bool available,
