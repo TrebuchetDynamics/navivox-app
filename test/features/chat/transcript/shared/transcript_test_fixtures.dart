@@ -99,6 +99,52 @@ NavivoxChatMessage transcriptVoiceMessage({
   );
 }
 
+NavivoxToolApproval transcriptShellApproval({
+  String id = 'approval-shell',
+  String status = 'approval_required',
+  String prompt = 'Approve shell.run?',
+  String risk = 'Writes files',
+}) {
+  return NavivoxToolApproval(
+    id: id,
+    status: status,
+    prompt: prompt,
+    risk: risk,
+  );
+}
+
+NavivoxToolArtifact transcriptDiffArtifact({
+  String id = 'a-1',
+  String kind = 'file',
+  String title = 'diff.patch',
+  String? summary = '14 lines changed',
+  String? ref,
+}) {
+  return NavivoxToolArtifact(
+    id: id,
+    kind: kind,
+    title: title,
+    summary: summary,
+    ref: ref,
+  );
+}
+
+NavivoxToolArtifact transcriptScreenshotArtifact({
+  String id = 'a-2',
+  String kind = 'image',
+  String title = 'screenshot.png',
+  String? summary,
+  String? ref,
+}) {
+  return NavivoxToolArtifact(
+    id: id,
+    kind: kind,
+    title: title,
+    summary: summary,
+    ref: ref,
+  );
+}
+
 NavivoxToolCall transcriptToolCall({
   String name = 'grep',
   String status = 'finished',

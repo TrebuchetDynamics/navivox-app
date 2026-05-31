@@ -39,25 +39,10 @@ void main() {
           name: 'shell.run',
           status: 'completed',
           summary: 'ran git diff',
-          approval: const NavivoxToolApproval(
-            id: 'approval-shell',
-            status: 'approval_required',
-            prompt: 'Approve shell.run?',
-            risk: 'Writes files',
-          ),
-          artifacts: const [
-            NavivoxToolArtifact(
-              id: 'a-1',
-              kind: 'file',
-              title: 'diff.patch',
-              summary: '14 lines changed',
-            ),
-            NavivoxToolArtifact(
-              id: 'a-2',
-              kind: 'image',
-              title: 'screenshot.png',
-              ref: 'artifacts/a-2',
-            ),
+          approval: transcriptShellApproval(),
+          artifacts: [
+            transcriptDiffArtifact(),
+            transcriptScreenshotArtifact(ref: 'artifacts/a-2'),
           ],
         ),
       );

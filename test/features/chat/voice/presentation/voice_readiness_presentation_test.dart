@@ -5,6 +5,7 @@ import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
 import '../../shared/voice_recovery_test_fixtures.dart';
+import '../../shared/voice_settings_test_fixtures.dart';
 
 void main() {
   final profile = mineruBuilderProfile(
@@ -12,7 +13,7 @@ void main() {
     latestPreview: 'Ready',
     workspaceRootCount: 0,
   );
-  const trusted = NavivoxVoiceSettings(trustedServerIds: {'local'});
+  final trusted = trustedVoiceSettingsFor('local');
 
   test(
     'reports ready when settings, trust, device, and profile allow capture',
@@ -47,7 +48,7 @@ void main() {
       localVoiceCaptureUnavailableReason: deviceSttUnavailableReason,
     );
     final untrusted = VoiceReadinessPresentation.fromState(
-      settings: const NavivoxVoiceSettings(),
+      settings: untrustedVoiceSettings,
       activeProfile: profile,
       localVoiceCaptureAvailable: false,
       localVoiceCaptureUnavailableReason: deviceSttUnavailableReason,

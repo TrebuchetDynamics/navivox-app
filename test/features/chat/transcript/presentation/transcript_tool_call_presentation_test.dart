@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_tool_call_presentation.dart';
 
 import '../shared/transcript_test_fixtures.dart';
@@ -11,25 +10,10 @@ void main() {
         name: 'shell.run',
         status: 'finished',
         summary: 'ran git diff',
-        approval: const NavivoxToolApproval(
-          id: 'approval-shell',
-          status: 'approval_required',
-          prompt: 'Approve shell.run?',
-          risk: 'Writes files',
-        ),
-        artifacts: const [
-          NavivoxToolArtifact(
-            id: 'a-1',
-            kind: 'file',
-            title: 'diff.patch',
-            summary: '14 lines changed',
-            ref: 'artifact://a-1',
-          ),
-          NavivoxToolArtifact(
-            id: 'a-2',
-            kind: 'image',
-            title: 'screenshot.png',
-          ),
+        approval: transcriptShellApproval(),
+        artifacts: [
+          transcriptDiffArtifact(ref: 'artifact://a-1'),
+          transcriptScreenshotArtifact(),
         ],
       ),
     );
@@ -74,10 +58,13 @@ void main() {
         name: 'grep',
         status: 'completed',
         summary: '',
-        artifacts: const [
-          NavivoxToolArtifact(id: 'a-1', kind: 'text', title: 'result.txt'),
-          NavivoxToolArtifact(
-            id: 'a-2',
+        artifacts: [
+          transcriptDiffArtifact(
+            kind: 'text',
+            title: 'result.txt',
+            summary: null,
+          ),
+          transcriptScreenshotArtifact(
             kind: 'log',
             title: 'empty.log',
             summary: '',

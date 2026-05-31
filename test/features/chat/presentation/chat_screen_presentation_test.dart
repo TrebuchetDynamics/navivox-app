@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
-import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../shared/chat_message_test_fixtures.dart';
 import '../shared/voice_recovery_test_fixtures.dart';
 import '../shared/voice_run_test_fixtures.dart';
+import '../shared/voice_settings_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -66,7 +66,7 @@ void main() {
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      voiceSettings: trustedVoiceSettingsFor('srv1'),
       localVoiceCaptureAvailable: true,
     );
 
@@ -107,7 +107,7 @@ void main() {
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      voiceSettings: trustedVoiceSettingsFor('srv1'),
       localVoiceCaptureAvailable: true,
     );
 
@@ -194,7 +194,7 @@ void main() {
         profileContacts: [profile],
         selectedProfileContactKey: 'srv1::mineru',
       ),
-      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      voiceSettings: trustedVoiceSettingsFor('srv1'),
       localVoiceCaptureAvailable: true,
     );
 
@@ -231,7 +231,7 @@ void main() {
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      voiceSettings: trustedVoiceSettingsFor('srv1'),
       localVoiceCaptureAvailable: true,
     );
 
@@ -274,7 +274,7 @@ void main() {
         profileContacts: [activeProfile],
         selectedProfileContactKey: 'srv1::mineru',
       ),
-      voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+      voiceSettings: trustedVoiceSettingsFor('srv1'),
       localVoiceCaptureAvailable: false,
     );
 
@@ -303,7 +303,7 @@ void main() {
         profileContacts: [activeProfile],
         selectedProfileContactKey: 'srv1::mineru',
       ),
-      voiceSettings: const NavivoxVoiceSettings(),
+      voiceSettings: untrustedVoiceSettings,
       localVoiceCaptureAvailable: true,
     );
 
@@ -323,7 +323,7 @@ void main() {
           servers: [local],
           activeServerId: 'srv1',
         ),
-        voiceSettings: const NavivoxVoiceSettings(trustedServerIds: {'srv1'}),
+        voiceSettings: trustedVoiceSettingsFor('srv1'),
         localVoiceCaptureAvailable: true,
       );
 
