@@ -1,6 +1,6 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../shared/presentation/count_labels.dart';
-import '../../profile_contacts/profile_contact_presentation.dart';
+import '../../../shared/presentation/profile_health_labels.dart';
 
 class ServersScreenPresentation {
   const ServersScreenPresentation({required this.gateways});
@@ -112,6 +112,5 @@ class GatewayProfileContactPresentation {
 
   final NavivoxProfileContact contact;
 
-  String get compactHealthLabel =>
-      ProfileContactPresentation(contact).compactHealthLabel;
+  String get compactHealthLabel => compactProfileHealthLabel(contact.health);
 }

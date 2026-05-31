@@ -1,16 +1,18 @@
 {
   "version": 1,
   "target": "lib",
-  "updatedAt": "2026-05-31T00:24:22.802Z",
-  "objective": "Small compile-preserving lib refactor focused on shared-code reuse/contracts: keep existing root topology (app/core/features/router/shared/testing/theme plus root entrypoints), and replace duplicated session string/date trimming policy with existing core/protocol JSON helpers.",
+  "updatedAt": "2026-05-31T00:26:56.956Z",
+  "objective": "Small compile-preserving lib refactor focused on shared-code reuse/contracts: keep existing root topology (app/core/features/router/shared/testing/theme plus root entrypoints), and replace duplicated presentation/json policy with existing shared/core contracts instead of broad package moves.",
   "completedSlices": [
     "Reused navivoxOptionalLiteralStringFromJson in PublicJsonWebKey parsing to preserve literal-string JWK semantics without local duplicate trim/null logic.",
     "Reused navivoxOptionalStringFromJson and navivoxDateTimeFromJson in SessionPersistenceService saved-session loading, removing local _nullableString/_parseDateTime duplicates.",
-    "Reused navivoxOptionalStringFromJson in ReconnectReadiness blocked recovery messages."
+    "Reused navivoxOptionalStringFromJson in ReconnectReadiness blocked recovery messages.",
+    "Reused compactProfileHealthLabel in servers overview presentation, removing cross-feature dependency on ProfileContactPresentation for compact health policy."
   ],
   "nextCandidates": [],
   "validationReceipts": [
     "flutter test test/core/session/durable_credential_key_store_test.dart test/core/session/session_persistence_service_test.dart test/core/session/reconnect_readiness_test.dart — passed (14 tests).",
+    "flutter test test/features/servers/overview/servers_screen_presentation_test.dart test/shared/presentation/profile_health_labels_test.dart — passed (4 tests).",
     "folder_refactor_audit target=lib plannedTopologyComplete=true facadeFiles=[app.dart] outOfScopeFiles=[main.dart, main_e2e.dart] nextCandidateFiles=[] — passed."
   ]
 }
