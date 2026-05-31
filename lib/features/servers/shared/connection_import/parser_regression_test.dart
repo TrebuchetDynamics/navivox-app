@@ -33,6 +33,7 @@ void main() {
   doesNotLetBlankJsonEntryAliasInheritTopLevelDefaultAlias();
   doesNotLetMetadataOnlyJsonEntryStealDefaultCredentialsFromConcreteEntry();
   parsesSharedTextTokenWithSpacedSeparator();
+  doesNotTreatTokenSuffixInDifferentLabelAsSharedTextToken();
   parsesSharedTextTokenWrappedInQuotes();
   parsesSharedTextTokenWrappedInBackticks();
   parsesSharedTextTokenWrappedInAngleBrackets();
@@ -605,6 +606,22 @@ void parsesSharedTextTokenWithSpacedSeparator() {
   _expect(
     result.token == 'shared_secret',
     'token labels should allow spaces before separators',
+  );
+}
+
+void doesNotTreatTokenSuffixInDifferentLabelAsSharedTextToken() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Server: https://gateway.example/connect\nnotoken: stale_secret',
+  );
+
+  _expect(result != null, 'shared text URL should still parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'shared text URL origin should provide baseUrl',
+  );
+  _expect(
+    result.token == null,
+    'token labels must not match the token suffix inside a different field name',
   );
 }
 

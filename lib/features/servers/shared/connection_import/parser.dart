@@ -931,9 +931,8 @@ String? _firstLabeledToken(
 }) {
   _LabeledTokenMatch? earliestMatch;
   for (final label in _tokenLabels) {
-    final matches = RegExp(
-      '${RegExp.escape(label)}\\s*[:=]',
-      caseSensitive: false,
+    final matches = _tokenLabelPattern(
+      label,
     ).allMatches(text, start).where((match) => match.start < end);
     for (final match in matches) {
       final token = _readLabeledTokenAt(text, match.end, end: end);
@@ -964,6 +963,17 @@ const _tokenLabels = [
   'auth-token',
   'token',
 ];
+
+RegExp _tokenLabelPattern(String label) {
+  // Field labels are provenance, not substring searches. Without an explicit
+  // left boundary, a copied field such as "notoken:" or "server-token:" can
+  // accidentally satisfy the generic "token:" label and attach unrelated data
+  // to the selected endpoint.
+  return RegExp(
+    '(^|[^A-Za-z0-9_-])${RegExp.escape(label)}\\s*[:=]',
+    caseSensitive: false,
+  );
+}
 
 String? _readLabeledTokenAt(String text, int start, {int? end}) {
   final token = _readTokenAt(text, start, end: end);
