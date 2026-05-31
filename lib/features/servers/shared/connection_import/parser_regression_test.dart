@@ -19,6 +19,7 @@ void main() {
   prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
   prefersConnectionPathOverEarlierEqualRankMetadataUrl();
   doesNotBorrowTokenFromLaterSharedTextUrlWindow();
+  doesNotBorrowTokenFromEarlierSharedTextUrlWindow();
   doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken();
   doesNotUseUrlAfterSharedTextTokenLabelAsToken();
   doesNotTreatSingleUrlAfterSharedTextTokenLabelAsToken();
@@ -378,6 +379,30 @@ void doesNotBorrowTokenFromLaterSharedTextUrlWindow() {
   _expect(
     result.token == null,
     'a token after a different later URL must not be borrowed by the selected endpoint',
+  );
+}
+
+void doesNotBorrowTokenFromEarlierSharedTextUrlWindow() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Read https://docs.example/setup Token: nvbx_docs. Then open '
+    'https://gateway.example/connect?server_id=srv.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with an earlier URL token and later richer endpoint should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'richer selected endpoint should keep its baseUrl',
+  );
+  _expect(
+    result.serverId == 'srv',
+    'richer selected endpoint metadata should be preserved',
+  );
+  _expect(
+    result.token == null,
+    'a token after a different earlier URL must not be borrowed by the selected endpoint',
   );
 }
 

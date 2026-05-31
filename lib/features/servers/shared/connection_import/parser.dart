@@ -400,7 +400,9 @@ class _SharedTextTokenProvenance {
       hasSelectedEndpoint: true,
       followingSearchStart: selectedEndpoint.tokenSearchStart,
       followingSearchEnd: selectedEndpoint.tokenSearchEnd,
-      leadingSearchEnd: selectedEndpoint.leadingTokenSearchEnd,
+      leadingSearchEnd: selectedEndpoint.canUseLeadingToken
+          ? selectedEndpoint.leadingTokenSearchEnd
+          : 0,
     );
   }
 
@@ -461,6 +463,7 @@ _SharedTextEndpointCandidate? _sharedTextEndpointCandidate(
           end: endpoint.tokenWindow.end,
         ) !=
         null,
+    canUseLeadingToken: !endpoint.hasPriorEndpoint,
     hasConnectionPath: uri != null && _hasConnectionPath(uri),
   );
 }
@@ -479,6 +482,7 @@ Iterable<_SharedTextEndpoint> _endpointUrls(String text) sync* {
         start: match.trailingPunctuationWindow.start,
         end: nextEndpointStart,
       ),
+      hasPriorEndpoint: index > 0,
     );
   }
 }
@@ -550,11 +554,13 @@ class _SharedTextEndpoint {
     required this.url,
     required this.sourceWindow,
     required this.tokenWindow,
+    required this.hasPriorEndpoint,
   });
 
   final String url;
   final _TextWindow sourceWindow;
   final _TextWindow tokenWindow;
+  final bool hasPriorEndpoint;
 }
 
 class _TextWindow {
@@ -573,6 +579,7 @@ class _SharedTextEndpointCandidate {
     required this.tokenSearchEnd,
     required this.leadingTokenSearchEnd,
     required this.hasFollowingToken,
+    required this.canUseLeadingToken,
     required this.hasConnectionPath,
   });
 
@@ -581,6 +588,7 @@ class _SharedTextEndpointCandidate {
   final int tokenSearchEnd;
   final int leadingTokenSearchEnd;
   final bool hasFollowingToken;
+  final bool canUseLeadingToken;
   final bool hasConnectionPath;
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
