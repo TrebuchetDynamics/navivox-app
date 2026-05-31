@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
-import '../shared/navivox_gateway_constants.dart';
+import '../shared/navivox_gateway_auth.dart';
 
 class NavivoxGatewaySocket {
   NavivoxGatewaySocket._(this._socket) {
@@ -73,18 +72,11 @@ Future<NavivoxGatewaySocket> defaultConnectWebSocket(
   Uri uri,
   Map<String, String> headers,
 ) async {
-  final protocols = <String>[navivoxWebSocketProtocol];
-  final token = _bearerToken(headers);
-  if (token != null && token.isNotEmpty) {
-    protocols.add(
-      '$navivoxWebSocketTokenProtocolPrefix'
-      '${base64Url.encode(utf8.encode(token)).replaceAll('=', '')}',
-    );
-  }
-
   final socket = web.WebSocket(
     uri.toString(),
-    protocols.map((protocol) => protocol.toJS).toList().toJS,
+    navivoxGatewayWebSocketProtocols(
+      headers,
+    ).map((protocol) => protocol.toJS).toList().toJS,
   );
   final completer = Completer<NavivoxGatewaySocket>();
 
@@ -105,15 +97,6 @@ Future<NavivoxGatewaySocket> defaultConnectWebSocket(
   }).toJS;
 
   return completer.future;
-}
-
-String? _bearerToken(Map<String, String> headers) {
-  final auth = headers.entries
-      .where((entry) => entry.key.toLowerCase() == 'authorization')
-      .map((entry) => entry.value.trim())
-      .firstOrNull;
-  if (auth == null || !auth.startsWith('Bearer ')) return null;
-  return auth.substring('Bearer '.length).trim();
 }
 
 JSObject _headersToRecord(Map<String, String> headers) {

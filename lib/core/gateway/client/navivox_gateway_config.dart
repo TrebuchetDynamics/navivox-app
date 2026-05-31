@@ -1,5 +1,6 @@
 import '../../protocol/navivox_json.dart';
 import '../../protocol/navivox_memory.dart';
+import '../shared/navivox_gateway_auth.dart';
 
 class NavivoxGatewayConfig {
   const NavivoxGatewayConfig({
@@ -110,7 +111,11 @@ class NavivoxGatewayConfig {
     if (value == null || value.isEmpty) {
       return const {};
     }
-    return {'Authorization': 'Bearer $value'};
+    return {
+      navivoxGatewayAuthorizationHeader: navivoxGatewayBearerAuthorization(
+        value,
+      ),
+    };
   }
 
   Uri _withPath(String path) {

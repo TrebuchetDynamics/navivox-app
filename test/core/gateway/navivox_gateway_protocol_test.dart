@@ -76,6 +76,27 @@ void main() {
     expect(config.headers, {'Authorization': 'Bearer nvbx_test_token'});
   });
 
+  test('builds shared gateway auth header and websocket protocols', () {
+    final headers = {
+      navivoxGatewayAuthorizationHeader: navivoxGatewayBearerAuthorization(
+        ' nvbx:test ',
+      ),
+    };
+
+    expect(headers, {'Authorization': 'Bearer nvbx:test'});
+    expect(
+      navivoxGatewayBearerToken({'authorization': 'Bearer nvbx:test'}),
+      'nvbx:test',
+    );
+    expect(navivoxGatewayWebSocketProtocols(headers), [
+      navivoxWebSocketProtocol,
+      '${navivoxWebSocketTokenProtocolPrefix}bnZieDp0ZXN0',
+    ]);
+    expect(navivoxGatewayWebSocketProtocols(const {}), [
+      navivoxWebSocketProtocol,
+    ]);
+  });
+
   test('parses Gormes pairing descriptor into gateway config', () {
     final descriptor = NavivoxPairingDescriptor.parse(
       'navivox://connect?'
