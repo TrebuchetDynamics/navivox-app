@@ -1,5 +1,6 @@
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../contracts/navivox_channel.dart';
+import '../contracts/navivox_profile_contact_codec.dart';
 
 /// Gateway profile-contact fallback and server-list policy.
 ///
@@ -38,6 +39,15 @@ NavivoxProfileContact navivoxFallbackProfileContact() {
     workspaceRootsOk: true,
     micAvailable: true,
   );
+}
+
+List<NavivoxProfileContact> navivoxProfileContactsFromGatewayPayloads(
+  Iterable<Map<String, Object?>> payloads,
+) {
+  final contacts = payloads
+      .map(navivoxProfileContactFromJson)
+      .toList(growable: false);
+  return contacts.isEmpty ? [navivoxFallbackProfileContact()] : contacts;
 }
 
 List<NavivoxServer> navivoxServersFromProfileContacts(

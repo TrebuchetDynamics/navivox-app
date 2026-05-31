@@ -23,6 +23,22 @@ bool navivoxCapabilityAllows(
       capabilities.advertisesEndpoint(method, path);
 }
 
+NavivoxGatewayClient navivoxRequireGatewayCapability({
+  required NavivoxGatewayClient? client,
+  required NavivoxCapabilityDocument? capabilities,
+  required bool Function(NavivoxCapabilityDocument capabilities) isAvailable,
+  required String connectMessage,
+  required String unavailableMessage,
+}) {
+  if (client == null) {
+    throw StateError(connectMessage);
+  }
+  if (capabilities == null || !isAvailable(capabilities)) {
+    throw StateError(unavailableMessage);
+  }
+  return client;
+}
+
 bool navivoxProfileContactsAvailable(NavivoxCapabilityDocument capabilities) {
   return navivoxCapabilityAllows(
     capabilities,

@@ -1,7 +1,6 @@
 import '../../gateway/messages/navivox_gateway_event.dart';
 import '../../protocol/navivox_event.dart';
 import '../../protocol/navivox_json.dart';
-import '../contracts/navivox_channel.dart';
 
 /// Resolves the server/profile scope for gateway transcript events.
 ///

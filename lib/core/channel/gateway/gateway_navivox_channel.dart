@@ -14,6 +14,7 @@ import '../contracts/navivox_channel.dart';
 import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_capability_policy.dart';
+import 'gateway_memory_request_policy.dart';
 import 'gateway_message_scope_policy.dart';
 import 'gateway_profile_contact_policy.dart';
 import 'gateway_tool_artifact_codec.dart';
@@ -188,12 +189,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     NavivoxGatewayClient client,
   ) async {
     final contactPayloads = await client.profileContacts();
-    final profileContacts = contactPayloads
-        .map(navivoxProfileContactFromJson)
-        .toList(growable: false);
-    return profileContacts.isEmpty
-        ? [navivoxFallbackProfileContact()]
-        : profileContacts;
+    return navivoxProfileContactsFromGatewayPayloads(contactPayloads);
   }
 
   void _enterClosedCapabilityMode(
@@ -412,14 +408,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     bool apply = false,
     List<String> workspaceRoots = const [],
   }) async {
-    final client = _client;
-    if (client == null) {
-      throw StateError('Connect to Gormes to create profiles from seed.');
-    }
-    final capabilities = _capabilities;
-    if (capabilities == null || !navivoxProfileSeedAvailable(capabilities)) {
-      throw StateError('Gormes profile seed is not advertised.');
-    }
+    final client = navivoxRequireGatewayCapability(
+      client: _client,
+      capabilities: _capabilities,
+      isAvailable: navivoxProfileSeedAvailable,
+      connectMessage: 'Connect to Gormes to create profiles from seed.',
+      unavailableMessage: 'Gormes profile seed is not advertised.',
+    );
     final result = await client.profileSeed(
       seed: seed,
       apply: apply,
@@ -443,14 +438,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   @override
   Future<NavivoxVoiceProfilesResponse> voiceProfiles() async {
-    final client = _client;
-    if (client == null) {
-      throw StateError('Connect to Gormes to load voice profiles.');
-    }
-    final capabilities = _capabilities;
-    if (capabilities == null || !navivoxVoiceProfilesAvailable(capabilities)) {
-      throw StateError('Gormes voice profiles are not advertised.');
-    }
+    final client = navivoxRequireGatewayCapability(
+      client: _client,
+      capabilities: _capabilities,
+      isAvailable: navivoxVoiceProfilesAvailable,
+      connectMessage: 'Connect to Gormes to load voice profiles.',
+      unavailableMessage: 'Gormes voice profiles are not advertised.',
+    );
     return client.voiceProfiles();
   }
 
@@ -459,15 +453,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required String profileId,
     required NavivoxProfileVoiceProfile voiceProfile,
   }) async {
-    final client = _client;
-    if (client == null) {
-      throw StateError('Connect to Gormes to validate voice profiles.');
-    }
-    final capabilities = _capabilities;
-    if (capabilities == null ||
-        !navivoxVoiceProfileValidationAvailable(capabilities)) {
-      throw StateError('Gormes voice profile validation is not advertised.');
-    }
+    final client = navivoxRequireGatewayCapability(
+      client: _client,
+      capabilities: _capabilities,
+      isAvailable: navivoxVoiceProfileValidationAvailable,
+      connectMessage: 'Connect to Gormes to validate voice profiles.',
+      unavailableMessage: 'Gormes voice profile validation is not advertised.',
+    );
     return client.validateVoiceProfile(
       profileId: profileId,
       voiceProfile: voiceProfile,
@@ -476,14 +468,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   @override
   Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
-    final client = _client;
-    if (client == null) {
-      throw StateError('Connect to Gormes to load run records.');
-    }
-    final capabilities = _capabilities;
-    if (capabilities == null || !navivoxRunRecordsSupported(capabilities)) {
-      throw StateError('Gormes run records are not advertised.');
-    }
+    final client = navivoxRequireGatewayCapability(
+      client: _client,
+      capabilities: _capabilities,
+      isAvailable: navivoxRunRecordsSupported,
+      connectMessage: 'Connect to Gormes to load run records.',
+      unavailableMessage: 'Gormes run records are not advertised.',
+    );
     return client.runRecord(runIdOrSessionId);
   }
 
@@ -501,12 +492,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     try {
       final contactPayloads = await client.profileContacts();
-      final profileContacts = contactPayloads
-          .map(navivoxProfileContactFromJson)
-          .toList(growable: false);
-      final contacts = profileContacts.isEmpty
-          ? [navivoxFallbackProfileContact()]
-          : profileContacts;
+      final contacts = navivoxProfileContactsFromGatewayPayloads(
+        contactPayloads,
+      );
       final selectedKey =
           contacts.any(
             (contact) => contact.key == _state.selectedProfileContactKey,
@@ -535,24 +523,20 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       serverId: serverId,
       profileId: profileId,
     );
-    final client = _client;
-    if (client == null) {
-      return NavivoxMemoryOverview.degraded(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
+      scope: scope,
+      disconnectedReason: 'Connect to Gormes to load Goncho memory.',
+      unavailableReason: 'Gormes memory API is unavailable.',
+      degraded: (reason) => NavivoxMemoryOverview.degraded(
         profileId: scope.profileId,
-        reason: 'Connect to Gormes to load Goncho memory.',
-      );
-    }
-    try {
-      return await client.memoryOverview(
+        reason: reason,
+      ),
+      request: (client, scope) => client.memoryOverview(
         serverId: scope.serverId,
         profileId: scope.profileId,
-      );
-    } catch (_) {
-      return NavivoxMemoryOverview.degraded(
-        profileId: scope.profileId,
-        reason: 'Gormes memory API is unavailable.',
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -569,26 +553,21 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       serverId: serverId,
       profileId: profileId,
     );
-    final client = _client;
-    if (client == null) {
-      return const NavivoxMemorySearchResult.degraded(
-        reason: 'Connect to Gormes to search Goncho memory.',
-      );
-    }
-    try {
-      return await client.memorySearch(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
+      scope: scope,
+      disconnectedReason: 'Connect to Gormes to search Goncho memory.',
+      unavailableReason: 'Gormes memory search API is unavailable.',
+      degraded: (reason) => NavivoxMemorySearchResult.degraded(reason: reason),
+      request: (client, scope) => client.memorySearch(
         serverId: scope.serverId,
         profileId: scope.profileId,
         query: query,
         type: type,
         limit: limit,
         pageToken: pageToken,
-      );
-    } catch (_) {
-      return const NavivoxMemorySearchResult.degraded(
-        reason: 'Gormes memory search API is unavailable.',
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -603,26 +582,20 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       serverId: serverId,
       profileId: profileId,
     );
-    final client = _client;
-    if (client == null) {
-      return NavivoxMemoryDetail.degraded(
-        id: id,
-        reason: 'Connect to Gormes to inspect Goncho memory.',
-      );
-    }
-    try {
-      return await client.memoryDetail(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
+      scope: scope,
+      disconnectedReason: 'Connect to Gormes to inspect Goncho memory.',
+      unavailableReason: 'Gormes memory detail API is unavailable.',
+      degraded: (reason) =>
+          NavivoxMemoryDetail.degraded(id: id, reason: reason),
+      request: (client, scope) => client.memoryDetail(
         serverId: scope.serverId,
         profileId: scope.profileId,
         id: id,
         type: type,
-      );
-    } catch (_) {
-      return NavivoxMemoryDetail.degraded(
-        id: id,
-        reason: 'Gormes memory detail API is unavailable.',
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -639,28 +612,22 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       serverId: serverId,
       profileId: profileId,
     );
-    final client = _client;
-    if (client == null) {
-      return NavivoxMemoryActionResult.degraded(
-        action: action,
-        reason: 'Connect to Gormes to manage Goncho memory.',
-      );
-    }
-    try {
-      return await client.memoryAction(
+    return navivoxGatewayMemoryRequest(
+      client: _client,
+      scope: scope,
+      disconnectedReason: 'Connect to Gormes to manage Goncho memory.',
+      unavailableReason: 'Gormes memory management API is unavailable.',
+      degraded: (reason) =>
+          NavivoxMemoryActionResult.degraded(action: action, reason: reason),
+      request: (client, scope) => client.memoryAction(
         serverId: scope.serverId,
         profileId: scope.profileId,
         id: id,
         type: type,
         action: action,
         correction: correction,
-      );
-    } catch (_) {
-      return NavivoxMemoryActionResult.degraded(
-        action: action,
-        reason: 'Gormes memory management API is unavailable.',
-      );
-    }
+      ),
+    );
   }
 
   @override
