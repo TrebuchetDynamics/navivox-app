@@ -8,7 +8,7 @@ import '../../../core/channel/navivox_channel_provider.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
 import '../../profile_contacts/profile_contact_presentation.dart';
 import '../../profiles/profile_seed_sheet.dart';
-import '../agents_screen_presentation.dart';
+import '../presentation/agents_screen_presentation.dart';
 
 class AgentsScreen extends ConsumerStatefulWidget {
   const AgentsScreen({super.key});

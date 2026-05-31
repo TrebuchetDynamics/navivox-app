@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_memory.dart';
-import '../memory_dashboard_presentation.dart';
+import '../presentation/memory_dashboard_presentation.dart';
 
 const _memoryPresentation = MemoryDashboardPresentation();
 

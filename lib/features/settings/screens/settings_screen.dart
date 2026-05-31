@@ -6,7 +6,7 @@ import '../../../router/navigation_intent.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../providers/voice_settings_provider.dart';
-import '../settings_screen_presentation.dart';
+import '../presentation/settings_screen_presentation.dart';
 
 const _settingsPresentation = SettingsScreenPresentation();
 
