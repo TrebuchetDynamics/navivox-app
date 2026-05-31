@@ -1,18 +1,17 @@
 {
   "version": 1,
   "target": "features/servers/shared/connection_import",
-  "updatedAt": "2026-05-31T10:06:09.946Z",
-  "objective": "Visibility bug-finding refactor: make connection-import candidate ranking explicit so complete baseUrl+token candidates cannot be hidden by metadata-rich incomplete entries.",
+  "updatedAt": "2026-05-31T11:21:01.868Z",
+  "objective": "Bug-finding visibility refactor for connection import copied URL normalization: make wrapper/trailing delimiter stripping explicit and characterize direct wrapped copied URL imports.",
   "completedSlices": [
-    "Added regression proving JSON entry selection must not prefer metadata-rich incomplete candidates over complete baseUrl+token candidates.",
-    "Extracted _ConnectionImportCandidateRank with explicit completeness-first ranking before field richness."
+    "Extracted copied endpoint URL trimming into explicit start/end pure helpers in parser.dart.",
+    "Added characterization coverage for angle-bracketed and backtick-delimited plain copied URL payloads."
   ],
   "nextCandidates": [
-    "Inspect tie semantics for equal-rank complete entries (first listed vs last listed/provenance freshness) only if product semantics require deterministic override behavior."
+    "Connection import candidate ranking/data-flow remains a likely seam for future bug-finding, especially JSON entry fallback/default provenance and explicit invalid base_url versus websocket-derived base URL precedence."
   ],
   "validationReceipts": [
-    "dart --enable-asserts features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: metadata-rich incomplete entry dropped token from complete entry)",
-    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart && dart --enable-asserts features/servers/shared/connection_import/parser_regression_test.dart (passed)",
-    "dart --enable-asserts features/servers/setup/navivox_connect_intent_payload_regression_test.dart && ... broader server regression sequence (blocked/fails in Flutter SDK imports under plain dart, unrelated to touched parser)"
+    "dart run features/servers/shared/connection_import/parser_regression_test.dart (pass)",
+    "dart run features/servers/setup/navivox_connect_intent_payload_regression_test.dart && dart run features/servers/setup/navivox_connect_intent_initial_payload_regression_test.dart (pass)"
   ]
 }

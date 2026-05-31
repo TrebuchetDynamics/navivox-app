@@ -31,6 +31,8 @@ void main() {
   parsesSharedTextTokenWrappedInAngleBrackets();
   stripsSentenceTrailingPeriodFromSharedTextUrl();
   stripsTrailingPunctuationFromPlainCopiedUrl();
+  stripsAngleBracketFromPlainCopiedUrl();
+  stripsBacktickFromPlainCopiedUrl();
   stripsAngleBracketFromSharedTextUrl();
   stripsBacktickFromSharedTextUrl();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
@@ -528,6 +530,38 @@ void stripsTrailingPunctuationFromPlainCopiedUrl() {
   _expect(
     result.token == 'nvbx_shared',
     'sentence punctuation after a plain copied URL should not become part of the token',
+  );
+}
+
+void stripsAngleBracketFromPlainCopiedUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    '<https://gateway.example/connect?token=nvbx_shared>',
+  );
+
+  _expect(result != null, 'angle-bracketed plain copied URL should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'leading angle bracket before a plain copied URL should not affect the baseUrl',
+  );
+  _expect(
+    result.token == 'nvbx_shared',
+    'angle brackets around a plain copied URL should not become part of the token',
+  );
+}
+
+void stripsBacktickFromPlainCopiedUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    '`https://gateway.example/connect?token=nvbx_shared`',
+  );
+
+  _expect(result != null, 'backtick-delimited plain copied URL should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'leading backtick before a plain copied URL should not affect the baseUrl',
+  );
+  _expect(
+    result.token == 'nvbx_shared',
+    'backticks around a plain copied URL should not become part of the token',
   );
 }
 

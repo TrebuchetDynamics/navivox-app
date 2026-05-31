@@ -32,7 +32,7 @@ class ConnectionImportParser {
   }
 
   _CopiedUriPayload? _copiedUriPayload(String text) {
-    final copiedUrl = _trimCopiedUrlTrailingPunctuation(text);
+    final copiedUrl = _trimCopiedEndpointUrl(text);
     final uri = Uri.tryParse(copiedUrl);
     if (uri == null || !uri.hasScheme) return null;
     return _CopiedUriPayload(text: copiedUrl, uri: uri);
@@ -344,7 +344,7 @@ Iterable<_SharedTextEndpoint> _endpointUrls(String text) sync* {
         ? matches[index + 1].start
         : text.length;
     yield _SharedTextEndpoint(
-      url: _trimCopiedUrlTrailingPunctuation(url),
+      url: _trimCopiedEndpointUrl(url),
       tokenSearchStart: match.end,
       tokenSearchEnd: nextEndpointStart,
     );
@@ -556,18 +556,35 @@ const _jsonConnectionImportFieldAliasGroups = [
 // dropping websocket endpoints embedded in prose.
 final _endpointUrlPattern = RegExp(r'(?:https?|wss?)://\S+');
 
-String _trimCopiedUrlTrailingPunctuation(String url) {
-  var end = url.length;
-  while (end > 0 && _copiedUrlTrailingPunctuation.contains(url[end - 1])) {
-    end--;
-  }
-  return url.substring(0, end);
+String _trimCopiedEndpointUrl(String url) {
+  final start = _copiedEndpointUrlStart(url);
+  final end = _copiedEndpointUrlEnd(url, start: start);
+  return url.substring(start, end);
 }
 
-// Plain-text shares often end a copied URL with sentence/list punctuation or
-// markdown/code delimiters. Keep this list explicit because these characters
-// otherwise become part of the parsed origin when the shared URL has no path,
-// or part of a query token when the URL carries connection credentials.
+int _copiedEndpointUrlStart(String url) {
+  var start = 0;
+  while (start < url.length &&
+      _copiedUrlLeadingDelimiters.contains(url[start])) {
+    start++;
+  }
+  return start;
+}
+
+int _copiedEndpointUrlEnd(String url, {required int start}) {
+  var end = url.length;
+  while (end > start && _copiedUrlTrailingPunctuation.contains(url[end - 1])) {
+    end--;
+  }
+  return end;
+}
+
+// Plain-text shares often wrap or end a copied URL with sentence/list
+// punctuation or markdown/code delimiters. Keep these lists explicit because
+// these characters otherwise become part of the parsed origin when the shared
+// URL has no path, or part of a query token when the URL carries connection
+// credentials.
+const _copiedUrlLeadingDelimiters = '<"\'`';
 const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'`';
 
 String? _firstToken(String text, {int start = 0, int? end}) {
