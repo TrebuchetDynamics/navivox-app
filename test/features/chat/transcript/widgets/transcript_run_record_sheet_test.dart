@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_run_record_sheet.dart';
 
-import '../../../shared/app/test_material_app.dart';
+import '../shared/transcript_test_scaffold.dart';
 import '../shared/transcript_test_fixtures.dart';
 
 void main() {
@@ -9,8 +9,8 @@ void main() {
     'renders redacted run record transcript, voice, tool, and usage rows',
     (tester) async {
       await tester.pumpWidget(
-        TestMaterialScaffold(
-          body: TranscriptRunRecordSheet(record: transcriptRunRecordSnapshot()),
+        transcriptTestScaffold(
+          TranscriptRunRecordSheet(record: transcriptRunRecordSnapshot()),
         ),
       );
 

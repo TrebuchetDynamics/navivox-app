@@ -8,7 +8,7 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_surface_fram
 import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
-import '../../../shared/app/test_material_app.dart';
+import 'transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptBubble] under the shared Material feature-test shell.
 Widget transcriptBubbleTestApp({
@@ -30,7 +30,7 @@ Widget transcriptBubbleTestApp({
     onCancelActiveTurn: onCancelActiveTurn,
   );
 
-  return TestMaterialScaffold(body: wrapBubble?.call(bubble) ?? bubble);
+  return transcriptTestScaffold(wrapBubble?.call(bubble) ?? bubble);
 }
 
 /// Mounts [TranscriptComposer] under the shared Material feature-test shell.
@@ -47,8 +47,8 @@ Widget transcriptComposerTestApp({
   bool capturing = false,
   VoidCallback? onToggleVoice,
 }) {
-  return TestMaterialScaffold(
-    body: TranscriptComposer(
+  return transcriptTestScaffold(
+    TranscriptComposer(
       controller: controller,
       onSend: onSend,
       voiceCaptureAvailable: voiceCaptureAvailable,
@@ -73,8 +73,8 @@ Widget transcriptInputPanelTestApp({
   VoidCallback? onVoiceCaptureStarted,
   ValueChanged<Object>? onVoiceCaptureFailed,
 }) {
-  return TestMaterialScaffold(
-    body: TranscriptInputPanel(
+  return transcriptTestScaffold(
+    TranscriptInputPanel(
       controller: controller,
       onSend: onSend,
       voiceCaptureService: voiceCaptureService,
@@ -97,8 +97,8 @@ Widget transcriptSurfaceFrameTestApp({
     onSend: onSend ?? (_) {},
   );
 
-  return TestMaterialScaffold(
-    body: header == null
+  return transcriptTestScaffold(
+    header == null
         ? SizedBox(height: height, child: frame)
         : Column(
             children: [
@@ -120,8 +120,8 @@ Widget transcriptThreadTestApp({
   onForward,
   VoidCallback? onCancelActiveTurn,
 }) {
-  return TestMaterialScaffold(
-    body: TranscriptThread(
+  return transcriptTestScaffold(
+    TranscriptThread(
       messages: messages,
       scrollController: scrollController,
       assistantTypingLabel: assistantTypingLabel,

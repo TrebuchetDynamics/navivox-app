@@ -5,7 +5,7 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_surface.dart
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 import 'package:navivox/shared/voice/text_to_speech_service.dart';
 
-import '../../../shared/app/test_material_app.dart';
+import 'transcript_test_scaffold.dart';
 
 /// Mounts [TranscriptSurface] in the shared feature-test Material scaffold.
 Widget transcriptSurfaceTestApp({
@@ -24,8 +24,8 @@ Widget transcriptSurfaceTestApp({
   void Function(NavivoxChatMessage message, NavivoxProfileContact target)?
   onForward,
 }) {
-  return TestMaterialScaffold(
-    body: TranscriptSurface(
+  return transcriptTestScaffold(
+    TranscriptSurface(
       messages: messages,
       onSend: onSend,
       onUploadFile: onUploadFile,

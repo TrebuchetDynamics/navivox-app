@@ -4,7 +4,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_action_presentation.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_message_action_sheet.dart';
 
-import '../../../shared/app/test_material_app.dart';
+import '../shared/transcript_test_scaffold.dart';
 import '../shared/transcript_test_fixtures.dart';
 
 void main() {
@@ -23,8 +23,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      TestMaterialScaffold(
-        body: TranscriptMessageActionSheet(
+      transcriptTestScaffold(
+        TranscriptMessageActionSheet(
           presentation: presentation,
           onPauseStream: () async => actions.add('pause'),
           onCopyText: () async => actions.add('copy:${presentation.text}'),
@@ -74,8 +74,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      TestMaterialScaffold(
-        body: TranscriptMessageActionSheet(
+      transcriptTestScaffold(
+        TranscriptMessageActionSheet(
           presentation: presentation,
           onForward: (target) => forwardedTo = target,
         ),
@@ -101,8 +101,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      TestMaterialScaffold(
-        body: TranscriptMessageActionSheet(presentation: presentation),
+      transcriptTestScaffold(
+        TranscriptMessageActionSheet(presentation: presentation),
       ),
     );
 
