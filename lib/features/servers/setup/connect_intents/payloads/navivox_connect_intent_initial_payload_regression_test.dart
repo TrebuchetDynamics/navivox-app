@@ -1,4 +1,4 @@
-import '../test_support/regression_expect.dart';
+import '../../test_support/regression_expect.dart';
 import 'navivox_connect_intent_initial_payload.dart';
 import 'navivox_platform_connect_intent_payload.dart';
 

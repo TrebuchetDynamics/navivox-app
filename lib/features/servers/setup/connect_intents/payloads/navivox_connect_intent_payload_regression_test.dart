@@ -1,5 +1,5 @@
-import '../../models/connection_import.dart';
-import '../test_support/regression_expect.dart';
+import '../../../models/connection_import.dart';
+import '../../test_support/regression_expect.dart';
 import 'navivox_connect_intent_payload.dart';
 import 'navivox_platform_connect_intent_payload.dart';
 
