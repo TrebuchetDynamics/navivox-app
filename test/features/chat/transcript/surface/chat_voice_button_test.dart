@@ -6,6 +6,7 @@ import 'package:navivox/shared/voice/voice_capture_service.dart';
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
 import '../shared/transcript_surface_test_app.dart';
 import '../shared/transcript_test_fixtures.dart';
+import '../shared/transcript_voice_recovery_test_helpers.dart';
 
 void main() {
   testWidgets('renders a captured voice transcript bubble', (tester) async {
@@ -31,91 +32,53 @@ void main() {
   testWidgets('disabled STT mic explains why voice is unavailable', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      transcriptSurfaceTestApp(
-        messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
-        voiceUnavailableReason: 'device STT unavailable',
-      ),
+    await pumpUnavailableTranscriptSurface(
+      tester,
+      voiceUnavailableReason: deviceSttUnavailableReason,
     );
 
     expect(find.byIcon(Icons.mic_off), findsOneWidget);
     expect(find.byIcon(Icons.send), findsOneWidget);
-    expect(
-      find.byTooltip('Voice unavailable: device STT unavailable'),
-      findsOneWidget,
-    );
+    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
 
-    await tester.tap(find.byIcon(Icons.mic_off));
-    await tester.pumpAndSettle();
+    await openVoiceUnavailableSheet(tester);
 
     expect(find.text('Voice unavailable'), findsOneWidget);
-    expect(find.text('device STT unavailable'), findsOneWidget);
-    expect(
-      find.text(
-        'Install or enable device speech recognition, then return to Navivox.',
-      ),
-      findsOneWidget,
-    );
+    expectDeviceSttRecoveryCopy();
   });
 
   testWidgets('permission-denied mic explains Android permission recovery', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      transcriptSurfaceTestApp(
-        messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
-        voiceUnavailableReason: 'microphone permission denied',
-      ),
+    await pumpUnavailableTranscriptSurface(
+      tester,
+      voiceUnavailableReason: microphonePermissionDeniedReason,
     );
 
-    expect(
-      find.byTooltip('Voice unavailable: microphone permission denied'),
-      findsOneWidget,
-    );
+    expectVoiceUnavailableTooltip(microphonePermissionDeniedReason);
 
-    await tester.tap(find.byIcon(Icons.mic_off));
-    await tester.pumpAndSettle();
+    await openVoiceUnavailableSheet(tester);
 
-    expect(find.text('microphone permission denied'), findsOneWidget);
-    expect(
-      find.text(
-        'Grant microphone permission in Android App info, then return to Navivox.',
-      ),
-      findsOneWidget,
-    );
+    expectMicrophonePermissionRecoveryCopy();
   });
 
   testWidgets('disabled STT mic canonicalizes recovery copy', (tester) async {
-    await tester.pumpWidget(
-      transcriptSurfaceTestApp(
-        messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
-        voiceUnavailableReason: ' Device STT unavailable ',
-      ),
+    await pumpUnavailableTranscriptSurface(
+      tester,
+      voiceUnavailableReason: ' Device STT unavailable ',
     );
 
-    expect(
-      find.byTooltip('Voice unavailable: device STT unavailable'),
-      findsOneWidget,
-    );
+    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
     expect(
       find.byTooltip('Voice unavailable: Device STT unavailable'),
       findsNothing,
     );
 
-    await tester.tap(find.byIcon(Icons.mic_off));
-    await tester.pumpAndSettle();
+    await openVoiceUnavailableSheet(tester);
 
-    expect(find.text('device STT unavailable'), findsOneWidget);
+    expect(find.text(deviceSttUnavailableReason), findsOneWidget);
     expect(find.text('Device STT unavailable'), findsNothing);
-    expect(
-      find.text(
-        'Install or enable device speech recognition, then return to Navivox.',
-      ),
-      findsOneWidget,
-    );
+    expectDeviceSttRecoveryCopy();
   });
 
   testWidgets('unavailable STT reason disables mic even with a voice service', (
@@ -128,25 +91,18 @@ void main() {
     );
     VoiceCapture? captured;
 
-    await tester.pumpWidget(
-      transcriptSurfaceTestApp(
-        messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
-        voiceCaptureService: service,
-        voiceUnavailableReason: 'device STT unavailable',
-        onVoice: (capture) => captured = capture,
-      ),
+    await pumpUnavailableTranscriptSurface(
+      tester,
+      voiceUnavailableReason: deviceSttUnavailableReason,
+      voiceCaptureService: service,
+      onVoice: (capture) => captured = capture,
     );
 
     expect(find.byIcon(Icons.mic), findsNothing);
     expect(find.byIcon(Icons.mic_off), findsOneWidget);
-    expect(
-      find.byTooltip('Voice unavailable: device STT unavailable'),
-      findsOneWidget,
-    );
+    expectVoiceUnavailableTooltip(deviceSttUnavailableReason);
 
-    await tester.tap(find.byIcon(Icons.mic_off));
-    await tester.pumpAndSettle();
+    await openVoiceUnavailableSheet(tester);
 
     expect(find.text('Voice unavailable'), findsOneWidget);
     expect(captured, isNull);
