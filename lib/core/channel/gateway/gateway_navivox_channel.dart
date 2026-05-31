@@ -15,6 +15,7 @@ import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_assistant_message_policy.dart';
 import 'gateway_capability_policy.dart';
+import 'gateway_channel_state_policy.dart';
 import 'gateway_config_admin_policy.dart';
 import 'gateway_memory_request_policy.dart';
 import 'gateway_message_scope_policy.dart';
@@ -931,11 +932,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _appendSystemMessage(String text) {
-    final messages = _state.messagesList;
-    final lastMessage = messages.isEmpty ? null : messages.last;
-    if (lastMessage?.author == NavivoxMessageAuthor.system &&
-        lastMessage?.kind == NavivoxMessageKind.text &&
-        lastMessage?.text == text) {
+    if (!navivoxShouldAppendGatewaySystemMessage(state: _state, text: text)) {
       return;
     }
 
@@ -983,18 +980,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _putMessage(NavivoxChatMessage message) {
-    final messages = Map<String, NavivoxChatMessage>.from(_state.messages);
-    messages[message.id] = message;
-    _state = _state.copyWith(messages: messages);
+    _state = navivoxStateWithGatewayMessage(state: _state, message: message);
     notifyListeners();
   }
 
   void _putVoiceRun(NavivoxVoiceRun run, {required bool active}) {
-    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
-    runs[run.id] = run;
-    _state = _state.copyWith(
-      voiceRuns: runs,
-      activeVoiceRunId: active ? run.id : _state.activeVoiceRunId,
+    _state = navivoxStateWithGatewayVoiceRun(
+      state: _state,
+      run: run,
+      active: active,
     );
     notifyListeners();
   }

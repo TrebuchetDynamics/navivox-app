@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T02:34:12.076Z",
+  "generatedAt": "2026-05-31T02:36:09.124Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,11 +8,11 @@
   "candidates": [
     {
       "relative": "lib/core/protocol",
-      "score": 339,
+      "score": 342,
       "files": 20,
       "direct": 9,
       "churn": 51,
-      "callers": 57,
+      "callers": 58,
       "importsOut": 1,
       "tests": 0,
       "roles": 2,
@@ -25,9 +25,9 @@
     {
       "relative": "lib/core",
       "score": 305,
-      "files": 71,
+      "files": 72,
       "direct": 0,
-      "churn": 251,
+      "churn": 254,
       "callers": 61,
       "importsOut": 0,
       "tests": 0,
@@ -40,10 +40,10 @@
     },
     {
       "relative": "lib/core/channel",
-      "score": 226.4,
-      "files": 18,
+      "score": 226.7,
+      "files": 19,
       "direct": 3,
-      "churn": 64,
+      "churn": 67,
       "callers": 43,
       "importsOut": 9,
       "tests": 0,
@@ -89,9 +89,9 @@
     {
       "relative": "lib",
       "score": 195,
-      "files": 202,
+      "files": 203,
       "direct": 3,
-      "churn": 832,
+      "churn": 835,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -336,6 +336,22 @@
       ]
     },
     {
+      "relative": "lib/core/channel/gateway",
+      "score": 108.6,
+      "files": 12,
+      "direct": 12,
+      "churn": 30,
+      "callers": 1,
+      "importsOut": 11,
+      "tests": 0,
+      "roles": 2,
+      "duplicates": 1,
+      "subdirs": 0,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "test/features/chat/transcript",
       "score": 106.8,
       "files": 26,
@@ -366,22 +382,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "lib/core/channel/gateway",
-      "score": 103.3,
-      "files": 11,
-      "direct": 11,
-      "churn": 27,
-      "callers": 1,
-      "importsOut": 11,
-      "tests": 0,
-      "roles": 2,
-      "duplicates": 1,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
       ]
     },
     {
