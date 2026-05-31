@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../../gateway/navivox_gateway_protocol.dart';
+import '../../../gateway/navivox_gateway_protocol.dart';
 
 String navivoxGatewayNoActiveTurnMessage({required bool stop}) {
   return stop ? 'No active turn to stop.' : 'No active turn to cancel.';

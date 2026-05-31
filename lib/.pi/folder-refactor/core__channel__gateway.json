@@ -1,18 +1,21 @@
 {
   "version": 1,
   "target": "core/channel/gateway",
-  "updatedAt": "2026-05-31T08:32:20.665Z",
-  "objective": "Split core/channel/gateway into focused responsibility subfolders while preserving root compatibility facades and reusing existing gateway/channel contracts/helpers.",
+  "updatedAt": "2026-05-31T08:44:28.890Z",
+  "objective": "Refactor core/channel/gateway into responsibility subfolders with shared approval/codec contracts and a root compatibility facade.",
   "completedSlices": [
-    "Moved transcript policies/codecs to transcript/ with root compatibility facades; reused existing NavivoxMessageScope/navivoxMessageScopeWithFallback contract for assistant/tool scope merges.",
-    "Moved turn submission/control/metadata policies to turns/ with root compatibility facades; preserved shared start-turn metadata helper reuse.",
-    "Moved capability policy/client guard to capabilities/ with root compatibility facades; preserved shared connected-client guard contract.",
-    "Moved config-admin, memory, profile-contact, channel-state, and voice-run policies to config/, memory/, profiles/, state/, and voice/ with root compatibility facades.",
-    "Moved GatewayNavivoxChannel implementation to channel/ and left root gateway_navivox_channel.dart facade."
+    "Extracted NavivoxGatewayApprovalNotice and navivoxGatewayToolApproval into approvals/gateway_approval_notice.dart to decouple tool-call policy from safety-message policy.",
+    "Moved tool artifact metadata decoding into codecs/gateway_tool_artifact_codec.dart.",
+    "Moved assistant/safety/tool/message-scope/user-turn message policies into messages/.",
+    "Moved client capability, client guard, and config-admin policies into client/.",
+    "Moved turn-control and turn-metadata helpers into turns/.",
+    "Moved memory request policy into memory/, profile contact and voice-run policies into profiles/, channel state policy into state/.",
+    "Moved GatewayNavivoxChannel implementation into runtime/ and left gateway_navivox_channel.dart as compatibility facade."
   ],
   "nextCandidates": [],
   "validationReceipts": [
-    "dart analyze core/channel/gateway — No issues found",
-    "folder_refactor_audit core/channel/gateway — pass"
+    "dart analyze core/channel/gateway: No issues found",
+    "dart analyze core/channel/gateway core/channel/gateway_navivox_channel.dart core/channel/providers/navivox_channel_provider.dart testing/connect_and_talk_channel.dart: No issues found",
+    "folder_refactor_audit core/channel/gateway: pass"
   ]
 }

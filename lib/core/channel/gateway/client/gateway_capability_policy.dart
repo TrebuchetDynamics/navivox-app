@@ -1,4 +1,4 @@
-import '../../gateway/navivox_gateway_protocol.dart';
+import '../../../gateway/navivox_gateway_protocol.dart';
 import 'gateway_client_guard.dart';
 
 /// Gateway-facing capability policy for channel features.

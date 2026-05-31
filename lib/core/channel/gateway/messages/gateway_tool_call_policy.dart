@@ -1,8 +1,8 @@
-import '../../gateway/navivox_gateway_protocol.dart';
-import '../../protocol/navivox_event.dart';
-import '../contracts/navivox_message_scope.dart';
-import 'gateway_safety_notice_policy.dart';
-import 'gateway_tool_artifact_codec.dart';
+import '../../../gateway/navivox_gateway_protocol.dart';
+import '../../../protocol/navivox_event.dart';
+import '../../contracts/navivox_message_scope.dart';
+import '../approvals/gateway_approval_notice.dart';
+import '../codecs/gateway_tool_artifact_codec.dart';
 
 /// Builds durable tool-call cards from gateway events.
 ///

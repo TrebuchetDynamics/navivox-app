@@ -1,4 +1,4 @@
-import '../../gateway/navivox_gateway_protocol.dart';
+import '../../../gateway/navivox_gateway_protocol.dart';
 
 /// Shared gateway-client connection guard for channel request policies.
 ///

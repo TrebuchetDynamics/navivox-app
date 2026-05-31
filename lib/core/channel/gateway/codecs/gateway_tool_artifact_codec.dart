@@ -1,5 +1,5 @@
-import '../../protocol/navivox_event.dart';
-import '../../protocol/navivox_json.dart';
+import '../../../protocol/navivox_event.dart';
+import '../../../protocol/navivox_json.dart';
 
 /// Gateway metadata decoder for transcript tool artifacts.
 ///
