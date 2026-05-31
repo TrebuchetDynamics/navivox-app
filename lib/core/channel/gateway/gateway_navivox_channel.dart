@@ -14,6 +14,7 @@ import '../contracts/navivox_channel.dart';
 import '../contracts/navivox_memory_scope.dart';
 import '../contracts/navivox_profile_contact_codec.dart';
 import 'gateway_capability_policy.dart';
+import 'gateway_config_admin_policy.dart';
 import 'gateway_memory_request_policy.dart';
 import 'gateway_message_scope_policy.dart';
 import 'gateway_profile_contact_policy.dart';
@@ -716,11 +717,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   NavivoxGatewayClient _requireConfigAdminClient(String action) {
-    final client = _client;
-    if (client == null || !_configAdminAvailable) {
-      throw StateError('Connect to Gormes to $action.');
-    }
-    return client;
+    return navivoxRequireGatewayConfigAdminClient(
+      client: _client,
+      available: _configAdminAvailable,
+      action: action,
+    );
   }
 
   @override
