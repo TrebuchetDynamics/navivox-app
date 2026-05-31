@@ -1,4 +1,5 @@
-import 'navivox_gateway_event_decoder.dart';
+import '../../contracts/navivox_gateway_message_fields.dart';
+import '../navivox_gateway_event_decoder.dart';
 
 void main() {
   invalidJsonStringBecomesBadResponseEvent();
@@ -15,11 +16,11 @@ void invalidJsonStringBecomesBadResponseEvent() {
 
   _expect(event.isError, 'invalid JSON string should decode to error event');
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'invalid JSON code should be bad_response',
   );
   _expect(
-    event.message == 'Invalid gateway event',
+    event.message == navivoxGatewayInvalidEventMessage,
     'invalid JSON message should describe invalid gateway event',
   );
 }
@@ -29,7 +30,7 @@ void nonObjectJsonStringBecomesBadResponseEvent() {
 
   _expect(event.isError, 'non-object JSON string should decode to error event');
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'non-object JSON code should be bad_response',
   );
 }
@@ -52,7 +53,7 @@ void decodedObjectMissingEventTypeBecomesBadResponseEvent() {
     'decoded object without an event type should decode to error event',
   );
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'missing event type should be bad_response',
   );
 }
@@ -65,7 +66,7 @@ void decodedObjectWithBlankEventTypeBecomesBadResponseEvent() {
     'decoded object with a blank event type should decode to error event',
   );
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'blank event type should be bad_response',
   );
 }
@@ -78,7 +79,7 @@ void decodedObjectWithNonStringEventTypeBecomesBadResponseEvent() {
     'decoded object with a non-string event type should decode to error event',
   );
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'non-string event type should be bad_response',
   );
 }
@@ -91,7 +92,7 @@ void decodedMapWithNonStringKeyBecomesBadResponseEvent() {
     'adapter maps with non-string keys should decode to error event',
   );
   _expect(
-    event.code == 'bad_response',
+    event.code == navivoxGatewayBadResponseCode,
     'adapter maps with non-string keys should be bad_response',
   );
 }
