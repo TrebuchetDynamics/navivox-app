@@ -3,16 +3,20 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import '../models/connection_import.dart';
+import 'navivox_connect_intent_initial_payload.dart';
 import 'navivox_connect_intent_payload.dart';
 
 class NavivoxConnectIntentSource {
-  const NavivoxConnectIntentSource({
+  NavivoxConnectIntentSource({
     MethodChannel methodChannel = const MethodChannel(_methodChannelName),
     EventChannel eventChannel = const EventChannel(_eventChannelName),
     NavivoxConnectIntentObserver? observer,
+    NavivoxInitialConnectIntentPayloadCache? initialPayloadCache,
   }) : _methodChannel = methodChannel,
        _eventChannel = eventChannel,
-       _observer = observer;
+       _observer = observer,
+       _initialPayloadCache =
+           initialPayloadCache ?? NavivoxInitialConnectIntentPayloadCache();
 
   static const _methodChannelName =
       'com.trebuchetdynamics.navivox/connect_intents';
@@ -22,10 +26,14 @@ class NavivoxConnectIntentSource {
   final MethodChannel _methodChannel;
   final EventChannel _eventChannel;
   final NavivoxConnectIntentObserver? _observer;
+  final NavivoxInitialConnectIntentPayloadCache _initialPayloadCache;
 
   Future<bool> isAvailable() async {
     try {
-      await _methodChannel.invokeMethod<Object?>('initialConnectIntent');
+      final payload = await _methodChannel.invokeMethod<Object?>(
+        'initialConnectIntent',
+      );
+      _initialPayloadCache.remember(payload);
       return true;
     } on MissingPluginException {
       return false;
@@ -56,6 +64,9 @@ class NavivoxConnectIntentSource {
   }
 
   Future<Object?> _initialPayload() async {
+    if (_initialPayloadCache.hasPayload) {
+      return _initialPayloadCache.take();
+    }
     try {
       return await _methodChannel.invokeMethod<Object?>('initialConnectIntent');
     } on MissingPluginException {
