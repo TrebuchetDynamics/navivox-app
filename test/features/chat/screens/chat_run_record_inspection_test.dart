@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import '../transcript/shared/transcript_test_fixtures.dart';
+import '../shared/protocol/chat_message_test_fixtures.dart';
 import '../shared/widgets/chat_screen_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
@@ -17,12 +18,10 @@ void main() {
               contacts: [mineruBuilderProfile(latestPreview: 'building')],
             )
             ..seedMessages([
-              transcriptTextMessage(
+              chatProfileTextMessage(
                 id: 'req-run-record',
                 createdAt: DateTime(2026, 5, 23, 10),
                 text: 'assistant final answer',
-                serverId: 'local',
-                profileId: 'mineru',
                 runRecordReference: 'req-run-record',
               ),
             ])
@@ -54,12 +53,10 @@ void main() {
         profileContactChannel(
           contacts: [mineruBuilderProfile(latestPreview: 'building')],
         )..seedMessages([
-          transcriptTextMessage(
+          chatProfileTextMessage(
             id: 'assistant-row',
             createdAt: DateTime(2026, 5, 23, 10),
             text: 'assistant final answer',
-            serverId: 'local',
-            profileId: 'mineru',
             runRecordReference: 'req-run-record',
           ),
         ]);

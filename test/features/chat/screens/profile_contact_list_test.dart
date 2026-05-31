@@ -21,7 +21,7 @@ void main() {
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.text('Personal'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('profile-contact-local-mineru')),
+      find.byKey(ValueKey(chatProfileContactKey(chatMineruProfileScope))),
       findsOneWidget,
     );
     expect(
@@ -39,14 +39,14 @@ void main() {
     expect(find.text('2 roots'), findsNothing);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('profile-contact-local-mineru')),
+        of: find.byKey(ValueKey(chatProfileContactKey(chatMineruProfileScope))),
         matching: find.byType(Chip),
       ),
       findsNothing,
     );
     expect(find.text('auth'), findsNothing);
     expect(
-      find.byKey(const ValueKey('profile-attention-office-support')),
+      find.byKey(ValueKey(chatProfileAttentionKey(chatSupportProfileScope))),
       findsOneWidget,
     );
     expect(find.text('1'), findsNothing);
@@ -65,10 +65,10 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     final selectedTile = tester.widget<ListTile>(
-      find.byKey(const ValueKey('profile-contact-local-mineru')),
+      find.byKey(ValueKey(chatProfileContactKey(chatMineruProfileScope))),
     );
     final otherTile = tester.widget<ListTile>(
-      find.byKey(const ValueKey('profile-contact-office-support')),
+      find.byKey(ValueKey(chatProfileContactKey(chatSupportProfileScope))),
     );
 
     expect(selectedTile.selected, isTrue);
@@ -91,7 +91,7 @@ void main() {
       findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('profile-contact-voice-local-mineru')),
+      find.byKey(ValueKey(chatProfileVoiceKey(chatMineruProfileScope))),
       findsOneWidget,
     );
     expect(
@@ -182,7 +182,9 @@ void main() {
 
     final highlighted = tester.widget<Text>(
       find.descendant(
-        of: find.byKey(const ValueKey('profile-contact-title-local-mineru')),
+        of: find.byKey(
+          ValueKey(chatProfileContactTitleKey(chatMineruProfileScope)),
+        ),
         matching: find.byType(Text),
       ),
     );
@@ -284,19 +286,19 @@ void main() {
 
     expect(find.text('typing… · online · 2 roots'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('profile-active-turn-local-mineru')),
+      find.byKey(ValueKey(chatProfileActiveTurnKey(chatMineruProfileScope))),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-typing-dot-local-mineru-0')),
+      find.byKey(ValueKey(chatProfileTypingDotKey(chatMineruProfileScope, 0))),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-typing-dot-local-mineru-1')),
+      find.byKey(ValueKey(chatProfileTypingDotKey(chatMineruProfileScope, 1))),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-typing-dot-local-mineru-2')),
+      find.byKey(ValueKey(chatProfileTypingDotKey(chatMineruProfileScope, 2))),
       findsOneWidget,
     );
   });
@@ -309,7 +311,7 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     await tester.tap(
-      find.byKey(const ValueKey('profile-contact-office-support')),
+      find.byKey(ValueKey(chatProfileContactKey(chatSupportProfileScope))),
     );
     await tester.pumpAndSettle();
 
@@ -357,7 +359,14 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     await tester.tap(
-      find.byKey(const ValueKey('profile-contact-office team-support/desk')),
+      find.byKey(
+        ValueKey(
+          chatProfileContactKey((
+            serverId: 'office team',
+            profileId: 'support/desk',
+          )),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -393,7 +402,7 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     await tester.tap(
-      find.byKey(const ValueKey('profile-contact-office-support')),
+      find.byKey(ValueKey(chatProfileContactKey(chatSupportProfileScope))),
     );
     await tester.pumpAndSettle();
 
@@ -405,11 +414,11 @@ void main() {
 
     expect(find.text('Navivox'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('profile-contact-local-mineru')),
+      find.byKey(ValueKey(chatProfileContactKey(chatMineruProfileScope))),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-contact-office-support')),
+      find.byKey(ValueKey(chatProfileContactKey(chatSupportProfileScope))),
       findsOneWidget,
     );
     expect(find.byType(NavigationBar), findsOneWidget);
@@ -428,7 +437,7 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     await tester.longPress(
-      find.byKey(const ValueKey('profile-contact-local-mineru')),
+      find.byKey(ValueKey(chatProfileContactKey(chatMineruProfileScope))),
     );
     await tester.pumpAndSettle();
 
@@ -494,7 +503,7 @@ void main() {
     await pumpProfileContactList(tester, channel: channel);
 
     await tester.longPress(
-      find.byKey(const ValueKey('profile-contact-office-support')),
+      find.byKey(ValueKey(chatProfileContactKey(chatSupportProfileScope))),
     );
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(

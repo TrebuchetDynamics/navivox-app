@@ -22,3 +22,27 @@ const chatSupportProfileScope = (
 String chatProfileScopeKey(ChatProfileScope scope) {
   return '${scope.serverId}::${scope.profileId}';
 }
+
+String chatProfileContactKey(ChatProfileScope scope) {
+  return 'profile-contact-${scope.serverId}-${scope.profileId}';
+}
+
+String chatProfileContactTitleKey(ChatProfileScope scope) {
+  return 'profile-contact-title-${scope.serverId}-${scope.profileId}';
+}
+
+String chatProfileAttentionKey(ChatProfileScope scope) {
+  return 'profile-attention-${scope.serverId}-${scope.profileId}';
+}
+
+String chatProfileVoiceKey(ChatProfileScope scope) {
+  return 'profile-contact-voice-${scope.serverId}-${scope.profileId}';
+}
+
+String chatProfileActiveTurnKey(ChatProfileScope scope) {
+  return 'profile-active-turn-${scope.serverId}-${scope.profileId}';
+}
+
+String chatProfileTypingDotKey(ChatProfileScope scope, int index) {
+  return 'profile-typing-dot-${scope.serverId}-${scope.profileId}-$index';
+}
