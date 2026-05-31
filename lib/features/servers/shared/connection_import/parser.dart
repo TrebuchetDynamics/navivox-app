@@ -438,9 +438,18 @@ bool _isTokenChar(int codeUnit) {
       codeUnit == 0x2b;
 }
 
-String? _normalizeBaseUrl(String? raw) => navivoxHttpOriginOrOriginalFromString(
-  navivoxOptionalLiteralStringFromJson(raw),
-);
+String? _normalizeBaseUrl(String? raw) {
+  final value = navivoxOptionalLiteralStringFromJson(raw);
+  if (value == null) return null;
+
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme) return value;
+  if (uri.host.isEmpty) return null;
+
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'http' && scheme != 'https') return null;
+  return navivoxOriginFromUri(uri);
+}
 
 String? _normalizeWebSocketUrl(String? raw) =>
     navivoxWebSocketUrlFromEndpointString(

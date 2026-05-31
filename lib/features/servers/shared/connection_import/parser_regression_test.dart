@@ -18,6 +18,7 @@ void main() {
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
   doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
+  doesNotTreatUnsupportedJsonBaseUrlSchemeAsBaseUrl();
 }
 
 void parsesValidCorePairingDescriptor() {
@@ -266,6 +267,19 @@ void doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl() {
   _expect(
     result.baseUrl == null,
     'invalid websocket_url values must not be promoted to a baseUrl',
+  );
+}
+
+void doesNotTreatUnsupportedJsonBaseUrlSchemeAsBaseUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"base_url":"ftp://gateway.example","token":"nvbx_token"}',
+  );
+
+  _expect(result != null, 'token-only JSON import should still parse');
+  _expect(result!.token == 'nvbx_token', 'token should be preserved');
+  _expect(
+    result.baseUrl == null,
+    'unsupported base_url schemes must not be promoted to a connection baseUrl',
   );
 }
 
