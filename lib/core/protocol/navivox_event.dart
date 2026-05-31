@@ -1,3 +1,4 @@
+import 'navivox_profile_contact_key.dart';
 import 'navivox_voice_run.dart';
 
 enum NavivoxMessageKind {
@@ -37,17 +38,10 @@ class NavivoxChatMessage {
   final String? serverId;
   final String? profileId;
 
-  String? get profileContactKey {
-    final server = serverId?.trim();
-    final profile = profileId?.trim();
-    if (server == null ||
-        server.isEmpty ||
-        profile == null ||
-        profile.isEmpty) {
-      return null;
-    }
-    return '$server::$profile';
-  }
+  String? get profileContactKey => navivoxProfileContactKeyFromNullable(
+    serverId: serverId,
+    profileId: profileId,
+  );
 }
 
 class NavivoxToolCall {

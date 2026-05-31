@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
@@ -12,25 +11,26 @@ void main() {
   testWidgets('chat message action forwards text to another profile contact', (
     tester,
   ) async {
-    final channel = profileContactChannel(
-      servers: const [localReadyServer, officeReadyServer],
-      contacts: [
-        mineruBuilderProfile(latestPreview: 'building'),
-        supportTriageProfile(
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'watching tickets',
-          micAvailable: true,
-        ),
-      ],
-    )..seedMessages([
-        transcriptTextMessage(
-          id: 'assistant-1',
-          createdAt: DateTime(2026, 5, 19, 12),
-          text: 'send this to support',
-          serverId: 'local',
-          profileId: 'mineru',
-        ),
-      ]);
+    final channel =
+        profileContactChannel(
+          servers: const [localReadyServer, officeReadyServer],
+          contacts: [
+            mineruBuilderProfile(latestPreview: 'building'),
+            supportTriageProfile(
+              health: NavivoxProfileHealth.online,
+              latestPreview: 'watching tickets',
+              micAvailable: true,
+            ),
+          ],
+        )..seedMessages([
+          transcriptTextMessage(
+            id: 'assistant-1',
+            createdAt: DateTime(2026, 5, 19, 12),
+            text: 'send this to support',
+            serverId: 'local',
+            profileId: 'mineru',
+          ),
+        ]);
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(

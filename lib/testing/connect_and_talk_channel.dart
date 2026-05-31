@@ -1,6 +1,7 @@
 import '../core/channel/gateway_navivox_channel.dart';
 import '../core/channel/navivox_channel.dart';
 import '../core/protocol/navivox_event.dart';
+import '../core/protocol/navivox_profile_contact_key.dart';
 
 class ConnectAndTalkChannel extends GatewayNavivoxChannel {
   NavivoxChannelState _state = const NavivoxChannelState();
@@ -81,7 +82,10 @@ class ConnectAndTalkChannel extends GatewayNavivoxChannel {
   }) {
     _state = _state.copyWith(
       activeServerId: serverId,
-      selectedProfileContactKey: '$serverId::$profileId',
+      selectedProfileContactKey: navivoxProfileContactKey(
+        serverId: serverId,
+        profileId: profileId,
+      ),
     );
     notifyListeners();
   }

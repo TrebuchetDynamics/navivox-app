@@ -9,6 +9,7 @@ import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_event.dart';
+import '../../../core/protocol/navivox_profile_contact_key.dart';
 import '../../../core/protocol/voice_unavailable_reason.dart';
 import '../../../router/app_routes.dart';
 import '../../profile_contacts/profile_contact_avatar.dart';
@@ -563,7 +564,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     final profileId = widget.profileId;
     if (serverId == null || profileId == null) return;
 
-    final key = '$serverId::$profileId';
+    final key = navivoxProfileContactKey(
+      serverId: serverId,
+      profileId: profileId,
+    );
     if (_lastRouteProfileKey != key) {
       _lastRouteProfileKey = key;
       _voiceRunController.clearRuntimeVoiceDisabledReason();

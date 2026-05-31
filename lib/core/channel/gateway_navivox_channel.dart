@@ -8,6 +8,7 @@ import '../gateway/navivox_gateway_protocol.dart';
 import '../protocol/navivox_event.dart';
 import '../protocol/navivox_json.dart';
 import '../protocol/navivox_memory.dart';
+import '../protocol/navivox_profile_contact_key.dart';
 import '../protocol/navivox_voice_run.dart';
 import '../session/session_persistence_service.dart';
 import 'navivox_channel.dart';
@@ -746,7 +747,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     required String serverId,
     required String profileId,
   }) {
-    final key = '$serverId::$profileId';
+    final key = navivoxProfileContactKey(
+      serverId: serverId,
+      profileId: profileId,
+    );
     if (_state.selectedProfileContactKey == key &&
         _state.activeServerId == serverId) {
       return;

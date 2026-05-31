@@ -1,5 +1,6 @@
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/protocol/navivox_json.dart';
+import '../../../core/protocol/navivox_profile_contact_key.dart';
 import '../../../router/navigation_intent.dart';
 
 class PairingHandoffLanding {
@@ -16,7 +17,7 @@ class PairingHandoffLanding {
     final server = navivoxOptionalStringFromJson(serverId);
     final profile = navivoxOptionalStringFromJson(profileId);
     if (server == null || profile == null) return null;
-    final key = '$server::$profile';
+    final key = navivoxProfileContactKey(serverId: server, profileId: profile);
     for (final contact in state.profileContacts) {
       if (contact.key == key) return contact;
     }

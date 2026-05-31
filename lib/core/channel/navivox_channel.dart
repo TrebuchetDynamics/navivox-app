@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../gateway/navivox_gateway_protocol.dart';
 import '../protocol/navivox_event.dart';
 import '../protocol/navivox_memory.dart';
+import '../protocol/navivox_profile_contact_key.dart';
 import '../protocol/navivox_voice_run.dart';
 import '../protocol/voice_unavailable_reason.dart';
 
@@ -127,7 +128,8 @@ class NavivoxProfileContact {
   final String activeTurnState;
   final String avatarSeed;
 
-  String get key => '$serverId::$profileId';
+  String get key =>
+      navivoxProfileContactKey(serverId: serverId, profileId: profileId);
 }
 
 class NavivoxProfileRoutingSelection {
