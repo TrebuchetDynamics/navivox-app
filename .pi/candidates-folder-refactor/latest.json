@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T01:00:38.733Z",
+  "generatedAt": "2026-05-31T01:02:42.529Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -41,14 +41,14 @@
     {
       "relative": "lib/features",
       "score": 196,
-      "files": 97,
+      "files": 98,
       "direct": 0,
-      "churn": 457,
+      "churn": 459,
       "callers": 1,
       "importsOut": 20,
       "tests": 0,
       "roles": 6,
-      "duplicates": 239,
+      "duplicates": 240,
       "subdirs": 9,
       "extensions": [
         ".dart"
@@ -57,14 +57,14 @@
     {
       "relative": "lib",
       "score": 195,
-      "files": 164,
+      "files": 165,
       "direct": 3,
-      "churn": 640,
+      "churn": 643,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 340,
+      "duplicates": 341,
       "subdirs": 7,
       "extensions": [
         ".dart"
@@ -168,15 +168,15 @@
     },
     {
       "relative": "lib/features/chat",
-      "score": 165,
+      "score": 163,
       "files": 40,
       "direct": 0,
-      "churn": 241,
+      "churn": 242,
       "callers": 1,
-      "importsOut": 23,
+      "importsOut": 21,
       "tests": 0,
       "roles": 3,
-      "duplicates": 117,
+      "duplicates": 103,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -275,7 +275,7 @@
       "score": 117.8,
       "files": 6,
       "direct": 3,
-      "churn": 13,
+      "churn": 14,
       "callers": 13,
       "importsOut": 10,
       "tests": 0,
@@ -301,6 +301,22 @@
       "extensions": [
         ".md",
         ".mjs"
+      ]
+    },
+    {
+      "relative": "lib/features/profile_contacts",
+      "score": 107.1,
+      "files": 7,
+      "direct": 3,
+      "churn": 17,
+      "callers": 8,
+      "importsOut": 7,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 30,
+      "subdirs": 3,
+      "extensions": [
+        ".dart"
       ]
     },
     {
@@ -396,22 +412,6 @@
       "roles": 0,
       "duplicates": 44,
       "subdirs": 0,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/config",
-      "score": 93,
-      "files": 10,
-      "direct": 0,
-      "churn": 36,
-      "callers": 0,
-      "importsOut": 4,
-      "tests": 0,
-      "roles": 4,
-      "duplicates": 8,
-      "subdirs": 4,
       "extensions": [
         ".dart"
       ]
