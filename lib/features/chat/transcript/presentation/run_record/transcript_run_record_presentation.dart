@@ -1,6 +1,7 @@
 import '../../../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../../../../core/protocol/navivox_json.dart';
 import '../shared/transcript_display_text.dart';
+import '../shared/transcript_info_text.dart';
 
 class TranscriptRunRecordInfoRow {
   const TranscriptRunRecordInfoRow({required this.label, required this.value});
@@ -159,7 +160,7 @@ List<TranscriptRunRecordInfoRow> _voiceRows(Map<String, Object?> voice) {
     rows.add(
       TranscriptRunRecordInfoRow(
         label: 'Audio',
-        value: _joinRunRecordInfoParts(audioParts),
+        value: transcriptJoinInfoParts(audioParts),
       ),
     );
   }
@@ -203,7 +204,7 @@ String? _providerState(
     final voice = navivoxOptionalStringFromJson(value['voice_id']);
     if (voice != null) parts.add('voice $voice');
   }
-  return _joinOptionalRunRecordInfoParts(parts);
+  return transcriptJoinOptionalInfoParts(parts);
 }
 
 List<TranscriptRunRecordToolRow> _toolRows(Map<String, Object?> raw) {
@@ -250,15 +251,9 @@ String _usageLabel(Map<String, Object?> value) {
   final parts = <String>[];
   if (input != null) parts.add('input $input');
   if (output != null) parts.add('output $output');
-  final usage = _joinOptionalRunRecordInfoParts(parts);
+  final usage = transcriptJoinOptionalInfoParts(parts);
   if (usage != null) return usage;
   return status ?? 'unknown';
-}
-
-String _joinRunRecordInfoParts(List<String> parts) => parts.join(' • ');
-
-String? _joinOptionalRunRecordInfoParts(List<String> parts) {
-  return parts.isEmpty ? null : _joinRunRecordInfoParts(parts);
 }
 
 String _costLabel(Map<String, Object?> value) {
