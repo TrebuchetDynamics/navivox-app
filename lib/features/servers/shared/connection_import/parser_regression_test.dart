@@ -11,6 +11,7 @@ void main() {
   appliesTopLevelJsonConnectionDefaultsToEntries();
   prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
   parsesSharedTextTokenWithSpacedSeparator();
+  parsesSharedTextTokenWrappedInQuotes();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
@@ -170,6 +171,22 @@ void parsesSharedTextTokenWithSpacedSeparator() {
   _expect(
     result.token == 'shared_secret',
     'token labels should allow spaces before separators',
+  );
+}
+
+void parsesSharedTextTokenWrappedInQuotes() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Server: https://gateway.example/connect\nToken: "shared_secret"',
+  );
+
+  _expect(result != null, 'quoted shared text import should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'quoted shared text URL origin should provide baseUrl',
+  );
+  _expect(
+    result.token == 'shared_secret',
+    'token labels should allow copied quote delimiters around tokens',
   );
 }
 

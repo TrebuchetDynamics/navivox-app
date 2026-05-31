@@ -363,9 +363,7 @@ const _tokenLabels = [
 
 String? _readTokenAt(String text, int start) {
   var index = start;
-  while (index < text.length && text.codeUnitAt(index) <= 32) {
-    index++;
-  }
+  index = _skipTokenLeadingIgnoredChars(text, index);
   final tokenStart = index;
   while (index < text.length && _isTokenChar(text.codeUnitAt(index))) {
     index++;
@@ -374,13 +372,29 @@ String? _readTokenAt(String text, int start) {
   return _trimTokenTrailingPunctuation(text.substring(tokenStart, index));
 }
 
+int _skipTokenLeadingIgnoredChars(String text, int start) {
+  var index = start;
+  while (index < text.length) {
+    final codeUnit = text.codeUnitAt(index);
+    if (codeUnit <= 32 || _tokenLeadingDelimiters.contains(text[index])) {
+      index++;
+      continue;
+    }
+    break;
+  }
+  return index;
+}
+
 String _trimTokenTrailingPunctuation(String token) {
   var end = token.length;
-  while (end > 0 && '.,;:!?)]}"\''.contains(token[end - 1])) {
+  while (end > 0 && _tokenTrailingPunctuation.contains(token[end - 1])) {
     end--;
   }
   return token.substring(0, end);
 }
+
+const _tokenLeadingDelimiters = '"\'';
+const _tokenTrailingPunctuation = '.,;:!?)]}"\'';
 
 bool _isTokenChar(int codeUnit) {
   return (codeUnit >= 0x30 && codeUnit <= 0x39) ||
