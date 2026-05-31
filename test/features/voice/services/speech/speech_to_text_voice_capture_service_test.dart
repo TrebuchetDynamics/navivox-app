@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:navivox/core/protocol/voice_unavailable_reason.dart';
 import 'package:navivox/features/voice/services/speech/speech_to_text_capture_policy.dart';
 import 'package:navivox/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
@@ -50,6 +51,21 @@ void main() {
       );
 
       expect(selected, same(previous));
+    });
+
+    test('classifies platform permission spellings before fallback', () {
+      expect(
+        speechToTextDeviceUnavailableReasonFromMessage('notAllowed'),
+        microphonePermissionDeniedReason,
+      );
+      expect(
+        speechToTextDeviceUnavailableReasonFromMessage('error_not_allowed'),
+        microphonePermissionDeniedReason,
+      );
+      expect(
+        speechToTextDeviceUnavailableReasonFromMessage('recognizer missing'),
+        deviceSttUnavailableReason,
+      );
     });
   });
 
@@ -337,7 +353,7 @@ void main() {
       final future = service.capture(timeout: const Duration(seconds: 5));
       await Future<void>.delayed(Duration.zero);
 
-      engine.emitError(SpeechRecognitionError('error_permission', true));
+      engine.emitError(SpeechRecognitionError('notAllowed', true));
 
       await expectLater(
         future,

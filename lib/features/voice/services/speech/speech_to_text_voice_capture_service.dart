@@ -274,29 +274,18 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       }
       if (error.permanent) {
         return DeviceSpeechUnavailable(
-          _deviceSpeechUnavailableMessage(error.errorMsg),
+          speechToTextDeviceUnavailableReasonFromMessage(error.errorMsg),
         );
       }
     }
     if (error is stt.ListenFailedException) {
       return DeviceSpeechUnavailable(
-        _deviceSpeechUnavailableMessage(
+        speechToTextDeviceUnavailableReasonFromMessage(
           '${error.message ?? ''} ${error.details ?? ''}',
         ),
       );
     }
     return SpeechToTextCaptureFailure(error);
-  }
-
-  String _deviceSpeechUnavailableMessage(String message) {
-    final normalized = message.trim().toLowerCase();
-    if (normalized.contains('permission') ||
-        normalized.contains('denied') ||
-        normalized.contains('not_allowed') ||
-        normalized.contains('not allowed')) {
-      return microphonePermissionDeniedReason;
-    }
-    return deviceSttUnavailableReason;
   }
 }
 

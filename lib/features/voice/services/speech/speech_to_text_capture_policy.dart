@@ -1,3 +1,5 @@
+import '../../../../core/protocol/voice_unavailable_reason.dart';
+
 class SpeechToTextSnapshot {
   const SpeechToTextSnapshot({
     required this.words,
@@ -29,4 +31,15 @@ SpeechToTextSnapshot completionSpeechToTextTranscript({
 }) {
   if (terminalSnapshot.words.trim().isNotEmpty) return terminalSnapshot;
   return latestUsableSnapshot ?? terminalSnapshot;
+}
+
+String speechToTextDeviceUnavailableReasonFromMessage(String message) {
+  final normalized = message.trim().toLowerCase();
+  final compact = normalized.replaceAll(RegExp(r'[^a-z0-9]'), '');
+  if (normalized.contains('permission') ||
+      normalized.contains('denied') ||
+      compact.contains('notallowed')) {
+    return microphonePermissionDeniedReason;
+  }
+  return deviceSttUnavailableReason;
 }
