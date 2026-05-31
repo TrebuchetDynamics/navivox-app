@@ -35,4 +35,46 @@ void main() {
     expect(navivoxStrictBoolFromJson('yes'), isFalse);
     expect(navivoxStrictBoolFromJson(null, fallback: true), isTrue);
   });
+
+  test(
+    'value from wire trims tokens and falls back for blank or unknown values',
+    () {
+      expect(
+        navivoxValueFromWire<_WireChoice>(
+          value: ' beta ',
+          values: _WireChoice.values,
+          wireValue: (choice) => choice.wireValue,
+          fallback: _WireChoice.alpha,
+        ),
+        _WireChoice.beta,
+      );
+      expect(
+        navivoxValueFromWire<_WireChoice>(
+          value: 'missing',
+          values: _WireChoice.values,
+          wireValue: (choice) => choice.wireValue,
+          fallback: _WireChoice.alpha,
+        ),
+        _WireChoice.alpha,
+      );
+      expect(
+        navivoxValueFromWire<_WireChoice>(
+          value: ' ',
+          values: _WireChoice.values,
+          wireValue: (choice) => choice.wireValue,
+          fallback: _WireChoice.alpha,
+        ),
+        _WireChoice.alpha,
+      );
+    },
+  );
+}
+
+enum _WireChoice {
+  alpha('alpha'),
+  beta('beta');
+
+  const _WireChoice(this.wireValue);
+
+  final String wireValue;
 }

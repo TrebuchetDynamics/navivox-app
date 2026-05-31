@@ -84,6 +84,24 @@ String navivoxStringFieldFromJson(Map<String, Object?> json, String key) {
   return navivoxStringFromJson(json[key], fallback: '');
 }
 
+/// Selects a typed enum/value object by matching its wire value.
+///
+/// The wire token uses the same non-empty trimmed string semantics as other
+/// Navivox protocol fields and falls back when the value is blank or unknown.
+T navivoxValueFromWire<T>({
+  required Object? value,
+  required Iterable<T> values,
+  required String Function(T value) wireValue,
+  required T fallback,
+}) {
+  final text = navivoxOptionalStringFromJson(value);
+  if (text == null) return fallback;
+  for (final candidate in values) {
+    if (wireValue(candidate) == text) return candidate;
+  }
+  return fallback;
+}
+
 /// Returns the first non-empty literal string field whose key matches [names].
 ///
 /// The lookup first honors exact keys, then falls back to a compatibility match

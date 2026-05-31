@@ -18,12 +18,12 @@ enum NavivoxMemoryType {
   final String label;
 
   static NavivoxMemoryType fromWire(Object? value) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty) return all;
-    for (final type in values) {
-      if (type.wireValue == text) return type;
-    }
-    return all;
+    return navivoxValueFromWire(
+      value: value,
+      values: values,
+      wireValue: (type) => type.wireValue,
+      fallback: all,
+    );
   }
 }
 
@@ -41,12 +41,12 @@ enum NavivoxMemoryActionType {
   final String label;
 
   static NavivoxMemoryActionType fromWire(Object? value) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty) return archive;
-    for (final type in values) {
-      if (type.wireValue == text) return type;
-    }
-    return archive;
+    return navivoxValueFromWire(
+      value: value,
+      values: values,
+      wireValue: (type) => type.wireValue,
+      fallback: archive,
+    );
   }
 }
 
@@ -79,10 +79,7 @@ class NavivoxMemorySearchResult {
         json['next_page_token'],
         fallback: '',
       ),
-      degradedReason: navivoxStringFromJson(
-        json['degraded_reason'] ?? json['reason'],
-        fallback: '',
-      ),
+      degradedReason: _degradedReasonFromJson(json),
     );
   }
 
@@ -202,10 +199,7 @@ class NavivoxMemoryDetail {
       linkedRelationships: navivoxStringListFromJson(
         json['linked_relationships'],
       ),
-      degradedReason: navivoxStringFromJson(
-        json['degraded_reason'] ?? json['reason'],
-        fallback: '',
-      ),
+      degradedReason: _degradedReasonFromJson(json),
     );
   }
 
@@ -253,10 +247,7 @@ class NavivoxMemoryActionResult {
         json['raw_source_preserved'],
         fallback: true,
       ),
-      degradedReason: navivoxStringFromJson(
-        json['degraded_reason'] ?? json['reason'],
-        fallback: '',
-      ),
+      degradedReason: _degradedReasonFromJson(json),
     );
   }
 
@@ -330,10 +321,7 @@ class NavivoxMemoryOverview {
       sessionSummaries: navivoxIntFromJson(countMap['session_summaries']),
       entities: navivoxIntFromJson(countMap['entities']),
       relationships: navivoxIntFromJson(countMap['relationships']),
-      degradedReason: navivoxStringFromJson(
-        json['degraded_reason'] ?? json['reason'],
-        fallback: '',
-      ),
+      degradedReason: _degradedReasonFromJson(json),
       lastUpdatedAt: navivoxDateTimeFromJson(json['last_updated_at']),
     );
   }
@@ -359,6 +347,13 @@ class NavivoxMemoryOverview {
     NavivoxMemoryHealth.degraded => 'Goncho degraded',
     NavivoxMemoryHealth.unavailable => 'Goncho unavailable',
   };
+}
+
+String _degradedReasonFromJson(Map<String, Object?> json) {
+  return navivoxStringFromJson(
+    json['degraded_reason'] ?? json['reason'],
+    fallback: '',
+  );
 }
 
 String _safeDatabaseLabel(Object? value) {
