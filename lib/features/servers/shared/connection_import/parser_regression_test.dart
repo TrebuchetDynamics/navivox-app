@@ -8,6 +8,7 @@ void main() {
   preservesGenericUrlRepeatedQueryValuesAfterBlankCopyArtifacts();
   preservesMetadataFromUrlEmbeddedInSharedText();
   preservesWebSocketUrlEmbeddedInSharedText();
+  parsesUppercaseSchemeUrlEmbeddedInSharedText();
   prefersEmbeddedUrlTokenOverEarlierStaleSharedTextToken();
   prefersTokenAfterSelectedEmbeddedUrlOverEarlierStaleSharedTextToken();
   readsEarliestLabeledSharedTextTokenAfterSelectedUrl();
@@ -154,6 +155,25 @@ void preservesWebSocketUrlEmbeddedInSharedText() {
     'embedded websocket URL should be preserved',
   );
   _expect(result.token == 'nvbx_shared', 'embedded websocket token preserved');
+}
+
+void parsesUppercaseSchemeUrlEmbeddedInSharedText() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Open HTTPS://gateway.example/connect?token=nvbx_shared to finish setup.',
+  );
+
+  _expect(
+    result != null,
+    'embedded URLs should parse even when the copied scheme is uppercase',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'uppercase URL schemes should normalize to the endpoint origin',
+  );
+  _expect(
+    result.token == 'nvbx_shared',
+    'uppercase URL schemes should still preserve query credentials',
+  );
 }
 
 void prefersEmbeddedUrlTokenOverEarlierStaleSharedTextToken() {

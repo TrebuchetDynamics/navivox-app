@@ -584,8 +584,13 @@ const _jsonConnectionImportFieldAliasGroups = [
 
 // Shared-text imports accept the same generic endpoint schemes as direct URL
 // imports. Keeping the regex explicit prevents HTTP-only drift from silently
-// dropping websocket endpoints embedded in prose.
-final _endpointUrlPattern = RegExp(r'(?:https?|wss?)://\S+');
+// dropping websocket endpoints embedded in prose. URI schemes are
+// case-insensitive, so match copied prose URLs case-insensitively before Uri
+// parsing normalizes the selected candidate.
+final _endpointUrlPattern = RegExp(
+  r'(?:https?|wss?)://\S+',
+  caseSensitive: false,
+);
 
 String _trimCopiedEndpointUrl(String url) {
   final start = _copiedEndpointUrlStart(url);
