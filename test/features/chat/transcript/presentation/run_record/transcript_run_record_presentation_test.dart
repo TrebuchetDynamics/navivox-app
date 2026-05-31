@@ -90,4 +90,34 @@ void main() {
       expect(presentation.statusLabel, 'completed');
     },
   );
+
+  test('keeps gateway tool_name when projecting run record tool events', () {
+    final presentation = TranscriptRunRecordPresentation.fromRecord(
+      const NavivoxRunRecordSnapshot(
+        runId: 'req-tool-name',
+        sessionId: 's-tool-name',
+        status: 'completed',
+        createdAt: null,
+        updatedAt: null,
+        completedAt: null,
+        raw: {
+          'tool_events': [
+            {
+              'tool_call_id': 'tool-1',
+              'tool_name': 'shell.run',
+              'status': 'finished',
+              'metadata': {'artifact_id': 'artifact-shell'},
+            },
+          ],
+        },
+      ),
+    );
+
+    expect(
+      presentation.toolRows.map(
+        (row) => '${row.id}:${row.name}:${row.status}:${row.artifactRef}',
+      ),
+      ['tool-1:shell.run:finished:artifact-shell'],
+    );
+  });
 }

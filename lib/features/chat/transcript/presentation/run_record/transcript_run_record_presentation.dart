@@ -1,7 +1,7 @@
 import '../../../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../../../../core/protocol/navivox_json.dart';
 import '../shared/text/transcript_display_text.dart';
-import '../shared/text/transcript_info_text.dart';
+import '../shared/transcript_info_text.dart';
 
 class TranscriptRunRecordInfoRow {
   const TranscriptRunRecordInfoRow({required this.label, required this.value});
@@ -214,7 +214,7 @@ List<TranscriptRunRecordToolRow> _toolRows(Map<String, Object?> raw) {
   for (final item in value.whereType<Map>()) {
     final row = Map<String, Object?>.from(item);
     final id = navivoxOptionalStringFromJson(row['tool_call_id']) ?? 'unknown';
-    final name = navivoxOptionalStringFromJson(row['name']) ?? id;
+    final name = _toolEventName(row, fallback: id);
     final status = navivoxOptionalStringFromJson(row['status']) ?? 'unknown';
     final metadata = navivoxMapFieldFromJson(row, 'metadata');
     rows.add(
@@ -227,6 +227,12 @@ List<TranscriptRunRecordToolRow> _toolRows(Map<String, Object?> raw) {
     );
   }
   return rows;
+}
+
+String _toolEventName(Map<String, Object?> row, {required String fallback}) {
+  return navivoxOptionalStringFromJson(row['name']) ??
+      navivoxOptionalStringFromJson(row['tool_name']) ??
+      fallback;
 }
 
 String _artifactRef(Map<String, Object?> metadata) {
