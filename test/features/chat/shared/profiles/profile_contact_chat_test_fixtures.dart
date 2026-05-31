@@ -25,6 +25,26 @@ const chatSupportTriageContact = NavivoxProfileContact(
   latestPreview: 'Watching tickets',
 );
 
+/// Shared Profile contact fixture scoped through the canonical chat Profile contract.
+NavivoxProfileContact chatProfileContact({
+  ChatProfileScope scope = chatMineruProfileScope,
+  String displayName = 'Mineru',
+  String serverLabel = 'Local',
+  NavivoxProfileHealth health = NavivoxProfileHealth.online,
+  String latestPreview = 'Ready',
+  bool micAvailable = false,
+}) {
+  return NavivoxProfileContact(
+    serverId: scope.serverId,
+    profileId: scope.profileId,
+    displayName: displayName,
+    serverLabel: serverLabel,
+    health: health,
+    latestPreview: latestPreview,
+    micAvailable: micAvailable,
+  );
+}
+
 /// Shared chat test channel with the default local Mineru Profile contact.
 TestNavivoxChannel mineruReadyProfileChannel({bool micAvailable = false}) {
   return profileContactChannel(
