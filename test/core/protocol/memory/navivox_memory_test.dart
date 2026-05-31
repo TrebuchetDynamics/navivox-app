@@ -40,6 +40,29 @@ void main() {
     });
   });
 
+  test('overview counts clamp impossible negative gateway values', () {
+    final overview = NavivoxMemoryOverview.fromJson({
+      'counts': {
+        'turns': '-2',
+        'memory_items': -1,
+        'observations': 3,
+        'conclusions': null,
+        'session_summaries': '-7',
+        'entities': 0,
+        'relationships': 1.9,
+      },
+    });
+
+    expect(overview.totalTurns, 0);
+    expect(overview.activeMemoryItems, 0);
+    expect(overview.observations, 3);
+    expect(overview.conclusions, 0);
+    expect(overview.sessionSummaries, 0);
+    expect(overview.entities, 0);
+    expect(overview.relationships, 1);
+    expect(navivoxMemoryCountFromJson('-4'), 0);
+  });
+
   test('memory degradation aliases share non-empty reason semantics', () {
     final search = NavivoxMemorySearchResult.fromJson({
       'items': const [],

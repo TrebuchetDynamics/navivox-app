@@ -305,17 +305,19 @@ class NavivoxMemoryOverview {
         json['database_label'] ?? json['database_path'],
       ),
       health: health,
-      totalTurns: navivoxIntFromJson(
+      totalTurns: navivoxMemoryCountFromJson(
         countMap['turns'] ?? countMap['total_turns'],
       ),
-      activeMemoryItems: navivoxIntFromJson(
+      activeMemoryItems: navivoxMemoryCountFromJson(
         countMap['memory_items'] ?? countMap['active_memory_items'],
       ),
-      observations: navivoxIntFromJson(countMap['observations']),
-      conclusions: navivoxIntFromJson(countMap['conclusions']),
-      sessionSummaries: navivoxIntFromJson(countMap['session_summaries']),
-      entities: navivoxIntFromJson(countMap['entities']),
-      relationships: navivoxIntFromJson(countMap['relationships']),
+      observations: navivoxMemoryCountFromJson(countMap['observations']),
+      conclusions: navivoxMemoryCountFromJson(countMap['conclusions']),
+      sessionSummaries: navivoxMemoryCountFromJson(
+        countMap['session_summaries'],
+      ),
+      entities: navivoxMemoryCountFromJson(countMap['entities']),
+      relationships: navivoxMemoryCountFromJson(countMap['relationships']),
       degradedReason: navivoxMemoryDegradedReasonFromJson(json),
       lastUpdatedAt: navivoxDateTimeFromJson(json['last_updated_at']),
     );
@@ -342,6 +344,16 @@ class NavivoxMemoryOverview {
     NavivoxMemoryHealth.degraded => 'Goncho degraded',
     NavivoxMemoryHealth.unavailable => 'Goncho unavailable',
   };
+}
+
+/// Decodes memory aggregate counters while preserving their invariant.
+///
+/// Memory overview counts are cardinalities from the gateway; malformed,
+/// missing, or negative values cannot represent real item totals and are
+/// surfaced as zero instead of leaking impossible counters into presentation.
+int navivoxMemoryCountFromJson(Object? value) {
+  final count = navivoxIntFromJson(value);
+  return count < 0 ? 0 : count;
 }
 
 String _safeDatabaseLabel(Object? value) {
