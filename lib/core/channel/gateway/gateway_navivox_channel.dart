@@ -18,6 +18,7 @@ import 'gateway_config_admin_policy.dart';
 import 'gateway_memory_request_policy.dart';
 import 'gateway_message_scope_policy.dart';
 import 'gateway_profile_contact_policy.dart';
+import 'gateway_safety_notice_policy.dart';
 import 'gateway_tool_artifact_codec.dart';
 import 'gateway_turn_metadata_policy.dart';
 
@@ -946,22 +947,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void _putSafetyWarning(NavivoxGatewayEvent event) {
     final id = event.safetyId ?? 'safety-${_uuid.v4()}';
-    final scope = _messageScopeFromEvent(event);
     _putMessage(
-      NavivoxChatMessage(
+      navivoxGatewaySafetyWarningMessage(
+        event: event,
         id: id,
-        author: NavivoxMessageAuthor.system,
-        kind: NavivoxMessageKind.safetyWarning,
         createdAt: _clock(),
-        safetyNotice: NavivoxSafetyNotice(
-          id: id,
-          severity: event.severity ?? 'warning',
-          message: event.message ?? 'Safety warning',
-          risk: event.risk,
-        ),
-        runRecordReference: event.runRecordReference,
-        serverId: scope.serverId,
-        profileId: scope.profileId,
+        scope: _messageScopeFromEvent(event),
       ),
     );
   }
@@ -982,9 +973,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           kind: NavivoxMessageKind.toolCall,
           createdAt: priorMessage?.createdAt ?? _clock(),
           toolCall: priorTool.copyWith(
-            approval: NavivoxToolApproval(
+            approval: navivoxGatewayToolApproval(
               id: id,
-              status: 'approval_required',
               prompt: prompt,
               risk: risk,
             ),
@@ -997,21 +987,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       );
     }
     _putMessage(
-      NavivoxChatMessage(
+      navivoxGatewayApprovalRequestMessage(
+        event: event,
         id: id,
-        author: NavivoxMessageAuthor.system,
-        kind: NavivoxMessageKind.approvalRequest,
+        toolCallId: toolCallId,
+        prompt: prompt,
+        risk: risk,
         createdAt: _clock(),
-        safetyNotice: NavivoxSafetyNotice(
-          id: id,
-          approvalId: id,
-          toolCallId: toolCallId,
-          message: prompt,
-          risk: risk,
-        ),
-        runRecordReference: event.runRecordReference,
-        serverId: scope.serverId,
-        profileId: scope.profileId,
+        scope: scope,
       ),
     );
     _approvals.add(
