@@ -34,6 +34,7 @@ void main() {
   parsesSharedTextTokenWrappedInBackticks();
   parsesSharedTextTokenWrappedInAngleBrackets();
   stripsSentenceTrailingPeriodFromSharedTextUrl();
+  parsesSharedTextTokenAfterAttachedUrlPunctuation();
   stripsTrailingPunctuationFromPlainCopiedUrl();
   stripsAngleBracketFromPlainCopiedUrl();
   stripsBacktickFromPlainCopiedUrl();
@@ -601,6 +602,22 @@ void stripsSentenceTrailingPeriodFromSharedTextUrl() {
     'sentence punctuation after a copied URL should not become part of the baseUrl',
   );
   _expect(result.token == 'shared_secret', 'shared text token should parse');
+}
+
+void parsesSharedTextTokenAfterAttachedUrlPunctuation() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Server: https://gateway.example,Token: shared_secret',
+  );
+
+  _expect(result != null, 'shared text import should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'attached sentence punctuation after a copied URL should not become part of the baseUrl',
+  );
+  _expect(
+    result.token == 'shared_secret',
+    'token labels immediately after URL punctuation should keep their provenance window',
+  );
 }
 
 void stripsTrailingPunctuationFromPlainCopiedUrl() {

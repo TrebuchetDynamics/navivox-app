@@ -382,20 +382,83 @@ _SharedTextEndpointCandidate? _sharedTextEndpointCandidate(
 }
 
 Iterable<_SharedTextEndpoint> _endpointUrls(String text) sync* {
-  final matches = _endpointUrlPattern.allMatches(text).toList();
+  final matches = _endpointUrlMatches(text).toList(growable: false);
   for (var index = 0; index < matches.length; index++) {
     final match = matches[index];
-    final url = match.group(0);
-    if (url == null) continue;
     final nextEndpointStart = index + 1 < matches.length
-        ? matches[index + 1].start
+        ? matches[index + 1].sourceWindow.start
         : text.length;
     yield _SharedTextEndpoint(
-      url: _trimCopiedEndpointUrl(url),
-      sourceWindow: _TextWindow(start: match.start, end: match.end),
-      tokenWindow: _TextWindow(start: match.end, end: nextEndpointStart),
+      url: match.url,
+      sourceWindow: match.sourceWindow,
+      tokenWindow: _TextWindow(
+        start: match.trailingPunctuationWindow.start,
+        end: nextEndpointStart,
+      ),
     );
   }
+}
+
+Iterable<_SharedTextEndpointMatch> _endpointUrlMatches(String text) sync* {
+  for (final match in _endpointUrlPattern.allMatches(text)) {
+    final matchedText = match.group(0);
+    if (matchedText == null) continue;
+    final trimmedUrlStart = _copiedEndpointUrlStart(matchedText);
+    final rawUrlEnd = _matchedEndpointUrlEndBeforeAttachedTokenLabel(
+      matchedText,
+      start: trimmedUrlStart,
+    );
+    final trimmedUrlEnd = _copiedEndpointUrlEnd(
+      matchedText.substring(0, rawUrlEnd),
+      start: trimmedUrlStart,
+    );
+    if (trimmedUrlEnd <= trimmedUrlStart) continue;
+
+    yield _SharedTextEndpointMatch(
+      url: matchedText.substring(trimmedUrlStart, trimmedUrlEnd),
+      sourceWindow: _TextWindow(start: match.start, end: match.end),
+      trailingPunctuationWindow: _TextWindow(
+        start: match.start + trimmedUrlEnd,
+        end: match.end,
+      ),
+    );
+  }
+}
+
+int _matchedEndpointUrlEndBeforeAttachedTokenLabel(
+  String matchedText, {
+  required int start,
+}) {
+  final punctuationAlternation = _attachedTokenLabelPunctuation
+      .map(RegExp.escape)
+      .join('|');
+  int? earliestTokenLabelStart;
+  for (final label in _tokenLabels) {
+    final labelPattern = RegExp(
+      '(?:$punctuationAlternation)\\s*${RegExp.escape(label)}\\s*[:=]',
+      caseSensitive: false,
+    );
+    final match = labelPattern.firstMatch(matchedText.substring(start));
+    if (match == null) continue;
+    final labelStart = start + match.start;
+    if (earliestTokenLabelStart == null ||
+        labelStart < earliestTokenLabelStart) {
+      earliestTokenLabelStart = labelStart;
+    }
+  }
+  return earliestTokenLabelStart ?? matchedText.length;
+}
+
+class _SharedTextEndpointMatch {
+  const _SharedTextEndpointMatch({
+    required this.url,
+    required this.sourceWindow,
+    required this.trailingPunctuationWindow,
+  }) : assert(url.length > 0);
+
+  final String url;
+  final _TextWindow sourceWindow;
+  final _TextWindow trailingPunctuationWindow;
 }
 
 class _SharedTextEndpoint {
@@ -759,6 +822,19 @@ bool _hasUnmatchedClosingDelimiterAtEnd(
 // credentials.
 const _copiedUrlLeadingDelimiters = '<"\'`';
 const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'`';
+const _attachedTokenLabelPunctuation = [
+  ',',
+  ';',
+  '.',
+  '!',
+  ')',
+  ']',
+  '}',
+  '>',
+  '"',
+  "'",
+  '`',
+];
 
 String? _firstToken(String text, {int start = 0, int? end}) {
   final tokenSearchEnd = end ?? text.length;
