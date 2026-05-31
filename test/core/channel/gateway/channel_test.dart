@@ -8,6 +8,8 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
+import '../support/gateway_routing_test_support.dart';
+
 void main() {
   test('connects to gateway and streams a chat turn', () async {
     final server = await _FakeGatewayServer.start();
@@ -16,10 +18,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     expect(channel.state.activeServer?.name, 'Gormes Gateway');
     expect(channel.state.activeServer?.status, contains('Gateway online'));
@@ -59,10 +58,7 @@ void main() {
       final channel = GatewayNavivoxChannel();
       addTearDown(channel.dispose);
 
-      await channel.connect(
-        baseUrl: server.baseUrl,
-        token: _FakeGatewayServer.token,
-      );
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
       expect(server.profileContactsRequests, 0);
       expect(server.streamRequests, 0);
@@ -89,10 +85,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     expect(channel.state.runRecordInspectionAvailable, isFalse);
     await expectLater(channel.runRecord('run-1'), throwsA(isA<StateError>()));
@@ -105,10 +98,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
     channel.selectProfileContact(
       serverId: 'navivox-gateway',
       profileId: 'default',
@@ -184,10 +174,7 @@ void main() {
       final channel = GatewayNavivoxChannel();
       addTearDown(channel.dispose);
 
-      await channel.connect(
-        baseUrl: server.baseUrl,
-        token: _FakeGatewayServer.token,
-      );
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
       expect(channel.state.profileContacts, hasLength(1));
       expect(channel.state.profileContacts.single.profileId, 'mineru');
@@ -256,10 +243,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     expect(
       channel.state.profileContacts.single.latestPreview,
@@ -335,10 +319,7 @@ void main() {
       final channel = GatewayNavivoxChannel();
       addTearDown(channel.dispose);
 
-      await channel.connect(
-        baseUrl: server.baseUrl,
-        token: _FakeGatewayServer.token,
-      );
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
       channel.sendVoice(transcript: 'hello by voice');
 
@@ -364,10 +345,7 @@ void main() {
       final channel = GatewayNavivoxChannel();
       addTearDown(channel.dispose);
 
-      await channel.connect(
-        baseUrl: server.baseUrl,
-        token: _FakeGatewayServer.token,
-      );
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
       final voiceRunId = channel.startVoiceRun();
       channel.stageVoiceRunTranscript(
@@ -401,10 +379,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     final voiceRunId = channel.startVoiceRun();
     channel.stageVoiceRunTranscript(
@@ -460,10 +435,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     final approvalCompleter = Completer<NavivoxApprovalRequest>();
     final approvalSub = channel.approvalRequests.listen((request) {
@@ -583,10 +555,7 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(
-      baseUrl: server.baseUrl,
-      token: _FakeGatewayServer.token,
-    );
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
     final completed = Completer<void>();
     channel.addListener(() {
@@ -665,10 +634,7 @@ void main() {
       final channel = GatewayNavivoxChannel();
       addTearDown(channel.dispose);
 
-      await channel.connect(
-        baseUrl: server.baseUrl,
-        token: _FakeGatewayServer.token,
-      );
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
       final completed = Completer<void>();
       channel.addListener(() {
@@ -719,8 +685,6 @@ class _FakeGatewayServer {
     this._runRecordsAvailable,
   );
 
-  static const token = 'nvbx_test_token';
-
   final HttpServer _server;
   final int port;
   final List<Map<String, Object?>> Function(String requestId)? _streamEvents;
@@ -766,7 +730,7 @@ class _FakeGatewayServer {
 
   Future<void> _handle(HttpRequest request) async {
     if (request.uri.path == '/healthz') {
-      _writeJson(request.response, {'status': 'ok'});
+      writeGatewayJson(request.response, {'status': 'ok'});
       return;
     }
     if (!_authorized(request)) {
@@ -775,7 +739,7 @@ class _FakeGatewayServer {
       return;
     }
     if (request.uri.path == '/v1/navivox/status') {
-      _writeJson(request.response, {
+      writeGatewayJson(request.response, {
         'enabled': true,
         'gateway_id': 'gw_test_gateway',
       });
@@ -787,16 +751,19 @@ class _FakeGatewayServer {
         await request.response.close();
         return;
       }
-      _writeJson(request.response, _capabilities ?? _capabilityDocument());
+      writeGatewayJson(
+        request.response,
+        _capabilities ?? _capabilityDocument(),
+      );
       return;
     }
     if (request.uri.path == '/v1/navivox/profile-contacts') {
       profileContactsRequests++;
-      _writeJson(request.response, {'contacts': _profileContacts()});
+      writeGatewayJson(request.response, {'contacts': _profileContacts()});
       return;
     }
     if (request.uri.path == '/v1/navivox/profile-routing') {
-      _writeJson(request.response, {'profiles': <Object?>[]});
+      writeGatewayJson(request.response, {'profiles': <Object?>[]});
       return;
     }
     if (request.uri.path == '/v1/navivox/stream') {
@@ -819,104 +786,39 @@ class _FakeGatewayServer {
   }
 
   Map<String, Object?> _capabilityDocument() {
-    return {
-      'object': 'gormes.navivox.capabilities',
-      'protocol_version': 'navivox.v1',
-      'capabilities': [
-        'profile_contacts',
-        'profile_routing',
-        'stream_turns',
-        'turn_control',
-      ],
-      'auth': {
-        'mode': 'pairing_token',
-        'headers': ['Authorization: Bearer <token>'],
-        'websocket_protocols': [
-          'navivox.v1',
-          'gormes.navivox.token.<base64url-token>',
-        ],
+    final document = gatewayRoutingCapabilityDocument();
+    document['capabilities'] = [
+      'profile_contacts',
+      'profile_routing',
+      'stream_turns',
+      'turn_control',
+    ];
+    document['endpoints'] = [
+      {
+        'method': 'GET',
+        'path': '/v1/navivox/status',
+        'auth': 'navivox',
+        'stability': 'stable',
+        'description': 'Runtime status',
       },
-      'health': {
-        'canonical': '/healthz',
-        'aliases': ['/healthz'],
-        'auth': 'none',
-      },
-      'endpoints': [
-        {
-          'method': 'GET',
-          'path': '/v1/navivox/status',
-          'auth': 'navivox',
-          'stability': 'stable',
-          'description': 'Runtime status',
-        },
-        {
-          'method': 'GET',
-          'path': '/v1/navivox/capabilities',
-          'auth': 'navivox',
-          'stability': 'stable',
-          'description': 'Capability document',
-        },
-        {
-          'method': 'GET',
-          'path': '/v1/navivox/profile-contacts',
-          'auth': 'navivox',
-          'stability': 'stable',
-          'description': 'Profile contacts',
-        },
-        {
-          'method': 'GET',
-          'path': '/v1/navivox/profile-routing',
-          'auth': 'navivox',
-          'stability': 'stable',
-          'description': 'Profile routing',
-        },
-        {
-          'method': 'WS',
-          'path': '/v1/navivox/stream',
-          'auth': 'navivox',
-          'stability': 'stable',
-          'description': 'Navivox stream',
-        },
-      ],
-      'profile_management': {
-        'contacts_endpoint': '/v1/navivox/profile-contacts',
-        'routing_endpoint': '/v1/navivox/profile-routing',
-        'create_from_seed_endpoint': '/v1/navivox/profile-seed',
-        'dashboard_api_exposed': false,
-        'supported_actions': ['contact_snapshot'],
-        'unsupported_actions': ['direct_dashboard_api_profiles'],
-        'profile_contract_parts': ['profile_contacts', 'profile_routing'],
-      },
-      'attachments': {
-        'max_request_bytes': 1048576,
-        'opaque_upload_ids': false,
-        'raw_local_paths_accepted': false,
-        'workspace_file_attach': false,
-        'mime_allowlist': <String>[],
-        'retention': 'not_accepted',
-      },
-      'voice': {
-        'device_transcribed_text_turns': true,
-        'raw_audio_upload': false,
-        'voice_profiles_endpoint': '/v1/navivox/voice-profiles',
-        'run_records_endpoint': _runRecordsAvailable
-            ? '/v1/navivox/run-records/{run_id_or_session_id}'
-            : '',
-        'stt_providers': ['device'],
-        'tts_providers': ['server'],
-      },
-      'streams': {
-        'canonical_endpoint': '/v1/navivox/stream',
-        'transport': 'websocket',
-        'event_kinds': [
-          'session_started',
-          'assistant_delta',
-          'assistant_message',
-          'done',
-        ],
-        'openai_runs_bridge': false,
-      },
+      ...List<Map<String, Object?>>.from(document['endpoints'] as List),
+    ];
+    document['voice'] = {
+      ...Map<String, Object?>.from(document['voice'] as Map),
+      'run_records_endpoint': _runRecordsAvailable
+          ? '/v1/navivox/run-records/{run_id_or_session_id}'
+          : '',
     };
+    document['streams'] = {
+      ...Map<String, Object?>.from(document['streams'] as Map),
+      'event_kinds': [
+        'session_started',
+        'assistant_delta',
+        'assistant_message',
+        'done',
+      ],
+    };
+    return document;
   }
 
   List<Map<String, Object?>> _profileContacts() {
@@ -943,14 +845,7 @@ class _FakeGatewayServer {
   }
 
   bool _authorized(HttpRequest request) {
-    return request.headers.value(HttpHeaders.authorizationHeader) ==
-        'Bearer $token';
-  }
-
-  void _writeJson(HttpResponse response, Map<String, Object?> body) {
-    response.headers.contentType = ContentType.json;
-    response.write(jsonEncode(body));
-    unawaited(response.close());
+    return isAuthorizedGatewayRequest(request);
   }
 
   List<Map<String, Object?>> _eventsFor(String requestId) {

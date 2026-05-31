@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
-import '../../support/test_navivox_channel.dart';
+import '../../../support/test_navivox_channel.dart';
 
 void main() {
   test('channel state exposes voice runs in insertion order', () {
