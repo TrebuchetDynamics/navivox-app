@@ -1,5 +1,5 @@
 import '../../../core/channel/navivox_channel.dart';
-import '../../profile_contacts/profile_contact_presentation.dart';
+import '../../profile_contacts/presentation/profile_contact_presentation.dart';
 import '../apply/config_apply_flow_model.dart';
 import '../apply/config_apply_presentation.dart';
 import '../form/config_draft_session.dart';

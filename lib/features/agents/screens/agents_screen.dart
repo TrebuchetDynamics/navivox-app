@@ -5,9 +5,9 @@ import '../../../router/navigation_intent.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../profile_contacts/profile_contact_avatar.dart';
-import '../../profile_contacts/profile_contact_presentation.dart';
-import '../../profiles/profile_seed_sheet.dart';
+import '../../profile_contacts/presentation/profile_contact_presentation.dart';
+import '../../profile_contacts/widgets/profile_contact_avatar.dart';
+import '../../profiles/widgets/profile_seed_sheet.dart';
 import '../presentation/agents_screen_presentation.dart';
 
 class AgentsScreen extends ConsumerStatefulWidget {

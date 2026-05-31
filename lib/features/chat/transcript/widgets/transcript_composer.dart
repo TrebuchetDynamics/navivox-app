@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../transcript/presentation/transcript_composer_presentation.dart';
+import '../../transcript/presentation/composer/transcript_composer_presentation.dart';
 
 class TranscriptComposer extends StatefulWidget {
   const TranscriptComposer({

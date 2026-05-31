@@ -8,11 +8,11 @@ import '../../../../core/channel/navivox_channel.dart';
 import '../../../../core/protocol/navivox_event.dart';
 import '../../../voice/services/tts/text_to_speech_service.dart';
 import '../../../voice/widgets/voice_morph_surface.dart';
-import '../../transcript/presentation/transcript_message_action_presentation.dart';
-import '../../transcript/presentation/transcript_safety_notice_presentation.dart';
-import '../../transcript/presentation/transcript_text_message_presentation.dart';
-import '../../transcript/presentation/transcript_tool_call_presentation.dart';
-import '../../transcript/presentation/transcript_voice_message_presentation.dart';
+import '../../transcript/presentation/action/transcript_message_action_presentation.dart';
+import '../../transcript/presentation/message/transcript_safety_notice_presentation.dart';
+import '../../transcript/presentation/message/transcript_text_message_presentation.dart';
+import '../../transcript/presentation/message/transcript_tool_call_presentation.dart';
+import '../../transcript/presentation/message/transcript_voice_message_presentation.dart';
 import 'transcript_message_action_sheet.dart';
 
 class TranscriptBubble extends StatelessWidget {

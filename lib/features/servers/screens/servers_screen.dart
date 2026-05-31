@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
-import '../../profile_contacts/profile_contact_avatar.dart';
+import '../../profile_contacts/widgets/profile_contact_avatar.dart';
 import '../presentation/servers_screen_presentation.dart';
 import '../registration/presentation/register_gateway_presentation.dart';
 

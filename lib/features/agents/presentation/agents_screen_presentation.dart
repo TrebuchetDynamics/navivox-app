@@ -1,5 +1,5 @@
 import '../../../core/channel/navivox_channel.dart';
-import '../../profile_contacts/profile_contact_list_presentation.dart';
+import '../../profile_contacts/presentation/profile_contact_list_presentation.dart';
 
 class AgentsScreenPresentation {
   const AgentsScreenPresentation({

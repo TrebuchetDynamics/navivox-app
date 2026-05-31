@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/channel/navivox_channel.dart';
 import '../../../../core/protocol/navivox_event.dart';
 import '../../../voice/services/tts/text_to_speech_service.dart';
-import '../../transcript/presentation/transcript_thread_presentation.dart';
+import '../../transcript/presentation/thread/transcript_thread_presentation.dart';
 import 'transcript_bubble.dart';
 
 class TranscriptThread extends StatelessWidget {
