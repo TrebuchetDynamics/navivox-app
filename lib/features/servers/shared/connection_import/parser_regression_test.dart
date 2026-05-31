@@ -19,6 +19,7 @@ void main() {
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
+  preservesFirstJsonEntryWhenCandidatesHaveEqualRank();
   doesNotPreferIncompleteMetadataEntryOverCompleteConnectionEntry();
   appliesTopLevelJsonConnectionDefaultsToEntries();
   prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
@@ -348,6 +349,18 @@ void prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate() {
   _expect(
     result.profileId == 'profile',
     'richer profile_id should be preserved',
+  );
+}
+
+void preservesFirstJsonEntryWhenCandidatesHaveEqualRank() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"entries":[{"base_url":"https://gateway.example","token":"nvbx_first"},{"base_url":"https://gateway.example","token":"nvbx_second"}]}',
+  );
+
+  _expect(result != null, 'JSON entries should parse');
+  _expect(
+    result!.token == 'nvbx_first',
+    'equal-rank JSON candidates should keep source order instead of letting a later equivalent entry replace provenance',
   );
 }
 

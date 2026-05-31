@@ -171,19 +171,34 @@ bool _isBlankJsonValue(Object? value) {
 SetupQrImageImport? _bestImportFromCandidateMaps(
   Iterable<_JsonConnectionImportFields> candidateMaps,
 ) {
-  _ConnectionImportCandidate? bestCandidate;
+  return _bestConnectionImportCandidate(
+    _jsonConnectionImportCandidates(candidateMaps),
+  )?.toImport();
+}
+
+Iterable<_ConnectionImportCandidate> _jsonConnectionImportCandidates(
+  Iterable<_JsonConnectionImportFields> candidateMaps,
+) sync* {
   for (final candidateFields in candidateMaps) {
     final candidate = _connectionImportCandidateFromFields(
       candidateFields.fields,
       hasExplicitConnectionFields: candidateFields.hasExplicitConnectionFields,
     );
-    if (candidate == null) continue;
+    if (candidate != null) yield candidate;
+  }
+}
+
+_ConnectionImportCandidate? _bestConnectionImportCandidate(
+  Iterable<_ConnectionImportCandidate> candidates,
+) {
+  _ConnectionImportCandidate? bestCandidate;
+  for (final candidate in candidates) {
     bestCandidate = _richerConnectionImportCandidate(
       currentBest: bestCandidate,
       candidate: candidate,
     );
   }
-  return bestCandidate?.toImport();
+  return bestCandidate;
 }
 
 _ConnectionImportCandidate? _connectionImportCandidateFromFields(
@@ -431,7 +446,11 @@ class _ConnectionImportCandidate {
     this.serverId,
     this.profileId,
     this.hasExplicitConnectionFields = true,
-  });
+  }) : assert(baseUrl == null || baseUrl.length > 0),
+       assert(token == null || token.length > 0),
+       assert(webSocketUrl == null || webSocketUrl.length > 0),
+       assert(serverId == null || serverId.length > 0),
+       assert(profileId == null || profileId.length > 0);
 
   final String? baseUrl;
   final String? token;
