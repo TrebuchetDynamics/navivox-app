@@ -8,6 +8,7 @@ import '../capabilities/navivox_gateway_capabilities.dart';
 import '../config_admin/navivox_gateway_config_admin.dart';
 import '../messages/navivox_gateway_event.dart';
 import '../observations/navivox_gateway_observations.dart';
+import '../shared/navivox_gateway_json.dart';
 import '../voice/navivox_gateway_voice.dart';
 import '../transport/navivox_gateway_transport_stub.dart'
     if (dart.library.io) '../transport/navivox_gateway_transport_io.dart'
@@ -162,13 +163,15 @@ class NavivoxGatewayClient {
   Future<NavivoxGatewaySessionSnapshot> session(String sessionId) async {
     final body = await _getJson(config.sessionUri(sessionId));
     return NavivoxGatewaySessionSnapshot.fromJson(
-      _objectField(body, 'session'),
+      navivoxGatewayObjectField(body, 'session'),
     );
   }
 
   Future<NavivoxRunRecordSnapshot> runRecord(String runIdOrSessionId) async {
     final body = await _getJson(config.runRecordUri(runIdOrSessionId));
-    return NavivoxRunRecordSnapshot.fromJson(_objectField(body, 'run_record'));
+    return NavivoxRunRecordSnapshot.fromJson(
+      navivoxGatewayObjectField(body, 'run_record'),
+    );
   }
 
   Future<NavivoxProfileSeedResult> profileSeed({
@@ -280,7 +283,7 @@ class NavivoxGatewayClient {
 
   Future<Map<String, Object?>> _getJson(Uri uri) async {
     final body = await _get(uri, config.headers);
-    return _decodeObject(body);
+    return navivoxGatewayDecodeObject(body);
   }
 
   Future<Map<String, Object?>> _postJson(
@@ -291,23 +294,9 @@ class NavivoxGatewayClient {
       ...config.headers,
       'Content-Type': 'application/json',
     };
-    return _decodeObject(await _post(uri, headers, jsonEncode(body)));
-  }
-
-  Map<String, Object?> _decodeObject(String body) {
-    final decoded = jsonDecode(body);
-    if (decoded is! Map) {
-      throw const FormatException('expected JSON object');
-    }
-    return Map<String, Object?>.from(decoded);
-  }
-
-  Map<String, Object?> _objectField(Map<String, Object?> body, String key) {
-    final value = body[key];
-    if (value is! Map) {
-      throw FormatException('expected JSON object field $key');
-    }
-    return Map<String, Object?>.from(value);
+    return navivoxGatewayDecodeObject(
+      await _post(uri, headers, jsonEncode(body)),
+    );
   }
 
   static Future<String> _defaultGet(Uri uri, Map<String, String> headers) {

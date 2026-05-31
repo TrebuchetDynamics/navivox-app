@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T01:26:55.206Z",
+  "generatedAt": "2026-05-31T01:30:36.461Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -43,7 +43,7 @@
       "score": 211,
       "files": 103,
       "direct": 0,
-      "churn": 518,
+      "churn": 521,
       "callers": 1,
       "importsOut": 27,
       "tests": 0,
@@ -59,13 +59,29 @@
       "score": 195,
       "files": 177,
       "direct": 3,
-      "churn": 710,
+      "churn": 713,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
       "duplicates": 347,
       "subdirs": 7,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "test/features/shared",
+      "score": 193.5,
+      "files": 5,
+      "direct": 0,
+      "churn": 23,
+      "callers": 41,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 7,
+      "subdirs": 4,
       "extensions": [
         ".dart"
       ]
@@ -89,9 +105,9 @@
     {
       "relative": "test/features",
       "score": 187,
-      "files": 82,
+      "files": 83,
       "direct": 0,
-      "churn": 534,
+      "churn": 535,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
@@ -105,31 +121,15 @@
     {
       "relative": "test",
       "score": 186,
-      "files": 119,
+      "files": 120,
       "direct": 0,
-      "churn": 635,
+      "churn": 636,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
       "duplicates": 74,
       "subdirs": 8,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/shared",
-      "score": 185.2,
-      "files": 4,
-      "direct": 0,
-      "churn": 22,
-      "callers": 41,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 7,
-      "subdirs": 3,
       "extensions": [
         ".dart"
       ]
@@ -187,7 +187,7 @@
       "score": 165,
       "files": 40,
       "direct": 0,
-      "churn": 263,
+      "churn": 265,
       "callers": 1,
       "importsOut": 23,
       "tests": 0,
@@ -389,7 +389,7 @@
       "score": 97.4,
       "files": 8,
       "direct": 8,
-      "churn": 19,
+      "churn": 21,
       "callers": 1,
       "importsOut": 16,
       "tests": 0,

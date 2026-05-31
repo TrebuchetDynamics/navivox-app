@@ -15,4 +15,5 @@ export 'messages/navivox_gateway_event.dart';
 export 'messages/navivox_gateway_message.dart';
 export 'observations/navivox_gateway_observations.dart';
 export 'shared/navivox_gateway_constants.dart';
+export 'shared/navivox_gateway_json.dart';
 export 'voice/navivox_gateway_voice.dart';
