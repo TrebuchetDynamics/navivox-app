@@ -14,6 +14,14 @@ void main() {
       'Enter a valid Gormes gateway URL.',
     );
     expect(
+      presentation.validateBaseUrl('http://exa mple'),
+      'Enter a valid Gormes gateway URL.',
+    );
+    expect(
+      presentation.validateBaseUrl('http://127.0.0.1:99999'),
+      'Enter a valid Gormes gateway URL.',
+    );
+    expect(
       presentation.validateBaseUrl('ftp://example.com'),
       'Use http, https, ws, or wss.',
     );

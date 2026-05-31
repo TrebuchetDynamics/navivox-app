@@ -8,14 +8,10 @@ class GatewayConnectionPresentation {
   String? validateBaseUrl(String? value) {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) return 'Enter the Gormes gateway base URL.';
-    final uri = Uri.tryParse(trimmed);
-    if (uri == null || uri.host.isEmpty) {
-      return 'Enter a valid Gormes gateway URL.';
-    }
-    if (!navivoxIsEndpointScheme(uri.scheme)) {
-      return 'Use http, https, ws, or wss.';
-    }
-    return null;
+    return _validateEndpointUriText(
+      trimmed,
+      invalidMessage: 'Enter a valid Gormes gateway URL.',
+    );
   }
 
   String? validateAddressAndPort({
@@ -48,17 +44,14 @@ class GatewayConnectionPresentation {
       rawAddress: rawAddress,
       defaultScheme: _supportedInputScheme(scheme) ?? 'http',
     );
-    final uri = Uri.tryParse(input.uriText);
-    if (uri == null || uri.host.isEmpty) {
-      return const GatewayConnectionAddressPort.error(
-        'Enter a valid Gormes gateway address.',
-      );
+    final uriError = _validateEndpointUriText(
+      input.uriText,
+      invalidMessage: 'Enter a valid Gormes gateway address.',
+    );
+    if (uriError != null) {
+      return GatewayConnectionAddressPort.error(uriError);
     }
-    if (!navivoxIsEndpointScheme(uri.scheme)) {
-      return const GatewayConnectionAddressPort.error(
-        'Use http, https, ws, or wss.',
-      );
-    }
+    final uri = Uri.parse(input.uriText);
 
     final detectedPort = uri.hasPort ? uri.port : null;
     final selectedPort = detectedPort ?? _parsePort(rawPort);
@@ -168,9 +161,27 @@ bool _looksLikeBareIpv6Address(String value) {
 int? _parsePort(String value) {
   if (value.isEmpty) return null;
   final parsed = int.tryParse(value);
-  if (parsed == null || parsed <= 0 || parsed > 65535) return null;
+  if (parsed == null || !_isValidPort(parsed)) return null;
   return parsed;
 }
+
+String? _validateEndpointUriText(
+  String text, {
+  required String invalidMessage,
+}) {
+  if (_containsWhitespace(text)) return invalidMessage;
+  final uri = Uri.tryParse(text);
+  if (uri == null || uri.host.isEmpty) return invalidMessage;
+  if (!navivoxIsEndpointScheme(uri.scheme)) {
+    return 'Use http, https, ws, or wss.';
+  }
+  if (uri.hasPort && !_isValidPort(uri.port)) return invalidMessage;
+  return null;
+}
+
+bool _containsWhitespace(String value) => RegExp(r'\s').hasMatch(value);
+
+bool _isValidPort(int port) => port > 0 && port <= 65535;
 
 String? _supportedInputScheme(String scheme) {
   final normalized = scheme.trim().toLowerCase();

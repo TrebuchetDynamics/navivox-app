@@ -3,6 +3,7 @@ import 'presentation.dart';
 void main() {
   parsesBareIpv6AddressWithSeparatePort();
   preservesExplicitDefaultPortFromUriAddress();
+  rejectsOutOfRangePortEmbeddedInUriAddress();
 }
 
 void parsesBareIpv6AddressWithSeparatePort() {
@@ -38,6 +39,21 @@ void preservesExplicitDefaultPortFromUriAddress() {
   _expect(
     result.detectedPortFromAddress,
     'URI address port should be recorded as detected from the address',
+  );
+}
+
+void rejectsOutOfRangePortEmbeddedInUriAddress() {
+  const presentation = GatewayConnectionPresentation();
+
+  final result = presentation.parseAddressPort(
+    address: 'http://127.0.0.1:99999',
+    port: '',
+  );
+
+  _expect(result.hasError, 'out-of-range URI ports should be rejected');
+  _expect(
+    result.error == 'Enter a valid Gormes gateway address.',
+    'invalid embedded URI ports should use the address validation error',
   );
 }
 
