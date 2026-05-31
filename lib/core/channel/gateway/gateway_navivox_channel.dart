@@ -22,6 +22,7 @@ import 'gateway_safety_notice_policy.dart';
 import 'gateway_tool_call_policy.dart';
 import 'gateway_turn_control_policy.dart';
 import 'gateway_user_turn_policy.dart';
+import 'gateway_voice_run_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   GatewayNavivoxChannel({Uuid? uuid, DateTime Function()? clock})
@@ -97,7 +98,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final profileRouting = navivoxProfileRoutingAvailable(capabilities)
         ? await client.profileRouting()
         : const NavivoxProfileRoutingReport();
-    final configAdminState = await _loadConfigAdminState(client, capabilities);
+    final configAdminState = await navivoxLoadGatewayConfigAdminState(
+      client: client,
+      capabilities: capabilities,
+    );
     _configAdminAvailable = configAdminState != null;
     final streamAvailable = navivoxStreamAvailable(capabilities);
     if (streamAvailable) {
@@ -172,21 +176,6 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       return navivoxCapabilityDocumentUsable(capabilities)
           ? capabilities
           : null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<({Map<String, Object?> schema, Map<String, Object?> values})?>
-  _loadConfigAdminState(
-    NavivoxGatewayClient client,
-    NavivoxCapabilityDocument capabilities,
-  ) async {
-    if (!navivoxConfigAdminSupported(capabilities)) return null;
-    try {
-      final schema = await client.configAdminSchema();
-      final values = await client.configAdminValues();
-      return (schema: schema.toConfigSchema(), values: values.toConfigValues());
     } catch (_) {
       return null;
     }
@@ -269,12 +258,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   @override
   String startVoiceRun() {
-    final activeProfile = _state.activeProfileContact;
     final id = 'voice-${_uuid.v4()}';
-    final run = NavivoxVoiceRun.recording(
+    final run = navivoxGatewayRecordingVoiceRun(
       id: id,
-      serverId: activeProfile?.serverId ?? 'navivox-gateway',
-      profileId: activeProfile?.profileId ?? 'default',
+      profile: _state.activeProfileContact,
       createdAt: _clock(),
     );
     _putVoiceRun(run, active: true);
@@ -292,12 +279,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final run = _state.voiceRuns[voiceRunId];
     if (run == null) return;
     _putVoiceRun(
-      run.copyWith(
-        status: NavivoxVoiceRunStatus.pendingSend,
-        transcriptSource: transcriptSource,
+      navivoxGatewayStagedVoiceRun(
+        run: run,
         transcript: transcript,
         duration: duration,
         confidence: confidence,
+        transcriptSource: transcriptSource,
         updatedAt: _clock(),
       ),
       active: true,
@@ -339,7 +326,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
 
     final requestId = _uuid.v4();
-    final submitted = run.markSubmitted(
+    final submitted = navivoxGatewaySubmittedVoiceRun(
+      run: run,
       requestId: requestId,
       sessionId: _activeSessionId,
     );
@@ -351,12 +339,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       createdAt: _clock(),
       profile: _state.activeProfileContact,
       routing: _state.activeProfileRoutingSelection,
-      voice: NavivoxVoiceMessage(
+      voice: navivoxGatewaySubmittedVoiceMessage(
+        run: submitted,
         voiceRunId: voiceRunId,
-        duration: submitted.duration ?? Duration.zero,
         transcript: trimmed,
-        confidence: submitted.confidence ?? 1,
-        status: submitted.status,
       ),
     );
     _putMessage(submission.message);
@@ -628,11 +614,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   Future<void> refreshConfigAdmin() async {
     final client = _requireConfigAdminClient('refresh config admin');
-    final schema = await client.configAdminSchema();
-    final values = await client.configAdminValues();
+    final configAdminState = await navivoxRefreshGatewayConfigAdminState(
+      client: client,
+    );
     _state = _state.copyWith(
-      configSchema: schema.toConfigSchema(),
-      configValues: values.toConfigValues(),
+      configSchema: configAdminState.schema,
+      configValues: configAdminState.values,
     );
     notifyListeners();
   }

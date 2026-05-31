@@ -1,5 +1,6 @@
 import '../../gateway/navivox_gateway_protocol.dart';
 import '../contracts/navivox_channel.dart';
+import 'gateway_capability_policy.dart';
 
 /// Gateway config-admin request guard.
 ///
@@ -15,6 +16,35 @@ NavivoxGatewayClient navivoxRequireGatewayConfigAdminClient({
     throw StateError('Connect to Gormes to $action.');
   }
   return client;
+}
+
+/// Best-effort load of the advertised config-admin schema and current values.
+///
+/// Initial connect and manual refresh both need the same typed schema/value
+/// snapshot. Connect can opt into a degraded null result when the endpoint is
+/// unavailable or fails; refresh keeps its existing fail-fast behavior through
+/// [navivoxRefreshGatewayConfigAdminState].
+Future<({Map<String, Object?> schema, Map<String, Object?> values})?>
+navivoxLoadGatewayConfigAdminState({
+  required NavivoxGatewayClient client,
+  required NavivoxCapabilityDocument capabilities,
+}) async {
+  if (!navivoxConfigAdminSupported(capabilities)) return null;
+  try {
+    return await navivoxRefreshGatewayConfigAdminState(client: client);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Loads the current config-admin schema/value snapshot.
+Future<({Map<String, Object?> schema, Map<String, Object?> values})>
+navivoxRefreshGatewayConfigAdminState({
+  required NavivoxGatewayClient client,
+}) async {
+  final schema = await client.configAdminSchema();
+  final values = await client.configAdminValues();
+  return (schema: schema.toConfigSchema(), values: values.toConfigValues());
 }
 
 /// Applies a config-admin gateway response to channel state.
