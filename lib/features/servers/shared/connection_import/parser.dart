@@ -189,7 +189,10 @@ _ConnectionImportCandidate? _connectionImportCandidateFromGenericUri(Uri uri) {
 
 SetupQrImageImport? _importFromSharedText(String text) {
   final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(text);
-  final token = _firstToken(text) ?? embeddedUrlCandidate?.token;
+  final token = _sharedTextImportToken(
+    text: text,
+    embeddedUrlCandidate: embeddedUrlCandidate,
+  );
   if (embeddedUrlCandidate == null && token == null) return null;
 
   return SetupQrImageImport(
@@ -199,6 +202,16 @@ SetupQrImageImport? _importFromSharedText(String text) {
     serverId: embeddedUrlCandidate?.serverId,
     profileId: embeddedUrlCandidate?.profileId,
   );
+}
+
+String? _sharedTextImportToken({
+  required String text,
+  required _ConnectionImportCandidate? embeddedUrlCandidate,
+}) {
+  // Keep token provenance aligned with the selected URL candidate. Earlier prose
+  // can contain stale copied tokens; only fall back to prose when the chosen URL
+  // did not carry a token itself.
+  return embeddedUrlCandidate?.token ?? _firstToken(text);
 }
 
 _ConnectionImportCandidate? _bestGenericUrlCandidateFromSharedText(
@@ -366,7 +379,7 @@ String _trimCopiedUrlTrailingPunctuation(String url) {
 // Plain-text shares often end a copied URL with sentence/list punctuation. Keep
 // this list explicit because these characters otherwise become part of the
 // parsed origin when the shared URL has no path.
-const _copiedUrlTrailingPunctuation = '.,;:!?)]}"\'';
+const _copiedUrlTrailingPunctuation = '.,;:!?)]}>"\'';
 
 String? _firstToken(String text) {
   final labeledToken = _firstLabeledToken(text);
