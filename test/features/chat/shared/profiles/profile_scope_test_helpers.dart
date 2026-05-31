@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/channel/navivox_channel.dart';
 
 import '../../../../support/test_navivox_channel.dart';
 
@@ -14,6 +15,18 @@ void expectSelectedProfileScope(
   ));
 }
 
+/// Asserts the channel selected the same scope as [contact].
+void expectSelectedProfileContactScope(
+  TestNavivoxChannel channel,
+  NavivoxProfileContact contact,
+) {
+  expectSelectedProfileScope(
+    channel,
+    serverId: contact.serverId,
+    profileId: contact.profileId,
+  );
+}
+
 /// Asserts the last text send was routed to the expected Profile scope.
 void expectLastSentTextCall(
   TestNavivoxChannel channel, {
@@ -26,4 +39,18 @@ void expectLastSentTextCall(
     serverId: serverId,
     profileId: profileId,
   ));
+}
+
+/// Asserts the last text send was routed to [contact].
+void expectLastSentTextToProfileContact(
+  TestNavivoxChannel channel, {
+  required String text,
+  required NavivoxProfileContact contact,
+}) {
+  expectLastSentTextCall(
+    channel,
+    text: text,
+    serverId: contact.serverId,
+    profileId: contact.profileId,
+  );
 }

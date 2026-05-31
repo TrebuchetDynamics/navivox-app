@@ -37,16 +37,11 @@ void main() {
     expect(result.text, 'send this to support');
     expect(result.routeLocation, '/chats/office%20team/support%20desk');
     expect(result.snackbarMessage, 'Forwarded to Support Desk');
-    expectSelectedProfileScope(
-      channel,
-      serverId: 'office team',
-      profileId: 'support desk',
-    );
-    expectLastSentTextCall(
+    expectSelectedProfileContactScope(channel, _target);
+    expectLastSentTextToProfileContact(
       channel,
       text: 'send this to support',
-      serverId: 'office team',
-      profileId: 'support desk',
+      contact: _target,
     );
   });
 

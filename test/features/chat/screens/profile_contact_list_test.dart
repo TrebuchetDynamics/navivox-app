@@ -311,11 +311,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expectSelectedProfileScope(
-      channel,
-      serverId: 'office',
-      profileId: 'support',
-    );
+    expectSelectedProfileContactScope(channel, chatProfileListContacts[1]);
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-active-profile')), findsNothing);
     expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);
@@ -481,7 +477,7 @@ void main() {
     await tester.tap(find.text('Open memory'));
     await tester.pumpAndSettle();
 
-    expectSelectedProfileScope(channel, serverId: 'local', profileId: 'mineru');
+    expectSelectedProfileContactScope(channel, chatProfileListContacts[0]);
     expect(find.text('Memory'), findsWidgets);
     expect(find.text('Profile: Mineru Builder'), findsOneWidget);
   });
@@ -510,11 +506,7 @@ void main() {
     await tester.tap(find.text('Edit profile'));
     await tester.pumpAndSettle();
 
-    expectSelectedProfileScope(
-      channel,
-      serverId: 'office',
-      profileId: 'support',
-    );
+    expectSelectedProfileContactScope(channel, chatProfileListContacts[1]);
     expect(find.text('Config'), findsWidgets);
     expect(find.text('Profile: Support Triage'), findsOneWidget);
   });
@@ -532,11 +524,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expectSelectedProfileScope(
-      channel,
-      serverId: 'office',
-      profileId: 'support',
-    );
+    expectSelectedProfileContactScope(channel, chatProfileListContacts[1]);
     expect(find.text('Support Triage'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-active-profile')), findsNothing);
     expect(find.byKey(const ValueKey('chat-context-action')), findsOneWidget);

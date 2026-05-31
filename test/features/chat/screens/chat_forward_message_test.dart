@@ -40,16 +40,11 @@ void main() {
     await tester.tap(find.text('Support Triage'));
     await tester.pumpAndSettle();
 
-    expectSelectedProfileScope(
-      channel,
-      serverId: 'office',
-      profileId: 'support',
-    );
-    expectLastSentTextCall(
+    expectSelectedProfileContactScope(channel, transcriptSupportContact);
+    expectLastSentTextToProfileContact(
       channel,
       text: 'send this to support',
-      serverId: 'office',
-      profileId: 'support',
+      contact: transcriptSupportContact,
     );
     expect(find.text('Forwarded to Support Triage'), findsOneWidget);
   });

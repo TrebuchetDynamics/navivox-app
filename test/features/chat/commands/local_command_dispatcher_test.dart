@@ -108,11 +108,7 @@ void main() {
         LocalCommandIntent.switchProfile(chatSupportTriageContact),
       );
 
-      expectSelectedProfileScope(
-        channel,
-        serverId: 'office',
-        profileId: 'support',
-      );
+      expectSelectedProfileContactScope(channel, chatSupportTriageContact);
       expect(result.routeLocation, '/chats/office/support');
       expect(result.message, 'Switched to Support Triage.');
     },
