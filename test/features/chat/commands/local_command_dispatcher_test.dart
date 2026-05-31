@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/commands/local_command_dispatcher.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
@@ -103,26 +102,17 @@ void main() {
     'switch profile command selects contact and returns chat route plus copy',
     () {
       final channel = mineruReadyProfileChannel();
-      const contact = NavivoxProfileContact(
-        serverId: 'office',
-        profileId: 'support desk',
-        displayName: 'Support Desk',
-        serverLabel: 'office',
-        health: NavivoxProfileHealth.online,
-        latestPreview: 'Watching tickets',
-      );
-
       final result = dispatcher.dispatch(
         channel,
-        LocalCommandIntent.switchProfile(contact),
+        LocalCommandIntent.switchProfile(chatSupportTriageContact),
       );
 
       expect(channel.selectedProfileScope, (
         serverId: 'office',
-        profileId: 'support desk',
+        profileId: 'support',
       ));
-      expect(result.routeLocation, '/chats/office/support%20desk');
-      expect(result.message, 'Switched to Support Desk.');
+      expect(result.routeLocation, '/chats/office/support');
+      expect(result.message, 'Switched to Support Triage.');
     },
   );
 
