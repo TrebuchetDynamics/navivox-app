@@ -122,13 +122,15 @@ class ConfigValidationSnapshotWire {
 
   final Map<String, Object?> snapshot;
 
-  Object? get validationErrors =>
-      configWireValueFromAliases(snapshot, const ['validation_errors']);
+  Object? get validationErrors => configWirePopulatedValueFromAliases(
+    snapshot,
+    const ['validation_errors'],
+  );
 
   Object? get genericErrors => snapshot['errors'];
 
   Object? get fieldErrors =>
-      configWireValueFromAliases(snapshot, const ['field_errors']);
+      configWirePopulatedValueFromAliases(snapshot, const ['field_errors']);
 }
 
 class ConfigValidationState {

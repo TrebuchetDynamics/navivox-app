@@ -16,6 +16,17 @@ Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
   return null;
 }
 
+/// Returns the first non-empty alias value.
+///
+/// Use this for collection-shaped aliases where an empty preferred alias should
+/// not suppress a later populated compatibility alias from the same payload.
+Object? configWirePopulatedValueFromAliases(Map raw, Iterable<String> aliases) {
+  for (final value in _configWireAliasCandidates(raw, aliases)) {
+    if (_configWireValueIsPopulated(value)) return value;
+  }
+  return null;
+}
+
 String? configWireStringFromAliases(Map raw, Iterable<String> aliases) {
   for (final value in _configWireAliasCandidates(raw, aliases)) {
     final text = configWireString(value);
@@ -60,6 +71,14 @@ Iterable<Object?> _configWireAliasCandidates(
       yield entry.value;
     }
   }
+}
+
+bool _configWireValueIsPopulated(Object? value) {
+  if (value == null) return false;
+  if (value is String) return value.trim().isNotEmpty;
+  if (value is Iterable) return value.isNotEmpty;
+  if (value is Map) return value.isNotEmpty;
+  return true;
 }
 
 String _configNormalizeWireFieldName(String value) =>

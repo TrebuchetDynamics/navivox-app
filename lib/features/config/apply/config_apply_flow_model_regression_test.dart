@@ -5,6 +5,7 @@ void main() {
   attachesValidationErrorListMessagesToDraftChanges();
   attachesCamelCaseValidationSnapshotMessagesToDraftChanges();
   fallsBackAcrossNullValidationSnapshotAliases();
+  fallsBackAcrossEmptyValidationSnapshotAliases();
   fallsBackAcrossBlankStringValidationAliases();
   attachesNestedFieldErrorMessageObjectsToDraftChanges();
 }
@@ -104,6 +105,31 @@ void fallsBackAcrossNullValidationSnapshotAliases() {
     flow.validationMessagesFor('feature.enabled').join('|') ==
         'Expected a boolean.|Still not a boolean.',
     'null snake_case validation snapshot aliases should not hide later camelCase aliases',
+  );
+}
+
+void fallsBackAcrossEmptyValidationSnapshotAliases() {
+  final form = _singleBooleanFieldForm();
+
+  final flow = ConfigApplyFlowModel.fromDraft(
+    form: form,
+    draftValues: {'feature.enabled': 'maybe'},
+    validationSnapshot: {
+      'validation_errors': [],
+      'validationErrors': [
+        {'field': 'feature.enabled', 'detail': 'Expected a boolean.'},
+      ],
+      'field_errors': {},
+      'fieldErrors': {
+        'feature.enabled': ['Still not a boolean.'],
+      },
+    },
+  );
+
+  _expect(
+    flow.validationMessagesFor('feature.enabled').join('|') ==
+        'Expected a boolean.|Still not a boolean.',
+    'empty snake_case validation snapshot aliases should not hide later populated camelCase aliases',
   );
 }
 
