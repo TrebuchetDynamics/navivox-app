@@ -1,24 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../support/test_navivox_channel.dart';
-import '../../shared/app/test_material_app.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/approval/approval_banner.dart';
+
+import 'shared/approval_banner_widget_test_fixtures.dart';
+import 'shared/approval_request_test_fixtures.dart';
 
 void main() {
   testWidgets(
     'shows the prompt and resolves Allow into respondToApproval(true)',
     (tester) async {
-      final channel = TestNavivoxChannel();
-
-      await tester.pumpWidget(
-        TestMaterialScaffold(body: ApprovalBanner(channel: channel)),
-      );
+      final channel = await pumpApprovalBanner(tester);
 
       expect(find.byType(ApprovalBanner), findsOneWidget);
       expect(find.text('Allow'), findsNothing);
 
       channel.emitApprovalRequest(
-        const NavivoxApprovalRequest(
+        approvalRequest(
           id: 'ap-1',
           toolCallId: 'tc-1',
           prompt: 'Allow shell.run to delete /tmp/x?',
@@ -43,14 +39,10 @@ void main() {
   );
 
   testWidgets('Deny calls respondToApproval(false)', (tester) async {
-    final channel = TestNavivoxChannel();
-
-    await tester.pumpWidget(
-      TestMaterialScaffold(body: ApprovalBanner(channel: channel)),
-    );
+    final channel = await pumpApprovalBanner(tester);
 
     channel.emitApprovalRequest(
-      const NavivoxApprovalRequest(
+      approvalRequest(
         id: 'ap-2',
         toolCallId: 'tc-2',
         prompt: 'Allow shell.run?',

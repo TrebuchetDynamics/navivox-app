@@ -87,7 +87,7 @@ void main() {
         id: 'safe-1',
         kind: NavivoxMessageKind.safetyWarning,
         createdAt: DateTime(2026, 5, 7, 10),
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptSafetyNotice(
           id: 'safe-1',
           severity: 'high',
           message: 'Shell command wants to modify files',
@@ -98,7 +98,7 @@ void main() {
         id: 'approval-1',
         kind: NavivoxMessageKind.approvalRequest,
         createdAt: DateTime(2026, 5, 7, 10, 1),
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptApprovalNotice(
           id: 'approval-1',
           approvalId: 'approval-1',
           toolCallId: 'call-shell',

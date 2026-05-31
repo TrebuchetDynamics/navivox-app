@@ -38,7 +38,7 @@ void main() {
     final safety = TranscriptMessagePlainTextPresentation.fromMessage(
       transcriptNoticeMessage(
         kind: NavivoxMessageKind.safetyWarning,
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptSafetyNotice(
           id: 'safety-1',
           message: 'Unsafe exposure',
           risk: 'Public gateway',
@@ -48,7 +48,7 @@ void main() {
     final approval = TranscriptMessagePlainTextPresentation.fromMessage(
       transcriptNoticeMessage(
         kind: NavivoxMessageKind.approvalRequest,
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptApprovalNotice(
           id: 'approval-1',
           message: 'Approve restart?',
           risk: 'Interrupts active run',
@@ -74,7 +74,7 @@ void main() {
     final notice = TranscriptMessagePlainTextPresentation.fromMessage(
       transcriptNoticeMessage(
         kind: NavivoxMessageKind.safetyWarning,
-        notice: const NavivoxSafetyNotice(id: 'safety-2', message: ''),
+        notice: transcriptSafetyNotice(id: 'safety-2', message: ''),
       ),
     );
 

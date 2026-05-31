@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/approval/approval_banner_presentation.dart';
+
+import 'shared/approval_request_test_fixtures.dart';
 
 void main() {
   test('summarizes approval prompt actions and medium risk copy', () {
     final presentation = ApprovalBannerPresentation.fromRequest(
-      const NavivoxApprovalRequest(
+      approvalRequest(
         id: 'ap-1',
         toolCallId: 'tc-1',
         prompt: 'Allow shell.run to delete /tmp/x?',
@@ -24,7 +25,7 @@ void main() {
 
   test('flags high-risk approvals for Adapter warning icon rendering', () {
     final presentation = ApprovalBannerPresentation.fromRequest(
-      const NavivoxApprovalRequest(
+      approvalRequest(
         id: 'ap-high',
         toolCallId: 'tc-high',
         prompt: 'shell.run rm -rf /?',
@@ -39,7 +40,7 @@ void main() {
 
   test('omits risk badge for unknown or missing risk values', () {
     final unknown = ApprovalBannerPresentation.fromRequest(
-      const NavivoxApprovalRequest(
+      approvalRequest(
         id: 'ap-unknown',
         toolCallId: 'tc-unknown',
         prompt: 'shell.run ls?',
@@ -47,7 +48,7 @@ void main() {
       ),
     );
     final missing = ApprovalBannerPresentation.fromRequest(
-      const NavivoxApprovalRequest(
+      approvalRequest(
         id: 'ap-missing',
         toolCallId: 'tc-missing',
         prompt: 'shell.run pwd?',

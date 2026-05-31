@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_safety_notice_presentation.dart';
+
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   test('derives safety warning display state', () {
     final presentation = TranscriptSafetyNoticePresentation.fromNotice(
-      const NavivoxSafetyNotice(
+      transcriptSafetyNotice(
         id: 'safe-1',
         severity: 'high',
         message: 'Shell command wants to modify files',
@@ -26,7 +27,7 @@ void main() {
 
   test('derives approval notice display state without severity badge', () {
     final presentation = TranscriptSafetyNoticePresentation.fromNotice(
-      const NavivoxSafetyNotice(
+      transcriptApprovalNotice(
         id: 'approval-1',
         severity: 'high',
         approvalId: 'approval-1',
@@ -51,11 +52,11 @@ void main() {
     'omits optional safety rows when severity or risk are missing or blank',
     () {
       final missing = TranscriptSafetyNoticePresentation.fromNotice(
-        const NavivoxSafetyNotice(id: 'safe-empty', message: 'Watch this'),
+        transcriptSafetyNotice(id: 'safe-empty', message: 'Watch this'),
         approval: false,
       );
       final blankRisk = TranscriptSafetyNoticePresentation.fromNotice(
-        const NavivoxSafetyNotice(
+        transcriptSafetyNotice(
           id: 'safe-blank',
           severity: '',
           message: 'Still safe',

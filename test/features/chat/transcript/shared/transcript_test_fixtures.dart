@@ -116,3 +116,35 @@ NavivoxChatMessage transcriptNoticeMessage({
     safetyNotice: notice,
   );
 }
+
+NavivoxSafetyNotice transcriptSafetyNotice({
+  String id = 'safety-1',
+  String? severity,
+  required String message,
+  String? risk,
+}) {
+  return NavivoxSafetyNotice(
+    id: id,
+    severity: severity,
+    message: message,
+    risk: risk,
+  );
+}
+
+NavivoxSafetyNotice transcriptApprovalNotice({
+  String id = 'approval-1',
+  String? severity,
+  String? approvalId,
+  String? toolCallId,
+  required String message,
+  String? risk,
+}) {
+  return NavivoxSafetyNotice(
+    id: id,
+    severity: severity,
+    approvalId: approvalId,
+    toolCallId: toolCallId,
+    message: message,
+    risk: risk,
+  );
+}

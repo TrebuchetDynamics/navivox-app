@@ -94,7 +94,7 @@ void main() {
       channel,
       message: transcriptNoticeMessage(
         kind: NavivoxMessageKind.safetyWarning,
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptSafetyNotice(
           id: 'safe-1',
           message: 'Needs confirmation',
           risk: 'Writes config',
@@ -107,7 +107,7 @@ void main() {
       channel,
       message: transcriptNoticeMessage(
         kind: NavivoxMessageKind.approvalRequest,
-        notice: const NavivoxSafetyNotice(
+        notice: transcriptApprovalNotice(
           id: 'approval-1',
           message: 'Approve tool call?',
           risk: 'Runs shell command',
