@@ -17,9 +17,19 @@ Map<String, Object?> navivoxGatewayDecodeObject(String body) {
 }
 
 /// Converts a loose gateway JSON value into an object map when possible.
+///
+/// Adapter-provided maps must still obey the JSON object invariant that all
+/// keys are strings. Malformed maps return `null` instead of leaking cast
+/// exceptions through tolerant wire parsers.
 Map<String, Object?>? navivoxGatewayOptionalObjectFromJson(Object? value) {
   if (value is! Map) return null;
-  return Map<String, Object?>.from(value);
+  final object = <String, Object?>{};
+  for (final entry in value.entries) {
+    final key = entry.key;
+    if (key is! String) return null;
+    object[key] = entry.value;
+  }
+  return object;
 }
 
 /// Reads a gateway wire field as a raw string without trimming.
