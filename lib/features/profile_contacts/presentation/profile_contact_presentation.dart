@@ -1,12 +1,10 @@
 import 'package:intl/intl.dart';
 
 import '../../../core/channel/navivox_channel.dart';
-import '../../../shared/presentation/profile_contact_labels.dart';
+import '../../../shared/presentation/profile_contact_avatar_presentation.dart';
 import '../../../shared/presentation/profile_health_labels.dart';
 
 export '../../../shared/presentation/profile_contact_scope_presentation.dart';
-
-const _avatarColorSlots = 18;
 
 class ProfileContactPresentation {
   const ProfileContactPresentation(this.contact);
@@ -83,17 +81,14 @@ class ProfileContactPresentation {
 
   int get attentionCount => contact.attentionBadges.length;
 
-  String get avatarInitial {
-    final runes = _avatarLabel.runes;
-    if (runes.isEmpty) return '?';
-    return String.fromCharCode(runes.first).toUpperCase();
-  }
+  ProfileContactAvatarPresentation get avatar =>
+      ProfileContactAvatarPresentation(contact);
 
-  int get avatarColorIndex =>
-      contact.avatarSeed.codeUnits.fold<int>(0, (sum, unit) => sum + unit) %
-      _avatarColorSlots;
+  String get avatarInitial => avatar.initial;
 
-  String get avatarSemanticLabel => '$_avatarLabel profile avatar';
+  int get avatarColorIndex => avatar.colorIndex;
+
+  String get avatarSemanticLabel => avatar.semanticLabel;
 
   String get detailsTitle => 'Profile details';
 
@@ -207,9 +202,6 @@ class ProfileContactPresentation {
     if (latestPreview.isNotEmpty) lines.add('Latest: $latestPreview');
     return lines;
   }
-
-  String get _avatarLabel =>
-      profileContactIdentityLabel(contact, fallback: 'profile');
 
   List<String> get searchTerms => [
     contact.displayName,

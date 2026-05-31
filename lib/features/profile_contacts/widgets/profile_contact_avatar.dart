@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
-import '../presentation/profile_contact_presentation.dart';
+import '../../../shared/presentation/profile_contact_avatar_presentation.dart';
 
 const _telegramAvatarGradients = <List<Color>>[
   [Color(0xff5ac8fa), Color(0xff007aff)],
@@ -20,14 +20,14 @@ class ProfileContactAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presentation = ProfileContactPresentation(contact);
+    final presentation = ProfileContactAvatarPresentation(contact);
     final effectiveRadius = radius ?? 22;
     final gradient =
-        _telegramAvatarGradients[presentation.avatarColorIndex %
+        _telegramAvatarGradients[presentation.colorIndex %
             _telegramAvatarGradients.length];
 
     return Semantics(
-      label: presentation.avatarSemanticLabel,
+      label: presentation.semanticLabel,
       image: true,
       excludeSemantics: true,
       child: SizedBox.square(
@@ -43,7 +43,7 @@ class ProfileContactAvatar extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              presentation.avatarInitial,
+              presentation.initial,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
