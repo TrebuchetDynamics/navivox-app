@@ -18,6 +18,7 @@ void main() {
   doesNotPreferIncompleteMetadataEntryOverCompleteConnectionEntry();
   appliesTopLevelJsonConnectionDefaultsToEntries();
   prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
+  prefersEntryAliasOverrideOverTopLevelJsonDefaultAlias();
   doesNotLetMetadataOnlyJsonEntryStealDefaultCredentialsFromConcreteEntry();
   parsesSharedTextTokenWithSpacedSeparator();
   parsesSharedTextTokenWrappedInQuotes();
@@ -306,6 +307,22 @@ void prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable() {
   _expect(
     result!.token == 'nvbx_fresh_entry',
     'nonblank entry fields should override equally complete top-level defaults',
+  );
+}
+
+void prefersEntryAliasOverrideOverTopLevelJsonDefaultAlias() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"base_url":"https://default.example","token":"nvbx_stale_default","entries":[{"baseUrl":"https://gateway.example","pairingToken":"nvbx_fresh_entry"}]}',
+  );
+
+  _expect(result != null, 'JSON entry aliases should parse with defaults');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'entry base URL alias should override top-level default base URL aliases',
+  );
+  _expect(
+    result.token == 'nvbx_fresh_entry',
+    'entry token alias should override top-level default token aliases',
   );
 }
 

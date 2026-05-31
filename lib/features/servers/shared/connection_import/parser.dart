@@ -119,11 +119,24 @@ Map<dynamic, dynamic> _entryFieldsWithJsonDefaults(
   Map<dynamic, dynamic> entry,
 ) {
   final fields = Map<dynamic, dynamic>.of(defaults)..remove('entries');
+  _removeDefaultJsonAliasesOverriddenByEntry(fields, entry);
   for (final entryField in entry.entries) {
     if (_isBlankJsonValue(entryField.value)) continue;
     fields[entryField.key] = entryField.value;
   }
   return fields;
+}
+
+void _removeDefaultJsonAliasesOverriddenByEntry(
+  Map<dynamic, dynamic> fields,
+  Map<dynamic, dynamic> entry,
+) {
+  for (final aliases in _jsonConnectionImportFieldAliasGroups) {
+    if (navivoxFirstStringFieldFromJson(entry, aliases) == null) continue;
+    for (final alias in aliases) {
+      fields.remove(alias);
+    }
+  }
 }
 
 bool _hasNonBlankJsonConnectionField(Map<dynamic, dynamic> fields) {
@@ -473,6 +486,13 @@ const _webSocketUrlFieldNames = [
 const _baseUrlFieldNames = ['base_url', 'baseUrl', 'gateway_url', 'url'];
 const _serverIdFieldNames = ['server_id', 'serverId'];
 const _profileIdFieldNames = ['profile_id', 'profileId'];
+const _jsonConnectionImportFieldAliasGroups = [
+  _tokenFieldNames,
+  _webSocketUrlFieldNames,
+  _baseUrlFieldNames,
+  _serverIdFieldNames,
+  _profileIdFieldNames,
+];
 
 // Shared-text imports accept the same generic endpoint schemes as direct URL
 // imports. Keeping the regex explicit prevents HTTP-only drift from silently
