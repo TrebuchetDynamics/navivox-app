@@ -71,6 +71,13 @@ List<Object?> navivoxListFromJson(Object? value) {
   return value.cast<Object?>();
 }
 
+/// Returns map entries from a loose wire list, ignoring non-map items.
+List<Map<String, Object?>> navivoxMapListFromJson(Object? value) {
+  return navivoxListFromJson(
+    value,
+  ).whereType<Map>().map(navivoxMapFromJson).toList(growable: false);
+}
+
 List<Object?> navivoxListFieldFromJson(Map<String, Object?> json, String key) {
   return navivoxListFromJson(json[key]);
 }

@@ -36,6 +36,20 @@ void main() {
     expect(navivoxStrictBoolFromJson(null, fallback: true), isTrue);
   });
 
+  test('map list parser keeps maps and ignores malformed entries', () {
+    final maps = navivoxMapListFromJson([
+      {'id': 'one', 'score': 1},
+      'skip',
+      {'id': 'two'},
+    ]);
+
+    expect(maps, [
+      {'id': 'one', 'score': 1},
+      {'id': 'two'},
+    ]);
+    expect(navivoxMapListFromJson('not-list'), isEmpty);
+  });
+
   test(
     'value from wire trims tokens and falls back for blank or unknown values',
     () {

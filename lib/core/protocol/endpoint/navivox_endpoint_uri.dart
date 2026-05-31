@@ -1,3 +1,5 @@
+import '../serialization/navivox_json.dart';
+
 /// URI normalization helpers shared by Navivox pairing and setup flows.
 const navivoxEndpointSchemes = {'http', 'https', 'ws', 'wss'};
 
@@ -42,8 +44,8 @@ String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
 }
 
 String? navivoxHttpOriginOrOriginalFromString(String? raw) {
-  final value = raw?.trim();
-  if (value == null || value.isEmpty) return null;
+  final value = navivoxOptionalStringFromJson(raw);
+  if (value == null) return null;
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
   final scheme = uri.scheme.toLowerCase();
@@ -66,8 +68,8 @@ String? navivoxHttpBaseUrlFromEndpointString(String? raw) {
 }
 
 Uri? _endpointUriFromString(String? raw) {
-  final value = raw?.trim();
-  if (value == null || value.isEmpty) return null;
+  final value = navivoxOptionalStringFromJson(raw);
+  if (value == null) return null;
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
   return uri;

@@ -63,18 +63,10 @@ class NavivoxMemorySearchResult {
       degradedReason = reason;
 
   factory NavivoxMemorySearchResult.fromJson(Map<String, Object?> json) {
-    final rawItems = json['items'];
     return NavivoxMemorySearchResult(
-      items: rawItems is List
-          ? rawItems
-                .whereType<Map>()
-                .map(
-                  (item) => NavivoxMemoryItem.fromJson(
-                    Map<String, Object?>.from(item),
-                  ),
-                )
-                .toList(growable: false)
-          : const [],
+      items: navivoxMapListFromJson(
+        json['items'],
+      ).map(NavivoxMemoryItem.fromJson).toList(growable: false),
       nextPageToken: navivoxStringFromJson(
         json['next_page_token'],
         fallback: '',
@@ -295,8 +287,10 @@ class NavivoxMemoryOverview {
 
   factory NavivoxMemoryOverview.fromJson(Map<String, Object?> json) {
     final counts = json['counts'];
-    final countMap = counts is Map ? Map<String, Object?>.from(counts) : json;
-    final healthText = json['health']?.toString().trim().toLowerCase();
+    final countMap = counts is Map ? navivoxMapFromJson(counts) : json;
+    final healthText = navivoxOptionalStringFromJson(
+      json['health'],
+    )?.toLowerCase();
     final health = switch (healthText) {
       'active' || 'ok' || 'healthy' => NavivoxMemoryHealth.active,
       'unavailable' || 'offline' => NavivoxMemoryHealth.unavailable,
@@ -357,8 +351,8 @@ String _degradedReasonFromJson(Map<String, Object?> json) {
 }
 
 String _safeDatabaseLabel(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return 'redacted';
+  final text = navivoxOptionalStringFromJson(value);
+  if (text == null) return 'redacted';
 
   const gormesMarker = '/.gormes/';
   final markerIndex = text.indexOf(gormesMarker);
