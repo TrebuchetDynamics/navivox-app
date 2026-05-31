@@ -2,52 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_run_record_presentation.dart';
 
+import '../shared/transcript_test_fixtures.dart';
+
 void main() {
   test(
     'summarizes text and voice run record evidence without secret metadata',
     () {
       final presentation = TranscriptRunRecordPresentation.fromRecord(
-        NavivoxRunRecordSnapshot(
-          runId: 'req-run-record',
-          sessionId: 's-run-record',
-          status: 'completed',
+        transcriptRunRecordSnapshot(
           createdAt: DateTime.utc(2026, 5, 23, 10),
           updatedAt: DateTime.utc(2026, 5, 23, 10, 0, 4),
           completedAt: DateTime.utc(2026, 5, 23, 10, 0, 8),
-          raw: const {
-            'transcript': [
-              {'role': 'user', 'text': 'transcribed voice command'},
-              {'role': 'assistant', 'text': 'assistant final answer'},
-            ],
-            'voice': {
-              'device_transcript': 'transcribed voice command',
-              'audio': {
-                'duration_ms': 1200,
-                'codec': 'opus',
-                'raw_audio_stored': false,
-                'retention': 'not_stored',
-              },
-              'server_stt': {'provider': 'local', 'status': 'available'},
-              'tts': {
-                'provider': 'piper',
-                'voice_id': 'amy',
-                'status': 'ready',
-              },
-            },
-            'provider_usage': {'status': 'unknown'},
-            'provider_cost': {'status': 'unknown'},
-            'tool_events': [
-              {
-                'tool_call_id': 'tool-1',
-                'name': 'read_file',
-                'status': 'finished',
-                'metadata': {
-                  'artifact_ref': 'artifact://readme',
-                  'secret_token': 'must-not-render',
-                },
-              },
-            ],
-          },
         ),
       );
 

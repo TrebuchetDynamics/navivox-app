@@ -1,4 +1,5 @@
 import 'package:navivox/core/channel/navivox_channel.dart';
+import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
 import '../../shared/profile_contact_chat_test_fixtures.dart';
@@ -114,6 +115,54 @@ NavivoxChatMessage transcriptNoticeMessage({
     kind: kind,
     createdAt: createdAt ?? DateTime.utc(2026, 5, 23, 11, 15),
     safetyNotice: notice,
+  );
+}
+
+NavivoxRunRecordSnapshot transcriptRunRecordSnapshot({
+  String runId = 'req-run-record',
+  String sessionId = 's-run-record',
+  String status = 'completed',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  DateTime? completedAt,
+}) {
+  return NavivoxRunRecordSnapshot(
+    runId: runId,
+    sessionId: sessionId,
+    status: status,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    completedAt: completedAt,
+    raw: const {
+      'transcript': [
+        {'role': 'user', 'text': 'transcribed voice command'},
+        {'role': 'assistant', 'text': 'assistant final answer'},
+      ],
+      'voice': {
+        'device_transcript': 'transcribed voice command',
+        'audio': {
+          'duration_ms': 1200,
+          'codec': 'opus',
+          'raw_audio_stored': false,
+          'retention': 'not_stored',
+        },
+        'server_stt': {'provider': 'local', 'status': 'available'},
+        'tts': {'provider': 'piper', 'voice_id': 'amy', 'status': 'ready'},
+      },
+      'provider_usage': {'status': 'unknown'},
+      'provider_cost': {'status': 'unknown'},
+      'tool_events': [
+        {
+          'tool_call_id': 'tool-1',
+          'name': 'read_file',
+          'status': 'finished',
+          'metadata': {
+            'artifact_ref': 'artifact://readme',
+            'secret_token': 'must-not-render',
+          },
+        },
+      ],
+    },
   );
 }
 

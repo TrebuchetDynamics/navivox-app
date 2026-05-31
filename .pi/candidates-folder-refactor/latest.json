@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T03:38:42.354Z",
+  "generatedAt": "2026-05-31T03:41:19.595Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -123,7 +123,7 @@
       "score": 187,
       "files": 94,
       "direct": 0,
-      "churn": 585,
+      "churn": 593,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
@@ -139,7 +139,7 @@
       "score": 186,
       "files": 132,
       "direct": 0,
-      "churn": 693,
+      "churn": 701,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -203,7 +203,7 @@
       "score": 159,
       "files": 52,
       "direct": 0,
-      "churn": 310,
+      "churn": 318,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
@@ -323,7 +323,7 @@
       "score": 118.8,
       "files": 6,
       "direct": 6,
-      "churn": 15,
+      "churn": 16,
       "callers": 19,
       "importsOut": 3,
       "tests": 0,
@@ -372,13 +372,29 @@
       "score": 114.7,
       "files": 29,
       "direct": 0,
-      "churn": 108,
+      "churn": 113,
       "callers": 3,
       "importsOut": 9,
       "tests": 0,
       "roles": 3,
       "duplicates": 9,
       "subdirs": 5,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "test/features/chat/shared",
+      "score": 107.9,
+      "files": 5,
+      "direct": 5,
+      "churn": 7,
+      "callers": 17,
+      "importsOut": 4,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 0,
+      "subdirs": 0,
       "extensions": [
         ".dart"
       ]
@@ -398,22 +414,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "test/features/chat/shared",
-      "score": 101.7,
-      "files": 5,
-      "direct": 5,
-      "churn": 6,
-      "callers": 15,
-      "importsOut": 4,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 0,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
       ]
     }
   ],

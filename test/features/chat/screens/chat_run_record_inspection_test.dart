@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
-import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../transcript/shared/transcript_test_fixtures.dart';
 import '../shared/chat_screen_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
@@ -27,31 +26,7 @@ void main() {
                 runRecordReference: 'req-run-record',
               ),
             ])
-            ..seedRunRecord(
-              const NavivoxRunRecordSnapshot(
-                runId: 'req-run-record',
-                sessionId: 's-run-record',
-                status: 'completed',
-                createdAt: null,
-                updatedAt: null,
-                completedAt: null,
-                raw: {
-                  'transcript': [
-                    {'role': 'user', 'text': 'hello'},
-                    {'role': 'assistant', 'text': 'assistant final answer'},
-                  ],
-                  'provider_usage': {'status': 'unknown'},
-                  'provider_cost': {'status': 'unknown'},
-                  'voice': {
-                    'device_transcript': 'hello',
-                    'audio': {
-                      'raw_audio_stored': false,
-                      'retention': 'not_stored',
-                    },
-                  },
-                },
-              ),
-            );
+            ..seedRunRecord(transcriptRunRecordSnapshot());
 
       await pumpChatScreen(
         tester,
