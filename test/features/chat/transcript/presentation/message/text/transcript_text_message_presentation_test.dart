@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_text_message_presentation.dart';
 
-import '../../shared/transcript_test_fixtures.dart';
+import '../../../shared/transcript_test_fixtures.dart';
+import '../shared/transcript_display_text_expectations.dart';
 
 void main() {
   test('derives text message display state', () {
@@ -14,8 +15,11 @@ void main() {
       ),
     );
 
-    expect(presentation.text, 'hello profile contact');
-    expect(presentation.hasText, isTrue);
+    expectTranscriptDisplayText(
+      actualText: presentation.text,
+      actualIsVisible: presentation.hasText,
+      expectedText: 'hello profile contact',
+    );
   });
 
   test('preserves operator text exactly without trimming', () {
@@ -27,8 +31,11 @@ void main() {
       ),
     );
 
-    expect(presentation.text, '  keep spacing  ');
-    expect(presentation.hasText, isTrue);
+    expectTranscriptDisplayText(
+      actualText: presentation.text,
+      actualIsVisible: presentation.hasText,
+      expectedText: '  keep spacing  ',
+    );
   });
 
   test('normalizes missing text to empty display state', () {
@@ -39,7 +46,10 @@ void main() {
       ),
     );
 
-    expect(presentation.text, '');
-    expect(presentation.hasText, isFalse);
+    expectTranscriptDisplayText(
+      actualText: presentation.text,
+      actualIsVisible: presentation.hasText,
+      expectedText: '',
+    );
   });
 }

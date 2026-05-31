@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_voice_message_presentation.dart';
 
-import '../../shared/transcript_test_fixtures.dart';
+import '../../../shared/transcript_test_fixtures.dart';
+import '../shared/transcript_display_text_expectations.dart';
 
 void main() {
   test('derives Voice run bubble display state with transcript', () {
@@ -15,8 +16,11 @@ void main() {
 
     expect(presentation.title, 'Voice message');
     expect(presentation.durationLabel, '1s');
-    expect(presentation.transcript, 'hello voice');
-    expect(presentation.showTranscript, isTrue);
+    expectTranscriptDisplayText(
+      actualText: presentation.transcript,
+      actualIsVisible: presentation.showTranscript,
+      expectedText: 'hello voice',
+    );
     expect(presentation.morphIntensity, 0.91);
   });
 
@@ -30,8 +34,11 @@ void main() {
 
     expect(presentation.title, 'Voice message');
     expect(presentation.durationLabel, '0s');
-    expect(presentation.transcript, '');
-    expect(presentation.showTranscript, isFalse);
+    expectTranscriptDisplayText(
+      actualText: presentation.transcript,
+      actualIsVisible: presentation.showTranscript,
+      expectedText: '',
+    );
     expect(presentation.morphIntensity, 0.42);
   });
 }

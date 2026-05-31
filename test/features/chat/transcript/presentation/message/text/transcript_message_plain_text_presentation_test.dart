@@ -2,8 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_plain_text_presentation.dart';
 
-import '../../shared/transcript_test_fixtures.dart';
-import '../shared/transcript_message_text_projection_cases.dart';
+import '../../../shared/transcript_test_fixtures.dart';
+import '../../shared/transcript_message_text_projection_cases.dart';
+import '../shared/transcript_display_text_expectations.dart';
 
 void main() {
   test('projects transcript messages into shared plain text cases', () {
@@ -12,12 +13,12 @@ void main() {
         testCase.message,
       );
 
-      expect(
-        presentation.text,
-        testCase.expectedText,
+      expectTranscriptDisplayText(
+        actualText: presentation.text,
+        actualIsVisible: presentation.hasText,
+        expectedText: testCase.expectedText,
         reason: testCase.description,
       );
-      expect(presentation.hasText, isTrue, reason: testCase.description);
     }
   });
 
@@ -37,11 +38,20 @@ void main() {
       ),
     );
 
-    expect(tool.text, isEmpty);
-    expect(tool.hasText, isFalse);
-    expect(missingVoice.text, isEmpty);
-    expect(missingVoice.hasText, isFalse);
-    expect(notice.text, isEmpty);
-    expect(notice.hasText, isFalse);
+    expectTranscriptDisplayText(
+      actualText: tool.text,
+      actualIsVisible: tool.hasText,
+      expectedText: '',
+    );
+    expectTranscriptDisplayText(
+      actualText: missingVoice.text,
+      actualIsVisible: missingVoice.hasText,
+      expectedText: '',
+    );
+    expectTranscriptDisplayText(
+      actualText: notice.text,
+      actualIsVisible: notice.hasText,
+      expectedText: '',
+    );
   });
 }
