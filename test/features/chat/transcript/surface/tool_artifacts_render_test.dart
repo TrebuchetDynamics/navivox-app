@@ -19,7 +19,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        transcriptSurfaceTestApp(messages: [message], onSend: (_) {}),
+        transcriptSurfaceTestApp(
+          messages: [message],
+          onSend: transcriptNoopSend,
+        ),
       );
 
       expect(find.text('shell.run'), findsOneWidget);
@@ -48,7 +51,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        transcriptSurfaceTestApp(messages: [message], onSend: (_) {}),
+        transcriptSurfaceTestApp(
+          messages: [message],
+          onSend: transcriptNoopSend,
+        ),
       );
 
       expect(find.byIcon(Icons.attachment), findsNWidgets(2));
@@ -94,7 +100,7 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      transcriptSurfaceTestApp(messages: messages, onSend: (_) {}),
+      transcriptSurfaceTestApp(messages: messages, onSend: transcriptNoopSend),
     );
 
     expect(find.byKey(const ValueKey('safety-warning-card')), findsOneWidget);

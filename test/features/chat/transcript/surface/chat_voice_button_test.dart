@@ -21,7 +21,7 @@ void main() {
             confidence: 0.91,
           ),
         ],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
       ),
     );
 
@@ -117,7 +117,7 @@ void main() {
       await tester.pumpWidget(
         transcriptSurfaceTestApp(
           messages: const <NavivoxChatMessage>[],
-          onSend: (_) {},
+          onSend: transcriptNoopSend,
           voiceCaptureService: service,
           onVoice: (capture) => captured = capture,
         ),
@@ -147,7 +147,7 @@ void main() {
     await tester.pumpWidget(
       transcriptSurfaceTestApp(
         messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: service,
         onVoice: (_) {},
       ),

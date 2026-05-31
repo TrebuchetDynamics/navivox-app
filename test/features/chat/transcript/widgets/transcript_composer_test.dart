@@ -35,7 +35,7 @@ void main() {
     await tester.pumpWidget(
       transcriptComposerTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         onUploadFile: attachmentActions.uploadFile,
         onPickPhotoOrVideo: attachmentActions.pickPhotoOrVideo,
         onOpenWorkspace: attachmentActions.openWorkspace,
@@ -51,7 +51,10 @@ void main() {
     final controller = transcriptTextController();
 
     await tester.pumpWidget(
-      transcriptComposerTestApp(controller: controller, onSend: (_) {}),
+      transcriptComposerTestApp(
+        controller: controller,
+        onSend: transcriptNoopSend,
+      ),
     );
 
     await tester.tap(find.byTooltip('Attach'));
@@ -72,7 +75,7 @@ void main() {
     await tester.pumpWidget(
       transcriptComposerTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceUnavailableReason: rawDeviceSttUnavailableReason,
         voiceRecoveryAction: deviceSttRecoveryAction,
         onOpenVoiceSettings: () => openedSettings = true,
@@ -110,7 +113,7 @@ void main() {
     await tester.pumpWidget(
       transcriptComposerTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureAvailable: true,
         onToggleVoice: () => toggles += 1,
       ),
@@ -124,7 +127,7 @@ void main() {
     await tester.pumpWidget(
       transcriptComposerTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureAvailable: true,
         capturing: true,
         onToggleVoice: () => toggles += 1,

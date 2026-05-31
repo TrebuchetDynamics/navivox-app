@@ -35,7 +35,7 @@ void main() {
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: successfulVoiceCaptureService(audio: [1, 2, 3]),
         onVoiceCaptureStarted: () => events.add('started'),
         onVoice: (capture) {
@@ -61,7 +61,7 @@ void main() {
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: ThrowingVoiceCaptureService(
           StateError('microphone exploded'),
         ),
@@ -86,7 +86,7 @@ void main() {
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: const ThrowingVoiceCaptureService(
           SpeechToTextCaptureFailure('no transcript'),
         ),
@@ -108,7 +108,7 @@ void main() {
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: const ThrowingVoiceCaptureService(
           DeviceSpeechUnavailable('microphone permission denied'),
         ),
@@ -132,7 +132,7 @@ void main() {
     await tester.pumpWidget(
       transcriptInputPanelTestApp(
         controller: controller,
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         voiceCaptureService: successfulVoiceCaptureService(
           transcript: 'slow voice',
           duration: const Duration(milliseconds: 50),

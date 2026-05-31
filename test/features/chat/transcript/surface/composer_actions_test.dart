@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(
       transcriptSurfaceTestApp(
         messages: const <NavivoxChatMessage>[],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         onUploadFile: attachmentActions.uploadFile,
         onPickPhotoOrVideo: attachmentActions.pickPhotoOrVideo,
         onOpenWorkspace: attachmentActions.openWorkspace,

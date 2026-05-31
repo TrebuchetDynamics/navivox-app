@@ -38,7 +38,7 @@ void main() {
             createdAt: DateTime(2026, 5, 19, 12),
           ),
         ],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
       ),
     );
 
@@ -70,7 +70,7 @@ void main() {
             createdAt: DateTime(2026, 5, 19, 12),
           ),
         ],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
         textToSpeechService: tts,
       ),
     );
@@ -96,7 +96,7 @@ void main() {
             createdAt: DateTime(2026, 5, 19, 12),
           ),
         ],
-        onSend: (_) {},
+        onSend: transcriptNoopSend,
       ),
     );
 
@@ -120,7 +120,7 @@ void main() {
               createdAt: DateTime(2026, 5, 19, 12),
             ),
           ],
-          onSend: (_) {},
+          onSend: transcriptNoopSend,
           forwardTargets: const [transcriptSupportContact],
           onForward: (message, target) => forwarded.add((
             text: message.text!,
