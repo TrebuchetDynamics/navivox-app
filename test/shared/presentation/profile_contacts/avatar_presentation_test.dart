@@ -1,15 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/shared/presentation/profile_contact_avatar_presentation.dart';
+
+import 'profile_contact_test_data.dart';
 
 void main() {
   test('derives stable initials, color slots, and semantic labels', () {
-    const contact = NavivoxProfileContact(
+    final contact = profileContactFixture(
       serverId: 'local',
-      profileId: 'mineru',
-      displayName: 'Mineru Builder',
       serverLabel: 'Local Gormes',
-      health: NavivoxProfileHealth.online,
       latestPreview: '',
       avatarSeed: 'local:work-mineru-repo',
     );
@@ -24,12 +22,10 @@ void main() {
   test('falls back through profile id, server id, and caller fallback', () {
     expect(
       ProfileContactAvatarPresentation(
-        const NavivoxProfileContact(
+        profileContactFixture(
           serverId: 'local',
-          profileId: 'mineru',
           displayName: ' ',
           serverLabel: 'Local Gormes',
-          health: NavivoxProfileHealth.online,
           latestPreview: '',
         ),
       ).initial,
@@ -37,12 +33,11 @@ void main() {
     );
     expect(
       ProfileContactAvatarPresentation(
-        const NavivoxProfileContact(
+        profileContactFixture(
           serverId: 'local',
           profileId: ' ',
           displayName: ' ',
           serverLabel: 'Local Gormes',
-          health: NavivoxProfileHealth.online,
           latestPreview: '',
         ),
       ).semanticLabel,
@@ -50,12 +45,11 @@ void main() {
     );
     expect(
       ProfileContactAvatarPresentation(
-        const NavivoxProfileContact(
+        profileContactFixture(
           serverId: ' ',
           profileId: ' ',
           displayName: ' ',
           serverLabel: 'Local Gormes',
-          health: NavivoxProfileHealth.online,
           latestPreview: '',
         ),
       ).initial,

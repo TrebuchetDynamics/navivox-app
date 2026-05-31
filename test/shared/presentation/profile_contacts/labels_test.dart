@@ -1,28 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/shared/presentation/profile_contact_labels.dart';
 
+import 'profile_contact_test_data.dart';
+
 void main() {
-  const profile = NavivoxProfileContact(
-    serverId: 'srv1',
-    profileId: 'mineru',
-    displayName: 'Mineru Builder',
-    serverLabel: 'Local',
-    health: NavivoxProfileHealth.warning,
-    latestPreview: 'Ready',
-    workspaceRootCount: 4,
-    workspaceRootsWarning: 2,
-    workspaceRootsError: 1,
-  );
+  const profile = mineruProfileContact;
 
   test('uses safe profile and server fallbacks for blank contacts', () {
-    const blankContact = NavivoxProfileContact(
-      serverId: 'srv1',
-      profileId: 'mineru',
+    final blankContact = profileContactFixture(
       displayName: ' ',
       serverLabel: ' ',
-      health: NavivoxProfileHealth.online,
-      latestPreview: 'Ready',
     );
 
     expect(
@@ -46,41 +33,24 @@ void main() {
       );
       expect(
         profileContactIdentityLabel(
-          const NavivoxProfileContact(
-            serverId: 'srv1',
-            profileId: 'mineru',
-            displayName: ' ',
-            serverLabel: 'Local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Ready',
-          ),
+          profileContactFixture(displayName: ' '),
           fallback: 'profile',
         ),
         'mineru',
       );
       expect(
         profileContactIdentityLabel(
-          const NavivoxProfileContact(
-            serverId: 'srv1',
-            profileId: ' ',
-            displayName: ' ',
-            serverLabel: 'Local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Ready',
-          ),
+          profileContactFixture(profileId: ' ', displayName: ' '),
           fallback: 'profile',
         ),
         'srv1',
       );
       expect(
         profileContactIdentityLabel(
-          const NavivoxProfileContact(
+          profileContactFixture(
             serverId: ' ',
             profileId: ' ',
             displayName: ' ',
-            serverLabel: 'Local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Ready',
           ),
           fallback: 'profile',
         ),
@@ -108,15 +78,7 @@ void main() {
   test(
     'reports project attention when no counts exist but roots are unhealthy',
     () {
-      const profile = NavivoxProfileContact(
-        serverId: 'srv1',
-        profileId: 'mineru',
-        displayName: 'Mineru Builder',
-        serverLabel: 'Local',
-        health: NavivoxProfileHealth.online,
-        latestPreview: 'Ready',
-        workspaceRootsOk: false,
-      );
+      final profile = profileContactFixture(workspaceRootsOk: false);
 
       expect(profileContactProjectStatusSegments(profile), [
         'project attention needed',
