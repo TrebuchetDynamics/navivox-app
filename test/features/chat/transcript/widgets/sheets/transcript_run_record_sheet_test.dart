@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_run_record_sheet.dart';
 
-import '../shared/transcript_test_scaffold.dart';
-import '../shared/transcript_test_fixtures.dart';
+import '../../shared/transcript_test_scaffold.dart';
+import '../../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets(

@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/shared/voice/voice_capture_failures.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
-import '../../../shared/fakes/voice_capture_service_fakes.dart';
-import '../shared/transcript_controller_test_helpers.dart';
-import '../shared/transcript_voice_recovery_test_helpers.dart';
-import '../shared/transcript_widget_test_app.dart';
+import '../../../../shared/fakes/voice_capture_service_fakes.dart';
+import '../../shared/transcript_controller_test_helpers.dart';
+import '../../shared/transcript_voice_recovery_test_helpers.dart';
+import '../../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and clears the composer controller', (

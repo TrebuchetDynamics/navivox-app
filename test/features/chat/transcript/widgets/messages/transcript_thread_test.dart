@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
-import '../shared/transcript_controller_test_helpers.dart';
-import '../shared/transcript_test_fixtures.dart';
-import '../shared/transcript_widget_test_app.dart';
+import '../../shared/transcript_controller_test_helpers.dart';
+import '../../shared/transcript_test_fixtures.dart';
+import '../../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('renders the shared empty Transcript surface state', (

@@ -4,8 +4,8 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_message_action_presentation.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_message_action_sheet.dart';
 
-import '../shared/transcript_test_scaffold.dart';
-import '../shared/transcript_test_fixtures.dart';
+import '../../shared/transcript_test_scaffold.dart';
+import '../../shared/transcript_test_fixtures.dart';
 
 void main() {
   testWidgets('renders action text and invokes pause, copy, and read actions', (

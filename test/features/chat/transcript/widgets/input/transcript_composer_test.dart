@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../shared/transcript_attachment_test_helpers.dart';
-import '../shared/transcript_controller_test_helpers.dart';
-import '../shared/transcript_voice_recovery_test_helpers.dart';
-import '../shared/transcript_widget_test_app.dart';
+import '../../shared/transcript_attachment_test_helpers.dart';
+import '../../shared/transcript_controller_test_helpers.dart';
+import '../../shared/transcript_voice_recovery_test_helpers.dart';
+import '../../shared/transcript_widget_test_app.dart';
 
 void main() {
   testWidgets('sends typed text and inserts quick emoji', (tester) async {
