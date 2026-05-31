@@ -14,6 +14,7 @@ void main() {
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
+  doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
 }
 
 void parsesValidCorePairingDescriptor() {
@@ -203,6 +204,23 @@ void rejectsCorePairingDescriptorWithNonHttpBaseUrl() {
   _expect(
     result == null,
     'core pairing base_url must be an HTTP(S) endpoint, not an arbitrary URI',
+  );
+}
+
+void doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"websocket_url":"https://gateway.example/ws","token":"nvbx_token"}',
+  );
+
+  _expect(result != null, 'token-only JSON import should still parse');
+  _expect(result!.token == 'nvbx_token', 'token should be preserved');
+  _expect(
+    result.webSocketUrl == null,
+    'HTTP websocket_url values are not valid websocket endpoints',
+  );
+  _expect(
+    result.baseUrl == null,
+    'invalid websocket_url values must not be promoted to a baseUrl',
   );
 }
 

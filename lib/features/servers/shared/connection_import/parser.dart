@@ -142,25 +142,42 @@ _ConnectionImportCandidate? _connectionImportCandidateFromFields(
   String? fallbackBaseUrl,
 }) {
   final token = navivoxFirstStringFieldFromJson(fields, _tokenFieldNames);
-  final webSocketUrl = navivoxFirstStringFieldFromJson(
-    fields,
-    _webSocketUrlFieldNames,
-  );
-  final explicitBaseUrl =
-      _normalizeBaseUrl(
-        navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames),
-      ) ??
-      _normalizeWebSocketBaseUrl(webSocketUrl);
+  final endpointFields = _connectionImportEndpointFields(fields);
   final candidate = _ConnectionImportCandidate(
-    baseUrl: explicitBaseUrl ?? fallbackBaseUrl,
+    baseUrl: endpointFields.baseUrl ?? fallbackBaseUrl,
     token: token,
-    webSocketUrl: _normalizeWebSocketUrl(webSocketUrl),
+    webSocketUrl: endpointFields.webSocketUrl,
     serverId: navivoxFirstStringFieldFromJson(fields, _serverIdFieldNames),
     profileId: navivoxFirstStringFieldFromJson(fields, _profileIdFieldNames),
   );
   if (!candidate.hasImportValues) return null;
 
   return candidate;
+}
+
+_ConnectionImportEndpointFields _connectionImportEndpointFields(
+  Map<dynamic, dynamic> fields,
+) {
+  final webSocketUrl = navivoxFirstStringFieldFromJson(
+    fields,
+    _webSocketUrlFieldNames,
+  );
+  final normalizedWebSocketUrl = _normalizeWebSocketUrl(webSocketUrl);
+  return _ConnectionImportEndpointFields(
+    baseUrl:
+        _normalizeBaseUrl(
+          navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames),
+        ) ??
+        _normalizeBaseUrlFromWebSocketUrl(normalizedWebSocketUrl),
+    webSocketUrl: normalizedWebSocketUrl,
+  );
+}
+
+class _ConnectionImportEndpointFields {
+  const _ConnectionImportEndpointFields({this.baseUrl, this.webSocketUrl});
+
+  final String? baseUrl;
+  final String? webSocketUrl;
 }
 
 SetupQrImageImport? _importFromGenericUri(Uri uri) {
@@ -388,7 +405,5 @@ String? _normalizeWebSocketUrl(String? raw) =>
       navivoxOptionalLiteralStringFromJson(raw),
     );
 
-String? _normalizeWebSocketBaseUrl(String? raw) =>
-    navivoxHttpBaseUrlFromEndpointString(
-      navivoxOptionalLiteralStringFromJson(raw),
-    );
+String? _normalizeBaseUrlFromWebSocketUrl(String? normalizedWebSocketUrl) =>
+    navivoxHttpBaseUrlFromEndpointString(normalizedWebSocketUrl);
