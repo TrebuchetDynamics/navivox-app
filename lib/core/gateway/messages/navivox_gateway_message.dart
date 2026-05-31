@@ -1,4 +1,4 @@
-import '../shared/navivox_gateway_json.dart';
+import '../shared/contracts/navivox_gateway_text.dart';
 
 /// Typed WebSocket message sent to the Navivox gateway.
 class NavivoxGatewayMessage {
