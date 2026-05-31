@@ -28,7 +28,9 @@ List<NavivoxToolArtifact> navivoxToolArtifactsFromGatewayMetadata(
       id: 'metadata-$toolCallId',
       kind: 'metadata',
       title: 'Tool metadata',
-      summary: navivoxBoundedGatewayToolText(_safeMetadataSummary(metadata)),
+      summary: navivoxBoundedGatewayToolText(
+        navivoxSafeGatewayToolMetadataSummary(metadata),
+      ),
     ),
   ];
 }
@@ -69,10 +71,16 @@ NavivoxToolArtifact? _toolArtifactFromFlatMetadata(
   );
 }
 
-String _safeMetadataSummary(Map<String, Object?> metadata) {
+/// Returns a deterministic, non-secret summary for malformed tool metadata.
+///
+/// The gateway may include arbitrary metadata when a structured tool artifact is
+/// missing or malformed. Keep this fallback conservative: values under
+/// secret-looking keys are dropped, compound values are summarized by shape, and
+/// callers can apply their own display-length bounds.
+String navivoxSafeGatewayToolMetadataSummary(Map<String, Object?> metadata) {
   final parts = <String>[];
   for (final entry in metadata.entries) {
-    if (_isSensitiveMetadataKey(entry.key)) continue;
+    if (navivoxIsSensitiveGatewayToolMetadataKey(entry.key)) continue;
     parts.add('${entry.key}: ${_safeMetadataValue(entry.value)}');
   }
   return parts.isEmpty ? 'Metadata unavailable' : parts.join('; ');
@@ -84,7 +92,7 @@ String _safeMetadataValue(Object? value) {
   return value?.toString() ?? '';
 }
 
-bool _isSensitiveMetadataKey(String key) {
+bool navivoxIsSensitiveGatewayToolMetadataKey(String key) {
   final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   return _sensitiveMetadataKeyFragments.any(normalized.contains);
 }
@@ -97,4 +105,5 @@ const _sensitiveMetadataKeyFragments = <String>[
   'authorization',
   'credential',
   'bearer',
+  'privatekey',
 ];
