@@ -2,6 +2,7 @@ import '../connection_import_parser.dart';
 
 void main() {
   parsesValidCorePairingDescriptor();
+  preservesRepeatedCorePairingQueryValues();
   parsesGenericTokenUrlOutsideCoreDescriptorProtocol();
   preservesGenericUrlMetadataWhenBaseUrlComesFromUrlOrigin();
   preservesGenericUrlRepeatedQueryValuesAfterBlankCopyArtifacts();
@@ -17,6 +18,7 @@ void main() {
   parsesSharedTextTokenWithSpacedSeparator();
   parsesSharedTextTokenWrappedInQuotes();
   stripsSentenceTrailingPeriodFromSharedTextUrl();
+  stripsAngleBracketFromSharedTextUrl();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
@@ -41,6 +43,22 @@ void parsesValidCorePairingDescriptor() {
   _expect(result.token == 'nvbx_ok', 'rest_token preserved');
   _expect(result.serverId == 'srv', 'server_id preserved');
   _expect(result.profileId == 'profile', 'profile_id preserved');
+}
+
+void preservesRepeatedCorePairingQueryValues() {
+  final result = parseNavivoxConnectionImportPayload(
+    'navivox://connect?websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fws&websocket_url=&rest_token=nvbx_ok&rest_token=',
+  );
+
+  _expect(
+    result != null,
+    'core pairing descriptor with repeated blank copy artifacts should parse',
+  );
+  _expect(
+    result!.webSocketUrl == 'ws://127.0.0.1:8765/ws',
+    'first nonblank repeated websocket_url wins',
+  );
+  _expect(result.token == 'nvbx_ok', 'first nonblank repeated rest_token wins');
 }
 
 void parsesGenericTokenUrlOutsideCoreDescriptorProtocol() {
@@ -272,6 +290,22 @@ void stripsSentenceTrailingPeriodFromSharedTextUrl() {
     'sentence punctuation after a copied URL should not become part of the baseUrl',
   );
   _expect(result.token == 'shared_secret', 'shared text token should parse');
+}
+
+void stripsAngleBracketFromSharedTextUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Open <https://gateway.example/connect?token=nvbx_shared> to finish setup.',
+  );
+
+  _expect(result != null, 'angle-bracketed shared URL should parse');
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'angle bracket after copied URL should not affect the baseUrl',
+  );
+  _expect(
+    result.token == 'nvbx_shared',
+    'angle bracket after copied URL should not become part of the token',
+  );
 }
 
 void rejectsMalformedCorePairingDescriptorBeforeGenericFallback() {

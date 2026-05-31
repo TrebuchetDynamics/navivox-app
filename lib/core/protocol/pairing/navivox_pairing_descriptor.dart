@@ -22,7 +22,9 @@ class NavivoxPairingDescriptor {
     if (uri.scheme != 'navivox' || uri.host != 'connect') {
       throw FormatException('Expected navivox://connect descriptor', value);
     }
-    final query = uri.queryParameters;
+    final query = navivoxFirstNonBlankQueryParameterValues(
+      uri.queryParametersAll,
+    );
     final tokenRequired = _boolFromPairingParam(query['token_required']);
     final token = _optionalPairingParam(query['rest_token']);
     if (tokenRequired && token == null) {

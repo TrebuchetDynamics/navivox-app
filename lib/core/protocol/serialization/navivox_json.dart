@@ -169,6 +169,29 @@ Map<String, String> navivoxTrimmedStringFields(Map<String, Object?> values) {
   };
 }
 
+/// Returns a query-parameter map using the first non-empty value for each key.
+///
+/// This keeps copied URLs with duplicate blank parameters from erasing the
+/// earlier value supplied by the producer.
+Map<String, String> navivoxFirstNonBlankQueryParameterValues(
+  Map<String, List<String>> queryParametersAll,
+) {
+  final result = <String, String>{};
+  for (final entry in queryParametersAll.entries) {
+    final value = navivoxFirstNonBlankQueryParameterValue(entry.value);
+    if (value != null) result[entry.key] = value;
+  }
+  return result;
+}
+
+String? navivoxFirstNonBlankQueryParameterValue(List<String> values) {
+  for (final value in values) {
+    final text = navivoxOptionalLiteralStringFromJson(value);
+    if (text != null) return text;
+  }
+  return null;
+}
+
 DateTime? navivoxDateTimeFromJson(Object? value) {
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return null;
