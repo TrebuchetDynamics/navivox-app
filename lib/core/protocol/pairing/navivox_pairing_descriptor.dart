@@ -98,15 +98,15 @@ class _PairingDescriptorFields {
   }
 
   String? optional(String name) {
-    return navivoxOptionalStringFromJson(firstValues[name]);
+    return navivoxFirstStringFieldFromJson(firstValues, [name]);
   }
 
   bool boolean(String name) {
-    return navivoxStrictBoolFromJson(firstValues[name]);
+    return navivoxStrictBoolFromJson(optional(name));
   }
 
   List<String> csv(String name) {
-    final values = allValues[name];
+    final values = _allQueryValues(name);
     if (values == null) return const [];
     return values
         .map(navivoxOptionalStringFromJson)
@@ -116,7 +116,23 @@ class _PairingDescriptorFields {
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }
+
+  List<String>? _allQueryValues(String name) {
+    final exact = allValues[name];
+    if (exact != null) return exact;
+
+    final normalizedName = _normalizePairingDescriptorFieldName(name);
+    for (final entry in allValues.entries) {
+      if (_normalizePairingDescriptorFieldName(entry.key) == normalizedName) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
 }
+
+String _normalizePairingDescriptorFieldName(String value) =>
+    value.toLowerCase().replaceAll('_', '');
 
 Uri _baseUriFromPairingParams({
   required String? explicitBaseUrl,

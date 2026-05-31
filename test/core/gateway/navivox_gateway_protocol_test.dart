@@ -247,6 +247,34 @@ void main() {
     expect(config.headers, {'Authorization': 'Bearer setup-secret-token'});
   });
 
+  test('accepts normalized pairing descriptor query field aliases', () {
+    final descriptor = NavivoxPairingDescriptor.parse(
+      'navivox://connect?'
+      'baseUrl=https%3A%2F%2Fgateway.example%2Fsetup&'
+      'websocketUrl=wss%3A%2F%2Fgateway.example%2Fv1%2Fnavivox%2Fstream&'
+      'authMode=pairing_token&'
+      'exposureMode=local&'
+      'tokenRequired=true&'
+      'restToken=setup-secret-token&'
+      'serverId=local&'
+      'profileId=mineru&'
+      'channelIds=navivox%2Ctelegram',
+    );
+
+    expect(descriptor.baseUri.toString(), 'https://gateway.example');
+    expect(
+      descriptor.webSocketUri.toString(),
+      'wss://gateway.example/v1/navivox/stream',
+    );
+    expect(descriptor.authMode, 'pairing_token');
+    expect(descriptor.exposureMode, 'local');
+    expect(descriptor.tokenRequired, isTrue);
+    expect(descriptor.token, 'setup-secret-token');
+    expect(descriptor.serverId, 'local');
+    expect(descriptor.profileId, 'mineru');
+    expect(descriptor.channelIds, ['navivox', 'telegram']);
+  });
+
   test('normalizes explicit pairing base_url to HTTP origin only', () {
     final descriptor = NavivoxPairingDescriptor.parse(
       'navivox://connect?'
