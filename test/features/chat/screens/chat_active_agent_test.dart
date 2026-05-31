@@ -10,7 +10,7 @@ import 'package:navivox/router/app_routes.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 import '../../shared/fixtures/seed_fixtures.dart';
-import '../shared/chat_screen_test_fixtures.dart';
+import '../shared/widgets/chat_screen_test_fixtures.dart';
 
 const _seedServers = [
   NavivoxServer(id: 'srv1', name: 'Local', status: 'ready'),

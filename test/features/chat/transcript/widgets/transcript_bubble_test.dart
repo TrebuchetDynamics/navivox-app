@@ -5,7 +5,7 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 
 import '../shared/transcript_test_fixtures.dart';
 import '../shared/transcript_widget_test_app.dart';
-import '../../shared/inline_span_test_helpers.dart';
+import '../../shared/widgets/inline_span_test_helpers.dart';
 
 void main() {
   testWidgets('renders message text and opens assistant pause action', (

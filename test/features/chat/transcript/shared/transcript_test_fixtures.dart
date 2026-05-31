@@ -2,7 +2,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
-import '../../shared/profile_contact_chat_test_fixtures.dart';
+import '../../shared/profiles/profile_contact_chat_test_fixtures.dart';
 
 /// Shared Profile contact target used by transcript forwarding/action tests.
 const transcriptSupportContact = chatSupportTriageContact;

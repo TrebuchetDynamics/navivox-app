@@ -4,8 +4,8 @@ import 'package:navivox/features/chat/voice/presentation/voice_readiness_present
 import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
-import '../../shared/voice_recovery_test_fixtures.dart';
-import '../../shared/voice_settings_test_fixtures.dart';
+import '../../shared/voice/voice_recovery_test_fixtures.dart';
+import '../../shared/voice/voice_settings_test_fixtures.dart';
 
 void main() {
   final profile = mineruBuilderProfile(

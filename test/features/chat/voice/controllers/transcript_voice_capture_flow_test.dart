@@ -4,7 +4,7 @@ import 'package:navivox/shared/voice/voice_capture_failures.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import '../../../shared/fakes/voice_capture_service_fakes.dart';
-import '../../shared/voice_recovery_test_fixtures.dart';
+import '../../shared/voice/voice_recovery_test_fixtures.dart';
 
 void main() {
   const flow = TranscriptVoiceCaptureFlow();

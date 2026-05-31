@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T03:57:18.790Z",
+  "generatedAt": "2026-05-31T03:59:45.948Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -103,27 +103,11 @@
       ]
     },
     {
-      "relative": "test/features/shared",
-      "score": 193.5,
-      "files": 5,
-      "direct": 0,
-      "churn": 23,
-      "callers": 41,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 7,
-      "subdirs": 4,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
       "relative": "test/features",
       "score": 187,
-      "files": 97,
+      "files": 98,
       "direct": 0,
-      "churn": 623,
+      "churn": 628,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
@@ -137,15 +121,31 @@
     {
       "relative": "test",
       "score": 186,
-      "files": 135,
+      "files": 136,
       "direct": 0,
-      "churn": 731,
+      "churn": 736,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
       "duplicates": 67,
       "subdirs": 8,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "test/features/shared",
+      "score": 184.5,
+      "files": 5,
+      "direct": 0,
+      "churn": 23,
+      "callers": 38,
+      "importsOut": 1,
+      "tests": 0,
+      "roles": 3,
+      "duplicates": 7,
+      "subdirs": 4,
       "extensions": [
         ".dart"
       ]
@@ -201,9 +201,9 @@
     {
       "relative": "test/features/chat",
       "score": 156,
-      "files": 55,
+      "files": 56,
       "direct": 0,
-      "churn": 348,
+      "churn": 353,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
@@ -285,10 +285,10 @@
     },
     {
       "relative": "test/features/chat/transcript/shared",
-      "score": 131.8,
-      "files": 6,
-      "direct": 6,
-      "churn": 20,
+      "score": 137.1,
+      "files": 7,
+      "direct": 7,
+      "churn": 23,
       "callers": 23,
       "importsOut": 3,
       "tests": 0,
@@ -385,10 +385,10 @@
     },
     {
       "relative": "test/features/chat/transcript",
-      "score": 113.7,
-      "files": 29,
+      "score": 114,
+      "files": 30,
       "direct": 0,
-      "churn": 128,
+      "churn": 133,
       "callers": 3,
       "importsOut": 10,
       "tests": 0,

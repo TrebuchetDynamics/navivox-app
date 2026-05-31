@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 
-import '../shared/profile_contact_chat_test_fixtures.dart';
+import '../shared/profiles/profile_contact_chat_test_fixtures.dart';
 
 void main() {
   const contacts = [chatMineruBuilderContact, chatSupportTriageContact];

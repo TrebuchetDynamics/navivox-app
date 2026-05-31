@@ -4,8 +4,8 @@ import 'package:navivox/features/chat/commands/local_command_dispatcher.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/router/app_routes.dart';
 
-import '../shared/profile_contact_chat_test_fixtures.dart';
-import '../shared/profile_scope_test_helpers.dart';
+import '../shared/profiles/profile_contact_chat_test_fixtures.dart';
+import '../shared/profiles/profile_scope_test_helpers.dart';
 
 void main() {
   const dispatcher = LocalCommandDispatcher();

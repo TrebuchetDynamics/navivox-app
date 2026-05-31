@@ -4,7 +4,7 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/forwarding/forward_message_intent.dart';
 
 import '../transcript/shared/transcript_test_fixtures.dart';
-import '../shared/profile_scope_test_helpers.dart';
+import '../shared/profiles/profile_scope_test_helpers.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';

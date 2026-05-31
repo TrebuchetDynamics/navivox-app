@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import '../../../support/test_navivox_channel.dart';
-import '../shared/inline_span_test_helpers.dart';
-import '../shared/chat_screen_test_fixtures.dart';
-import '../shared/profile_scope_test_helpers.dart';
+import '../shared/widgets/inline_span_test_helpers.dart';
+import '../shared/widgets/chat_screen_test_fixtures.dart';
+import '../shared/profiles/profile_scope_test_helpers.dart';
 import 'shared/profile_contact_screen_test_fixtures.dart';
 
 void main() {

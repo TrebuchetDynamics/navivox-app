@@ -3,10 +3,10 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
 
-import '../shared/chat_message_test_fixtures.dart';
-import '../shared/voice_recovery_test_fixtures.dart';
-import '../shared/voice_run_test_fixtures.dart';
-import '../shared/voice_settings_test_fixtures.dart';
+import '../shared/protocol/chat_message_test_fixtures.dart';
+import '../shared/voice/voice_recovery_test_fixtures.dart';
+import '../shared/protocol/voice_run_test_fixtures.dart';
+import '../shared/voice/voice_settings_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {

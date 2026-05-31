@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/shared/voice/voice_capture_service.dart';
 
-import '../../shared/voice_recovery_test_fixtures.dart';
+import '../../shared/voice/voice_recovery_test_fixtures.dart';
 import 'transcript_surface_test_app.dart';
 
-export '../../shared/voice_recovery_test_fixtures.dart';
+export '../../shared/voice/voice_recovery_test_fixtures.dart';
 
 Future<void> pumpUnavailableTranscriptSurface(
   WidgetTester tester, {
