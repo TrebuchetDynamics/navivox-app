@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import '../../../../support/test_navivox_channel.dart';
+import '../../shared/chat_message_test_fixtures.dart';
 import '../../shared/chat_screen_test_fixtures.dart';
 import '../../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
@@ -34,10 +35,9 @@ void main() {
   ) async {
     final channel = _streamingMineruChannel()
       ..seedMessages([
-        NavivoxChatMessage(
+        chatTextMessage(
           id: 'assistant-1',
           author: NavivoxMessageAuthor.assistant,
-          kind: NavivoxMessageKind.text,
           createdAt: DateTime(2026, 5, 21, 10),
           text: 'Drafting the deployment plan.',
           serverId: 'local',

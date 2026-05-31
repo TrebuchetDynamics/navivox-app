@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
+import '../shared/transcript_test_fixtures.dart';
 import '../shared/transcript_widget_test_app.dart';
 
 void main() {
@@ -180,12 +181,11 @@ ScrollPosition _threadScrollPosition(WidgetTester tester) {
 List<NavivoxChatMessage> _messages(int count) {
   return [
     for (var index = 0; index < count; index += 1)
-      NavivoxChatMessage(
+      transcriptTextMessage(
         id: 'message-$index',
         author: index.isEven
             ? NavivoxMessageAuthor.user
             : NavivoxMessageAuthor.assistant,
-        kind: NavivoxMessageKind.text,
         createdAt: DateTime.utc(2026, 5, 23, 12, index),
         text: 'message $index',
       ),

@@ -66,6 +66,18 @@ NavivoxChatMessage transcriptTextMessage({
   );
 }
 
+NavivoxVoiceMessage transcriptVoice({
+  String transcript = '',
+  Duration duration = const Duration(seconds: 1),
+  double confidence = 0.9,
+}) {
+  return NavivoxVoiceMessage(
+    duration: duration,
+    transcript: transcript,
+    confidence: confidence,
+  );
+}
+
 NavivoxChatMessage transcriptVoiceMessage({
   String id = 'voice-1',
   String transcript = '',
@@ -79,7 +91,7 @@ NavivoxChatMessage transcriptVoiceMessage({
     author: author,
     kind: NavivoxMessageKind.voice,
     createdAt: createdAt ?? DateTime.utc(2026, 5, 23, 11, 15),
-    voice: NavivoxVoiceMessage(
+    voice: transcriptVoice(
       duration: duration,
       transcript: transcript,
       confidence: confidence,

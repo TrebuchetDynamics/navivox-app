@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/transcript/presentation/transcript_voice_message_presentation.dart';
+
+import '../shared/transcript_test_fixtures.dart';
 
 void main() {
   test('derives Voice run bubble display state with transcript', () {
     final presentation = TranscriptVoiceMessagePresentation.fromVoice(
-      const NavivoxVoiceMessage(
+      transcriptVoice(
         transcript: 'hello voice',
-        duration: Duration(milliseconds: 1200),
+        duration: const Duration(milliseconds: 1200),
         confidence: 0.91,
       ),
     );
@@ -21,9 +22,8 @@ void main() {
 
   test('omits transcript row when Voice run transcript is empty', () {
     final presentation = TranscriptVoiceMessagePresentation.fromVoice(
-      const NavivoxVoiceMessage(
-        transcript: '',
-        duration: Duration(milliseconds: 500),
+      transcriptVoice(
+        duration: const Duration(milliseconds: 500),
         confidence: 0.42,
       ),
     );
