@@ -31,6 +31,14 @@ void main() {
       'https://gromit.tailnet.test:8765/v1/navivox/profile-contacts',
     );
     expect(
+      config.memoryOverviewUri().toString(),
+      'https://gromit.tailnet.test:8765/v1/navivox/memory/overview',
+    );
+    expect(
+      navivoxGatewayUriWithOptionalQuery(config.memoryOverviewUri(), const {}),
+      config.memoryOverviewUri(),
+    );
+    expect(
       config
           .memoryOverviewUri(serverId: 'local', profileId: 'mineru')
           .toString(),

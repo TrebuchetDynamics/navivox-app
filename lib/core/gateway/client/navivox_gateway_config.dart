@@ -39,9 +39,10 @@ class NavivoxGatewayConfig {
       'server_id': serverId,
       'profile_id': profileId,
     });
-    return _withPath(
-      '/v1/navivox/memory/overview',
-    ).replace(queryParameters: query.isEmpty ? null : query);
+    return navivoxGatewayUriWithOptionalQuery(
+      _withPath('/v1/navivox/memory/overview'),
+      query,
+    );
   }
 
   Uri memorySearchUri({
@@ -62,9 +63,10 @@ class NavivoxGatewayConfig {
       if (type != NavivoxMemoryType.all) 'type': type.wireValue,
       if (limit > 0) 'limit': limit.toString(),
     };
-    return _withPath(
-      '/v1/navivox/memory/search',
-    ).replace(queryParameters: params.isEmpty ? null : params);
+    return navivoxGatewayUriWithOptionalQuery(
+      _withPath('/v1/navivox/memory/search'),
+      params,
+    );
   }
 
   Uri memoryDetailUri({
