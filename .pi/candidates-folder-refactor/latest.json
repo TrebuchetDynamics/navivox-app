@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T01:16:48.937Z",
+  "generatedAt": "2026-05-31T01:19:09.972Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -40,12 +40,12 @@
     },
     {
       "relative": "lib/features",
-      "score": 199,
+      "score": 200,
       "files": 101,
       "direct": 0,
-      "churn": 492,
+      "churn": 496,
       "callers": 1,
-      "importsOut": 23,
+      "importsOut": 24,
       "tests": 0,
       "roles": 6,
       "duplicates": 241,
@@ -57,9 +57,9 @@
     {
       "relative": "lib",
       "score": 195,
-      "files": 171,
+      "files": 172,
       "direct": 3,
-      "churn": 680,
+      "churn": 685,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -91,7 +91,7 @@
       "score": 187,
       "files": 82,
       "direct": 0,
-      "churn": 519,
+      "churn": 522,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
@@ -107,7 +107,7 @@
       "score": 186,
       "files": 119,
       "direct": 0,
-      "churn": 620,
+      "churn": 623,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
@@ -168,12 +168,12 @@
     },
     {
       "relative": "lib/features/chat",
-      "score": 163,
+      "score": 164,
       "files": 40,
       "direct": 0,
-      "churn": 250,
+      "churn": 252,
       "callers": 1,
-      "importsOut": 21,
+      "importsOut": 22,
       "tests": 0,
       "roles": 3,
       "duplicates": 103,
@@ -203,7 +203,7 @@
       "score": 151.3,
       "files": 41,
       "direct": 0,
-      "churn": 247,
+      "churn": 249,
       "callers": 0,
       "importsOut": 7,
       "tests": 0,
@@ -271,6 +271,22 @@
       ]
     },
     {
+      "relative": "lib/shared",
+      "score": 119.6,
+      "files": 12,
+      "direct": 0,
+      "churn": 21,
+      "callers": 18,
+      "importsOut": 2,
+      "tests": 0,
+      "roles": 0,
+      "duplicates": 18,
+      "subdirs": 3,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
       "relative": "lib/router",
       "score": 117.8,
       "files": 6,
@@ -301,22 +317,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "lib/shared",
-      "score": 107.3,
-      "files": 11,
-      "direct": 0,
-      "churn": 20,
-      "callers": 17,
-      "importsOut": 2,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 17,
-      "subdirs": 2,
-      "extensions": [
-        ".dart"
       ]
     },
     {

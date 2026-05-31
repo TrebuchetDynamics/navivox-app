@@ -6,7 +6,7 @@ import 'package:navivox/features/chat/transcript/widgets/transcript_composer.dar
 import 'package:navivox/features/chat/transcript/widgets/transcript_input_panel.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_surface_frame.dart';
 import 'package:navivox/features/chat/transcript/widgets/transcript_thread.dart';
-import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 import '../../../shared/app/test_material_app.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/features/voice/services/tts/text_to_speech_service.dart';
+import 'package:navivox/shared/voice/text_to_speech_service.dart';
 
 import '../shared/transcript_surface_test_app.dart';
 import '../shared/transcript_test_fixtures.dart';

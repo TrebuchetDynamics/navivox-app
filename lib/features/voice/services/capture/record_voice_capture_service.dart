@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'audio_recorder.dart';
 import '../speech/speech_recognizer.dart';
-import 'voice_capture_service.dart';
+import '../../../../shared/voice/voice_capture_service.dart';
 
 class VoiceCaptureFailure implements Exception {
   const VoiceCaptureFailure(this.cause);

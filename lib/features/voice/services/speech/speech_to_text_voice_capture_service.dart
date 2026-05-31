@@ -7,7 +7,7 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../../core/protocol/voice_unavailable_reason.dart';
-import '../capture/voice_capture_service.dart';
+import '../../../../shared/voice/voice_capture_service.dart';
 
 const noSpeechDetectedVoiceCaptureMessage =
     'No speech was detected. Check microphone permission, device speech recognition, or try speaking closer to the mic.';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../voice/services/capture/voice_capture_service.dart';
+import '../../../../shared/voice/voice_capture_service.dart';
 import '../../voice/controllers/transcript_voice_capture_flow.dart';
 import 'transcript_composer.dart';
 

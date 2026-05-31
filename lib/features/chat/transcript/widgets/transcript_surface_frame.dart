@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/channel/navivox_channel.dart';
 import '../../../../core/protocol/navivox_event.dart';
-import '../../../voice/services/tts/text_to_speech_service.dart';
-import '../../../voice/services/capture/voice_capture_service.dart';
+import '../../../../shared/voice/text_to_speech_service.dart';
+import '../../../../shared/voice/voice_capture_service.dart';
 import 'transcript_input_panel.dart';
 import 'transcript_thread.dart';
 

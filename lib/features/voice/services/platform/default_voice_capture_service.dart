@@ -1,4 +1,4 @@
-import '../capture/voice_capture_service.dart';
+import '../../../../shared/voice/voice_capture_service.dart';
 import '../speech/speech_to_text_voice_capture_service.dart';
 import 'voice_capture_platform.dart';
 

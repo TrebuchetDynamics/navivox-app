@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:navivox/features/voice/services/capture/voice_capture_service.dart';
+import 'package:navivox/shared/voice/voice_capture_service.dart';
 
 /// Builds a deterministic voice capture value from test-friendly primitives.
 VoiceCapture testVoiceCapture(

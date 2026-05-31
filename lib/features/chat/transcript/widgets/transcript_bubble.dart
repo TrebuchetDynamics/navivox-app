@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/channel/navivox_channel.dart';
 import '../../../../core/protocol/navivox_event.dart';
-import '../../../voice/services/tts/text_to_speech_service.dart';
+import '../../../../shared/voice/text_to_speech_service.dart';
 import '../../../voice/widgets/voice_morph_surface.dart';
 import '../../transcript/presentation/action/transcript_message_action_presentation.dart';
 import '../../transcript/presentation/message/transcript_safety_notice_presentation.dart';
