@@ -9,14 +9,34 @@ import 'navivox_gateway_event.dart';
 /// JSON strings from real sockets. Invalid payloads are normalized to the same
 /// typed error event so clients do not duplicate wire-shape checks.
 NavivoxGatewayEvent navivoxGatewayEventFromWire(Object? event) {
-  final decoded = event is String ? jsonDecode(event) : event;
-  final object = navivoxGatewayOptionalObjectFromJson(decoded);
-  if (object == null) {
-    return const NavivoxGatewayEvent(
-      type: 'error',
-      code: 'bad_response',
-      message: 'Invalid gateway event',
-    );
-  }
+  final object = navivoxGatewayObjectFromWireEvent(event);
+  if (object == null) return navivoxInvalidGatewayEvent();
   return NavivoxGatewayEvent.fromJson(object);
+}
+
+/// Converts one loose WebSocket payload into a decoded event object.
+///
+/// This intentionally returns `null` for malformed JSON, non-object JSON, and
+/// non-map adapter payloads so callers can preserve the gateway client's
+/// bad-response event contract without leaking parser exceptions.
+Map<String, Object?>? navivoxGatewayObjectFromWireEvent(Object? event) {
+  final decoded = _navivoxDecodedWireEvent(event);
+  return navivoxGatewayOptionalObjectFromJson(decoded);
+}
+
+NavivoxGatewayEvent navivoxInvalidGatewayEvent() {
+  return const NavivoxGatewayEvent(
+    type: 'error',
+    code: 'bad_response',
+    message: 'Invalid gateway event',
+  );
+}
+
+Object? _navivoxDecodedWireEvent(Object? event) {
+  if (event is! String) return event;
+  try {
+    return jsonDecode(event);
+  } on FormatException {
+    return null;
+  }
 }

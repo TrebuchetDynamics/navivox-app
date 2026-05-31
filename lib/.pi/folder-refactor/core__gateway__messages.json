@@ -1,17 +1,19 @@
 {
   "version": 1,
   "target": "core/gateway/messages",
-  "updatedAt": "2026-05-31T09:23:57.776Z",
-  "objective": "Split gateway WebSocket message models into responsibility folders while preserving root import compatibility; extract shared wire field/type constants reused by inbound events and outbound messages.",
+  "updatedAt": "2026-05-31T10:09:16.390Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor: expose gateway event decoder wire-payload assumptions and preserve invalid-payload bad_response contract.",
   "completedSlices": [
-    "Moved inbound event model and decoder to messages/events with root facade exports preserved.",
-    "Moved outbound gateway message builder to messages/outbound with root facade export preserved.",
-    "Created messages/contracts/navivox_gateway_wire_fields.dart and reused it from inbound/outbound message code; reused existing shared navivox_gateway_json.dart text helper instead of missing text contract import."
+    "Added replayable regression coverage for malformed JSON string, non-object JSON string, and normal decoded map event payloads in navivox_gateway_event_decoder_regression_test.dart.",
+    "Extracted navivoxGatewayObjectFromWireEvent and navivoxInvalidGatewayEvent from navivoxGatewayEventFromWire, making decode/null/error boundaries explicit.",
+    "Fixed exposed bug: malformed JSON WebSocket payloads no longer throw FormatException; they return the documented bad_response event."
   ],
-  "nextCandidates": [],
+  "nextCandidates": [
+    "Gateway message/event model parsing drift in navivox_gateway_event.dart and navivox_gateway_message.dart: compare optional raw strings vs protocol trimmed string helpers for hidden validation inconsistencies."
+  ],
   "validationReceipts": [
-    "dart analyze core/gateway/messages -> No issues found",
-    "dart analyze core/gateway core/channel/gateway core/protocol -> No issues found",
-    "rg in core/gateway/messages found remaining wire literals only in contracts/navivox_gateway_wire_fields.dart"
+    "dart core/gateway/messages/navivox_gateway_event_decoder_regression_test.dart (failed before fix: FormatException on malformed JSON)",
+    "dart core/gateway/messages/navivox_gateway_event_decoder_regression_test.dart (passed after fix)",
+    "dart analyze core/gateway/messages/navivox_gateway_event_decoder.dart core/gateway/messages/navivox_gateway_event_decoder_regression_test.dart (No issues found)"
   ]
 }
