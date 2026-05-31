@@ -348,15 +348,29 @@ String _safeDatabaseLabel(Object? value) {
   final text = navivoxOptionalStringFromJson(value);
   if (text == null) return 'redacted';
 
-  const gormesMarker = '/.gormes/';
-  final markerIndex = text.indexOf(gormesMarker);
-  if (markerIndex >= 0) {
-    return '~/.gormes/${text.substring(markerIndex + gormesMarker.length)}';
-  }
-  if (text.startsWith('/')) {
-    final parts = text.split('/').where((part) => part.isNotEmpty).toList();
-    final basename = parts.isEmpty ? 'memory.db' : parts.last;
-    return 'redacted/$basename';
-  }
+  final gormesSuffix = _gormesPathSuffix(text);
+  if (gormesSuffix != null) return '~/.gormes/$gormesSuffix';
+
+  if (_isAbsolutePath(text)) return 'redacted/${_pathBasename(text)}';
+
   return text;
+}
+
+String? _gormesPathSuffix(String value) {
+  final normalized = value.replaceAll(r'\', '/');
+  const gormesMarker = '/.gormes/';
+  final markerIndex = normalized.indexOf(gormesMarker);
+  if (markerIndex < 0) return null;
+  return normalized.substring(markerIndex + gormesMarker.length);
+}
+
+bool _isAbsolutePath(String value) {
+  return value.startsWith('/') ||
+      value.startsWith(r'\\') ||
+      RegExp(r'^[A-Za-z]:[\\/]').hasMatch(value);
+}
+
+String _pathBasename(String value) {
+  final parts = value.split(RegExp(r'[\\/]')).where((part) => part.isNotEmpty);
+  return parts.isEmpty ? 'memory.db' : parts.last;
 }
