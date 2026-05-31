@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "target": "features/chat/transcript/presentation/shared",
+  "updatedAt": "2026-05-31T08:29:46.986Z",
+  "objective": "Organize transcript presentation shared contracts by responsibility: root compatibility facades, text helpers in text/, message plain-text contracts in message/. Main objective is reuse/stable shared contracts without broad package moves.",
+  "completedSlices": [
+    "Moved transcript display text helper implementation under shared/text with root export facade.",
+    "Moved transcript info text helper implementation under shared/text with root export facade.",
+    "Moved transcript plain-text message contract and presentation under shared/message with root export facades; fixed relative imports."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/chat/transcript/presentation: No issues found!",
+    "rg checked shared text/message import paths under features/chat/transcript/presentation."
+  ]
+}

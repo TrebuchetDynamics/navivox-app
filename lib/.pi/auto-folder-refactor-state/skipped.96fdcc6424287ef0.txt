@@ -1,0 +1,3 @@
+core/channel/gateway
+core/protocol/voice
+features/chat/transcript/presentation/shared

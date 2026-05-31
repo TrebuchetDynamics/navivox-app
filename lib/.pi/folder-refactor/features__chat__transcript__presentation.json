@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "features/chat/transcript/presentation",
+  "updatedAt": "2026-05-31T08:35:38.768Z",
+  "objective": "Complete presentation topology with root compatibility facades and focused action/composer/message/run_record/thread/shared packages; improve shared-code reuse by placing display/info text and message plain-text contracts in focused shared/text and shared/message packages while preserving old shared exports.",
+  "completedSlices": [
+    "Created missing focused shared compatibility paths for shared/message/transcript_message_plain_text.dart and shared/text/transcript_info_text.dart; dart analyze passed.",
+    "Moved display/info text helpers into shared/text with shared root wrappers; moved transcript plain-text contract into shared/message with root wrapper; dart analyze passed.",
+    "Moved TranscriptMessagePlainTextPresentation into shared/message with root wrapper; dart analyze passed.",
+    "Completion audit passed with all remaining presentation root files classified as compatibility facades."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/chat/transcript/presentation -> No issues found (after each slice)",
+    "folder_refactor_audit features/chat/transcript/presentation -> pass"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "target": "core/channel/gateway",
+  "updatedAt": "2026-05-31T08:32:20.665Z",
+  "objective": "Split core/channel/gateway into focused responsibility subfolders while preserving root compatibility facades and reusing existing gateway/channel contracts/helpers.",
+  "completedSlices": [
+    "Moved transcript policies/codecs to transcript/ with root compatibility facades; reused existing NavivoxMessageScope/navivoxMessageScopeWithFallback contract for assistant/tool scope merges.",
+    "Moved turn submission/control/metadata policies to turns/ with root compatibility facades; preserved shared start-turn metadata helper reuse.",
+    "Moved capability policy/client guard to capabilities/ with root compatibility facades; preserved shared connected-client guard contract.",
+    "Moved config-admin, memory, profile-contact, channel-state, and voice-run policies to config/, memory/, profiles/, state/, and voice/ with root compatibility facades.",
+    "Moved GatewayNavivoxChannel implementation to channel/ and left root gateway_navivox_channel.dart facade."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze core/channel/gateway — No issues found",
+    "folder_refactor_audit core/channel/gateway — pass"
+  ]
+}

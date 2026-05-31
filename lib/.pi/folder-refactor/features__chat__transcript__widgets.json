@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "target": "features/chat/transcript/widgets",
+  "updatedAt": "2026-05-31T08:39:19.768Z",
+  "objective": "Split transcript widgets into responsibility subfolders while preserving old root import paths with facade exports; emphasize shared bottom-sheet chrome reuse.",
+  "completedSlices": [
+    "Extracted shared TranscriptBottomSheetList and reused it from composer and message action sheets.",
+    "Moved sheet implementations into widgets/sheets with root facade exports.",
+    "Moved composer/input panel implementations into widgets/composer with root facade exports.",
+    "Moved surface/surface_frame implementations into widgets/surface with root facade exports.",
+    "Moved thread/bubble implementations into widgets/thread with root facade exports."
+  ],
+  "nextCandidates": [],
+  "validationReceipts": [
+    "dart analyze features/chat/transcript/widgets — No issues found after each slice"
+  ]
+}
