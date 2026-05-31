@@ -1,3 +1,4 @@
+import '../../protocol/config_wire_fields.dart';
 import '../../protocol/navivox_json.dart';
 
 class NavivoxConfigAdminField {
@@ -14,17 +15,16 @@ class NavivoxConfigAdminField {
 
   factory NavivoxConfigAdminField.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminField(
-      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: navivoxStringFromJson(json['type'], fallback: 'string'),
-      title: navivoxStringFromJson(
-        json['title'] ?? json['label'] ?? json['key'],
-        fallback: '',
-      ),
-      description: navivoxStringFromJson(json['description'], fallback: ''),
+      key: configWireStringFromAliases(json, const ['key', 'path']) ?? '',
+      type: configWireString(json['type']) ?? 'string',
+      title:
+          configWireStringFromAliases(json, const ['title', 'label', 'key']) ??
+          '',
+      description: configWireString(json['description']) ?? '',
       secret: json['secret'] == true,
       allowed: navivoxStringListFromJson(json['allowed']),
       actions: navivoxStringListFromJson(json['actions']),
-      reload: navivoxStringFromJson(json['reload'], fallback: ''),
+      reload: configWireString(json['reload']) ?? '',
     );
   }
 
@@ -94,12 +94,12 @@ class NavivoxConfigAdminValue {
 
   factory NavivoxConfigAdminValue.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminValue(
-      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: navivoxStringFromJson(json['type'], fallback: 'string'),
+      key: configWireStringFromAliases(json, const ['key', 'path']) ?? '',
+      type: configWireString(json['type']) ?? 'string',
       value: json['value'],
       secret: json['secret'] == true,
-      secretStatus: navivoxStringFromJson(json['secret_status'], fallback: ''),
-      source: navivoxStringFromJson(json['source'], fallback: ''),
+      secretStatus: configWireString(json['secret_status']) ?? '',
+      source: configWireString(json['source']) ?? '',
     );
   }
 
@@ -183,14 +183,14 @@ class NavivoxConfigAdminDiff {
 
   factory NavivoxConfigAdminDiff.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminDiff(
-      key: navivoxStringFromJson(json['key'] ?? json['path'], fallback: ''),
-      type: navivoxStringFromJson(json['type'], fallback: 'string'),
+      key: configWireStringFromAliases(json, const ['key', 'path']) ?? '',
+      type: configWireString(json['type']) ?? 'string',
       secret: json['secret'] == true,
       before: json['before'],
       after: json['after'],
       beforeRedacted: json['before_redacted'] == true,
       afterRedacted: json['after_redacted'] == true,
-      secretStatus: navivoxStringFromJson(json['secret_status'], fallback: ''),
+      secretStatus: configWireString(json['secret_status']) ?? '',
     );
   }
 
@@ -230,15 +230,17 @@ class NavivoxConfigAdminFieldError {
 
   factory NavivoxConfigAdminFieldError.fromJson(Map<String, Object?> json) {
     return NavivoxConfigAdminFieldError(
-      key: navivoxStringFromJson(
-        json['key'] ?? json['path'] ?? json['field'] ?? json['name'],
-        fallback: '',
-      ),
-      code: navivoxStringFromJson(json['code'], fallback: ''),
-      message: navivoxStringFromJson(
-        json['message'] ?? json['error'],
-        fallback: '',
-      ),
+      key:
+          configWireStringFromAliases(json, const [
+            'key',
+            'path',
+            'field',
+            'name',
+          ]) ??
+          '',
+      code: configWireString(json['code']) ?? '',
+      message:
+          configWireStringFromAliases(json, const ['message', 'error']) ?? '',
     );
   }
 
@@ -270,7 +272,7 @@ class NavivoxConfigAdminResponse {
       applied: json['applied'] == true,
       reloadApplied: json['reload_applied'] == true,
       pendingRestart: json['pending_restart'] == true,
-      reloadError: navivoxStringFromJson(json['reload_error'], fallback: ''),
+      reloadError: configWireString(json['reload_error']) ?? '',
       changes: navivoxListFromJson(json['changes'])
           .whereType<Map>()
           .map(
