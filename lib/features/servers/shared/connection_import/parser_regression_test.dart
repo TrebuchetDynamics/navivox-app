@@ -7,6 +7,7 @@ void main() {
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
+  doesNotPreferIncompleteMetadataEntryOverCompleteConnectionEntry();
   appliesTopLevelJsonConnectionDefaultsToEntries();
   prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
   parsesSharedTextTokenWithSpacedSeparator();
@@ -110,6 +111,18 @@ void prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate() {
   _expect(
     result.profileId == 'profile',
     'richer profile_id should be preserved',
+  );
+}
+
+void doesNotPreferIncompleteMetadataEntryOverCompleteConnectionEntry() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"entries":[{"base_url":"https://gateway.example","token":"nvbx_complete"},{"base_url":"https://gateway.example","websocket_url":"wss://gateway.example/ws","server_id":"srv","profile_id":"profile"}]}',
+  );
+
+  _expect(result != null, 'JSON entries should parse');
+  _expect(
+    result!.token == 'nvbx_complete',
+    'complete baseUrl+token candidates must outrank metadata-rich incomplete candidates',
   );
 }
 

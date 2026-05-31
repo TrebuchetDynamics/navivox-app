@@ -1,17 +1,18 @@
 {
   "version": 1,
   "target": "features/servers/shared/connection_import",
-  "updatedAt": "2026-05-31T10:04:10.332Z",
-  "objective": "Visibility bug-finding refactor: expose JSON connection-import candidate ordering/entry-default assumptions in the parser, with focused regression for stale top-level defaults hiding entry overrides.",
+  "updatedAt": "2026-05-31T10:06:09.946Z",
+  "objective": "Visibility bug-finding refactor: make connection-import candidate ranking explicit so complete baseUrl+token candidates cannot be hidden by metadata-rich incomplete entries.",
   "completedSlices": [
-    "Added regression proving an entry token must override an importable top-level token default when entries are present.",
-    "Extracted _entryCandidateMaps and changed _jsonCandidateMaps to treat entries as primary candidates, falling back to decoded top-level only when no entry maps exist."
+    "Added regression proving JSON entry selection must not prefer metadata-rich incomplete candidates over complete baseUrl+token candidates.",
+    "Extracted _ConnectionImportCandidateRank with explicit completeness-first ranking before field richness."
   ],
   "nextCandidates": [
-    "Inspect _bestImportFromCandidateMaps tie-breaking for equal-score entry candidates; add provenance/order characterization only if product semantics require first-vs-last deterministic preference."
+    "Inspect tie semantics for equal-rank complete entries (first listed vs last listed/provenance freshness) only if product semantics require deterministic override behavior."
   ],
   "validationReceipts": [
-    "dart --enable-asserts lib/features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: stale top-level token won)",
-    "dart format lib/features/servers/shared/connection_import/parser.dart lib/features/servers/shared/connection_import/parser_regression_test.dart && dart --enable-asserts lib/features/servers/setup/navivox_connect_intent_payload_regression_test.dart && dart --enable-asserts lib/features/servers/shared/connection_import/parser_regression_test.dart (passed)"
+    "dart --enable-asserts features/servers/shared/connection_import/parser_regression_test.dart (failed before fix: metadata-rich incomplete entry dropped token from complete entry)",
+    "dart format features/servers/shared/connection_import/parser.dart features/servers/shared/connection_import/parser_regression_test.dart && dart --enable-asserts features/servers/shared/connection_import/parser_regression_test.dart (passed)",
+    "dart --enable-asserts features/servers/setup/navivox_connect_intent_payload_regression_test.dart && ... broader server regression sequence (blocked/fails in Flutter SDK imports under plain dart, unrelated to touched parser)"
   ]
 }

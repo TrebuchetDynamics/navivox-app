@@ -226,7 +226,14 @@ class _ConnectionImportCandidate {
 
   bool get hasImportValues => baseUrl != null || token != null;
 
-  int get score {
+  bool get hasCompleteConnection => baseUrl != null && token != null;
+
+  _ConnectionImportCandidateRank get rank => _ConnectionImportCandidateRank(
+    isCompleteConnection: hasCompleteConnection,
+    fieldScore: _fieldScore,
+  );
+
+  int get _fieldScore {
     var result = 0;
     if (baseUrl != null) result += 2;
     if (token != null) result += 2;
@@ -237,7 +244,7 @@ class _ConnectionImportCandidate {
   }
 
   bool isRicherThan(_ConnectionImportCandidate? other) {
-    return other == null || score > other.score;
+    return other == null || rank.isRicherThan(other.rank);
   }
 
   SetupQrImageImport toImport() {
@@ -248,6 +255,23 @@ class _ConnectionImportCandidate {
       serverId: serverId,
       profileId: profileId,
     );
+  }
+}
+
+class _ConnectionImportCandidateRank {
+  const _ConnectionImportCandidateRank({
+    required this.isCompleteConnection,
+    required this.fieldScore,
+  });
+
+  final bool isCompleteConnection;
+  final int fieldScore;
+
+  bool isRicherThan(_ConnectionImportCandidateRank other) {
+    if (isCompleteConnection != other.isCompleteConnection) {
+      return isCompleteConnection;
+    }
+    return fieldScore > other.fieldScore;
   }
 }
 
