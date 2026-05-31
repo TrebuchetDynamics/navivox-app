@@ -1,4 +1,5 @@
 import 'navivox_gateway_socket_contract.dart';
+import 'navivox_gateway_transport_errors.dart';
 
 class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
   @override
@@ -6,7 +7,7 @@ class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
 
   @override
   void add(String message) {
-    throw UnsupportedError('Navivox gateway WebSocket is not supported here.');
+    throw navivoxGatewayUnsupportedWebSocket();
   }
 
   @override
@@ -14,16 +15,16 @@ class NavivoxGatewaySocket implements NavivoxGatewaySocketConnection {
 }
 
 Future<String> defaultGet(Uri uri, Map<String, String> headers) {
-  throw UnsupportedError('Navivox gateway HTTP is not supported here.');
+  throw navivoxGatewayUnsupportedHttp();
 }
 
 Future<String> defaultPost(Uri uri, Map<String, String> headers, String body) {
-  throw UnsupportedError('Navivox gateway HTTP is not supported here.');
+  throw navivoxGatewayUnsupportedHttp();
 }
 
 Future<NavivoxGatewaySocket> defaultConnectWebSocket(
   Uri uri,
   Map<String, String> headers,
 ) {
-  throw UnsupportedError('Navivox gateway WebSocket is not supported here.');
+  throw navivoxGatewayUnsupportedWebSocket();
 }

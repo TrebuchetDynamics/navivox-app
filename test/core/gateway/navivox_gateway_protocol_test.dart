@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
+import 'package:navivox/core/gateway/navivox_gateway_transport_stub.dart'
+    as stub;
 import 'package:navivox/core/protocol/navivox_memory.dart';
 
 void main() {
@@ -66,9 +68,14 @@ void main() {
       'https://gromit.tailnet.test:8765/v1/navivox/sessions/s%2F1',
     );
     expect(
+      config.sessionUri(' s/1 ').toString(),
+      'https://gromit.tailnet.test:8765/v1/navivox/sessions/s%2F1',
+    );
+    expect(
       config.runRecordUri('run 1').toString(),
       'https://gromit.tailnet.test:8765/v1/navivox/run-records/run%201',
     );
+    expect(navivoxGatewayTrimmedPathSegment(' run 1 '), 'run%201');
     expect(
       config.streamUri.toString(),
       'wss://gromit.tailnet.test:8765/v1/navivox/stream',
@@ -104,6 +111,52 @@ void main() {
     expect(
       navivoxGatewayHttpStatusMessage(503),
       'Navivox gateway returned HTTP 503',
+    );
+  });
+
+  test('shares unsupported transport errors across stub entrypoints', () {
+    expect(
+      () => stub.defaultGet(Uri.parse('http://example.test'), const {}),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (error) => error.message,
+          'message',
+          'Navivox gateway HTTP is not supported here.',
+        ),
+      ),
+    );
+    expect(
+      () => stub.defaultPost(Uri.parse('http://example.test'), const {}, '{}'),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (error) => error.message,
+          'message',
+          'Navivox gateway HTTP is not supported here.',
+        ),
+      ),
+    );
+    expect(
+      () => stub.NavivoxGatewaySocket().add('{}'),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (error) => error.message,
+          'message',
+          'Navivox gateway WebSocket is not supported here.',
+        ),
+      ),
+    );
+    expect(
+      () => stub.defaultConnectWebSocket(
+        Uri.parse('ws://example.test'),
+        const {},
+      ),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (error) => error.message,
+          'message',
+          'Navivox gateway WebSocket is not supported here.',
+        ),
+      ),
     );
   });
 

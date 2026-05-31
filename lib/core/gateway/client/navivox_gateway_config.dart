@@ -1,6 +1,7 @@
 import '../../protocol/navivox_json.dart';
 import '../../protocol/navivox_memory.dart';
 import '../shared/navivox_gateway_auth.dart';
+import '../shared/navivox_gateway_uri.dart';
 
 class NavivoxGatewayConfig {
   const NavivoxGatewayConfig({
@@ -87,10 +88,10 @@ class NavivoxGatewayConfig {
 
   Uri get sessionsUri => _withPath('/v1/navivox/sessions');
   Uri sessionUri(String sessionId) => _withPath(
-    '/v1/navivox/sessions/${Uri.encodeComponent(sessionId.trim())}',
+    '/v1/navivox/sessions/${navivoxGatewayTrimmedPathSegment(sessionId)}',
   );
   Uri runRecordUri(String runIdOrSessionId) => _withPath(
-    '/v1/navivox/run-records/${Uri.encodeComponent(runIdOrSessionId.trim())}',
+    '/v1/navivox/run-records/${navivoxGatewayTrimmedPathSegment(runIdOrSessionId)}',
   );
   Uri get turnUri => _withPath('/v1/navivox/turn');
 
