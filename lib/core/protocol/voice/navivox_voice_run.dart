@@ -77,10 +77,22 @@ class NavivoxVoiceRun {
     required String requestId,
     String? sessionId,
   }) {
-    return copyWith(
-      status: NavivoxVoiceRunStatus.submitted,
-      requestId: requestId,
+    return NavivoxVoiceRun(
+      id: id,
+      serverId: serverId,
+      profileId: profileId,
       sessionId: sessionId,
+      requestId: requestId,
+      status: NavivoxVoiceRunStatus.submitted,
+      transcriptSource: transcriptSource,
+      ttsStatus: ttsStatus,
+      transcript: transcript,
+      duration: duration,
+      confidence: confidence,
+      reason: null,
+      retentionPolicy: retentionPolicy,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
