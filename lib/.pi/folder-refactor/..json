@@ -1,18 +1,19 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:40:02.689Z",
-  "objective": "Bug-finding through visibility refactors under lib. Current slice focused core/session persistence stale reconnect metadata assumptions.",
+  "updatedAt": "2026-05-31T11:45:36.612Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor under features/servers/setup: make platform connect-intent source coercion explicit and add regression coverage for structured source payloads.",
   "completedSlices": [
-    "Extracted SavedConnectionFields normalization contract from SessionPersistenceService saveConnection.",
-    "Added regression characterization for blank/absent optional saved connection fields.",
-    "Fixed stale metadata bug by removing persisted websocket_url/gateway_id when new successful save omits or blanks those optional fields."
+    "Added focused regression for structured platform source values with deceptive toString() in features/servers/setup/navivox_connect_intent_payload_regression_test.dart.",
+    "Extracted _platformSourceTokenFromPayload in features/servers/setup/navivox_connect_intent_payload.dart so source provenance accepts only string tokens before trimming/mapping."
   ],
   "nextCandidates": [
-    "core/session durable reconnect readiness flow: expose pure eligibility/provenance steps around saved gatewayId + durable credential metadata."
+    "features/servers/shared/connection_import/parser.dart candidate ranking/token-window data flow: expose endpoint candidate windows as a value type and characterize malformed/ambiguous shared text provenance."
   ],
   "validationReceipts": [
-    "dart run /home/xel/git/gormes/navivox-app/lib/core/session/session_persistence_service_regression_test.dart (pass)",
-    "dart analyze /home/xel/git/gormes/navivox-app/lib/core/session/session_persistence_service.dart /home/xel/git/gormes/navivox-app/lib/core/session/saved_connection_fields.dart /home/xel/git/gormes/navivox-app/lib/core/session/session_persistence_service_regression_test.dart (pass)"
+    "FAIL (expected red): dart /home/xel/git/gormes/navivox-app/lib/features/servers/setup/navivox_connect_intent_payload_regression_test.dart -> platform source field must be a string, not Object.toString() text",
+    "PASS: dart /home/xel/git/gormes/navivox-app/lib/features/servers/setup/navivox_connect_intent_payload_regression_test.dart",
+    "PASS: dart /home/xel/git/gormes/navivox-app/lib/features/servers/setup/navivox_connect_intent_initial_payload_regression_test.dart",
+    "PASS: dart /home/xel/git/gormes/navivox-app/lib/features/servers/shared/connection_import/parser_regression_test.dart"
   ]
 }

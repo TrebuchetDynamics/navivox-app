@@ -51,9 +51,16 @@ class _NavivoxPlatformConnectIntentPayload {
 }
 
 PairingHandoffSource pairingHandoffSourceFromPlatformPayload(Object? value) {
-  return switch (value?.toString().trim()) {
+  return switch (_platformSourceTokenFromPayload(value)) {
     'direct_app_open' => PairingHandoffSource.directAppOpen,
     'shared_text' => PairingHandoffSource.sharedText,
     _ => PairingHandoffSource.manual,
   };
+}
+
+String? _platformSourceTokenFromPayload(Object? value) {
+  if (value is! String) return null;
+  final token = value.trim();
+  if (token.isEmpty) return null;
+  return token;
 }

@@ -6,6 +6,7 @@ void main() {
   preservesMapPayloadSourceProvenance();
   trimsPlatformSourceTokenBeforeMappingProvenance();
   rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings();
+  rejectsStructuredSourceValuesInsteadOfParsingObjectStrings();
 }
 
 void parsesPlainStringPayloadAsManualImport() {
@@ -61,6 +62,24 @@ void rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings() {
     result == null,
     'platform map payload field must be a string, not Object.toString() text',
   );
+}
+
+void rejectsStructuredSourceValuesInsteadOfParsingObjectStrings() {
+  final result = parseNavivoxConnectIntentPayload({
+    'payload': 'https://gateway.example/connect?token=nvbx_token',
+    'source': _StringLikePlatformSource(),
+  });
+
+  _expect(result != null, 'map payload with structured source should parse');
+  _expect(
+    result!.source == PairingHandoffSource.manual,
+    'platform source field must be a string, not Object.toString() text',
+  );
+}
+
+class _StringLikePlatformSource {
+  @override
+  String toString() => 'shared_text';
 }
 
 void _expect(bool condition, String message) {
