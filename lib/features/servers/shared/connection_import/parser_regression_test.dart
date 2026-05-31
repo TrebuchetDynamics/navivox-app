@@ -14,6 +14,7 @@ void main() {
   prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl();
   prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
   doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken();
+  doesNotUseUrlAfterSharedTextTokenLabelAsToken();
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
@@ -251,6 +252,26 @@ void doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken() {
   _expect(
     result.token == 'nvbx_fresh',
     'the selected later endpoint should keep its following token',
+  );
+}
+
+void doesNotUseUrlAfterSharedTextTokenLabelAsToken() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Open https://gateway.example/connect. Token:\n'
+    'https://docs.example/reset has troubleshooting steps.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with a URL after a token label should still parse the endpoint',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'the selected endpoint URL should still provide the baseUrl',
+  );
+  _expect(
+    result.token == null,
+    'a URL after a token label is prose/navigation, not a pairing token',
   );
 }
 

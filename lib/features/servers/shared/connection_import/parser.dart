@@ -543,7 +543,7 @@ String? _firstLabeledToken(
       caseSensitive: false,
     ).allMatches(text, start).where((match) => match.start < end);
     for (final match in matches) {
-      final token = _readTokenAt(text, match.end, end: end);
+      final token = _readLabeledTokenAt(text, match.end, end: end);
       if (token == null) continue;
       final candidate = _LabeledTokenMatch(start: match.start, token: token);
       if (candidate.isBefore(earliestMatch)) earliestMatch = candidate;
@@ -571,6 +571,15 @@ const _tokenLabels = [
   'auth-token',
   'token',
 ];
+
+String? _readLabeledTokenAt(String text, int start, {int? end}) {
+  final token = _readTokenAt(text, start, end: end);
+  if (token == null || _looksLikeUrlToken(token)) return null;
+  return token;
+}
+
+bool _looksLikeUrlToken(String token) =>
+    RegExp(r'^[a-z][a-z0-9+.-]*://', caseSensitive: false).hasMatch(token);
 
 String? _readTokenAt(String text, int start, {int? end}) {
   final tokenSearchEnd = end ?? text.length;
