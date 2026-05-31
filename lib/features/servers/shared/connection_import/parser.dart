@@ -15,17 +15,27 @@ class ConnectionImportParser {
     final jsonResult = _parseQrJsonPayload(text);
     if (jsonResult != null && jsonResult.hasValues) return jsonResult;
 
-    final uri = Uri.tryParse(text);
-    if (uri != null && uri.hasScheme) {
-      if (_isCorePairingDescriptorUri(uri)) {
-        return _parseCorePairingDescriptor(text, uri);
+    final copiedUriPayload = _copiedUriPayload(text);
+    if (copiedUriPayload != null) {
+      if (_isCorePairingDescriptorUri(copiedUriPayload.uri)) {
+        return _parseCorePairingDescriptor(
+          copiedUriPayload.text,
+          copiedUriPayload.uri,
+        );
       }
 
-      final uriImport = _importFromGenericUri(uri);
+      final uriImport = _importFromGenericUri(copiedUriPayload.uri);
       if (uriImport != null) return uriImport;
     }
 
     return _importFromSharedText(text);
+  }
+
+  _CopiedUriPayload? _copiedUriPayload(String text) {
+    final copiedUrl = _trimCopiedUrlTrailingPunctuation(text);
+    final uri = Uri.tryParse(copiedUrl);
+    if (uri == null || !uri.hasScheme) return null;
+    return _CopiedUriPayload(text: copiedUrl, uri: uri);
   }
 
   SetupQrImageImport? _parseCorePairingDescriptor(String text, Uri uri) {
@@ -59,6 +69,13 @@ class ConnectionImportParser {
 
 SetupQrImageImport? parseNavivoxConnectionImportPayload(String payload) =>
     const ConnectionImportParser().parsePayload(payload);
+
+class _CopiedUriPayload {
+  const _CopiedUriPayload({required this.text, required this.uri});
+
+  final String text;
+  final Uri uri;
+}
 
 bool _isCorePairingDescriptorUri(Uri uri) =>
     uri.scheme == 'navivox' && uri.host == 'connect';
