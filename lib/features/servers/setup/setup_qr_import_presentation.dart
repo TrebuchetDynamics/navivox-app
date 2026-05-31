@@ -240,36 +240,11 @@ bool _isTokenChar(int codeUnit) {
       codeUnit == 0x2b;
 }
 
-String? _normalizeBaseUrl(String? raw) {
-  final value = _asNonEmptyString(raw);
-  if (value == null) return null;
-  final uri = Uri.tryParse(value);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
-  if (uri.scheme != 'http' && uri.scheme != 'https') return value;
-  return navivoxOriginFromUri(uri);
-}
+String? _normalizeBaseUrl(String? raw) =>
+    navivoxHttpOriginOrOriginalFromString(_asNonEmptyString(raw));
 
-String? _normalizeWebSocketUrl(String? raw) {
-  final value = _asNonEmptyString(raw);
-  if (value == null) return null;
-  final uri = Uri.tryParse(value);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme != 'ws' && scheme != 'wss') return null;
-  return uri.toString();
-}
+String? _normalizeWebSocketUrl(String? raw) =>
+    navivoxWebSocketUrlFromEndpointString(_asNonEmptyString(raw));
 
-String? _normalizeWebSocketBaseUrl(String? raw) {
-  final value = _asNonEmptyString(raw);
-  if (value == null) return null;
-  final uri = Uri.tryParse(value);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'ws' ||
-      scheme == 'wss' ||
-      scheme == 'http' ||
-      scheme == 'https') {
-    return navivoxHttpBaseUrlFromEndpointUri(uri);
-  }
-  return null;
-}
+String? _normalizeWebSocketBaseUrl(String? raw) =>
+    navivoxHttpBaseUrlFromEndpointString(_asNonEmptyString(raw));

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-30T15:51:54.931Z",
+  "generatedAt": "2026-05-31T00:20:01.368Z",
   "cwd": "/home/xel/git/gormes/navivox-app",
   "target": ".",
   "targetAbsolute": "/home/xel/git/gormes/navivox-app",
@@ -8,15 +8,15 @@
   "candidates": [
     {
       "relative": "lib",
-      "score": 2110.5,
-      "files": 113,
+      "score": 2217.5,
+      "files": 141,
       "direct": 3,
-      "churn": 492,
+      "churn": 561,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 306,
+      "duplicates": 322,
       "subdirs": 7,
       "extensions": [
         ".dart"
@@ -24,15 +24,15 @@
     },
     {
       "relative": "lib/features",
-      "score": 1573,
-      "files": 75,
+      "score": 1633,
+      "files": 87,
       "direct": 0,
-      "churn": 383,
+      "churn": 421,
       "callers": 1,
-      "importsOut": 17,
+      "importsOut": 18,
       "tests": 0,
-      "roles": 5,
-      "duplicates": 221,
+      "roles": 6,
+      "duplicates": 229,
       "subdirs": 9,
       "extensions": [
         ".dart"
@@ -40,15 +40,15 @@
     },
     {
       "relative": "lib/features/chat",
-      "score": 816,
-      "files": 29,
+      "score": 880,
+      "files": 38,
       "direct": 0,
-      "churn": 216,
+      "churn": 234,
       "callers": 1,
       "importsOut": 22,
       "tests": 0,
-      "roles": 2,
-      "duplicates": 106,
+      "roles": 3,
+      "duplicates": 115,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -56,15 +56,15 @@
     },
     {
       "relative": "lib/core",
-      "score": 725,
-      "files": 21,
+      "score": 774,
+      "files": 33,
       "direct": 0,
-      "churn": 67,
-      "callers": 54,
+      "churn": 91,
+      "callers": 56,
       "importsOut": 0,
       "tests": 0,
-      "roles": 4,
-      "duplicates": 65,
+      "roles": 5,
+      "duplicates": 69,
       "subdirs": 4,
       "extensions": [
         ".dart"
@@ -72,15 +72,15 @@
     },
     {
       "relative": "test",
-      "score": 686,
-      "files": 108,
+      "score": 711,
+      "files": 115,
       "direct": 0,
-      "churn": 455,
+      "churn": 605,
       "callers": 0,
       "importsOut": 0,
       "tests": 0,
       "roles": 9,
-      "duplicates": 70,
+      "duplicates": 73,
       "subdirs": 8,
       "extensions": [
         ".dart"
@@ -88,31 +88,47 @@
     },
     {
       "relative": "test/features",
-      "score": 563,
-      "files": 75,
+      "score": 599,
+      "files": 82,
       "direct": 0,
-      "churn": 364,
+      "churn": 513,
       "callers": 0,
       "importsOut": 1,
       "tests": 0,
-      "roles": 6,
-      "duplicates": 58,
-      "subdirs": 9,
+      "roles": 7,
+      "duplicates": 61,
+      "subdirs": 10,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "lib/features/chat/transcript",
+      "score": 535,
+      "files": 26,
+      "direct": 0,
+      "churn": 39,
+      "callers": 2,
+      "importsOut": 9,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 70,
+      "subdirs": 2,
       "extensions": [
         ".dart"
       ]
     },
     {
       "relative": "playwright",
-      "score": 526,
+      "score": 520,
       "files": 36,
       "direct": 2,
-      "churn": 152,
+      "churn": 156,
       "callers": 0,
       "importsOut": 0,
       "tests": 1,
       "roles": 4,
-      "duplicates": 63,
+      "duplicates": 62,
       "subdirs": 5,
       "extensions": [
         ".json",
@@ -122,17 +138,33 @@
       ]
     },
     {
-      "relative": "lib/features/chat/transcript",
-      "score": 458.2,
-      "files": 17,
-      "direct": 0,
-      "churn": 21,
-      "callers": 2,
-      "importsOut": 8,
+      "relative": "lib/core/gateway",
+      "score": 409,
+      "files": 18,
+      "direct": 6,
+      "churn": 40,
+      "callers": 10,
+      "importsOut": 3,
       "tests": 0,
-      "roles": 0,
-      "duplicates": 61,
-      "subdirs": 2,
+      "roles": 3,
+      "duplicates": 39,
+      "subdirs": 8,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "lib/features/servers",
+      "score": 343,
+      "files": 15,
+      "direct": 0,
+      "churn": 86,
+      "callers": 1,
+      "importsOut": 11,
+      "tests": 0,
+      "roles": 4,
+      "duplicates": 32,
+      "subdirs": 7,
       "extensions": [
         ".dart"
       ]
@@ -155,67 +187,83 @@
     },
     {
       "relative": "test/features/chat",
-      "score": 330,
-      "files": 38,
+      "score": 310,
+      "files": 41,
       "direct": 0,
-      "churn": 182,
+      "churn": 243,
       "callers": 0,
-      "importsOut": 1,
+      "importsOut": 7,
       "tests": 0,
-      "roles": 3,
-      "duplicates": 30,
+      "roles": 4,
+      "duplicates": 23,
       "subdirs": 8,
       "extensions": [
         ".dart"
       ]
     },
     {
-      "relative": "lib/features/servers",
-      "score": 316,
-      "files": 12,
-      "direct": 0,
-      "churn": 67,
-      "callers": 1,
-      "importsOut": 10,
+      "relative": "playwright/debug",
+      "score": 306.5,
+      "files": 18,
+      "direct": 1,
+      "churn": 63,
+      "callers": 0,
+      "importsOut": 2,
       "tests": 0,
       "roles": 2,
-      "duplicates": 32,
-      "subdirs": 5,
+      "duplicates": 31,
+      "subdirs": 6,
+      "extensions": [
+        ".md",
+        ".mjs"
+      ]
+    },
+    {
+      "relative": "lib/features/chat/transcript/presentation",
+      "score": 301.5,
+      "files": 18,
+      "direct": 9,
+      "churn": 31,
+      "callers": 7,
+      "importsOut": 5,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 26,
+      "subdirs": 6,
       "extensions": [
         ".dart"
       ]
     },
     {
-      "relative": "lib/core/gateway",
-      "score": 314,
-      "files": 6,
-      "direct": 6,
-      "churn": 20,
-      "callers": 10,
-      "importsOut": 3,
+      "relative": "lib/core/protocol",
+      "score": 295.3,
+      "files": 7,
+      "direct": 7,
+      "churn": 19,
+      "callers": 41,
+      "importsOut": 1,
       "tests": 0,
-      "roles": 2,
-      "duplicates": 35,
+      "roles": 0,
+      "duplicates": 14,
       "subdirs": 0,
       "extensions": [
         ".dart"
       ]
     },
     {
-      "relative": "playwright/debug",
-      "score": 312.5,
-      "files": 18,
-      "direct": 1,
-      "churn": 59,
-      "callers": 0,
-      "importsOut": 2,
+      "relative": "lib/core/channel",
+      "score": 286.7,
+      "files": 3,
+      "direct": 3,
+      "churn": 26,
+      "callers": 42,
+      "importsOut": 7,
       "tests": 0,
-      "roles": 2,
-      "duplicates": 32,
-      "subdirs": 6,
+      "roles": 1,
+      "duplicates": 9,
+      "subdirs": 0,
       "extensions": [
-        ".md",
-        ".mjs"
+        ".dart"
       ]
     },
     {
@@ -235,17 +283,17 @@
       ]
     },
     {
-      "relative": "lib/core/channel",
-      "score": 283.5,
-      "files": 3,
-      "direct": 3,
-      "churn": 25,
+      "relative": "test/features/shared",
+      "score": 278.2,
+      "files": 4,
+      "direct": 0,
+      "churn": 21,
       "callers": 41,
-      "importsOut": 8,
+      "importsOut": 1,
       "tests": 0,
-      "roles": 1,
-      "duplicates": 9,
-      "subdirs": 0,
+      "roles": 3,
+      "duplicates": 7,
+      "subdirs": 3,
       "extensions": [
         ".dart"
       ]
@@ -265,22 +313,6 @@
       "extensions": [
         ".md",
         ".mjs"
-      ]
-    },
-    {
-      "relative": "lib/core/protocol",
-      "score": 263.7,
-      "files": 7,
-      "direct": 7,
-      "churn": 16,
-      "callers": 34,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 14,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
       ]
     },
     {
@@ -317,16 +349,16 @@
     },
     {
       "relative": "test/features/chat/transcript",
-      "score": 204,
-      "files": 23,
+      "score": 214,
+      "files": 26,
       "direct": 0,
-      "churn": 44,
-      "callers": 0,
-      "importsOut": 1,
+      "churn": 79,
+      "callers": 3,
+      "importsOut": 5,
       "tests": 0,
-      "roles": 1,
-      "duplicates": 17,
-      "subdirs": 4,
+      "roles": 2,
+      "duplicates": 13,
+      "subdirs": 5,
       "extensions": [
         ".dart"
       ]
@@ -343,6 +375,22 @@
       "roles": 1,
       "duplicates": 13,
       "subdirs": 4,
+      "extensions": [
+        ".dart"
+      ]
+    },
+    {
+      "relative": "lib/router",
+      "score": 200.1,
+      "files": 6,
+      "direct": 3,
+      "churn": 13,
+      "callers": 13,
+      "importsOut": 10,
+      "tests": 0,
+      "roles": 1,
+      "duplicates": 13,
+      "subdirs": 3,
       "extensions": [
         ".dart"
       ]
@@ -367,55 +415,18 @@
         ".kts",
         ".properties"
       ]
-    },
-    {
-      "relative": "lib/features/chat/transcript/presentation",
-      "score": 191.1,
-      "files": 9,
-      "direct": 9,
-      "churn": 13,
-      "callers": 7,
-      "importsOut": 4,
-      "tests": 0,
-      "roles": 0,
-      "duplicates": 17,
-      "subdirs": 0,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "test/features/servers",
-      "score": 175,
-      "files": 12,
-      "direct": 0,
-      "churn": 43,
-      "callers": 0,
-      "importsOut": 1,
-      "tests": 0,
-      "roles": 3,
-      "duplicates": 11,
-      "subdirs": 5,
-      "extensions": [
-        ".dart"
-      ]
-    },
-    {
-      "relative": "playwright/debug/chat-input",
-      "score": 172.5,
-      "files": 5,
-      "direct": 5,
-      "churn": 15,
-      "callers": 0,
-      "importsOut": 2,
-      "tests": 0,
-      "roles": 1,
-      "duplicates": 21,
-      "subdirs": 0,
-      "extensions": [
-        ".mjs"
-      ]
     }
   ],
-  "refactorIgnoreSuggestions": []
+  "refactorIgnoreSuggestions": [
+    {
+      "path": "test/features/shared/fixtures",
+      "pattern": "test/features/shared/fixtures/",
+      "reason": "generated/vendor/artifact path pattern; folder name 'fixtures' is usually non-refactorable",
+      "confidence": 6,
+      "files": 4,
+      "extensions": [
+        ".dart"
+      ]
+    }
+  ]
 }

@@ -1,3 +1,4 @@
+import '../../../../../core/protocol/navivox_json.dart';
 import '../../../../../shared/presentation/voice_unavailable_presentation.dart'
     as voice_unavailable_policy;
 
@@ -75,7 +76,7 @@ class TranscriptComposerPresentation {
                 : TranscriptComposerVoiceButtonState.capture
           : TranscriptComposerVoiceButtonState.unavailable,
       voiceUnavailableReason: reason,
-      voiceRecoveryAction: trimmedOrNull(voiceRecoveryAction),
+      voiceRecoveryAction: navivoxOptionalStringFromJson(voiceRecoveryAction),
       showVoiceSettings: canOpenVoiceSettings,
       shareOptions: defaultShareOptions,
     );
@@ -179,10 +180,5 @@ class TranscriptComposerPresentation {
       );
     }
     return rows;
-  }
-
-  static String? trimmedOrNull(String? value) {
-    final trimmed = value?.trim();
-    return trimmed?.isNotEmpty == true ? trimmed : null;
   }
 }

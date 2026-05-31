@@ -40,3 +40,35 @@ String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
   }
   return navivoxOriginFromUri(uri.replace(scheme: scheme));
 }
+
+String? navivoxHttpOriginOrOriginalFromString(String? raw) {
+  final value = raw?.trim();
+  if (value == null || value.isEmpty) return null;
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'http' && scheme != 'https') return value;
+  return navivoxOriginFromUri(uri);
+}
+
+String? navivoxWebSocketUrlFromEndpointString(String? raw) {
+  final uri = _endpointUriFromString(raw);
+  if (uri == null) return null;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'ws' && scheme != 'wss') return null;
+  return uri.toString();
+}
+
+String? navivoxHttpBaseUrlFromEndpointString(String? raw) {
+  final uri = _endpointUriFromString(raw);
+  if (uri == null || !navivoxIsEndpointScheme(uri.scheme)) return null;
+  return navivoxHttpBaseUrlFromEndpointUri(uri);
+}
+
+Uri? _endpointUriFromString(String? raw) {
+  final value = raw?.trim();
+  if (value == null || value.isEmpty) return null;
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+  return uri;
+}
