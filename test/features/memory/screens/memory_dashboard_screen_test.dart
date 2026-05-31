@@ -4,27 +4,15 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/features/memory/screens/memory_dashboard_screen.dart';
 
-import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
+import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
   testWidgets(
     'memory dashboard shows profile-scoped Goncho counts with a safe database label',
     (tester) async {
-      final channel = TestNavivoxChannel()
-        ..seedServers(const [
-          NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-        ], activeServerId: 'local')
-        ..seedProfileContacts(const [
-          NavivoxProfileContact(
-            serverId: 'local',
-            profileId: 'mineru',
-            displayName: 'Mineru Builder',
-            serverLabel: 'local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Goncho memory active',
-          ),
-        ], selectedKey: 'local::mineru')
+      final channel = localGormesMineruChannel()
         ..seedMemoryOverview(
           NavivoxMemoryOverview(
             profileId: 'mineru',
@@ -66,20 +54,7 @@ void main() {
   testWidgets('memory dashboard includes searchable browse cards', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Goncho memory active',
-        ),
-      ], selectedKey: 'local::mineru')
+    final channel = localGormesMineruChannel()
       ..seedMemoryOverview(
         const NavivoxMemoryOverview(
           profileId: 'mineru',
@@ -156,20 +131,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(900, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final channel = TestNavivoxChannel()
-        ..seedServers(const [
-          NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-        ], activeServerId: 'local')
-        ..seedProfileContacts(const [
-          NavivoxProfileContact(
-            serverId: 'local',
-            profileId: 'mineru',
-            displayName: 'Mineru Builder',
-            serverLabel: 'local',
-            health: NavivoxProfileHealth.online,
-            latestPreview: 'Goncho memory active',
-          ),
-        ], selectedKey: 'local::mineru')
+      final channel = localGormesMineruChannel()
         ..seedMemoryOverview(
           const NavivoxMemoryOverview(
             profileId: 'mineru',
@@ -249,20 +211,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(900, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Goncho memory active',
-        ),
-      ], selectedKey: 'local::mineru')
+    final channel = localGormesMineruChannel()
       ..seedMemoryOverview(
         const NavivoxMemoryOverview(
           profileId: 'mineru',
@@ -360,26 +309,18 @@ void main() {
   testWidgets('memory dashboard reports degraded API state safely', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.warning,
-          latestPreview: 'Memory API unavailable',
-        ),
-      ], selectedKey: 'local::mineru')
-      ..seedMemoryOverview(
-        const NavivoxMemoryOverview.degraded(
-          profileId: 'mineru',
-          reason: 'Gormes memory API is unavailable.',
-        ),
-      );
+    final channel =
+        localGormesMineruChannel(
+          contact: mineruBuilderProfile(
+            health: NavivoxProfileHealth.warning,
+            latestPreview: 'Memory API unavailable',
+          ),
+        )..seedMemoryOverview(
+          const NavivoxMemoryOverview.degraded(
+            profileId: 'mineru',
+            reason: 'Gormes memory API is unavailable.',
+          ),
+        );
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(

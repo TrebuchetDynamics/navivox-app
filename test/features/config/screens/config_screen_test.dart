@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
 void main() {
@@ -22,20 +22,7 @@ void main() {
   testWidgets('shows active server and profile scope above config fields', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers(const [
-        NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-      ], activeServerId: 'local')
-      ..seedProfileContacts(const [
-        NavivoxProfileContact(
-          serverId: 'local',
-          profileId: 'mineru',
-          displayName: 'Mineru Builder',
-          serverLabel: 'local',
-          health: NavivoxProfileHealth.online,
-          latestPreview: 'Goncho memory active',
-        ),
-      ], selectedKey: 'local::mineru')
+    final channel = localGormesMineruChannel()
       ..emitConfigSchema(const {
         'fields': [
           {'name': 'provider', 'type': 'string', 'required': true},

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/config/screens/config_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
+import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
   testWidgets('renders and applies profile voice settings through Gormes', (
@@ -137,29 +138,16 @@ void main() {
 }
 
 TestNavivoxChannel _seedChannel() {
-  return TestNavivoxChannel()
-    ..seedServers(const [
-      NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
-    ], activeServerId: 'local')
-    ..seedProfileContacts(const [
-      NavivoxProfileContact(
-        serverId: 'local',
-        profileId: 'mineru',
-        displayName: 'Mineru Builder',
-        serverLabel: 'local',
-        health: NavivoxProfileHealth.online,
-        latestPreview: 'Ready',
-        micAvailable: true,
-      ),
-    ], selectedKey: 'local::mineru')
-    ..seedVoiceRuns([
-      NavivoxVoiceRun.recording(
-        id: 'voice-1',
-        serverId: 'local',
-        profileId: 'mineru',
-        createdAt: DateTime.utc(2026, 5, 24, 10),
-      ).markSubmitted(requestId: 'req-profile-voice'),
-    ]);
+  return localGormesMineruChannel(
+    contact: mineruBuilderProfile(latestPreview: 'Ready'),
+  )..seedVoiceRuns([
+    NavivoxVoiceRun.recording(
+      id: 'voice-1',
+      serverId: 'local',
+      profileId: 'mineru',
+      createdAt: DateTime.utc(2026, 5, 24, 10),
+    ).markSubmitted(requestId: 'req-profile-voice'),
+  ]);
 }
 
 NavivoxVoiceProfilesResponse _voiceProfiles() {

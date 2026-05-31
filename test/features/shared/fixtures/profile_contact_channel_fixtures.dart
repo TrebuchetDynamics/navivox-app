@@ -21,3 +21,17 @@ TestNavivoxChannel profileContactChannel({
       selectedKey: selectedKey,
     );
 }
+
+/// Builds the common Local Gormes + Mineru Builder selected profile scope.
+TestNavivoxChannel localGormesMineruChannel({
+  NavivoxChannelState initial = const NavivoxChannelState(),
+  NavivoxProfileContact? contact,
+}) {
+  return profileContactChannel(
+    initial: initial,
+    servers: const [localGormesServer],
+    contacts: [
+      contact ?? mineruBuilderProfile(latestPreview: 'Goncho memory active'),
+    ],
+  );
+}

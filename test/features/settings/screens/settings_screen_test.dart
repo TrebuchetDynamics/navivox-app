@@ -4,6 +4,7 @@ import 'package:navivox/features/settings/screens/settings_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
+import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -109,11 +110,12 @@ void main() {
   testWidgets('settings expose the active gateway and profile scope', (
     tester,
   ) async {
-    final channel = TestNavivoxChannel()
-      ..seedServers([localGormesServer], activeServerId: 'local')
-      ..seedProfileContacts([
-        mineruBuilderProfile(latestPreview: 'Ready', workspaceRootCount: 0),
-      ], selectedKey: 'local::mineru');
+    final channel = localGormesMineruChannel(
+      contact: mineruBuilderProfile(
+        latestPreview: 'Ready',
+        workspaceRootCount: 0,
+      ),
+    );
 
     await tester.pumpWidget(
       TestNavivoxMaterialApp(channel: channel, home: const SettingsScreen()),
