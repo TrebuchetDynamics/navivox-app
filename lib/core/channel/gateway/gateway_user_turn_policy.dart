@@ -1,3 +1,5 @@
+import '../contracts/navivox_channel.dart';
+import 'gateway_turn_metadata_policy.dart';
 import '../../protocol/navivox_event.dart';
 
 /// Builds local user transcript messages for turns sent to the gateway.
@@ -21,5 +23,38 @@ NavivoxChatMessage navivoxGatewayUserTurnMessage({
     serverId: scope.serverId,
     profileId: scope.profileId,
     voice: voice,
+  );
+}
+
+/// Bundles the local user transcript entry with the gateway start-turn frame.
+///
+/// Text and voice turns share this submission contract: create the durable local
+/// message with the active profile scope, then send the same start_turn frame to
+/// the gateway. Keeping both artifacts together prevents the two input paths
+/// from diverging when the turn wire contract changes.
+({NavivoxChatMessage message, String frame}) navivoxGatewayUserTurnSubmission({
+  required String requestId,
+  required String? sessionId,
+  required String text,
+  required DateTime createdAt,
+  required NavivoxProfileContact? profile,
+  required NavivoxProfileRoutingSelection? routing,
+  NavivoxVoiceMessage? voice,
+}) {
+  return (
+    message: navivoxGatewayUserTurnMessage(
+      id: requestId,
+      text: text,
+      createdAt: createdAt,
+      scope: (serverId: profile?.serverId, profileId: profile?.profileId),
+      voice: voice,
+    ),
+    frame: navivoxGatewayStartTurnFrame(
+      requestId: requestId,
+      sessionId: sessionId,
+      text: text,
+      profile: profile,
+      routing: routing,
+    ),
   );
 }

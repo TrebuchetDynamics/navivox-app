@@ -22,7 +22,6 @@ import 'gateway_profile_contact_policy.dart';
 import 'gateway_safety_notice_policy.dart';
 import 'gateway_tool_call_policy.dart';
 import 'gateway_turn_control_policy.dart';
-import 'gateway_turn_metadata_policy.dart';
 import 'gateway_user_turn_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
@@ -239,27 +238,16 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
 
     final requestId = _uuid.v4();
-    final activeProfile = _state.activeProfileContact;
-    _putMessage(
-      navivoxGatewayUserTurnMessage(
-        id: requestId,
-        text: trimmed,
-        createdAt: _clock(),
-        scope: (
-          serverId: activeProfile?.serverId,
-          profileId: activeProfile?.profileId,
-        ),
-      ),
+    final submission = navivoxGatewayUserTurnSubmission(
+      requestId: requestId,
+      sessionId: _activeSessionId,
+      text: trimmed,
+      createdAt: _clock(),
+      profile: _state.activeProfileContact,
+      routing: _state.activeProfileRoutingSelection,
     );
-    socket.add(
-      navivoxGatewayStartTurnFrame(
-        requestId: requestId,
-        sessionId: _activeSessionId,
-        text: trimmed,
-        profile: activeProfile,
-        routing: _state.activeProfileRoutingSelection,
-      ),
-    );
+    _putMessage(submission.message);
+    socket.add(submission.frame);
   }
 
   @override
@@ -357,34 +345,23 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       sessionId: _activeSessionId,
     );
     _putVoiceRun(submitted, active: true);
-    final activeProfile = _state.activeProfileContact;
-    _putMessage(
-      navivoxGatewayUserTurnMessage(
-        id: requestId,
-        text: trimmed,
-        createdAt: _clock(),
-        scope: (
-          serverId: activeProfile?.serverId,
-          profileId: activeProfile?.profileId,
-        ),
-        voice: NavivoxVoiceMessage(
-          voiceRunId: voiceRunId,
-          duration: submitted.duration ?? Duration.zero,
-          transcript: trimmed,
-          confidence: submitted.confidence ?? 1,
-          status: submitted.status,
-        ),
+    final submission = navivoxGatewayUserTurnSubmission(
+      requestId: requestId,
+      sessionId: _activeSessionId,
+      text: trimmed,
+      createdAt: _clock(),
+      profile: _state.activeProfileContact,
+      routing: _state.activeProfileRoutingSelection,
+      voice: NavivoxVoiceMessage(
+        voiceRunId: voiceRunId,
+        duration: submitted.duration ?? Duration.zero,
+        transcript: trimmed,
+        confidence: submitted.confidence ?? 1,
+        status: submitted.status,
       ),
     );
-    socket.add(
-      navivoxGatewayStartTurnFrame(
-        requestId: requestId,
-        sessionId: _activeSessionId,
-        text: trimmed,
-        profile: activeProfile,
-        routing: _state.activeProfileRoutingSelection,
-      ),
-    );
+    _putMessage(submission.message);
+    socket.add(submission.frame);
   }
 
   @override
