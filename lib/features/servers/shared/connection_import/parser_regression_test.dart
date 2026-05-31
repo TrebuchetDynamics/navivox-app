@@ -26,6 +26,7 @@ void main() {
   appliesTopLevelJsonConnectionDefaultsToEntries();
   prefersEntryOverrideWhenTopLevelJsonDefaultIsAlsoImportable();
   prefersEntryAliasOverrideOverTopLevelJsonDefaultAlias();
+  doesNotLetBlankJsonEntryAliasInheritTopLevelDefaultAlias();
   doesNotLetMetadataOnlyJsonEntryStealDefaultCredentialsFromConcreteEntry();
   parsesSharedTextTokenWithSpacedSeparator();
   parsesSharedTextTokenWrappedInQuotes();
@@ -468,6 +469,22 @@ void prefersEntryAliasOverrideOverTopLevelJsonDefaultAlias() {
   _expect(
     result.token == 'nvbx_fresh_entry',
     'entry token alias should override top-level default token aliases',
+  );
+}
+
+void doesNotLetBlankJsonEntryAliasInheritTopLevelDefaultAlias() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"token":"nvbx_default","entries":[{"base_url":"https://gateway.example","token":""},{"base_url":"https://fallback.example","token":"nvbx_fallback"}]}',
+  );
+
+  _expect(result != null, 'JSON entries with blank aliases should parse');
+  _expect(
+    result!.baseUrl == 'https://fallback.example',
+    'a blank entry token alias must block inherited top-level token provenance instead of manufacturing a complete connection',
+  );
+  _expect(
+    result.token == 'nvbx_fallback',
+    'later explicit credentials should beat an entry whose token alias is blank',
   );
 }
 

@@ -138,11 +138,18 @@ void _removeDefaultJsonAliasesOverriddenByEntry(
   Map<dynamic, dynamic> entry,
 ) {
   for (final aliases in _jsonConnectionImportFieldAliasGroups) {
-    if (navivoxFirstStringFieldFromJson(entry, aliases) == null) continue;
+    if (!_jsonEntryMentionsAlias(entry, aliases)) continue;
     for (final alias in aliases) {
       fields.remove(alias);
     }
   }
+}
+
+bool _jsonEntryMentionsAlias(
+  Map<dynamic, dynamic> entry,
+  Iterable<String> aliases,
+) {
+  return aliases.any(entry.containsKey);
 }
 
 bool _hasNonBlankJsonConnectionField(Map<dynamic, dynamic> fields) {

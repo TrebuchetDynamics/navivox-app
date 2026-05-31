@@ -1,20 +1,22 @@
 {
   "version": 1,
   "target": ".",
-  "updatedAt": "2026-05-31T11:49:55.367Z",
-  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor under features/servers/shared/connection_import: expose shared-text endpoint/source/token windows and fix token provenance leakage across later URL windows.",
+  "updatedAt": "2026-05-31T11:51:19.858Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND visibility refactor under features/servers/shared/connection_import: expose JSON entry alias provenance and fix blank alias default leakage.",
   "completedSlices": [
-    "Added focused regression doesNotBorrowTokenFromLaterSharedTextUrlWindow in features/servers/shared/connection_import/parser_regression_test.dart (failed before fix).",
-    "Extracted _sharedTextEndpointCandidate and explicit _TextWindow/sourceWindow/tokenWindow contracts in features/servers/shared/connection_import/parser.dart.",
-    "Fixed _sharedTextImportToken fallback to search only before the selected endpoint, preserving token-before-URL compatibility while preventing tokens after later URLs from being borrowed."
+    "Added focused regression doesNotLetBlankJsonEntryAliasInheritTopLevelDefaultAlias in features/servers/shared/connection_import/parser_regression_test.dart (failed before fix).",
+    "Extracted _jsonEntryMentionsAlias pure helper in features/servers/shared/connection_import/parser.dart to make entry/default alias override provenance explicit.",
+    "Fixed _removeDefaultJsonAliasesOverriddenByEntry to remove inherited alias groups whenever an entry mentions an alias, including blank values, preventing stale top-level token defaults from manufacturing complete entry credentials."
   ],
   "nextCandidates": [
-    "features/servers/shared/connection_import/parser.dart JSON entries/default inheritance: expose candidate default provenance and characterize mixed metadata/default entries with blank alias overrides."
+    "features/servers/shared/connection_import/parser.dart shared-text/core descriptor fallback: characterize malformed embedded core descriptor plus generic URL coexistence; currently malformed core descriptor short-circuits all shared-text parsing."
   ],
   "validationReceipts": [
-    "FAIL (expected red): dart features/servers/shared/connection_import/parser_regression_test.dart -> a token after a different later URL must not be borrowed by the selected endpoint",
-    "PASS: dart features/servers/shared/connection_import/parser_regression_test.dart",
-    "PASS: dart features/servers/shared/connection_gateway/presentation_regression_test.dart",
-    "PASS: dart features/servers/setup/navivox_connect_intent_payload_regression_test.dart && dart features/servers/setup/navivox_connect_intent_initial_payload_regression_test.dart"
+    "FAIL (expected red): dart features/servers/shared/connection_import/parser_regression_test.dart -> a blank entry token alias must block inherited top-level token provenance instead of manufacturing a complete connection",
+    "PASS: dart format lib/features/servers/shared/connection_import/parser.dart lib/features/servers/shared/connection_import/parser_regression_test.dart",
+    "PASS: dart lib/features/servers/shared/connection_import/parser_regression_test.dart",
+    "PASS: dart lib/features/servers/shared/connection_gateway/presentation_regression_test.dart",
+    "PASS: dart lib/features/servers/setup/navivox_connect_intent_payload_regression_test.dart",
+    "PASS: dart lib/features/servers/setup/navivox_connect_intent_initial_payload_regression_test.dart"
   ]
 }
