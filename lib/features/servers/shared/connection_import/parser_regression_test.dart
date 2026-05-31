@@ -38,6 +38,7 @@ void main() {
   stripsTrailingPunctuationFromPlainCopiedUrl();
   stripsAngleBracketFromPlainCopiedUrl();
   stripsBacktickFromPlainCopiedUrl();
+  rejectsPunctuationOnlySharedTextToken();
   stripsAngleBracketFromSharedTextUrl();
   stripsBacktickFromSharedTextUrl();
   preservesBalancedParenthesesInSharedTextUrlPath();
@@ -665,6 +666,15 @@ void stripsBacktickFromPlainCopiedUrl() {
   _expect(
     result.token == 'nvbx_shared',
     'backticks around a plain copied URL should not become part of the token',
+  );
+}
+
+void rejectsPunctuationOnlySharedTextToken() {
+  final result = parseNavivoxConnectionImportPayload('token: .');
+
+  _expect(
+    result == null,
+    'punctuation-only shared-text token must not produce an empty token import',
   );
 }
 

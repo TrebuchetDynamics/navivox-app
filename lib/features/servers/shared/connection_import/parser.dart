@@ -911,7 +911,7 @@ String? _readTokenAt(String text, int start, {int? end}) {
     index++;
   }
   if (index == tokenStart) return null;
-  return _trimTokenTrailingPunctuation(text.substring(tokenStart, index));
+  return _trimTokenTrailingPunctuationOrNull(text.substring(tokenStart, index));
 }
 
 int _skipTokenLeadingIgnoredChars(String text, int start, {int? end}) {
@@ -928,12 +928,13 @@ int _skipTokenLeadingIgnoredChars(String text, int start, {int? end}) {
   return index;
 }
 
-String _trimTokenTrailingPunctuation(String token) {
+String? _trimTokenTrailingPunctuationOrNull(String token) {
   var end = token.length;
   while (end > 0 && _tokenTrailingPunctuation.contains(token[end - 1])) {
     end--;
   }
-  return token.substring(0, end);
+  final trimmed = token.substring(0, end);
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 // Shared-text tokens may be copied from prose, quoted strings, markdown code
