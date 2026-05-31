@@ -17,8 +17,9 @@ class ConnectionImportParser {
 
     final uri = Uri.tryParse(text);
     if (uri != null && uri.hasScheme) {
-      final coreResult = _parseCorePairingDescriptor(text, uri);
-      if (coreResult != null && coreResult.hasValues) return coreResult;
+      if (_isCorePairingDescriptorUri(uri)) {
+        return _parseCorePairingDescriptor(text, uri);
+      }
 
       final query = uri.queryParameters;
       final token = navivoxFirstStringFieldFromJson(query, _tokenFieldNames);
@@ -34,7 +35,7 @@ class ConnectionImportParser {
 
       if (queryBaseUrl != null || token != null) {
         return SetupQrImageImport(
-          baseUrl: queryBaseUrl,
+          baseUrl: queryBaseUrl ?? _httpOriginFromHttpUri(uri),
           token: token,
           webSocketUrl: _normalizeWebSocketUrl(queryWebSocketUrl),
           serverId: navivoxFirstStringFieldFromJson(query, _serverIdFieldNames),
@@ -148,6 +149,16 @@ class ConnectionImportParser {
 
 SetupQrImageImport? parseNavivoxConnectionImportPayload(String payload) =>
     const ConnectionImportParser().parsePayload(payload);
+
+bool _isCorePairingDescriptorUri(Uri uri) =>
+    uri.scheme == 'navivox' && uri.host == 'connect';
+
+String? _httpOriginFromHttpUri(Uri uri) {
+  return switch (uri.scheme) {
+    'http' || 'https' => navivoxOriginFromUri(uri),
+    _ => null,
+  };
+}
 
 const _tokenFieldNames = [
   'token',

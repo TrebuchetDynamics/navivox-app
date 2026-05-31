@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "target": ".",
+  "updatedAt": "2026-05-31T09:33:34.941Z",
+  "objective": "AUTO_FOLDER_REFACTOR_BUGFIND: visibility refactor in features/servers/shared connection import parser to expose pairing descriptor fallback and URL-token base URL assumptions.",
+  "completedSlices": [
+    "Added replayable Dart regression harness under features/servers/shared/connection_import_parser_regression_test.dart.",
+    "Made navivox://connect descriptor handling explicit via _isCorePairingDescriptorUri so malformed core descriptors do not fall through to generic token parsing.",
+    "Extracted _httpOriginFromHttpUri and fixed generic http(s) URLs with token query params to preserve the URL origin as baseUrl."
+  ],
+  "nextCandidates": [
+    "features/servers/setup/navivox_connect_intent_source.dart source/provenance handling for String platform payloads vs Map payloads",
+    "core/protocol/endpoint/navivox_endpoint_uri.dart endpoint normalization edge cases around explicit default ports and path preservation"
+  ],
+  "validationReceipts": [
+    "dart run features/servers/shared/connection_import_parser_regression_test.dart (passes)",
+    "dart analyze features/servers/shared/connection_import_parser.dart features/servers/shared/connection_import_parser_regression_test.dart (passes)",
+    "dart analyze features/servers/shared features/servers/models/connection_import.dart (passes)"
+  ]
+}
