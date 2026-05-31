@@ -36,6 +36,7 @@ void main() {
   stripsAngleBracketFromSharedTextUrl();
   stripsBacktickFromSharedTextUrl();
   rejectsMalformedCorePairingDescriptorBeforeGenericFallback();
+  rejectsSharedTextMalformedCoreDescriptorBeforeTokenFallback();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
   doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
@@ -606,6 +607,17 @@ void rejectsMalformedCorePairingDescriptorBeforeGenericFallback() {
     result == null,
     'malformed navivox://connect descriptors must be rejected instead of '
     'falling back to a token-only generic import',
+  );
+}
+
+void rejectsSharedTextMalformedCoreDescriptorBeforeTokenFallback() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Open navivox://connect?rest_token=nvbx_token_only to pair.',
+  );
+
+  _expect(
+    result == null,
+    'malformed navivox://connect descriptors embedded in shared text must be rejected instead of falling back to a token-only prose import',
   );
 }
 

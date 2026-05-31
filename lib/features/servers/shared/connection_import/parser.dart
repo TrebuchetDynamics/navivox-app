@@ -270,6 +270,9 @@ _ConnectionImportCandidate? _connectionImportCandidateFromGenericUri(Uri uri) {
 
 SetupQrImageImport? _importFromSharedText(String text) {
   final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(text);
+  if (embeddedUrlCandidate == null && _containsCorePairingDescriptorUri(text)) {
+    return null;
+  }
   final token = _sharedTextImportToken(
     text: text,
     embeddedUrlCandidate: embeddedUrlCandidate,
@@ -407,6 +410,14 @@ bool _hasConnectionPath(Uri uri) {
 }
 
 const _connectionPathSegments = {'connect', 'connection', 'pair', 'pairing'};
+
+bool _containsCorePairingDescriptorUri(String text) =>
+    _corePairingDescriptorUriPattern.hasMatch(text);
+
+final _corePairingDescriptorUriPattern = RegExp(
+  r'\bnavivox://connect(?:\?\S*)?',
+  caseSensitive: false,
+);
 
 Map<String, String> _genericUriFields(Uri uri) {
   final fields = navivoxFirstNonBlankQueryParameterValues(
