@@ -3,14 +3,9 @@ import 'navivox_profile_scope.dart';
 
 /// Profile/server scope used by memory API requests.
 ///
-/// Centralizing the fallback keeps overview/search/detail/action calls aligned
-/// when a caller supplies only part of the scope.
-class NavivoxMemoryScope {
-  const NavivoxMemoryScope({this.serverId, required this.profileId});
-
-  final String? serverId;
-  final String profileId;
-}
+/// Memory requests share the profile scope value object with voice-run and
+/// profile-contact defaults, while keeping a memory-specific name at this seam.
+typedef NavivoxMemoryScope = NavivoxProfileScope;
 
 NavivoxMemoryScope navivoxMemoryScopeFor({
   required NavivoxProfileContact? activeProfile,
