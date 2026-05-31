@@ -4,6 +4,8 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/conversations/profile_contact_conversation.dart';
 
+import '../shared/chat_message_test_fixtures.dart';
+
 void main() {
   final now = DateTime.utc(2026, 5, 27, 21);
 
@@ -30,35 +32,29 @@ void main() {
         profileContacts: const [mineru, support],
         selectedProfileContactKey: mineru.key,
         messages: {
-          'mineru': NavivoxChatMessage(
+          'mineru': chatTextMessage(
             id: 'mineru',
-            author: NavivoxMessageAuthor.user,
-            kind: NavivoxMessageKind.text,
             createdAt: now,
             text: 'mineru turn',
             serverId: 'local',
             profileId: 'mineru',
           ),
-          'support': NavivoxChatMessage(
+          'support': chatTextMessage(
             id: 'support',
             author: NavivoxMessageAuthor.assistant,
-            kind: NavivoxMessageKind.text,
             createdAt: now,
             text: 'support turn',
             serverId: 'local',
             profileId: 'support',
           ),
-          'system': NavivoxChatMessage(
+          'system': chatTextMessage(
             id: 'system',
             author: NavivoxMessageAuthor.system,
-            kind: NavivoxMessageKind.text,
             createdAt: now,
             text: 'Gateway is not connected.',
           ),
-          'legacy-user': NavivoxChatMessage(
+          'legacy-user': chatTextMessage(
             id: 'legacy-user',
-            author: NavivoxMessageAuthor.user,
-            kind: NavivoxMessageKind.text,
             createdAt: now,
             text: 'legacy unscoped turn',
           ),

@@ -5,6 +5,7 @@ import 'package:navivox/core/protocol/navivox_voice_run.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
 import 'package:navivox/shared/voice/voice_settings.dart';
 
+import '../shared/chat_message_test_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
@@ -39,28 +40,23 @@ void main() {
       profileContacts: [activeProfile, otherProfile],
       selectedProfileContactKey: 'srv1::mineru',
       messages: {
-        'mineru': NavivoxChatMessage(
+        'mineru': chatTextMessage(
           id: 'mineru',
-          author: NavivoxMessageAuthor.user,
-          kind: NavivoxMessageKind.text,
           text: 'mineru turn',
           serverId: 'srv1',
           profileId: 'mineru',
           createdAt: now,
         ),
-        'support': NavivoxChatMessage(
+        'support': chatTextMessage(
           id: 'support',
-          author: NavivoxMessageAuthor.user,
-          kind: NavivoxMessageKind.text,
           text: 'support turn',
           serverId: 'srv1',
           profileId: 'support',
           createdAt: now,
         ),
-        'system': NavivoxChatMessage(
+        'system': chatTextMessage(
           id: 'system',
           author: NavivoxMessageAuthor.system,
-          kind: NavivoxMessageKind.text,
           text: 'gateway connected',
           createdAt: now,
         ),
@@ -101,10 +97,8 @@ void main() {
       profileContacts: [activeProfile, otherProfile],
       selectedProfileContactKey: 'srv1::mineru',
       messages: {
-        'm1': NavivoxChatMessage(
+        'm1': chatTextMessage(
           id: 'm1',
-          author: NavivoxMessageAuthor.user,
-          kind: NavivoxMessageKind.text,
           text: 'hello',
           serverId: 'srv1',
           profileId: 'mineru',
