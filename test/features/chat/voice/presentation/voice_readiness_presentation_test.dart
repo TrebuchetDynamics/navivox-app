@@ -4,6 +4,7 @@ import 'package:navivox/features/chat/voice/presentation/voice_readiness_present
 import 'package:navivox/shared/voice/voice_settings.dart';
 
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
+import '../../shared/profiles/profile_scope_test_contracts.dart';
 import '../../shared/voice/voice_recovery_test_fixtures.dart';
 import '../../shared/voice/voice_settings_test_fixtures.dart';
 
@@ -13,7 +14,7 @@ void main() {
     latestPreview: 'Ready',
     workspaceRootCount: 0,
   );
-  final trusted = trustedVoiceSettingsFor('local');
+  final trusted = trustedVoiceSettingsForScope(chatMineruProfileScope);
 
   test(
     'reports ready when settings, trust, device, and profile allow capture',

@@ -3,6 +3,7 @@ import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/features/chat/presentation/chat_screen_presentation.dart';
 
+import '../shared/profiles/profile_scope_test_contracts.dart';
 import '../shared/protocol/chat_message_test_fixtures.dart';
 import '../shared/voice/voice_recovery_test_fixtures.dart';
 import '../shared/protocol/voice_run_test_fixtures.dart';
@@ -13,8 +14,9 @@ void main() {
   final now = DateTime.utc(2026, 5, 23, 9);
 
   const local = NavivoxServer(id: 'srv1', name: 'Local', status: 'ready');
+  const activeScope = (serverId: 'srv1', profileId: chatMineruProfileId);
   final activeProfile = mineruBuilderProfile(
-    serverId: 'srv1',
+    serverId: activeScope.serverId,
     serverLabel: 'Local',
     latestPreview: 'Ready',
     workspaceRootCount: 3,
@@ -22,7 +24,7 @@ void main() {
     activeTurnState: 'streaming',
   );
   final otherProfile = supportTriageProfile(
-    serverId: 'srv1',
+    serverId: activeScope.serverId,
     serverLabel: 'Local',
     health: NavivoxProfileHealth.online,
     latestPreview: 'Watching tickets',
@@ -37,21 +39,21 @@ void main() {
   test('keeps transcript surface scoped to active Profile contact', () {
     final state = NavivoxChannelState(
       servers: const [local],
-      activeServerId: 'srv1',
+      activeServerId: activeScope.serverId,
       profileContacts: [activeProfile, otherProfile],
-      selectedProfileContactKey: 'srv1::mineru',
+      selectedProfileContactKey: chatProfileScopeKey(activeScope),
       messages: {
         'mineru': chatTextMessage(
           id: 'mineru',
           text: 'mineru turn',
-          serverId: 'srv1',
-          profileId: 'mineru',
+          serverId: activeScope.serverId,
+          profileId: activeScope.profileId,
           createdAt: now,
         ),
         'support': chatTextMessage(
           id: 'support',
           text: 'support turn',
-          serverId: 'srv1',
+          serverId: activeScope.serverId,
           profileId: 'support',
           createdAt: now,
         ),
@@ -66,7 +68,7 @@ void main() {
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: trustedVoiceSettingsFor('srv1'),
+      voiceSettings: trustedVoiceSettingsForScope(activeScope),
       localVoiceCaptureAvailable: true,
     );
 
@@ -79,7 +81,7 @@ void main() {
   test('summarizes active profile scope and transcript surface inputs', () {
     final pendingRun = chatVoiceRun(
       id: 'voice-1',
-      serverId: 'srv1',
+      serverId: activeScope.serverId,
       transcript: 'ship this safely',
       duration: const Duration(seconds: 3),
       confidence: 0.82,
@@ -87,17 +89,17 @@ void main() {
     );
     final state = NavivoxChannelState(
       servers: const [local],
-      activeServerId: 'srv1',
+      activeServerId: activeScope.serverId,
       agents: const [architect],
       selectedAgentId: 'arch',
       profileContacts: [activeProfile, otherProfile],
-      selectedProfileContactKey: 'srv1::mineru',
+      selectedProfileContactKey: chatProfileScopeKey(activeScope),
       messages: {
         'm1': chatTextMessage(
           id: 'm1',
           text: 'hello',
-          serverId: 'srv1',
-          profileId: 'mineru',
+          serverId: activeScope.serverId,
+          profileId: activeScope.profileId,
           createdAt: now,
         ),
       },
@@ -107,7 +109,7 @@ void main() {
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: trustedVoiceSettingsFor('srv1'),
+      voiceSettings: trustedVoiceSettingsForScope(activeScope),
       localVoiceCaptureAvailable: true,
     );
 
@@ -174,9 +176,9 @@ void main() {
   });
 
   test('summarizes project errors before warnings in status copy', () {
-    const profile = NavivoxProfileContact(
-      serverId: 'srv1',
-      profileId: 'mineru',
+    final profile = NavivoxProfileContact(
+      serverId: activeScope.serverId,
+      profileId: activeScope.profileId,
       displayName: 'Mineru Builder',
       serverLabel: 'Local',
       health: NavivoxProfileHealth.warning,
@@ -188,13 +190,13 @@ void main() {
     );
 
     final presentation = ChatScreenPresentation.fromState(
-      state: const NavivoxChannelState(
-        servers: [local],
-        activeServerId: 'srv1',
+      state: NavivoxChannelState(
+        servers: const [local],
+        activeServerId: activeScope.serverId,
         profileContacts: [profile],
-        selectedProfileContactKey: 'srv1::mineru',
+        selectedProfileContactKey: chatProfileScopeKey(activeScope),
       ),
-      voiceSettings: trustedVoiceSettingsFor('srv1'),
+      voiceSettings: trustedVoiceSettingsForScope(activeScope),
       localVoiceCaptureAvailable: true,
     );
 
@@ -209,29 +211,29 @@ void main() {
   });
 
   test('derives continuous voice availability and recovery copy', () {
-    const profile = NavivoxProfileContact(
-      serverId: 'srv1',
-      profileId: 'mineru',
+    final profile = NavivoxProfileContact(
+      serverId: activeScope.serverId,
+      profileId: activeScope.profileId,
       displayName: 'Mineru Builder',
       serverLabel: 'Local',
       health: NavivoxProfileHealth.online,
       latestPreview: 'Ready',
       micAvailable: true,
-      voiceCapability: NavivoxVoiceCapability(
+      voiceCapability: const NavivoxVoiceCapability(
         disabledReason: deviceSttUnavailableReason,
         recoveryAction: 'Enable speech recognition on the Android device.',
       ),
     );
-    final state = const NavivoxChannelState(
-      servers: [local],
-      activeServerId: 'srv1',
+    final state = NavivoxChannelState(
+      servers: const [local],
+      activeServerId: activeScope.serverId,
       profileContacts: [profile],
-      selectedProfileContactKey: 'srv1::mineru',
+      selectedProfileContactKey: chatProfileScopeKey(activeScope),
     );
 
     final presentation = ChatScreenPresentation.fromState(
       state: state,
-      voiceSettings: trustedVoiceSettingsFor('srv1'),
+      voiceSettings: trustedVoiceSettingsForScope(activeScope),
       localVoiceCaptureAvailable: true,
     );
 
@@ -270,11 +272,11 @@ void main() {
     final presentation = ChatScreenPresentation.fromState(
       state: NavivoxChannelState(
         servers: const [local],
-        activeServerId: 'srv1',
+        activeServerId: activeScope.serverId,
         profileContacts: [activeProfile],
-        selectedProfileContactKey: 'srv1::mineru',
+        selectedProfileContactKey: chatProfileScopeKey(activeScope),
       ),
-      voiceSettings: trustedVoiceSettingsFor('srv1'),
+      voiceSettings: trustedVoiceSettingsForScope(activeScope),
       localVoiceCaptureAvailable: false,
     );
 
@@ -299,9 +301,9 @@ void main() {
     final presentation = ChatScreenPresentation.fromState(
       state: NavivoxChannelState(
         servers: const [local],
-        activeServerId: 'srv1',
+        activeServerId: activeScope.serverId,
         profileContacts: [activeProfile],
-        selectedProfileContactKey: 'srv1::mineru',
+        selectedProfileContactKey: chatProfileScopeKey(activeScope),
       ),
       voiceSettings: untrustedVoiceSettings,
       localVoiceCaptureAvailable: true,
@@ -319,11 +321,11 @@ void main() {
     'uses server scope and profile-selection voice copy without a profile',
     () {
       final presentation = ChatScreenPresentation.fromState(
-        state: const NavivoxChannelState(
-          servers: [local],
-          activeServerId: 'srv1',
+        state: NavivoxChannelState(
+          servers: const [local],
+          activeServerId: activeScope.serverId,
         ),
-        voiceSettings: trustedVoiceSettingsFor('srv1'),
+        voiceSettings: trustedVoiceSettingsForScope(activeScope),
         localVoiceCaptureAvailable: true,
       );
 
