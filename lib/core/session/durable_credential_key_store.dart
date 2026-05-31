@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
+import '../protocol/navivox_json.dart';
+
 class DurableCredentialKeyAlias {
   const DurableCredentialKeyAlias.native(this.value);
 
@@ -64,17 +66,15 @@ class PublicJsonWebKey {
   };
 
   static String _requiredString(Map<Object?, Object?> json, String key) {
-    final value = json[key];
-    if (value is! String || value.trim().isEmpty) {
+    final value = navivoxOptionalLiteralStringFromJson(json[key]);
+    if (value == null) {
       throw FormatException('Missing public JWK field: $key');
     }
-    return value.trim();
+    return value;
   }
 
   static String? _optionalString(Map<Object?, Object?> json, String key) {
-    final value = json[key];
-    if (value is! String || value.trim().isEmpty) return null;
-    return value.trim();
+    return navivoxOptionalLiteralStringFromJson(json[key]);
   }
 }
 

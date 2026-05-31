@@ -1,33 +1,16 @@
 {
   "version": 1,
   "target": "lib",
-  "updatedAt": "2026-05-31T00:22:33.445Z",
-  "objective": "Refactor lib toward explicit root entrypoints/facades plus focused shared contracts/helpers. Root keeps app.dart compatibility facade plus main.dart and main_e2e.dart entrypoints; implementation lives under app/, core/, features/, router/, shared/, testing/, theme/. Shared-code objective extracted/reused Navivox wire JSON coercion, strict bool token parsing, profile health parsing, endpoint URI normalization contracts, and presentation policies across gateway channel, pairing/config/profile UI, setup QR import, transcript composer, and test support while preserving root topology.",
+  "updatedAt": "2026-05-31T00:24:22.802Z",
+  "objective": "Small compile-preserving lib refactor focused on shared-code reuse/contracts: keep existing root topology (app/core/features/router/shared/testing/theme plus root entrypoints), and replace duplicated session string/date trimming policy with existing core/protocol JSON helpers.",
   "completedSlices": [
-    "Extracted shared Navivox wire JSON coercion helpers to lib/core/protocol/navivox_json.dart and reused them from gateway and memory protocol decoders.",
-    "Moved NavivoxApp implementation from root lib/app.dart to lib/app/navivox_app.dart while keeping lib/app.dart as public compatibility export.",
-    "Extracted E2EMockChannel from lib/main_e2e.dart to lib/testing/e2e_mock_channel.dart so the root e2e entrypoint remains thin.",
-    "Extracted endpoint URI normalization helpers to lib/core/protocol/navivox_endpoint_uri.dart and reused them from gateway pairing parsing and setup QR import parsing.",
-    "Extracted NavivoxGatewayConfig to lib/core/gateway/navivox_gateway_config.dart and NavivoxPairingDescriptor to lib/core/protocol/navivox_pairing_descriptor.dart; kept lib/core/gateway/navivox_gateway_protocol.dart compatibility exports and updated setup QR parsing to import the focused pairing descriptor contract directly.",
-    "Extracted shared profile health label policy to lib/shared/presentation/profile_health_labels.dart and reused it from profile contacts, settings, chat screen, and voice readiness presentations.",
-    "Extracted shared count-label helper to lib/shared/presentation/count_labels.dart and reused it from settings, servers overview, and chat project status presentation.",
-    "Reused existing Navivox JSON coercion helpers from lib/core/protocol/navivox_json.dart in profile seed sheet, profile voice profile card, and transcript run-record presentation instead of local duplicate map/string/list coercion.",
-    "Extracted shared profile contact label/status policy to lib/shared/presentation/profile_contact_labels.dart and reused it from memory dashboard scope/error labels and chat screen profile status/project labels.",
-    "Extracted shared voice-unavailable presentation policy to lib/shared/presentation/voice_unavailable_presentation.dart and reused canonical reason, recovery/help copy, and voice-settings subtitle policy from voice readiness and transcript composer UI.",
-    "Extracted core voice-unavailable reason contract to lib/core/protocol/voice_unavailable_reason.dart and reused constants/canonicalization across core channel state, speech services, voice controllers, and UI presentation while keeping the existing shared presentation export compatible.",
-    "Extended lib/core/protocol/navivox_json.dart with navivoxTrimmedStringList and navivoxTrimmedStringFields; reused them in gateway memory URI params, memory action body construction, profile seed workspace roots, and pairing descriptor CSV/optional params.",
-    "Extended lib/core/protocol/navivox_json.dart with navivoxMapFieldFromJson, navivoxListFieldFromJson, navivoxStringFieldFromJson, and navivoxStringListFieldFromJson; reused them in profile seed sheet, profile voice profile card, transcript run-record presentation, config form schema list parsing, and gateway channel string/int/date/list parsing wrappers.",
-    "Extracted config schema/validation wire string and alias helpers to lib/features/config/form/config_wire_fields.dart; reused them in config form schema rows/sections/secret labels, config field presentation, and config apply validation/secret draft parsing.",
-    "Added navivoxStrictBoolFromJson in lib/core/protocol/navivox_json.dart and reused it from gateway channel bool decoding, pairing descriptor token_required parsing, profile seed workspace suggestion flags, and test support.",
-    "Added navivoxProfileHealthFromJson in lib/core/channel/navivox_channel.dart and reused it from gateway channel and test support profile-contact parsing.",
-    "Added endpoint string normalization contracts in lib/core/protocol/navivox_endpoint_uri.dart and reused them from setup QR import base/websocket normalization with focused endpoint tests.",
-    "Reused existing navivoxOptionalStringFromJson from lib/core/protocol/navivox_json.dart in transcript composer voice recovery action trimming, replacing a local one-off helper."
+    "Reused navivoxOptionalLiteralStringFromJson in PublicJsonWebKey parsing to preserve literal-string JWK semantics without local duplicate trim/null logic.",
+    "Reused navivoxOptionalStringFromJson and navivoxDateTimeFromJson in SessionPersistenceService saved-session loading, removing local _nullableString/_parseDateTime duplicates.",
+    "Reused navivoxOptionalStringFromJson in ReconnectReadiness blocked recovery messages."
   ],
   "nextCandidates": [],
   "validationReceipts": [
-    "flutter test test/core/protocol/navivox_endpoint_uri_test.dart test/features/servers/setup/setup_qr_import_presentation_test.dart test/features/servers/registration/gateway_connection_presentation_test.dart: passed.",
-    "flutter test test/features/chat/transcript/presentation/transcript_composer_presentation_test.dart test/core/protocol/navivox_json_test.dart: passed.",
-    "flutter analyze: failed due existing unrelated warnings in unmodified test files (unnecessary/unused imports in test/core/gateway/navivox_gateway_protocol_test.dart, test/features/agents/screens/agents_screen_test.dart, test/features/chat/screens/chat_forward_message_test.dart, test/features/chat/screens/chat_run_record_inspection_test.dart, test/features/chat/transcript/surface/message_actions_test.dart, test/features/chat/transcript/widgets/transcript_run_record_sheet_test.dart).",
-    "folder_refactor_audit target=lib plannedTopologyComplete=true facadeFiles=[app.dart, main.dart, main_e2e.dart] nextCandidateFiles=[]: passed."
+    "flutter test test/core/session/durable_credential_key_store_test.dart test/core/session/session_persistence_service_test.dart test/core/session/reconnect_readiness_test.dart — passed (14 tests).",
+    "folder_refactor_audit target=lib plannedTopologyComplete=true facadeFiles=[app.dart] outOfScopeFiles=[main.dart, main_e2e.dart] nextCandidateFiles=[] — passed."
   ]
 }

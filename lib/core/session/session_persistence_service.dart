@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../protocol/navivox_json.dart';
+
 /// Persists non-secret gateway metadata for later reconnect flows.
 ///
 /// Pairing handoff tokens are bootstrap-only and must not be stored here.
@@ -56,9 +58,13 @@ class SessionPersistenceService {
 
     return SavedSession(
       baseUrl: baseUrl.trim(),
-      webSocketUrl: _nullableString(prefs.getString(_keyWebSocketUrl)),
-      gatewayId: _nullableString(prefs.getString(_keyGatewayId)),
-      lastConnectedAt: _parseDateTime(prefs.getString(_keyLastConnectedAt)),
+      webSocketUrl: navivoxOptionalStringFromJson(
+        prefs.getString(_keyWebSocketUrl),
+      ),
+      gatewayId: navivoxOptionalStringFromJson(prefs.getString(_keyGatewayId)),
+      lastConnectedAt: navivoxDateTimeFromJson(
+        prefs.getString(_keyLastConnectedAt),
+      ),
     );
   }
 
@@ -82,17 +88,6 @@ class SessionPersistenceService {
     if (prefs == null) return false;
     final baseUrl = prefs.getString(_keyBaseUrl);
     return baseUrl != null && baseUrl.trim().isNotEmpty;
-  }
-
-  DateTime? _parseDateTime(String? value) {
-    final text = value?.trim();
-    if (text == null || text.isEmpty) return null;
-    return DateTime.tryParse(text);
-  }
-
-  String? _nullableString(String? value) {
-    final text = value?.trim();
-    return (text == null || text.isEmpty) ? null : text;
   }
 }
 
