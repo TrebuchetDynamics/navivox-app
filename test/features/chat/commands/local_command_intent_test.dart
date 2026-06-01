@@ -4,6 +4,7 @@ import 'package:navivox/features/chat/commands/local_command_body_parser.dart';
 import 'package:navivox/features/chat/commands/local_command_builtins.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/features/chat/commands/local_command_profile_matcher.dart';
+import 'package:navivox/features/chat/commands/local_command_profile_resolution.dart';
 import 'package:navivox/features/chat/commands/local_command_text.dart';
 
 import '../shared/profiles/profile_contact_chat_test_fixtures.dart';
@@ -326,6 +327,47 @@ void main() {
     expect(intent.target?.profileId, 'mineru');
   });
 
+  test('classifies profile resolution before policy gates', () {
+    const profileResolver = LocalCommandProfileResolver();
+
+    final unmatchable = profileResolver.resolve(
+      normalized: '',
+      contacts: contacts,
+      normalize: resolver.normalize,
+    );
+    final noMatch = profileResolver.resolve(
+      normalized: 'unknown profile',
+      contacts: contacts,
+      normalize: resolver.normalize,
+    );
+    final single = profileResolver.resolve(
+      normalized: 'support',
+      contacts: contacts,
+      normalize: resolver.normalize,
+    );
+    final ambiguous = profileResolver.resolve(
+      normalized: 'mineru',
+      contacts: [
+        contacts[0],
+        const NavivoxProfileContact(
+          serverId: 'office',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'office',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+      ],
+      normalize: resolver.normalize,
+    );
+
+    expect(unmatchable.kind, LocalCommandProfileResolutionKind.unmatchable);
+    expect(noMatch.kind, LocalCommandProfileResolutionKind.noMatch);
+    expect(single.kind, LocalCommandProfileResolutionKind.single);
+    expect(single.target, contacts[1]);
+    expect(ambiguous.kind, LocalCommandProfileResolutionKind.ambiguous);
+  });
+
   test(
     'returns disabled, disambiguation, and unknown profile-command intents',
     () {
@@ -370,6 +412,23 @@ void main() {
       expect(duplicate.message, 'Choose one profile named mineru.');
       expect(unknown.action, LocalCommandAction.unknown);
       expect(unknown.message, 'Voice command not recognized: unknown profile.');
+    },
+  );
+
+  test(
+    'disabled profile switching still reports unknown unmatched commands',
+    () {
+      final intent = resolver.resolve(
+        raw: 'navi unknown profile',
+        commandWord: 'navi',
+        commandMode: false,
+        fromVoice: false,
+        profileSwitchingEnabled: false,
+        contacts: contacts,
+      );
+
+      expect(intent.action, LocalCommandAction.unknown);
+      expect(intent.message, 'Voice command not recognized: unknown profile.');
     },
   );
 

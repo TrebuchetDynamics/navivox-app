@@ -1,7 +1,7 @@
 import '../../../core/channel/navivox_channel.dart';
 import 'local_command_body_parser.dart';
 import 'local_command_builtins.dart';
-import 'local_command_profile_matcher.dart';
+import 'local_command_profile_resolution.dart';
 import 'local_command_text.dart';
 
 enum LocalCommandAction {
@@ -94,8 +94,6 @@ class _ProfileCommandCandidate {
 
   final String body;
   final String normalized;
-
-  bool get hasMatchableText => normalized.isNotEmpty;
 }
 
 class LocalCommandResolver {
@@ -103,6 +101,8 @@ class LocalCommandResolver {
 
   final LocalCommandBodyParser _commandBodyParser =
       const LocalCommandBodyParser();
+  final LocalCommandProfileResolver _profileResolver =
+      const LocalCommandProfileResolver();
 
   LocalCommandIntent resolve({
     required String raw,
@@ -166,35 +166,27 @@ class LocalCommandResolver {
     required bool profileSwitchingEnabled,
     required List<NavivoxProfileContact> contacts,
   }) {
-    if (!candidate.hasMatchableText) {
-      return LocalCommandIntent.unknown(candidate.body);
-    }
-    if (!profileSwitchingEnabled) {
-      return const LocalCommandIntent.profileSwitchingDisabled();
-    }
-
-    final matches = _matchingProfileCommandContacts(
+    final resolution = _profileResolver.resolve(
       normalized: candidate.normalized,
-      contacts: contacts,
-    );
-    if (matches.length == 1) {
-      return LocalCommandIntent.switchProfile(matches.single);
-    }
-    if (matches.length > 1) {
-      return LocalCommandIntent.disambiguateProfile(candidate.body);
-    }
-    return LocalCommandIntent.unknown(candidate.body);
-  }
-
-  List<NavivoxProfileContact> _matchingProfileCommandContacts({
-    required String normalized,
-    required List<NavivoxProfileContact> contacts,
-  }) {
-    return matchingLocalCommandContacts(
-      normalized: normalized,
       contacts: contacts,
       normalize: normalize,
     );
+
+    return switch (resolution.kind) {
+      LocalCommandProfileResolutionKind.unmatchable ||
+      LocalCommandProfileResolutionKind.noMatch => LocalCommandIntent.unknown(
+        candidate.body,
+      ),
+      LocalCommandProfileResolutionKind.single when !profileSwitchingEnabled =>
+        const LocalCommandIntent.profileSwitchingDisabled(),
+      LocalCommandProfileResolutionKind.single =>
+        LocalCommandIntent.switchProfile(resolution.target!),
+      LocalCommandProfileResolutionKind.ambiguous
+          when !profileSwitchingEnabled =>
+        const LocalCommandIntent.profileSwitchingDisabled(),
+      LocalCommandProfileResolutionKind.ambiguous =>
+        LocalCommandIntent.disambiguateProfile(candidate.body),
+    };
   }
 
   String normalize(String value) {
