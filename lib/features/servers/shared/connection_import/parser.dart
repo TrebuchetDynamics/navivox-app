@@ -16,13 +16,13 @@ part 'endpoints/generic_uri/endpoint_uri_identity.dart';
 part 'endpoints/copied_url/copied_endpoint_url.dart';
 part 'endpoints/generic_uri/generic_endpoint.dart';
 part 'shared_text/token_parsing/tokens.dart';
-part 'shared_text/endpoints/endpoint_matches.dart';
+part 'shared_text/endpoints/discovery/endpoint_matches.dart';
 part 'shared_text/import.dart';
 part 'shared_text/descriptors/core_pairing_descriptor.dart';
 part 'json/candidate_maps.dart';
-part 'shared_text/endpoints/endpoint.dart';
-part 'shared_text/endpoints/token_search_window.dart';
-part 'shared_text/endpoints/endpoint_selection.dart';
+part 'shared_text/endpoints/model/endpoint.dart';
+part 'shared_text/endpoints/selection/token_search_window.dart';
+part 'shared_text/endpoints/selection/endpoint_selection.dart';
 
 class ConnectionImportParser {
   const ConnectionImportParser();
