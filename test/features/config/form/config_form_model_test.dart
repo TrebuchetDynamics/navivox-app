@@ -232,6 +232,7 @@ void main() {
           {'path': 'audio.input_device', 'reload': 'no_restart'},
           {'path': 'audio.output_device', 'reload': 'reload_without_restart'},
           {'path': 'model.provider', 'reload': 'restart_or_reload'},
+          {'path': 'model.cache', 'reload': 'restart_without_reload'},
         ],
       },
       values: const {},
@@ -241,6 +242,7 @@ void main() {
     expect(model.rows[0].restartRequired, isFalse);
     expect(model.rows[1].restartRequired, isFalse);
     expect(model.rows[2].restartRequired, isTrue);
+    expect(model.rows[3].restartRequired, isTrue);
   });
 
   test('schema parsing snapshots rows and sections against mutation', () {

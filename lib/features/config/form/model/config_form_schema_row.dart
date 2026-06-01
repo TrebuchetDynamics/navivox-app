@@ -1,6 +1,9 @@
 import 'config_form_field_type.dart';
 import 'config_form_schema_wire.dart';
+import 'config_reload_mode_policy.dart';
 import 'config_risk_level.dart';
+
+export 'config_reload_mode_policy.dart';
 
 class ConfigFormSchemaRowCandidate {
   const ConfigFormSchemaRowCandidate._({
@@ -65,19 +68,4 @@ class ConfigFormSchemaRowCandidate {
   final List<String> allowedValues;
   final List<String> actions;
   final String reloadMode;
-}
-
-bool configFormReloadModeRequiresRestart(String reloadMode) {
-  final tokens = configFormReloadModeTokens(reloadMode);
-  if (tokens.isEmpty) return false;
-  if (tokens.contains('no') || tokens.contains('without')) return false;
-  return tokens.contains('restart');
-}
-
-List<String> configFormReloadModeTokens(String reloadMode) {
-  return reloadMode
-      .toLowerCase()
-      .split(RegExp(r'[^a-z0-9]+'))
-      .where((token) => token.isNotEmpty)
-      .toList(growable: false);
 }
