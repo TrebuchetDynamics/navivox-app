@@ -57,6 +57,16 @@ void main() {
       expect(overview.databaseLabel, 'redacted/memory.db');
       expect(overview.databaseLabel, isNot(contains('profiles/mineru')));
     });
+
+    test('does not surface traversal-only path basenames', () {
+      final overview = NavivoxMemoryOverview.fromJson({
+        'database_path': '/home/xel/.gormes/profiles/..',
+      });
+
+      expect(overview.databaseLabel, 'redacted/memory.db');
+      expect(overview.databaseLabel, isNot(contains('..')));
+      expect(overview.databaseLabel, isNot(contains('profiles')));
+    });
   });
 
   test('overview counts clamp impossible negative gateway values', () {

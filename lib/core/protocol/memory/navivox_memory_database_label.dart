@@ -41,5 +41,13 @@ bool _hasDirectoryProvenance(String value) {
 
 String _pathBasename(String value) {
   final parts = value.split(RegExp(r'[\\/]')).where((part) => part.isNotEmpty);
-  return parts.isEmpty ? 'memory.db' : parts.last;
+  final basename = parts.isEmpty ? null : parts.last;
+  if (basename == null || !_isSafeRedactedBasename(basename)) {
+    return 'memory.db';
+  }
+  return basename;
+}
+
+bool _isSafeRedactedBasename(String basename) {
+  return basename != '.' && basename != '..';
 }
