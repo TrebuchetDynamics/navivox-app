@@ -6,6 +6,7 @@ import '../../../../core/protocol/navivox_pairing_descriptor.dart';
 import '../../models/connection_import.dart';
 
 part 'candidate.dart';
+part 'candidate_rank.dart';
 
 class ConnectionImportParser {
   const ConnectionImportParser();
