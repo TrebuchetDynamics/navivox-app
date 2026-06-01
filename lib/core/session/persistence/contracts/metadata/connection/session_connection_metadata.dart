@@ -69,10 +69,11 @@ String sanitizedSavedSessionBaseUrl(String value) {
   return navivoxHttpBaseUrlFromEndpointString(value) ?? value;
 }
 
-/// Returns a websocket endpoint without query/fragment bootstrap state.
+/// Returns a websocket endpoint without non-durable bootstrap state.
 ///
 /// The path is preserved because websocket deployments may serve the stream
-/// outside the default Navivox path, but query params are not durable metadata.
+/// outside the default Navivox path, but query params, fragments, and userinfo
+/// are not durable metadata and may contain pairing credentials.
 String? sanitizedSavedSessionWebSocketUrl(Object? value) {
   final text = navivoxOptionalStringFromJson(value);
   if (text == null) return null;
@@ -80,11 +81,17 @@ String? sanitizedSavedSessionWebSocketUrl(Object? value) {
   if (uri == null || uri.host.isEmpty) return text;
   final scheme = uri.scheme.toLowerCase();
   if (scheme != 'ws' && scheme != 'wss') return text;
+  return durableSavedSessionWebSocketUri(uri).toString();
+}
+
+/// Projects a websocket URI onto the durable saved-session identity fields.
+Uri durableSavedSessionWebSocketUri(Uri uri) {
+  assert(uri.scheme.toLowerCase() == 'ws' || uri.scheme.toLowerCase() == 'wss');
+  assert(uri.host.isNotEmpty);
   return Uri(
     scheme: uri.scheme,
-    userInfo: uri.userInfo,
     host: uri.host,
     port: uri.hasPort ? uri.port : null,
     path: uri.path,
-  ).toString();
+  );
 }
