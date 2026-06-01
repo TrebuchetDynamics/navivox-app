@@ -93,6 +93,18 @@ void main() {
     expect(result, isNull);
   });
 
+  test('rejects malformed endpoint ports before reading query tokens', () {
+    final copiedUrl = parseNavivoxConnectionImportPayload(
+      'http://127.0.0.1:99999/connect?token=nvbx_bad',
+    );
+    final sharedText = parseNavivoxConnectionImportPayload(
+      'Open http://127.0.0.1:99999/connect?token=nvbx_bad to pair.',
+    );
+
+    expect(copiedUrl, isNull);
+    expect(sharedText, isNull);
+  });
+
   test('does not let metadata-only JSON entries outrank explicit entries', () {
     final result = parseNavivoxConnectionImportPayload('''
 {

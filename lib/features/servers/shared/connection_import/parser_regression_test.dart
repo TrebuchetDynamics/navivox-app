@@ -61,6 +61,8 @@ void main() {
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
   rejectsHostlessGenericEndpointInsteadOfFabricatingTokenOnlyImport();
+  rejectsInvalidPortCopiedEndpointInsteadOfThrowing();
+  rejectsInvalidPortSharedTextEndpointInsteadOfThrowing();
   doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
   doesNotTreatUnsupportedJsonBaseUrlSchemeAsBaseUrl();
 }
@@ -1059,6 +1061,28 @@ void rejectsHostlessGenericEndpointInsteadOfFabricatingTokenOnlyImport() {
   _expect(
     hostlessWebSocket == null,
     'hostless websocket URL must not degrade to a token-only import',
+  );
+}
+
+void rejectsInvalidPortCopiedEndpointInsteadOfThrowing() {
+  final result = parseNavivoxConnectionImportPayload(
+    'http://127.0.0.1:99999/connect?token=nvbx_bad',
+  );
+
+  _expect(
+    result == null,
+    'copied endpoints with invalid ports should be rejected, not throw or fabricate token-only imports',
+  );
+}
+
+void rejectsInvalidPortSharedTextEndpointInsteadOfThrowing() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Open http://127.0.0.1:99999/connect?token=nvbx_bad to finish setup.',
+  );
+
+  _expect(
+    result == null,
+    'shared-text endpoints with invalid ports should be rejected, not throw or fabricate token-only imports',
   );
 }
 

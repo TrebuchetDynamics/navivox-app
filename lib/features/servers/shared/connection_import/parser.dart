@@ -246,8 +246,13 @@ SetupQrImageImport? _importFromSharedText(String text) {
     if (coreImport != null) return coreImport;
   }
 
-  final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(text);
-  if (embeddedUrlCandidate == null && coreDescriptorCandidates.isNotEmpty) {
+  final genericEndpoints = _endpointUrls(text).toList(growable: false);
+  final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(
+    text,
+    genericEndpoints,
+  );
+  if (embeddedUrlCandidate == null &&
+      (coreDescriptorCandidates.isNotEmpty || genericEndpoints.isNotEmpty)) {
     return null;
   }
   final tokenSourceText = _sharedTextWithoutMalformedCoreDescriptors(
@@ -283,9 +288,10 @@ String? _sharedTextImportToken({
 
 _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
   String text,
+  Iterable<_SharedTextEndpoint> endpoints,
 ) {
   _SharedTextEndpointCandidate? bestCandidate;
-  for (final endpoint in _endpointUrls(text)) {
+  for (final endpoint in endpoints) {
     final candidate = _sharedTextEndpointCandidate(text, endpoint);
     if (candidate == null) continue;
     bestCandidate = candidate.isRicherThan(bestCandidate)
@@ -461,7 +467,17 @@ Map<String, String> _uriQueryFields(Uri uri) =>
 enum _GenericEndpointSchemeKind { http, webSocket, unsupported }
 
 bool _hasGenericEndpointIdentity(Uri uri) =>
-    uri.hasScheme && uri.host.isNotEmpty;
+    uri.hasScheme && uri.host.isNotEmpty && _hasValidExplicitPort(uri);
+
+bool _hasValidExplicitPort(Uri uri) {
+  if (!uri.hasPort) return true;
+  try {
+    final port = uri.port;
+    return port > 0 && port <= 65535;
+  } on FormatException {
+    return false;
+  }
+}
 
 String? _webSocketUriBaseUrl(Uri uri) {
   try {
@@ -795,7 +811,7 @@ String? _normalizeBaseUrl(String? raw) {
 
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme) return value;
-  if (uri.host.isEmpty) return null;
+  if (uri.host.isEmpty || !_hasValidExplicitPort(uri)) return null;
 
   final scheme = uri.scheme.toLowerCase();
   if (scheme != 'http' && scheme != 'https') return null;
