@@ -25,6 +25,13 @@ void main() {
       expect(sanitizedSavedSessionWebSocketUrl('wss:/missing-host'), isNull);
     });
 
+    test('drops websocket URLs with malformed ports instead of throwing', () {
+      expect(
+        sanitizedSavedSessionWebSocketUrl('wss://gateway.example:bad/stream'),
+        isNull,
+      );
+    });
+
     test('preserves legacy host-port websocket metadata', () {
       expect(
         sanitizedSavedSessionWebSocketUrl(' gateway.local:8765/custom/stream '),

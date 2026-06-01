@@ -133,15 +133,20 @@ SavedSessionWebSocketTextShape classifySavedSessionWebSocketTextShape(
     return SavedSessionWebSocketTextShape.bracketedHostLiteral;
   }
 
+  // Classify visibly URL-shaped text before consulting Uri.tryParse. Malformed
+  // authority URLs such as `wss://host:bad/path` may not parse, but they are
+  // still unsafe to preserve as legacy text because query/fragment/userinfo
+  // could carry bootstrap credentials.
+  if (_hasAuthoritySchemeSeparator(text)) {
+    return SavedSessionWebSocketTextShape.authorityUrl;
+  }
+
   final uri = Uri.tryParse(text);
   if (uri == null || !uri.hasScheme) return SavedSessionWebSocketTextShape.none;
 
   // Dart's URI parser treats `host:8765/path` as a URI with scheme `host`.
   // Saved-session metadata also accepts legacy non-URL text, so only discard
   // values that are visibly URL/scheme-shaped rather than host-port-shaped.
-  if (_hasAuthoritySchemeSeparator(text)) {
-    return SavedSessionWebSocketTextShape.authorityUrl;
-  }
   if (_hasPortLikeSchemeSeparator(text)) {
     return SavedSessionWebSocketTextShape.hostPortLike;
   }
