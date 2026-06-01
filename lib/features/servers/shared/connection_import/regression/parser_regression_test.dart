@@ -1,4 +1,4 @@
-import '../connection_import_parser.dart';
+import '../../connection_import_parser.dart';
 
 void main() {
   parsesValidCorePairingDescriptor();

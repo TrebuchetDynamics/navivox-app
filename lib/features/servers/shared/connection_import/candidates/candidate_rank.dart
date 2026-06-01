@@ -1,4 +1,4 @@
-part of 'parser.dart';
+part of '../parser.dart';
 
 class _ConnectionImportCandidateRank {
   const _ConnectionImportCandidateRank({

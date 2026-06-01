@@ -1,4 +1,4 @@
-part of 'parser.dart';
+part of '../parser.dart';
 
 Iterable<_JsonConnectionImportFields> _jsonCandidateMaps(
   Map<dynamic, dynamic> decoded,
