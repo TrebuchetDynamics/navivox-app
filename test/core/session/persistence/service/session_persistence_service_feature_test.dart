@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:navivox/core/session/session_persistence_service.dart';
 
-import '../support/session_persistence_test_support.dart';
+import '../../support/session_persistence_test_support.dart';
+import '../support/session_persistence_expectations.dart';
 
 void main() {
   group('SessionPersistenceService', () {
@@ -16,11 +17,7 @@ void main() {
       await saveLocalGatewayConnection(service);
       final session = await service.loadSession();
       expect(session, isNotNull);
-      expect(session!.baseUrl, localGatewayBaseUrl);
-      expect(session.webSocketUrl, localGatewayWebSocketUrl);
-      expect(session.gatewayId, localGatewayId);
-      expect(session.lastConnectedAt, isNotNull);
-      expect(session.canAttemptReconnect, isFalse);
+      expectLocalGatewaySession(session!);
     });
 
     test(
@@ -33,10 +30,7 @@ void main() {
         );
         final session = await service.loadSession();
         expect(session, isNotNull);
-        expect(session!.baseUrl, localGatewayBaseUrl);
-        expect(session.webSocketUrl, isNull);
-        expect(session.gatewayId, isNull);
-        expect(session.canAttemptReconnect, isFalse);
+        expectPartialLocalGatewaySession(session!);
       },
     );
 
@@ -44,14 +38,12 @@ void main() {
       await saveLocalGatewayConnection(service);
       expect(await service.hasSession(), isTrue);
       await service.clearSession();
-      expect(await service.hasSession(), isFalse);
-      final session = await service.loadSession();
-      expect(session, isNull);
+      await expectNoSavedSession(service);
     });
 
     test('hasSession returns false when no session saved', () async {
       await service.clearSession();
-      expect(await service.hasSession(), isFalse);
+      await expectNoSavedSession(service);
     });
 
     test('hasSession returns true after saveConnection', () async {
@@ -61,8 +53,7 @@ void main() {
 
     test('loadSession returns null when no session saved', () async {
       await service.clearSession();
-      final session = await service.loadSession();
-      expect(session, isNull);
+      await expectNoSavedSession(service);
     });
   });
 }
