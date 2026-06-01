@@ -398,4 +398,21 @@ void main() {
       expect(intent.message, 'Voice command not recognized: @@@.');
     },
   );
+
+  test(
+    'classifies unmatchable punctuation before profile-switching availability',
+    () {
+      final intent = resolver.resolve(
+        raw: 'navi @@@',
+        commandWord: 'navi',
+        commandMode: false,
+        fromVoice: true,
+        profileSwitchingEnabled: false,
+        contacts: const [],
+      );
+
+      expect(intent.action, LocalCommandAction.unknown);
+      expect(intent.message, 'Voice command not recognized: @@@.');
+    },
+  );
 }

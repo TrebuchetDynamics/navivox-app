@@ -86,6 +86,18 @@ class LocalCommandIntent {
   bool get consumesInput => action != LocalCommandAction.none;
 }
 
+class _ProfileCommandCandidate {
+  const _ProfileCommandCandidate({
+    required this.body,
+    required this.normalized,
+  });
+
+  final String body;
+  final String normalized;
+
+  bool get hasMatchableText => normalized.isNotEmpty;
+}
+
 class LocalCommandResolver {
   const LocalCommandResolver();
 
@@ -115,8 +127,7 @@ class LocalCommandResolver {
       return _resolveBuiltinCommand(builtin, commandWord: commandWord);
     }
     return _resolveProfileCommand(
-      body: body,
-      normalized: normalized,
+      _ProfileCommandCandidate(body: body, normalized: normalized),
       profileSwitchingEnabled: profileSwitchingEnabled,
       contacts: contacts,
     );
@@ -150,28 +161,29 @@ class LocalCommandResolver {
     };
   }
 
-  LocalCommandIntent _resolveProfileCommand({
-    required String body,
-    required String normalized,
+  LocalCommandIntent _resolveProfileCommand(
+    _ProfileCommandCandidate candidate, {
     required bool profileSwitchingEnabled,
     required List<NavivoxProfileContact> contacts,
   }) {
+    if (!candidate.hasMatchableText) {
+      return LocalCommandIntent.unknown(candidate.body);
+    }
     if (!profileSwitchingEnabled) {
       return const LocalCommandIntent.profileSwitchingDisabled();
     }
-    if (normalized.isEmpty) return LocalCommandIntent.unknown(body);
 
     final matches = _matchingProfileCommandContacts(
-      normalized: normalized,
+      normalized: candidate.normalized,
       contacts: contacts,
     );
     if (matches.length == 1) {
       return LocalCommandIntent.switchProfile(matches.single);
     }
     if (matches.length > 1) {
-      return LocalCommandIntent.disambiguateProfile(body);
+      return LocalCommandIntent.disambiguateProfile(candidate.body);
     }
-    return LocalCommandIntent.unknown(body);
+    return LocalCommandIntent.unknown(candidate.body);
   }
 
   List<NavivoxProfileContact> _matchingProfileCommandContacts({
