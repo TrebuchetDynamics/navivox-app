@@ -1,4 +1,5 @@
 import '../apply/config_apply_flow_model.dart';
+import '../apply/model/config_draft_value_equality.dart';
 import 'config_draft_edit_value.dart';
 import 'config_field_presentation.dart';
 
@@ -43,11 +44,26 @@ class ConfigDraftSession {
     if (!flow.hasPendingChanges) return this;
     final nextDraft = Map<String, Object?>.from(draftValues);
     for (final change in flow.changes) {
-      nextDraft.remove(change.path);
+      if (_draftValueStillMatchesApplied(
+        draftValues: draftValues,
+        path: change.path,
+        appliedValue: change.applyValue,
+      )) {
+        nextDraft.remove(change.path);
+      }
     }
     return ConfigDraftSession(
       draftValues: Map.unmodifiable(nextDraft),
       editingField: editingField,
     );
   }
+}
+
+bool _draftValueStillMatchesApplied({
+  required Map<String, Object?> draftValues,
+  required String path,
+  required Object? appliedValue,
+}) {
+  return draftValues.containsKey(path) &&
+      configDraftValuesEqual(draftValues[path], appliedValue);
 }

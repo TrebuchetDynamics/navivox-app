@@ -89,6 +89,30 @@ void main() {
     expect(cleaned.draftValues, {'model.temperature': 0.9});
   });
 
+  test('keeps drafts changed after an apply flow snapshot was created', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      },
+      values: const {'providers.default': 'openai'},
+    );
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {'providers.default': 'local'},
+    );
+    final session = const ConfigDraftSession(
+      draftValues: {'providers.default': 'anthropic'},
+      editingField: 'providers.default',
+    );
+
+    final cleaned = session.clearApplied(flow);
+
+    expect(cleaned.editingField, 'providers.default');
+    expect(cleaned.draftValues, {'providers.default': 'anthropic'});
+  });
+
   test('cancels editing without changing draft values', () {
     final session = const ConfigDraftSession(
       draftValues: {'providers.default': 'local'},
