@@ -93,15 +93,23 @@ String _safeMetadataValue(Object? value) {
 }
 
 bool navivoxIsSensitiveGatewayToolMetadataKey(String key) {
-  final normalized = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  return _sensitiveMetadataKeyFragments.any(normalized.contains);
+  final normalized = _normalizedGatewayToolMetadataKey(key);
+  return _sensitiveMetadataExactKeys.contains(normalized) ||
+      _sensitiveMetadataKeyFragments.any(normalized.contains);
 }
+
+String _normalizedGatewayToolMetadataKey(String key) {
+  return key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+}
+
+const _sensitiveMetadataExactKeys = <String>{'auth'};
 
 const _sensitiveMetadataKeyFragments = <String>[
   'token',
   'secret',
   'password',
   'apikey',
+  'accesskey',
   'authorization',
   'credential',
   'bearer',

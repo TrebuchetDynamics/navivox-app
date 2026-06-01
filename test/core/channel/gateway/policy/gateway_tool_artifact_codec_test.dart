@@ -9,7 +9,9 @@ void main() {
       () {
         final artifacts = navivoxToolArtifactsFromGatewayMetadata({
           'Authorization': 'Bearer secret-token',
+          'auth': 'Bearer short-secret',
           'credential': 'session-secret',
+          'aws_access_key_id': 'AKIA-secret',
           'private_key_pem': '-----BEGIN PRIVATE KEY-----',
           'safe_label': 'visible',
         }, toolCallId: 'tool-1');
@@ -18,7 +20,9 @@ void main() {
         final summary = artifacts.single.summary ?? '';
         expect(summary, 'safe_label: visible');
         expect(summary, isNot(contains('Bearer secret-token')));
+        expect(summary, isNot(contains('Bearer short-secret')));
         expect(summary, isNot(contains('session-secret')));
+        expect(summary, isNot(contains('AKIA-secret')));
         expect(summary, isNot(contains('PRIVATE KEY')));
       },
     );
