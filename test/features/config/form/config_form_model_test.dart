@@ -35,7 +35,7 @@ void main() {
   });
 
   test('builds schema row candidates with explicit skip and dedupe rules', () {
-    final candidates = configFormSchemaRowCandidatesFromFields(
+    final plan = configFormSchemaRowCandidatePlanFromFields(
       rawFields: const [
         'not-a-field',
         {'path': ' '},
@@ -45,7 +45,11 @@ void main() {
       ],
       values: const {'providers.default': 'openai', 'model.temperature': 0.4},
     );
+    final candidates = plan.candidates;
 
+    expect(plan.acceptedRows, 2);
+    expect(plan.skippedInvalidRows, 2);
+    expect(plan.skippedDuplicateRows, 1);
     expect(candidates.map((candidate) => candidate.field), [
       'providers.default',
       'model.temperature',
@@ -53,6 +57,7 @@ void main() {
     expect(candidates.first.label, 'Default provider');
     expect(candidates.first.rawValue, 'openai');
     expect(candidates.last.rawValue, 0.4);
+    expect(() => candidates.clear(), throwsUnsupportedError);
   });
 
   test('deduplicates duplicate schema field paths before section grouping', () {
