@@ -1,5 +1,5 @@
 import '../../gateway/client/navivox_gateway_config.dart';
-import '../endpoint/navivox_endpoint_uri.dart';
+import 'pairing_descriptor_endpoints.dart';
 import 'pairing_descriptor_query_fields.dart';
 
 class NavivoxPairingDescriptor {
@@ -32,18 +32,14 @@ class NavivoxPairingDescriptor {
     if (tokenRequired && token == null) {
       throw FormatException('Pairing descriptor requires rest_token', value);
     }
-    final webSocketUri = navivoxWebSocketUriFromEndpointString(
-      fields.required('websocket_url'),
-      descriptor: value,
-    );
-    final baseUri = _baseUriFromPairingParams(
+    final endpoints = PairingDescriptorEndpoints.fromWireFields(
+      webSocketUrl: fields.required('websocket_url'),
       explicitBaseUrl: fields.optional('base_url'),
-      webSocketUri: webSocketUri,
       descriptor: value,
     );
     return NavivoxPairingDescriptor(
-      baseUri: baseUri,
-      webSocketUri: webSocketUri,
+      baseUri: endpoints.baseUri,
+      webSocketUri: endpoints.webSocketUri,
       authMode: fields.optional('auth_mode') ?? '',
       exposureMode: fields.optional('exposure_mode') ?? '',
       tokenRequired: tokenRequired,
@@ -73,51 +69,6 @@ class NavivoxPairingDescriptor {
       baseUri: baseUri,
       token: token,
       webSocketUri: webSocketUri,
-    );
-  }
-}
-
-Uri _baseUriFromPairingParams({
-  required String? explicitBaseUrl,
-  required Uri webSocketUri,
-  required String descriptor,
-}) {
-  if (explicitBaseUrl != null) {
-    return _httpBaseUriFromPairingParam(explicitBaseUrl, descriptor);
-  }
-  return Uri.parse(_baseUrlFromWebSocketUri(webSocketUri, descriptor));
-}
-
-Uri _httpBaseUriFromPairingParam(String value, String descriptor) {
-  final uri = _validatedHttpBaseUri(value, descriptor);
-  return Uri.parse(navivoxOriginFromUri(uri));
-}
-
-Uri _validatedHttpBaseUri(String value, String descriptor) {
-  final uri = Uri.parse(value);
-  final scheme = uri.scheme.toLowerCase();
-  if ((scheme != 'http' && scheme != 'https') || uri.host.isEmpty) {
-    throw FormatException(
-      'Pairing descriptor base_url must use http or https',
-      descriptor,
-    );
-  }
-  if (uri.hasFragment) {
-    throw FormatException(
-      'Pairing descriptor base_url must not include a fragment',
-      descriptor,
-    );
-  }
-  return uri;
-}
-
-String _baseUrlFromWebSocketUri(Uri uri, String descriptor) {
-  try {
-    return navivoxHttpBaseUrlFromEndpointUri(uri, descriptor: descriptor);
-  } on FormatException {
-    throw FormatException(
-      'Pairing descriptor invalid websocket_url',
-      descriptor,
     );
   }
 }
