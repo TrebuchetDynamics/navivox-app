@@ -150,9 +150,12 @@ class LocalCommandResolver {
     if (!profileSwitchingEnabled) {
       return const LocalCommandIntent.profileSwitchingDisabled();
     }
-    final matches = contacts
-        .where((contact) => _contactCommandNames(contact).contains(normalized))
-        .toList(growable: false);
+    if (normalized.isEmpty) return LocalCommandIntent.unknown(body);
+
+    final matches = _matchingProfileCommandContacts(
+      normalized: normalized,
+      contacts: contacts,
+    );
     if (matches.length == 1) {
       return LocalCommandIntent.switchProfile(matches.single);
     }
@@ -162,8 +165,20 @@ class LocalCommandResolver {
     return LocalCommandIntent.unknown(body);
   }
 
+  List<NavivoxProfileContact> _matchingProfileCommandContacts({
+    required String normalized,
+    required List<NavivoxProfileContact> contacts,
+  }) {
+    return contacts
+        .where((contact) => _contactCommandNames(contact).contains(normalized))
+        .toList(growable: false);
+  }
+
   Set<String> _contactCommandNames(NavivoxProfileContact contact) {
-    return {normalize(contact.profileId), normalize(contact.displayName)};
+    return {
+      normalize(contact.profileId),
+      normalize(contact.displayName),
+    }.where((name) => name.isNotEmpty).toSet();
   }
 
   _CommandPrefixMatch? _matchCommandPrefix(String text, String commandWord) {

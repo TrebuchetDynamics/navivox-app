@@ -167,4 +167,30 @@ void main() {
       expect(unknown.message, 'Voice command not recognized: unknown profile.');
     },
   );
+
+  test(
+    'does not match punctuation-only command bodies to symbol-only names',
+    () {
+      final intent = resolver.resolve(
+        raw: 'navi @@@',
+        commandWord: 'navi',
+        commandMode: false,
+        fromVoice: true,
+        profileSwitchingEnabled: true,
+        contacts: const [
+          NavivoxProfileContact(
+            serverId: 'office',
+            profileId: 'bot',
+            displayName: '🤖',
+            serverLabel: 'office',
+            health: NavivoxProfileHealth.online,
+            latestPreview: 'Ready',
+          ),
+        ],
+      );
+
+      expect(intent.action, LocalCommandAction.unknown);
+      expect(intent.message, 'Voice command not recognized: @@@.');
+    },
+  );
 }
