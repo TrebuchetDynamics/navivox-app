@@ -66,13 +66,35 @@ List<String> configFormSectionFieldRefsFromSchema(Object? rawFields) {
 }
 
 bool? _configFormStrictBoolFromAliases(Map raw, Iterable<String> aliases) {
-  for (final alias in aliases) {
-    final value = configWireValueFromAliases(raw, [alias]);
+  for (final value in _configFormSchemaValueCandidates(raw, aliases)) {
     final parsed = _configFormStrictBool(value);
     if (parsed != null) return parsed;
   }
   return null;
 }
+
+Iterable<Object?> _configFormSchemaValueCandidates(
+  Map raw,
+  Iterable<String> aliases,
+) sync* {
+  for (final alias in aliases) {
+    if (raw.containsKey(alias)) yield raw[alias];
+  }
+
+  final normalizedAliases = {
+    for (final alias in aliases) _configFormNormalizeSchemaFieldName(alias),
+  };
+  for (final entry in raw.entries) {
+    if (normalizedAliases.contains(
+      _configFormNormalizeSchemaFieldName('${entry.key}'),
+    )) {
+      yield entry.value;
+    }
+  }
+}
+
+String _configFormNormalizeSchemaFieldName(String value) =>
+    value.toLowerCase().replaceAll('_', '');
 
 bool? _configFormStrictBool(Object? value) {
   if (value is bool) return value;

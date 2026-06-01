@@ -176,6 +176,27 @@ void main() {
     expect(model.rows[2].isSecret, isTrue);
   });
 
+  test('falls back past blank boolean schema aliases', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {
+            'path': 'server.port',
+            'type': 'integer',
+            'restart_required': ' ',
+            'restartRequired': true,
+            'requires_confirmation': '',
+            'requiresConfirmation': 'true',
+          },
+        ],
+      },
+      values: const {'server.port': 8080},
+    );
+
+    expect(model.rows.single.restartRequired, isTrue);
+    expect(model.rows.single.requiresConfirmation, isTrue);
+  });
+
   test('selects one config section by route id and reports misses', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
