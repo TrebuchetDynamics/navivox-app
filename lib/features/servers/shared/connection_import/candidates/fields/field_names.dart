@@ -1,4 +1,4 @@
-part of '../parser.dart';
+part of '../../parser.dart';
 
 const _tokenFieldNames = [
   'token',

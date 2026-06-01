@@ -5,10 +5,10 @@ import '../../../../core/protocol/navivox_json.dart';
 import '../../../../core/protocol/navivox_pairing_descriptor.dart';
 import '../../models/connection_import.dart';
 
-part 'candidates/candidate.dart';
-part 'candidates/candidate_rank.dart';
-part 'candidates/field_names.dart';
-part 'candidates/from_fields.dart';
+part 'candidates/model/candidate.dart';
+part 'candidates/ranking/candidate_rank.dart';
+part 'candidates/fields/field_names.dart';
+part 'candidates/fields/from_fields.dart';
 part 'endpoints/normalized_endpoint_fields.dart';
 part 'endpoints/endpoint_uri_identity.dart';
 part 'endpoints/copied_endpoint_url.dart';
