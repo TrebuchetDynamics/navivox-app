@@ -1,6 +1,8 @@
 import '../../../../../protocol/navivox_endpoint_uri.dart';
 import '../../../../../protocol/navivox_json.dart';
 
+import 'saved_session_web_socket_endpoint.dart';
+
 /// Normalized non-secret gateway connection metadata shared by saved-session
 /// persistence contracts.
 class SessionConnectionMetadata {
@@ -77,21 +79,12 @@ String sanitizedSavedSessionBaseUrl(String value) {
 String? sanitizedSavedSessionWebSocketUrl(Object? value) {
   final text = navivoxOptionalStringFromJson(value);
   if (text == null) return null;
-  final uri = Uri.tryParse(text);
-  if (uri == null || uri.host.isEmpty) return text;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme != 'ws' && scheme != 'wss') return text;
-  return durableSavedSessionWebSocketUri(uri).toString();
+  return SavedSessionWebSocketEndpoint.tryParse(text)?.durableUrl ?? text;
 }
 
 /// Projects a websocket URI onto the durable saved-session identity fields.
 Uri durableSavedSessionWebSocketUri(Uri uri) {
   assert(uri.scheme.toLowerCase() == 'ws' || uri.scheme.toLowerCase() == 'wss');
   assert(uri.host.isNotEmpty);
-  return Uri(
-    scheme: uri.scheme,
-    host: uri.host,
-    port: uri.hasPort ? uri.port : null,
-    path: uri.path,
-  );
+  return SavedSessionWebSocketEndpoint.tryParse(uri.toString())?.uri ?? uri;
 }
