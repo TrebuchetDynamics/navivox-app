@@ -69,6 +69,8 @@ void main() {
   rejectsHostlessGenericEndpointInsteadOfFabricatingTokenOnlyImport();
   rejectsInvalidPortCopiedEndpointInsteadOfThrowing();
   rejectsInvalidPortSharedTextEndpointInsteadOfThrowing();
+  parsesJsonWebSocketOnlyImportAsActionableEndpoint();
+  rejectsJsonMetadataOnlyImportAsUnactionable();
   doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
   doesNotTreatUnsupportedJsonBaseUrlSchemeAsBaseUrl();
 }
@@ -1215,6 +1217,36 @@ void rejectsInvalidPortSharedTextEndpointInsteadOfThrowing() {
   _expect(
     result == null,
     'shared-text endpoints with invalid ports should be rejected, not throw or fabricate token-only imports',
+  );
+}
+
+void parsesJsonWebSocketOnlyImportAsActionableEndpoint() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"websocket_url":"wss://gateway.example/navivox/ws"}',
+  );
+
+  _expect(
+    result != null,
+    'valid websocket-only JSON imports should be actionable because they derive a baseUrl',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'websocket-only imports should derive the HTTP baseUrl',
+  );
+  _expect(
+    result.webSocketUrl == 'wss://gateway.example/navivox/ws',
+    'websocket-only imports should preserve the websocket endpoint',
+  );
+}
+
+void rejectsJsonMetadataOnlyImportAsUnactionable() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"server_id":"srv","profile_id":"profile"}',
+  );
+
+  _expect(
+    result == null,
+    'profile metadata alone must not create an actionable connection import',
   );
 }
 

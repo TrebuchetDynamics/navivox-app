@@ -5,6 +5,7 @@ import '../../../../core/protocol/navivox_json.dart';
 import '../../../../core/protocol/navivox_pairing_descriptor.dart';
 import '../../models/connection_import.dart';
 
+part 'candidates/model/value_presence.dart';
 part 'candidates/model/candidate.dart';
 part 'candidates/ranking/candidate_rank.dart';
 part 'candidates/ranking/candidate_selection.dart';

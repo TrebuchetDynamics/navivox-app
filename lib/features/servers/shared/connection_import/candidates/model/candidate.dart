@@ -21,9 +21,12 @@ class _ConnectionImportCandidate {
   final String? profileId;
   final bool hasExplicitConnectionFields;
 
-  bool get hasImportValues => baseUrl != null || token != null;
+  _ConnectionImportValuePresence get _valuePresence =>
+      _ConnectionImportValuePresence(baseUrl: baseUrl, token: token);
 
-  bool get hasCompleteConnection => baseUrl != null && token != null;
+  bool get hasImportValues => _valuePresence.hasActionableImport;
+
+  bool get hasCompleteConnection => _valuePresence.hasCompleteConnection;
 
   _ConnectionImportCandidateRank get rank => _ConnectionImportCandidateRank(
     isCompleteConnection: hasCompleteConnection,
