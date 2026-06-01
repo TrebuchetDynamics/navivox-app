@@ -2,6 +2,7 @@ import '../../../core/channel/navivox_channel.dart';
 import 'local_command_body_parser.dart';
 import 'local_command_builtins.dart';
 import 'local_command_profile_matcher.dart';
+import 'local_command_text.dart';
 
 enum LocalCommandAction {
   none,
@@ -185,11 +186,6 @@ class LocalCommandResolver {
   }
 
   String normalize(String value) {
-    return value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
-        .trim()
-        .replaceAll(RegExp(r'\s+'), ' ');
+    return normalizeLocalCommandText(value);
   }
 }

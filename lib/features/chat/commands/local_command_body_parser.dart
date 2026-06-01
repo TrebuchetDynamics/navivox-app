@@ -1,3 +1,5 @@
+import 'local_command_text.dart';
+
 enum LocalCommandBodySource { prefixed, commandModeVoice }
 
 enum LocalCommandPrefixRejectionReason {
@@ -106,22 +108,9 @@ class LocalCommandBodyParser {
   int? _commandBodyStart(String separatorAndBody) {
     for (var index = 0; index < separatorAndBody.length; index += 1) {
       final codeUnit = separatorAndBody.codeUnitAt(index);
-      if (_isCommandWordSeparator(codeUnit)) continue;
+      if (isLocalCommandWordSeparator(codeUnit)) continue;
       return index == 0 ? null : index;
     }
     return separatorAndBody.isEmpty ? null : separatorAndBody.length;
-  }
-
-  bool _isCommandWordSeparator(int codeUnit) {
-    return codeUnit == 0x20 || // space
-        codeUnit == 0x09 || // tab
-        codeUnit == 0x0a || // line feed
-        codeUnit == 0x0d || // carriage return
-        codeUnit == 0x2c || // comma
-        codeUnit == 0x2e || // period
-        codeUnit == 0x3a || // colon
-        codeUnit == 0x3b || // semicolon
-        codeUnit == 0x21 || // exclamation mark
-        codeUnit == 0x3f; // question mark
   }
 }

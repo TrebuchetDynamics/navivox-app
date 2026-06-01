@@ -4,6 +4,7 @@ import 'package:navivox/features/chat/commands/local_command_body_parser.dart';
 import 'package:navivox/features/chat/commands/local_command_builtins.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/features/chat/commands/local_command_profile_matcher.dart';
+import 'package:navivox/features/chat/commands/local_command_text.dart';
 
 import '../shared/profiles/profile_contact_chat_test_fixtures.dart';
 
@@ -84,6 +85,27 @@ void main() {
     expect(commandModeVoice?.body, 'support');
     expect(commandModeVoice?.source, LocalCommandBodySource.commandModeVoice);
     expect(typedCommandMode, isNull);
+  });
+
+  test('centralizes local command text normalization assumptions', () {
+    expect(
+      normalizeLocalCommandText('  Office-1: Mineru!!  '),
+      'office 1 mineru',
+    );
+    expect(normalizeLocalCommandText('MINE_RU\t42'), 'mine ru 42');
+    expect(normalizeLocalCommandText('🤖'), isEmpty);
+  });
+
+  test('centralizes command-word separator decisions', () {
+    final separators = [' ', '\t', '\n', '\r', ',', '.', ':', ';', '!', '?'];
+
+    expect(
+      separators.map(
+        (value) => isLocalCommandWordSeparator(value.codeUnitAt(0)),
+      ),
+      everyElement(isTrue),
+    );
+    expect(isLocalCommandWordSeparator('/'.codeUnitAt(0)), isFalse);
   });
 
   test('replays command prefix boundary decisions explicitly', () {
