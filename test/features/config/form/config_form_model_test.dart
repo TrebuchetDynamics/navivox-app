@@ -283,6 +283,42 @@ void main() {
     expect(() => model.sections.single.rows.clear(), throwsUnsupportedError);
   });
 
+  test(
+    'deduplicates repeated section route ids so all sections are reachable',
+    () {
+      final model = ConfigFormModel.fromSchema(
+        schema: const {
+          'sections': [
+            {
+              'id': 'providers',
+              'label': 'Providers',
+              'fields': ['providers.default'],
+            },
+            {
+              'id': 'providers',
+              'label': 'Provider model settings',
+              'fields': ['model.temperature'],
+            },
+          ],
+          'fields': [
+            {'path': 'providers.default'},
+            {'path': 'model.temperature'},
+          ],
+        },
+        values: const {},
+      );
+
+      expect(model.sections.map((section) => section.id), [
+        'providers',
+        'providers-2',
+      ]);
+      expect(
+        model.selectSection('providers-2').sections.single.rows.single.field,
+        'model.temperature',
+      );
+    },
+  );
+
   test('selects one config section by route id and reports misses', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {

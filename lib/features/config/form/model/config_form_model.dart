@@ -3,9 +3,11 @@ import '../editing/config_edit_text.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
 import 'config_form_schema_row.dart';
-import 'config_form_schema_wire.dart';
+import 'config_form_sections.dart';
 
 export 'config_form_field_type.dart';
+export 'config_form_sections.dart'
+    show ConfigFormSection, ConfigSectionSelection;
 
 class ConfigFormModel {
   ConfigFormModel({
@@ -34,7 +36,10 @@ class ConfigFormModel {
     }
     return ConfigFormModel(
       rows: rows,
-      sections: _buildSections(schema?['sections'], rows),
+      sections: buildConfigFormSections(
+        rawSections: schema?['sections'],
+        rows: rows,
+      ),
     );
   }
 
@@ -57,98 +62,6 @@ class ConfigFormModel {
       missingId: id,
     );
   }
-
-  static List<ConfigFormSection> _buildSections(
-    Object? rawSections,
-    List<ConfigFormRow> rows,
-  ) {
-    if (rows.isEmpty) return const [];
-    if (rawSections is! List) {
-      return [ConfigFormSection.general(rows: rows)];
-    }
-
-    final rowsByField = {for (final row in rows) row.field: row};
-    final usedFields = <String>{};
-    final sections = <ConfigFormSection>[];
-
-    for (final raw in rawSections) {
-      if (raw is! Map) continue;
-      final sectionRows = <ConfigFormRow>[];
-      for (final field in configFormSectionFieldRefsFromSchemaMap(raw)) {
-        final row = rowsByField[field];
-        if (row == null || usedFields.contains(row.field)) continue;
-        sectionRows.add(row);
-        usedFields.add(row.field);
-      }
-      if (sectionRows.isEmpty) continue;
-      final id = configFormSectionIdFromSchema(
-        raw,
-        'section-${sections.length + 1}',
-      );
-      sections.add(
-        ConfigFormSection(
-          id: id,
-          label: configFormSectionLabelFromSchema(raw, id),
-          description: configFormSectionDescriptionFromSchema(raw),
-          rows: sectionRows,
-        ),
-      );
-    }
-
-    final otherRows = rows
-        .where((row) => !usedFields.contains(row.field))
-        .toList(growable: false);
-    if (otherRows.isNotEmpty) {
-      sections.add(
-        sections.isEmpty
-            ? ConfigFormSection.general(rows: otherRows)
-            : ConfigFormSection.other(rows: otherRows),
-      );
-    }
-    return sections;
-  }
-}
-
-class ConfigSectionSelection {
-  const ConfigSectionSelection({
-    required this.sections,
-    this.requestedId,
-    this.missingId,
-  });
-
-  final List<ConfigFormSection> sections;
-  final String? requestedId;
-  final String? missingId;
-
-  bool get isFiltered => requestedId != null;
-
-  bool get isMissing => missingId != null;
-}
-
-class ConfigFormSection {
-  ConfigFormSection({
-    required this.id,
-    required this.label,
-    required List<ConfigFormRow> rows,
-    this.description,
-  }) : rows = List.unmodifiable(rows);
-
-  ConfigFormSection.general({required List<ConfigFormRow> rows})
-    : id = 'general',
-      label = 'General config',
-      description = null,
-      rows = List.unmodifiable(rows);
-
-  ConfigFormSection.other({required List<ConfigFormRow> rows})
-    : id = 'other',
-      label = 'Other config',
-      description = null,
-      rows = List.unmodifiable(rows);
-
-  final String id;
-  final String label;
-  final String? description;
-  final List<ConfigFormRow> rows;
 }
 
 class ConfigFormRow {
