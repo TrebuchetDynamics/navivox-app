@@ -1,10 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_base_url.dart';
+import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_metadata_projection.dart';
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_web_socket_endpoint.dart';
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/session_connection_metadata.dart';
 
 void main() {
+  group('SavedSessionMetadataProjection', () {
+    test('rejects empty durable and legacy states as invalid projections', () {
+      expect(
+        () => SavedSessionMetadataProjection.durable(''),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => SavedSessionMetadataProjection.legacy(''),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
   group('sanitizedSavedSessionBaseUrl', () {
     test('strips setup path and bootstrap-only URL state', () {
       expect(

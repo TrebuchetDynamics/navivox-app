@@ -13,12 +13,16 @@ class SavedSessionMetadataProjection {
   const SavedSessionMetadataProjection.absent()
     : this._(durableValue: null, isLegacyText: false, isRejectedUrl: false);
 
-  const SavedSessionMetadataProjection.durable(this.durableValue)
-    : isLegacyText = false,
+  const SavedSessionMetadataProjection.durable(String value)
+    : assert(value.length > 0, 'durable projection values must not be blank'),
+      durableValue = value,
+      isLegacyText = false,
       isRejectedUrl = false;
 
-  const SavedSessionMetadataProjection.legacy(this.durableValue)
-    : isLegacyText = true,
+  const SavedSessionMetadataProjection.legacy(String value)
+    : assert(value.length > 0, 'legacy projection values must not be blank'),
+      durableValue = value,
+      isLegacyText = true,
       isRejectedUrl = false;
 
   const SavedSessionMetadataProjection.rejectedUrl()
