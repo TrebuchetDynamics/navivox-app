@@ -49,13 +49,25 @@ class ConfigFieldPresentation {
 
   bool get obscureText => _row.isSecret;
 
-  TextInputType get keyboardType => _row.type.isNumeric
-      ? const TextInputType.numberWithOptions(decimal: true)
-      : TextInputType.text;
+  TextInputType get keyboardType => configFieldKeyboardTypeFor(_row.type);
 
   Object? coerceEditValue(String raw) => _row.coerceEditValue(raw);
 
   bool clearsDraftFor(Object? value) {
     return _row.isSecret && configWireString(value) == null;
   }
+}
+
+TextInputType configFieldKeyboardTypeFor(ConfigFormFieldType type) {
+  return switch (type) {
+    ConfigFormFieldType.number => const TextInputType.numberWithOptions(
+      decimal: true,
+    ),
+    ConfigFormFieldType.integer => const TextInputType.numberWithOptions(
+      decimal: false,
+    ),
+    ConfigFormFieldType.boolean ||
+    ConfigFormFieldType.string ||
+    ConfigFormFieldType.secret => TextInputType.text,
+  };
 }

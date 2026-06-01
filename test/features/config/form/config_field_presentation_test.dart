@@ -40,6 +40,24 @@ void main() {
     expect(field.clearsDraftFor(0.7), isFalse);
   });
 
+  test('uses integer keyboard options for integer fields', () {
+    final row = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'server.port', 'label': 'Server port', 'type': 'integer'},
+        ],
+      },
+      values: const {'server.port': 8080},
+    ).rows.single;
+
+    final field = ConfigFieldPresentation.fromRow(row);
+
+    expect(
+      field.keyboardType,
+      const TextInputType.numberWithOptions(decimal: false),
+    );
+  });
+
   test(
     'keeps secret values redacted and treats blank secret drafts as clearable',
     () {
