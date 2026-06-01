@@ -39,6 +39,20 @@ void main() {
     },
   );
 
+  test('trims explicit base_url like websocket_url before validation', () {
+    final endpoints = PairingDescriptorEndpoints.fromWireFields(
+      webSocketUrl: ' ws://127.0.0.1:8765/v1/navivox/stream ',
+      explicitBaseUrl: ' https://gateway.example/setup?handoff=1 ',
+      descriptor: descriptor,
+    );
+
+    expect(
+      endpoints.webSocketUri.toString(),
+      'ws://127.0.0.1:8765/v1/navivox/stream',
+    );
+    expect(endpoints.baseUri.toString(), 'https://gateway.example');
+  });
+
   test(
     'rejects hidden state in endpoint fragments before origin stripping',
     () {

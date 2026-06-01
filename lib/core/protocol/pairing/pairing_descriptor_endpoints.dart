@@ -61,12 +61,29 @@ Uri pairingDescriptorBaseUri({
 }
 
 Uri _httpBaseUriFromPairingParam(String value, String descriptor) {
-  final uri = _validatedHttpBaseUri(value, descriptor);
-  return Uri.parse(navivoxOriginFromUri(uri));
+  final candidate = _PairingDescriptorHttpBaseUrlCandidate.parse(
+    value,
+    descriptor: descriptor,
+  );
+  return Uri.parse(navivoxOriginFromUri(candidate.uri));
 }
 
-Uri _validatedHttpBaseUri(String value, String descriptor) {
-  final uri = Uri.parse(value);
+class _PairingDescriptorHttpBaseUrlCandidate {
+  const _PairingDescriptorHttpBaseUrlCandidate._(this.uri);
+
+  factory _PairingDescriptorHttpBaseUrlCandidate.parse(
+    String value, {
+    required String descriptor,
+  }) {
+    final uri = Uri.parse(value.trim());
+    _validateHttpBaseUri(uri, descriptor);
+    return _PairingDescriptorHttpBaseUrlCandidate._(uri);
+  }
+
+  final Uri uri;
+}
+
+void _validateHttpBaseUri(Uri uri, String descriptor) {
   final scheme = uri.scheme.toLowerCase();
   if ((scheme != 'http' && scheme != 'https') || uri.host.isEmpty) {
     throw FormatException(
@@ -86,7 +103,6 @@ Uri _validatedHttpBaseUri(String value, String descriptor) {
       descriptor,
     );
   }
-  return uri;
 }
 
 bool _pairingDescriptorUriHasUserInfo(Uri uri) => uri.userInfo.isNotEmpty;
