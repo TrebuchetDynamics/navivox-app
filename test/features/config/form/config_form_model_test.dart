@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/config/form/config_form_model.dart';
 import 'package:navivox/features/config/form/model/config_form_schema_candidates.dart';
 import 'package:navivox/features/config/form/model/config_form_schema_wire.dart';
+import 'package:navivox/features/config/form/model/config_form_sections.dart';
 
 void main() {
   test('parses schema fields with labels values and typed edit coercion', () {
@@ -320,6 +321,71 @@ void main() {
       'providers.default',
     ]);
     expect(model.sections.last.rows.single.field, 'model.temperature');
+  });
+
+  test('section field ref plan exposes invalid stale and duplicate refs', () {
+    const provider = ConfigFormRow(
+      field: 'providers.default',
+      label: 'Default provider',
+      type: ConfigFormFieldType.string,
+      required: false,
+      restartRequired: false,
+      riskLevel: 'low',
+      requiresConfirmation: false,
+      rawValue: 'openai',
+    );
+    const temperature = ConfigFormRow(
+      field: 'model.temperature',
+      label: 'Temperature',
+      type: ConfigFormFieldType.number,
+      required: false,
+      restartRequired: false,
+      riskLevel: 'low',
+      requiresConfirmation: false,
+      rawValue: 0.4,
+    );
+
+    final plan = configFormSectionRowsCandidatePlan(
+      rawFieldRefs: const [
+        {'label': 'not a ref'},
+        'providers.default',
+        'providers.default',
+        'removed.path',
+        {'field': 'model.temperature'},
+      ],
+      rowsByField: const {
+        'providers.default': provider,
+        'model.temperature': temperature,
+      },
+      usedFields: const {},
+    );
+
+    expect(plan.rows.map((row) => row.field), [
+      'providers.default',
+      'model.temperature',
+    ]);
+    expect(plan.skippedInvalidRefs, 1);
+    expect(plan.skippedDuplicateRefs, 1);
+    expect(plan.skippedStaleRefs, 1);
+    expect(
+      plan.rejections.map(
+        (rejection) => (rejection.index, rejection.reason, rejection.field),
+      ),
+      [
+        (0, ConfigFormSectionFieldRefRejectionReason.invalid, null),
+        (
+          2,
+          ConfigFormSectionFieldRefRejectionReason.duplicate,
+          'providers.default',
+        ),
+        (
+          3,
+          ConfigFormSectionFieldRefRejectionReason.staleOrAlreadyUsed,
+          'removed.path',
+        ),
+      ],
+    );
+    expect(() => plan.rejections.clear(), throwsUnsupportedError);
   });
 
   test('falls back across section field reference aliases', () {

@@ -69,15 +69,18 @@ List<String> configFormSectionFieldRefsFromSchema(Object? rawFields) {
   if (rawFields is! List) return const [];
   final refs = <String>[];
   for (final raw in rawFields) {
-    final text = raw is Map
-        ? _configFormSectionFieldRefFromSchema(raw)
-        : configWireString(raw);
+    final text = configFormSectionFieldRefFromSchemaValue(raw);
     if (text != null) refs.add(text);
   }
   return refs;
 }
 
-String? _configFormSectionFieldRefFromSchema(Map raw) {
+String? configFormSectionFieldRefFromSchemaValue(Object? raw) {
+  if (raw is Map) return configFormSectionFieldRefFromSchema(raw);
+  return configWireString(raw);
+}
+
+String? configFormSectionFieldRefFromSchema(Map raw) {
   return configWireStringFromAliases(raw, const [
     'path',
     'field',

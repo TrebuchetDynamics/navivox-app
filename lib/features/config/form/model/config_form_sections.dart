@@ -113,16 +113,46 @@ List<ConfigFormRow> _sectionRowsFromFirstUsefulFieldRefCandidate({
   return const [];
 }
 
+enum ConfigFormSectionFieldRefRejectionReason {
+  invalid,
+  staleOrAlreadyUsed,
+  duplicate,
+}
+
+class ConfigFormSectionFieldRefRejection {
+  const ConfigFormSectionFieldRefRejection({
+    required this.index,
+    required this.reason,
+    this.field,
+  });
+
+  final int index;
+  final ConfigFormSectionFieldRefRejectionReason reason;
+  final String? field;
+}
+
 class ConfigFormSectionRowsCandidatePlan {
   ConfigFormSectionRowsCandidatePlan({
     required List<ConfigFormRow> rows,
-    required this.skippedStaleRefs,
-    required this.skippedDuplicateRefs,
-  }) : rows = List.unmodifiable(rows);
+    required List<ConfigFormSectionFieldRefRejection> rejections,
+  }) : rows = List.unmodifiable(rows),
+       rejections = List.unmodifiable(rejections);
 
   final List<ConfigFormRow> rows;
-  final int skippedStaleRefs;
-  final int skippedDuplicateRefs;
+  final List<ConfigFormSectionFieldRefRejection> rejections;
+
+  int get skippedInvalidRefs =>
+      _skippedRefs(ConfigFormSectionFieldRefRejectionReason.invalid);
+
+  int get skippedStaleRefs =>
+      _skippedRefs(ConfigFormSectionFieldRefRejectionReason.staleOrAlreadyUsed);
+
+  int get skippedDuplicateRefs =>
+      _skippedRefs(ConfigFormSectionFieldRefRejectionReason.duplicate);
+
+  int _skippedRefs(ConfigFormSectionFieldRefRejectionReason reason) {
+    return rejections.where((rejection) => rejection.reason == reason).length;
+  }
 }
 
 ConfigFormSectionRowsCandidatePlan configFormSectionRowsCandidatePlan({
@@ -131,18 +161,40 @@ ConfigFormSectionRowsCandidatePlan configFormSectionRowsCandidatePlan({
   required Set<String> usedFields,
 }) {
   final candidateRows = <ConfigFormRow>[];
+  final rejections = <ConfigFormSectionFieldRefRejection>[];
   final seenCandidateFields = <String>{};
-  var skippedStaleRefs = 0;
-  var skippedDuplicateRefs = 0;
 
-  for (final field in configFormSectionFieldRefsFromSchema(rawFieldRefs)) {
+  for (final indexedRef in _configFormSectionFieldRefDecisions(rawFieldRefs)) {
+    final index = indexedRef.index;
+    final field = indexedRef.field;
+    if (field == null) {
+      rejections.add(
+        ConfigFormSectionFieldRefRejection(
+          index: index,
+          reason: ConfigFormSectionFieldRefRejectionReason.invalid,
+        ),
+      );
+      continue;
+    }
     final row = rowsByField[field];
     if (row == null || usedFields.contains(row.field)) {
-      skippedStaleRefs += 1;
+      rejections.add(
+        ConfigFormSectionFieldRefRejection(
+          index: index,
+          reason: ConfigFormSectionFieldRefRejectionReason.staleOrAlreadyUsed,
+          field: field,
+        ),
+      );
       continue;
     }
     if (!seenCandidateFields.add(row.field)) {
-      skippedDuplicateRefs += 1;
+      rejections.add(
+        ConfigFormSectionFieldRefRejection(
+          index: index,
+          reason: ConfigFormSectionFieldRefRejectionReason.duplicate,
+          field: field,
+        ),
+      );
       continue;
     }
     candidateRows.add(row);
@@ -150,9 +202,21 @@ ConfigFormSectionRowsCandidatePlan configFormSectionRowsCandidatePlan({
 
   return ConfigFormSectionRowsCandidatePlan(
     rows: candidateRows,
-    skippedStaleRefs: skippedStaleRefs,
-    skippedDuplicateRefs: skippedDuplicateRefs,
+    rejections: rejections,
   );
+}
+
+Iterable<({int index, String? field})> _configFormSectionFieldRefDecisions(
+  Object? rawFieldRefs,
+) sync* {
+  if (rawFieldRefs is! List) return;
+  for (final indexedRaw in rawFieldRefs.indexed) {
+    final raw = indexedRaw.$2;
+    yield (
+      index: indexedRaw.$1,
+      field: configFormSectionFieldRefFromSchemaValue(raw),
+    );
+  }
 }
 
 ConfigFormSection _unsectionedRowsSection({
