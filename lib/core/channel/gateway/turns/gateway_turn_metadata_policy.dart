@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../../../gateway/navivox_gateway_protocol.dart';
-import '../../contracts/navivox_channel.dart';
+import '../../contracts/channel/navivox_channel_contract.dart';
 
 /// Builds gateway turn metadata consistently for text and voice submissions.
 ///
