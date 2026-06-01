@@ -21,6 +21,7 @@ part 'shared_text/import.dart';
 part 'shared_text/descriptors/core_pairing_descriptor.dart';
 part 'json/candidate_maps.dart';
 part 'shared_text/endpoints/endpoint.dart';
+part 'shared_text/endpoints/token_search_window.dart';
 part 'shared_text/endpoints/endpoint_selection.dart';
 
 class ConnectionImportParser {

@@ -3,32 +3,18 @@ part of '../../parser.dart';
 class _SharedTextEndpointCandidate {
   const _SharedTextEndpointCandidate({
     required this.candidate,
-    required this.tokenSearchStart,
-    required this.tokenSearchEnd,
-    required this.leadingTokenSearchEnd,
+    required this.tokenSearchWindow,
     required this.hasFollowingToken,
-    required this.canUseLeadingToken,
     required this.hasConnectionPath,
-  }) : assert(tokenSearchStart >= 0),
-       assert(tokenSearchEnd >= tokenSearchStart),
-       assert(leadingTokenSearchEnd >= 0);
+  });
 
   final _ConnectionImportCandidate candidate;
-  final int tokenSearchStart;
-  final int tokenSearchEnd;
-  final int leadingTokenSearchEnd;
+  final _SharedTextEndpointTokenSearchWindow tokenSearchWindow;
   final bool hasFollowingToken;
-  final bool canUseLeadingToken;
   final bool hasConnectionPath;
 
-  _SharedTextTokenProvenance get tokenProvenance {
-    return _SharedTextTokenProvenance(
-      hasSelectedEndpoint: true,
-      followingSearchStart: tokenSearchStart,
-      followingSearchEnd: tokenSearchEnd,
-      leadingSearchEnd: canUseLeadingToken ? leadingTokenSearchEnd : 0,
-    );
-  }
+  _SharedTextTokenProvenance get tokenProvenance =>
+      tokenSearchWindow.provenance;
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
     return _isPreferredSharedTextEndpointCandidate(this, other);

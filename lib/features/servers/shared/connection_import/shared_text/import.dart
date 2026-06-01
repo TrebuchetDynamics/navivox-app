@@ -102,11 +102,10 @@ _SharedTextEndpointCandidate? _sharedTextEndpointCandidate(
   final followingToken = endpoint.followingToken(text);
   return _SharedTextEndpointCandidate(
     candidate: candidate,
-    tokenSearchStart: endpoint.tokenWindow.start,
-    tokenSearchEnd: endpoint.tokenWindow.end,
-    leadingTokenSearchEnd: endpoint.sourceWindow.start,
+    tokenSearchWindow: _SharedTextEndpointTokenSearchWindow.fromEndpoint(
+      endpoint,
+    ),
     hasFollowingToken: followingToken != null,
-    canUseLeadingToken: !endpoint.hasPriorEndpoint,
     hasConnectionPath: uri != null && _hasConnectionPath(uri),
   );
 }
