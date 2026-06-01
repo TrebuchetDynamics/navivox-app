@@ -8,7 +8,11 @@ import 'config_form_schema_wire.dart';
 export 'config_form_field_type.dart';
 
 class ConfigFormModel {
-  const ConfigFormModel({required this.rows, required this.sections});
+  ConfigFormModel({
+    required List<ConfigFormRow> rows,
+    required List<ConfigFormSection> sections,
+  }) : rows = List.unmodifiable(rows),
+       sections = List.unmodifiable(sections);
 
   factory ConfigFormModel.fromSchema({
     required Map<String, Object?>? schema,
@@ -16,7 +20,7 @@ class ConfigFormModel {
   }) {
     final rawFields = schema?['fields'];
     if (rawFields is! List) {
-      return const ConfigFormModel(rows: [], sections: []);
+      return ConfigFormModel(rows: const [], sections: const []);
     }
 
     final rows = <ConfigFormRow>[];
@@ -122,22 +126,24 @@ class ConfigSectionSelection {
 }
 
 class ConfigFormSection {
-  const ConfigFormSection({
+  ConfigFormSection({
     required this.id,
     required this.label,
-    required this.rows,
+    required List<ConfigFormRow> rows,
     this.description,
-  });
+  }) : rows = List.unmodifiable(rows);
 
-  const ConfigFormSection.general({required this.rows})
+  ConfigFormSection.general({required List<ConfigFormRow> rows})
     : id = 'general',
       label = 'General config',
-      description = null;
+      description = null,
+      rows = List.unmodifiable(rows);
 
-  const ConfigFormSection.other({required this.rows})
+  ConfigFormSection.other({required List<ConfigFormRow> rows})
     : id = 'other',
       label = 'Other config',
-      description = null;
+      description = null,
+      rows = List.unmodifiable(rows);
 
   final String id;
   final String label;

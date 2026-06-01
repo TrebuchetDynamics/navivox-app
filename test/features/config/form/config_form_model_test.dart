@@ -243,6 +243,27 @@ void main() {
     expect(model.rows[2].restartRequired, isTrue);
   });
 
+  test('schema parsing snapshots rows and sections against mutation', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'sections': [
+          {
+            'id': 'providers',
+            'fields': ['providers.default'],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default'},
+        ],
+      },
+      values: const {},
+    );
+
+    expect(() => model.rows.clear(), throwsUnsupportedError);
+    expect(() => model.sections.clear(), throwsUnsupportedError);
+    expect(() => model.sections.single.rows.clear(), throwsUnsupportedError);
+  });
+
   test('selects one config section by route id and reports misses', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
