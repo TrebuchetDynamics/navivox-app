@@ -11,7 +11,10 @@ void main() {
         lastConnectedAt: connectedAt,
       );
 
-      expect(session.isStaleAt(connectedAt.add(const Duration(days: 7))), isFalse);
+      expect(
+        session.isStaleAt(connectedAt.add(const Duration(days: 7))),
+        isFalse,
+      );
       expect(
         session.isStaleAt(connectedAt.add(const Duration(days: 7, seconds: 1))),
         isTrue,
