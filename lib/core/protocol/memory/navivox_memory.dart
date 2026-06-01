@@ -1,8 +1,10 @@
 import '../serialization/navivox_json.dart';
 import 'navivox_memory_database_label.dart';
+import 'navivox_memory_counts.dart';
 import 'navivox_memory_degradation.dart';
 import 'navivox_memory_overview_health.dart';
 
+export 'navivox_memory_counts.dart';
 export 'navivox_memory_overview_health.dart';
 
 enum NavivoxMemoryType {
@@ -301,18 +303,47 @@ class NavivoxMemoryOverview {
       ),
       health: health,
       totalTurns: navivoxMemoryCountFromJson(
-        countMap['turns'] ?? countMap['total_turns'],
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryTotalTurnsCountFields,
+        ),
       ),
       activeMemoryItems: navivoxMemoryCountFromJson(
-        countMap['memory_items'] ?? countMap['active_memory_items'],
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryActiveItemsCountFields,
+        ),
       ),
-      observations: navivoxMemoryCountFromJson(countMap['observations']),
-      conclusions: navivoxMemoryCountFromJson(countMap['conclusions']),
+      observations: navivoxMemoryCountFromJson(
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryObservationsCountFields,
+        ),
+      ),
+      conclusions: navivoxMemoryCountFromJson(
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryConclusionsCountFields,
+        ),
+      ),
       sessionSummaries: navivoxMemoryCountFromJson(
-        countMap['session_summaries'],
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemorySessionSummariesCountFields,
+        ),
       ),
-      entities: navivoxMemoryCountFromJson(countMap['entities']),
-      relationships: navivoxMemoryCountFromJson(countMap['relationships']),
+      entities: navivoxMemoryCountFromJson(
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryEntitiesCountFields,
+        ),
+      ),
+      relationships: navivoxMemoryCountFromJson(
+        navivoxMemoryCountFieldFromJson(
+          countMap,
+          navivoxMemoryRelationshipsCountFields,
+        ),
+      ),
       degradedReason: navivoxMemoryDegradedReasonFromJson(json),
       lastUpdatedAt: navivoxDateTimeFromJson(json['last_updated_at']),
     );
@@ -339,14 +370,4 @@ class NavivoxMemoryOverview {
     NavivoxMemoryHealth.degraded => 'Goncho degraded',
     NavivoxMemoryHealth.unavailable => 'Goncho unavailable',
   };
-}
-
-/// Decodes memory aggregate counters while preserving their invariant.
-///
-/// Memory overview counts are cardinalities from the gateway; malformed,
-/// missing, or negative values cannot represent real item totals and are
-/// surfaced as zero instead of leaking impossible counters into presentation.
-int navivoxMemoryCountFromJson(Object? value) {
-  final count = navivoxIntFromJson(value);
-  return count < 0 ? 0 : count;
 }

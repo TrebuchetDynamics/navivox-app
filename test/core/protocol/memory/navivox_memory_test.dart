@@ -124,6 +124,28 @@ void main() {
     expect(navivoxMemoryCountFromJson('-4'), 0);
   });
 
+  test('overview count fields accept nested snake and camel aliases', () {
+    final overview = NavivoxMemoryOverview.fromJson({
+      'counts': {
+        'totalTurns': 12,
+        'activeMemoryItems': '4',
+        'observations': 3,
+        'conclusions': 2,
+        'sessionSummaries': 1,
+        'entities': 5,
+        'relationships': 6,
+      },
+    });
+
+    expect(overview.totalTurns, 12);
+    expect(overview.activeMemoryItems, 4);
+    expect(overview.observations, 3);
+    expect(overview.conclusions, 2);
+    expect(overview.sessionSummaries, 1);
+    expect(overview.entities, 5);
+    expect(overview.relationships, 6);
+  });
+
   test('memory degradation aliases share non-empty reason semantics', () {
     final search = NavivoxMemorySearchResult.fromJson({
       'items': const [],
