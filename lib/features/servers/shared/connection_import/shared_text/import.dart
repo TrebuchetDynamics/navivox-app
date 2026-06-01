@@ -1,25 +1,22 @@
 part of '../parser.dart';
 
 SetupQrImageImport? _importFromSharedText(String text) {
-  final coreDescriptorCandidates =
-      _corePairingDescriptorCandidatesFromSharedText(
-        text,
-      ).toList(growable: false);
-  final coreImport = _bestCorePairingDescriptorImport(coreDescriptorCandidates);
+  final scan = _SharedTextConnectionImportScan.fromText(text);
+  final coreImport = _bestCorePairingDescriptorImport(
+    scan.coreDescriptorCandidates,
+  );
   if (coreImport != null) return coreImport;
 
-  final genericEndpoints = _endpointUrls(text).toList(growable: false);
   final embeddedUrlCandidate = _bestGenericUrlCandidateFromSharedText(
     text,
-    genericEndpoints,
+    scan.genericEndpoints,
   );
-  if (embeddedUrlCandidate == null &&
-      (coreDescriptorCandidates.isNotEmpty || genericEndpoints.isNotEmpty)) {
+  if (embeddedUrlCandidate == null && scan.hasEndpointLikeImportBlocker) {
     return null;
   }
   final tokenSourceText = _sharedTextWithoutMalformedCoreDescriptors(
     text,
-    coreDescriptorCandidates,
+    scan.coreDescriptorCandidates,
   );
   final token = _sharedTextImportToken(
     text: tokenSourceText,
@@ -34,6 +31,38 @@ SetupQrImageImport? _importFromSharedText(String text) {
     serverId: embeddedUrlCandidate?.candidate.serverId,
     profileId: embeddedUrlCandidate?.candidate.profileId,
   );
+}
+
+class _SharedTextConnectionImportScan {
+  const _SharedTextConnectionImportScan({
+    required this.coreDescriptorCandidates,
+    required this.genericEndpoints,
+    required this.hasUnsupportedConnectionEndpoint,
+  });
+
+  factory _SharedTextConnectionImportScan.fromText(String text) {
+    final coreDescriptorCandidates =
+        _corePairingDescriptorCandidatesFromSharedText(
+          text,
+        ).toList(growable: false);
+    final genericEndpoints = _endpointUrls(text).toList(growable: false);
+    return _SharedTextConnectionImportScan(
+      coreDescriptorCandidates: coreDescriptorCandidates,
+      genericEndpoints: genericEndpoints,
+      hasUnsupportedConnectionEndpoint: _hasUnsupportedConnectionEndpointUrl(
+        text,
+      ),
+    );
+  }
+
+  final List<_SharedTextCoreDescriptorCandidate> coreDescriptorCandidates;
+  final List<_SharedTextEndpoint> genericEndpoints;
+  final bool hasUnsupportedConnectionEndpoint;
+
+  bool get hasEndpointLikeImportBlocker =>
+      coreDescriptorCandidates.isNotEmpty ||
+      genericEndpoints.isNotEmpty ||
+      hasUnsupportedConnectionEndpoint;
 }
 
 String? _sharedTextImportToken({

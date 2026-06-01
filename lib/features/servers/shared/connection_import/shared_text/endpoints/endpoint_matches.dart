@@ -3,6 +3,21 @@ part of '../../parser.dart';
 Iterable<_SharedTextEndpoint> _endpointUrls(String text) =>
     _sharedTextEndpoints(text);
 
+bool _hasUnsupportedConnectionEndpointUrl(String text) {
+  for (final match in _uriLikeUrlPattern.allMatches(text)) {
+    final matchedText = match.group(0);
+    if (matchedText == null) continue;
+    final url = _trimCopiedEndpointUrl(matchedText);
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) continue;
+    if (!_hasConnectionPath(uri)) continue;
+    if (_isCorePairingDescriptorUri(uri)) continue;
+    if (_ConnectionImportEndpointUriIdentity.fromUri(uri).isSupported) continue;
+    return true;
+  }
+  return false;
+}
+
 Iterable<_SharedTextEndpointMatch> _endpointUrlMatches(String text) sync* {
   for (final match in _endpointUrlPattern.allMatches(text)) {
     final matchedText = match.group(0);
@@ -58,6 +73,11 @@ bool _hasConnectionPath(Uri uri) {
 }
 
 const _connectionPathSegments = {'connect', 'connection', 'pair', 'pairing'};
+
+final _uriLikeUrlPattern = RegExp(
+  r'\b[a-z][a-z0-9+.-]*://\S+',
+  caseSensitive: false,
+);
 
 String _attachedTokenLabelBoundaryPattern() {
   final punctuationAlternation = _attachedTokenLabelPunctuation
