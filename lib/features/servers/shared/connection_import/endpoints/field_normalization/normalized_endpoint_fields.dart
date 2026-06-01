@@ -111,10 +111,40 @@ bool _isValidConnectionImportWebSocketUri(Uri uri) {
 }
 
 bool _hasSafeConnectionImportEndpointIdentity(Uri uri) {
-  return uri.hasScheme &&
-      uri.host.isNotEmpty &&
-      uri.userInfo.isEmpty &&
-      _hasValidExplicitPort(uri);
+  return _ConnectionImportEndpointIdentitySafety.fromUri(uri).isSafe;
+}
+
+class _ConnectionImportEndpointIdentitySafety {
+  const _ConnectionImportEndpointIdentitySafety({
+    required this.hasScheme,
+    required this.hasHost,
+    required this.hasUserInfo,
+    required this.hasValidExplicitPort,
+    required this.hasFragment,
+  });
+
+  factory _ConnectionImportEndpointIdentitySafety.fromUri(Uri uri) {
+    return _ConnectionImportEndpointIdentitySafety(
+      hasScheme: uri.hasScheme,
+      hasHost: uri.host.isNotEmpty,
+      hasUserInfo: uri.userInfo.isNotEmpty,
+      hasValidExplicitPort: _hasValidExplicitPort(uri),
+      hasFragment: uri.hasFragment,
+    );
+  }
+
+  final bool hasScheme;
+  final bool hasHost;
+  final bool hasUserInfo;
+  final bool hasValidExplicitPort;
+  final bool hasFragment;
+
+  bool get isSafe =>
+      hasScheme &&
+      hasHost &&
+      !hasUserInfo &&
+      hasValidExplicitPort &&
+      !hasFragment;
 }
 
 String? _normalizeBaseUrlFromWebSocketUrl(String? normalizedWebSocketUrl) =>

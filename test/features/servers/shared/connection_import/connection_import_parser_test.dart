@@ -164,6 +164,30 @@ void main() {
     expect(jsonWebSocketUrl, isNull);
   });
 
+  test('rejects endpoint fragments instead of silently dropping hidden state', () {
+    final copiedBaseUrl = parseNavivoxConnectionImportPayload(
+      'https://gateway.example/connect#token=nvbx_hidden',
+    );
+    final copiedWebSocketUrl = parseNavivoxConnectionImportPayload(
+      'wss://gateway.example/stream#token=nvbx_hidden',
+    );
+    final sharedTextBaseUrl = parseNavivoxConnectionImportPayload(
+      'Open https://gateway.example/connect#token=nvbx_hidden to pair.',
+    );
+    final jsonBaseUrl = parseNavivoxConnectionImportPayload(
+      '{"base_url":"https://gateway.example/connect#token=nvbx_hidden"}',
+    );
+    final jsonWebSocketUrl = parseNavivoxConnectionImportPayload(
+      '{"websocket_url":"wss://gateway.example/stream#token=nvbx_hidden"}',
+    );
+
+    expect(copiedBaseUrl, isNull);
+    expect(copiedWebSocketUrl, isNull);
+    expect(sharedTextBaseUrl, isNull);
+    expect(jsonBaseUrl, isNull);
+    expect(jsonWebSocketUrl, isNull);
+  });
+
   test('rejects malformed core descriptors without salvaging tokens', () {
     final result = parseNavivoxConnectionImportPayload(
       'navivox://connect?'
