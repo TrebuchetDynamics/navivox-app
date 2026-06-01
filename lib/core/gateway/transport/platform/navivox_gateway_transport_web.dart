@@ -27,7 +27,9 @@ Future<String> _request({
   final completer = Completer<String>();
 
   request.open(method, uri.toString(), true);
-  headers.forEach(request.setRequestHeader);
+  headers.forEach((name, value) {
+    request.setRequestHeader(name, value);
+  });
   request.onLoad.listen((_) {
     final status = request.status;
     if (navivoxGatewayIsSuccessStatus(status)) {

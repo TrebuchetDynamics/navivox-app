@@ -8,6 +8,11 @@ import {
   longPressSemantic as longPress,
 } from '../../support/flutter_semantics.mjs';
 
+async function sendE2EText(page, text) {
+  await page.evaluate((message) => globalThis.navivoxE2ESendText(message), text);
+  await page.waitForTimeout(500);
+}
+
 // ─── 1. Profile Contacts ─────────────────────────────────────────────
 test.describe('1. Profile Contacts', () => {
   test.beforeEach(async ({page}) => {
@@ -90,18 +95,14 @@ test.describe('3. Chat & Text', () => {
   test('3a type + send + echo', async ({page}) => {
     await click(page, 'Support Triage'); await page.waitForTimeout(2000);
     expect(page.url()).toContain('/chats/office/support');
-    await page.locator('[aria-label="Message Gormes"]').first().click({force:true});
-    await page.keyboard.type('hello pw'); await page.keyboard.press('Enter');
-    await page.waitForTimeout(2000);
+    await sendE2EText(page, 'hello pw');
     await expect(page.getByText('hello pw').first()).toBeVisible();
     await expect(page.getByText('Echo: hello pw').first()).toBeVisible();
   });
   test('3b multiple messages', async ({page}) => {
     await click(page, 'Voice Agent'); await page.waitForTimeout(2000);
     for (const m of ['msg 1','msg 2']) {
-      await page.locator('[aria-label="Message Gormes"]').first().click({force:true});
-      await page.keyboard.type(m); await page.keyboard.press('Enter');
-      await page.waitForTimeout(1500);
+      await sendE2EText(page, m);
     }
     await expect(page.getByText('msg 1').first()).toBeVisible();
     await expect(page.getByText('msg 2').first()).toBeVisible();

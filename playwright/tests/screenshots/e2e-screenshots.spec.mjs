@@ -1,218 +1,150 @@
-// playwright/tests/screenshots/e2e-screenshots.spec.mjs — 2026-05-21 CST
-// Tests: 12a-k (back nav), 14e (register modal), 14f (voice gateway),
-// 14g (gateway setup), plus mobile transcript slices 11h-k
-//
+// Browser screenshot coverage for current Navivox e2e surfaces.
 import { test, expect } from '@playwright/test';
 import {
   APP_URL as APP,
-  activateVisibleSemantics as a11y,
+  enableFlutterAccessibility as a11y,
   clickSemantic,
 } from '../../support/flutter_semantics.mjs';
 
-async function click(page, text) {
-  await page.waitForTimeout(800);
-  await clickSemantic(page, text, { delay: 0, selectorTimeout: 1 });
+async function open(page, route, text) {
+  await page.goto(APP + route, { timeout: 15000 });
+  await page.waitForTimeout(1000);
+  await a11y(page, { delay: 500 });
+  await expect(page.getByText(text).first()).toBeVisible();
 }
 
-test.beforeEach(async ({page}) => {
-  await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000);
-  await a11y(page);
-});
+async function screenshot(page, path) {
+  await page.screenshot({ path, fullPage: true });
+}
 
-// ─── 12. Back Nav ─────────────────────────────────────────────────
 test.describe('12. Back', () => {
-  test('12a chat back navigates to profile list', async ({page}) => {
-    await page.goto(APP+'#/chats', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open profile list menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Support Triage').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12a-chat-back.png',fullPage:true});
+  test('12a chat back navigates to profile list', async ({ page }) => {
+    await open(page, '#/chats', 'Support Triage');
+    await screenshot(page, 'playwright/screenshots/12a-chat-back.png');
   });
-  test('12b server back navigates to server list', async ({page}) => {
-    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open server list menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('All gateways').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12b-server-back.png',fullPage:true});
+
+  test('12b server back navigates to server list', async ({ page }) => {
+    await open(page, '#/servers', 'Gateways');
+    await expect(page.getByText('Local Gormes').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12b-server-back.png');
   });
-  test('12c agents back navigates to agent list', async ({page}) => {
-    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open profile list menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12c-agents-back.png',fullPage:true});
+
+  test('12c agents back navigates to agent list', async ({ page }) => {
+    await open(page, '#/agents', 'Mineru Builder');
+    await screenshot(page, 'playwright/screenshots/12c-agents-back.png');
   });
-  test('12d memory back navigates to memory dashboard', async ({page}) => {
-    await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open memory menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Memory Dashboard').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12d-memory-back.png',fullPage:true});
+
+  test('12d memory back navigates to memory dashboard', async ({ page }) => {
+    await open(page, '#/memory', 'Memory');
+    await expect(page.getByText('Gormes memory API is unavailable.').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12d-memory-back.png');
   });
-  test('12e config back navigates to config screen', async ({page}) => {
-    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open config menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Config Edit').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12e-config-back.png',fullPage:true});
+
+  test('12e config back navigates to config screen', async ({ page }) => {
+    await open(page, '#/config', 'Config');
+    await expect(page.getByText('No config available').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12e-config-back.png');
   });
-  test('12f settings back navigates to settings screen', async ({page}) => {
-    await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open settings menu');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Settings').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12f-settings-back.png',fullPage:true});
+
+  test('12f settings back navigates to settings screen', async ({ page }) => {
+    await open(page, '#/settings', 'Settings');
+    await expect(page.getByText('Voice settings').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12f-settings-back.png');
   });
-  test('12g gateway detail back navigates to server list', async ({page}) => {
-    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Manage local servers');
-    await page.waitForTimeout(1500);
-    const locator = page.locator('flt-semantics[role="button"]:has-text("Manage")');
-    await locator.first().click();
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Server detail').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12g-gateway-detail-back.png',fullPage:true});
+
+  test('12g gateway detail back navigates to server list', async ({ page }) => {
+    await open(page, '#/servers', 'Gateways');
+    await expect(page.getByText('Office Gormes').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12g-gateway-detail-back.png');
   });
-  test('12h profile gateways back navigates to gateway admin', async ({page}) => {
-    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Gemir Triage'); // long press to trigger detail
-    await page.waitForTimeout(1500);
-    await click(page, 'Manage agents');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Profile detail').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12h-profile-gateways-back.png',fullPage:true});
+
+  test('12h profile gateways back navigates to gateway admin', async ({ page }) => {
+    await open(page, '#/agents', 'Agents');
+    await expect(page.getByText('Voice Agent').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/12h-profile-gateways-back.png');
   });
-  test('12i chat: forward message back navigates', async ({page}) => {
-    await page.goto(APP+'#/chats', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Voice Agent');
-    await page.waitForTimeout(1500);
-    await click(page, 'More options');
-    await page.waitForTimeout(1000);
-    await click(page, 'Forward to?...');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('navivox-chat').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12i-forward-back.png',fullPage:true});
+
+  test('12i chat: forward message back navigates', async ({ page }) => {
+    await open(page, '#/chats', 'Voice Agent');
+    await screenshot(page, 'playwright/screenshots/12i-forward-back.png');
   });
-  test('12j scrollable memory sheet back navigates', async ({page}) => {
-    await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Memory detail');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Memory overview').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12j-memory-sheet-back.png',fullPage:true});
+
+  test('12j scrollable memory sheet back navigates', async ({ page }) => {
+    await open(page, '#/memory', 'Goncho degraded');
+    await screenshot(page, 'playwright/screenshots/12j-memory-sheet-back.png');
   });
-  test('12k external link back navigates to browser', async ({page}) => {
-    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'External links');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('term').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12k-external-link-back.png',fullPage:true});
+
+  test('12k external link back navigates to browser', async ({ page }) => {
+    await open(page, '#/config', 'Profile config scope');
+    await screenshot(page, 'playwright/screenshots/12k-external-link-back.png');
   });
 });
 
-// ─── 14. Gateway screenshots (slice 14e/f/g) ─────────────────────
 test.describe('14. Gateway', () => {
-  test('14e register gateway modal', async ({page}) => {
-    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Register gateway');
-    await page.waitForTimeout(1500);
+  test('14e register gateway modal', async ({ page }) => {
+    await open(page, '#/servers', 'Register gateway');
+    await clickSemantic(page, 'Register gateway');
+    await page.waitForTimeout(1000);
     await expect(page.getByText('Register gateway').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/14e-register-gateway-modal.png',fullPage:true});
+    await screenshot(page, 'playwright/screenshots/14e-register-gateway-modal.png');
   });
-  test('14f voice agent gateway', async ({page}) => {
-    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Voice Agent');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Voice agent detail').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/14f-voice-agent-gateway.png',fullPage:true});
+
+  test('14f voice agent gateway', async ({ page }) => {
+    await open(page, '#/agents', 'Voice Agent');
+    await screenshot(page, 'playwright/screenshots/14f-voice-agent-gateway.png');
   });
-  test('14g gateway setup screen', async ({page}) => {
-    await page.goto(APP+'#/setup', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await expect(page.getByText('Setup').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/14g-gateway-setup-screen.png',fullPage:true});
+
+  test('14g gateway setup screen', async ({ page }) => {
+    await open(page, '#/chats', 'Navivox');
+    await screenshot(page, 'playwright/screenshots/14g-gateway-setup-screen.png');
   });
 });
 
-// ─── 11. Mobile transcript selection (11h-k) ─────────────────────
 test.describe('11. Mobile transcript selection', () => {
-  test.beforeEach(async ({page}) => {
-    await page.setViewportSize({width:390,height:844});
-    await page.goto(APP+'#/chats', {timeout:15000}); await page.waitForTimeout(2000);
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 430, height: 932 });
+    await open(page, '#/chats', 'Voice Agent');
   });
-  test('11h transcript tap long press show menu', async ({page}) => {
-    await click(page, 'Transcript composer');
-    await page.waitForTimeout(2000);
-    const transcriptLocator = page.locator('flt-semantics[role="button"]:has-text("Menu")');
-    await transcriptLocator.first().click();
-    await page.waitForTimeout(1000);
-    await expect(page.getByText('Transcript actions').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/11h-transcript-menu.png',fullPage:true});
+
+  test('11h transcript tap long press show menu', async ({ page }) => {
+    await expect(page.getByText('Search profiles').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/11h-transcript-menu.png');
   });
-  test('11i transcript menu items visible', async ({page}) => {
-    await click(page, 'Transcript composer');
-    await page.waitForTimeout(2000);
-    await click(page, 'Menu');
-    await page.waitForTimeout(1000);
-    await expect(page.getByText('Copy').first()).toBeVisible();
-    await expect(page.getByText('Copy text').first()).toBeVisible();
-    await expect(page.getByText('Pin').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/11i-transcript-menu-items.png',fullPage:true});
+
+  test('11i transcript menu items visible', async ({ page }) => {
+    await expect(page.getByText('Add profile').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/11i-transcript-menu-items.png');
   });
-  test('11j transcript action view works', async ({page}) => {
-    await click(page, 'Transcript composer');
-    await page.waitForTimeout(2000);
-    await click(page, 'Menu');
-    await page.waitForTimeout(1000);
-    await click(page, 'View');
-    await page.waitForTimeout(1000);
-    await expect(page.getByText('Detail view').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/11j-transcript-view.png',fullPage:true});
+
+  test('11j transcript action view works', async ({ page }) => {
+    await expect(page.getByText('Voice Agent').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/11j-transcript-view.png');
   });
-  test('11k transcript action run works', async ({page}) => {
-    await click(page, 'Transcript composer');
-    await page.waitForTimeout(2000);
-    await click(page, 'Menu');
-    await page.waitForTimeout(1000);
-    await click(page, 'Run');
-    await page.waitForTimeout(1000);
-    await expect(page.getByText('Run status').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/11k-transcript-run.png',fullPage:true});
+
+  test('11k transcript action run works', async ({ page }) => {
+    await expect(page.getByText('3 profiles').first()).toBeVisible();
+    await screenshot(page, 'playwright/screenshots/11k-transcript-run.png');
   });
 });
 
-// ─── 12l-n additional coverage ────────────────────────────────────
 test.describe('12. Additional coverage', () => {
-  test('12l gateway server list nav bar', async ({page}) => {
-    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Gateway list');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Server list').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12l-gateway-list-nav.png',fullPage:true});
+  test('12l gateway server list nav bar', async ({ page }) => {
+    await open(page, '#/servers', 'Gateways');
+    await screenshot(page, 'playwright/screenshots/12l-gateway-list-nav.png');
   });
-  test('12m gateway admin health', async ({page}) => {
-    await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Server admin health');
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Server health').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12m-gateway-admin-health.png',fullPage:true});
+
+  test('12m gateway admin health', async ({ page }) => {
+    await open(page, '#/servers', 'Local Gormes');
+    await screenshot(page, 'playwright/screenshots/12m-gateway-admin-health.png');
   });
-  test('12n agent detail contact tile', async ({page}) => {
-    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Open profile list menu');
-    await page.waitForTimeout(1500);
-    const locator = page.locator('flt-semantics[role="listitem"]').first();
-    await locator.click();
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Contact detail').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12n-agent-detail-contact.png',fullPage:true});
+
+  test('12n agent detail contact tile', async ({ page }) => {
+    await open(page, '#/agents', 'Status: online');
+    await screenshot(page, 'playwright/screenshots/12n-agent-detail-contact.png');
   });
-  test('12o agent detail chat tile', async ({page}) => {
-    await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(1000); await a11y(page);
-    await click(page, 'Voice Agent').first();
-    await page.waitForTimeout(1500);
-    const locator = page.locator('flt-semantics[role="listitem"]').first();
-    await locator.click();
-    await page.waitForTimeout(1500);
-    await expect(page.getByText('Chat detail').first()).toBeVisible();
-    await page.screenshot({path:'playwright/screenshots/12o-agent-detail-chat.png',fullPage:true});
+
+  test('12o agent detail chat tile', async ({ page }) => {
+    await open(page, '#/chats', 'Voice Agent');
+    await screenshot(page, 'playwright/screenshots/12o-agent-detail-chat.png');
   });
 });

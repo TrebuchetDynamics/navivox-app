@@ -81,6 +81,9 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   void sendText(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
+    final active = _state.activeProfileContact;
+    final serverId = active?.serverId ?? _state.activeServerId;
+    final profileId = active?.profileId;
     final messages = Map<String, NavivoxChatMessage>.from(_state.messages);
     final id = 'user-${messages.length + 1}';
     messages[id] = NavivoxChatMessage(
@@ -89,6 +92,8 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: DateTime.now(),
       text: trimmed,
+      serverId: serverId,
+      profileId: profileId,
     );
     final aid = 'assistant-${messages.length + 1}';
     messages[aid] = NavivoxChatMessage(
@@ -97,6 +102,8 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
       kind: NavivoxMessageKind.text,
       createdAt: DateTime.now(),
       text: 'Echo: $trimmed',
+      serverId: serverId,
+      profileId: profileId,
     );
     _state = _state.copyWith(messages: messages);
     notifyListeners();
