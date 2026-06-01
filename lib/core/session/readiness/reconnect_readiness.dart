@@ -1,5 +1,4 @@
-import '../../gateway/navivox_gateway_protocol.dart';
-import '../../protocol/navivox_json.dart';
+import '../../gateway/capabilities/navivox_gateway_capabilities.dart';
 
 class ReconnectReadiness {
   const ReconnectReadiness({
@@ -28,7 +27,7 @@ class ReconnectReadiness {
       ReconnectReadinessKind.blocked => ReconnectReadiness(
         kind: ReconnectReadinessKind.blocked,
         message: 'Reconnect cannot be saved on this connection.',
-        recoveryMessage: navivoxOptionalStringFromJson(durable.blockedReason),
+        recoveryMessage: durable.readinessRecoveryMessage,
       ),
       ReconnectReadinessKind.available => const ReconnectReadiness(
         kind: ReconnectReadinessKind.available,

@@ -165,13 +165,33 @@ class NavivoxDurableReconnectCapability {
   final String effectiveSecurity;
   final String blockedReason;
 
+  List<String> get missingIssueContractFields {
+    final missing = <String>[];
+    if (!navivoxGatewayHasText(issueEndpoint)) missing.add('issue endpoint');
+    if (authMethods.isEmpty) missing.add('auth methods');
+    if (platforms.isEmpty) missing.add('platforms');
+    return List.unmodifiable(missing);
+  }
+
+  String? get readinessRecoveryMessage {
+    final suppliedReason = navivoxOptionalStringFromJson(blockedReason);
+    if (suppliedReason != null) return suppliedReason;
+    final missingFields = missingIssueContractFields;
+    if (missingFields.isEmpty) return null;
+    return 'Durable reconnect is advertised but missing ${_readinessList(missingFields)}.';
+  }
+
   ReconnectReadinessKind get readinessKind {
     if (!supported) return ReconnectReadinessKind.unsupported;
-    if (navivoxGatewayHasText(blockedReason)) {
-      return ReconnectReadinessKind.blocked;
-    }
+    if (readinessRecoveryMessage != null) return ReconnectReadinessKind.blocked;
     return ReconnectReadinessKind.available;
   }
+}
+
+String _readinessList(List<String> items) {
+  if (items.length <= 1) return items.join();
+  if (items.length == 2) return '${items[0]} and ${items[1]}';
+  return '${items.sublist(0, items.length - 1).join(', ')}, and ${items.last}';
 }
 
 enum ReconnectReadinessKind { unknown, unsupported, blocked, available, saved }

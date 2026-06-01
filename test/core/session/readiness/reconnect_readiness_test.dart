@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/gateway/capabilities/navivox_gateway_capabilities.dart';
 import 'package:navivox/core/session/reconnect_readiness.dart';
 
 import '../support/reconnect_capabilities_test_support.dart';
@@ -43,6 +44,25 @@ void main() {
   });
 
   test(
+    'blocks supported durable reconnect when issue contract is incomplete',
+    () {
+      final readiness = ReconnectReadiness.fromCapabilities(
+        reconnectCapabilityDocument({
+          'supported': true,
+          'auth_methods': ['device_key_challenge'],
+          'platforms': ['android'],
+        }),
+      );
+
+      expect(readiness.kind, ReconnectReadinessKind.blocked);
+      expect(
+        readiness.recoveryMessage,
+        'Durable reconnect is advertised but missing issue endpoint.',
+      );
+    },
+  );
+
+  test(
     'reports available but not saved when durable reconnect is eligible',
     () {
       final readiness = ReconnectReadiness.fromCapabilities(
@@ -63,4 +83,3 @@ void main() {
     },
   );
 }
-
