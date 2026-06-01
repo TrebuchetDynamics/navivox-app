@@ -34,6 +34,17 @@ void main() {
       'docs/runbooks/web-qa-dl-mphmcspi-bb46a2.md': 'web-qa/dl-mphmcspi-bb46a2.md',
     };
 
+    for (final path in expectedRunbooks) {
+      final text = File(path).readAsStringSync();
+      for (final facadePath in compatibilityFacades.keys) {
+        expect(
+          text,
+          isNot(contains(facadePath)),
+          reason: '$path should link canonical moved runbooks, not $facadePath',
+        );
+      }
+    }
+
     for (final entry in compatibilityFacades.entries) {
       final text = File(entry.key).readAsStringSync();
       expect(text, contains('Moved to'));
