@@ -1,4 +1,5 @@
 import '../serialization/navivox_json.dart';
+import 'pairing_descriptor_query_pair.dart';
 
 /// Query-field access for the `navivox://connect` pairing descriptor.
 ///
@@ -12,10 +13,13 @@ class PairingDescriptorQueryFields {
     required this.descriptor,
     required Map<String, List<String>> queryParametersAll,
     required String rawQuery,
-  }) : _orderedPairs = _orderedQueryPairs(rawQuery, queryParametersAll);
+  }) : _orderedPairs = pairingDescriptorOrderedQueryPairs(
+         rawQuery: rawQuery,
+         queryParametersAll: queryParametersAll,
+       );
 
   final String descriptor;
-  final List<_PairingDescriptorQueryPair> _orderedPairs;
+  final List<PairingDescriptorQueryPair> _orderedPairs;
 
   String required(String name) {
     final value = optional(name);
@@ -47,7 +51,7 @@ class PairingDescriptorQueryFields {
 }
 
 String? _pairingDescriptorFirstScalarQueryValue(
-  Iterable<_PairingDescriptorQueryPair> pairs,
+  Iterable<PairingDescriptorQueryPair> pairs,
   String name,
 ) {
   final normalizedName = navivoxCanonicalWireFieldName(name);
@@ -57,51 +61,4 @@ String? _pairingDescriptorFirstScalarQueryValue(
     if (value != null) return value;
   }
   return null;
-}
-
-List<_PairingDescriptorQueryPair> _orderedQueryPairs(
-  String rawQuery,
-  Map<String, List<String>> queryParametersAll,
-) {
-  if (rawQuery.isNotEmpty) {
-    return rawQuery
-        .split('&')
-        .map(_PairingDescriptorQueryPair.parse)
-        .toList(growable: false);
-  }
-
-  return queryParametersAll.entries
-      .expand(
-        (entry) => entry.value.map(
-          (value) => _PairingDescriptorQueryPair(
-            normalizedName: navivoxCanonicalWireFieldName(entry.key),
-            value: value,
-          ),
-        ),
-      )
-      .toList(growable: false);
-}
-
-class _PairingDescriptorQueryPair {
-  const _PairingDescriptorQueryPair({
-    required this.normalizedName,
-    required this.value,
-  });
-
-  factory _PairingDescriptorQueryPair.parse(String component) {
-    final separator = component.indexOf('=');
-    final rawName = separator == -1
-        ? component
-        : component.substring(0, separator);
-    final rawValue = separator == -1 ? '' : component.substring(separator + 1);
-    return _PairingDescriptorQueryPair(
-      normalizedName: navivoxCanonicalWireFieldName(
-        Uri.decodeQueryComponent(rawName),
-      ),
-      value: Uri.decodeQueryComponent(rawValue),
-    );
-  }
-
-  final String normalizedName;
-  final String value;
 }
