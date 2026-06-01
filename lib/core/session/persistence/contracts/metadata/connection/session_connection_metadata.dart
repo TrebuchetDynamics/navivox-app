@@ -1,6 +1,6 @@
-import '../../../../../protocol/navivox_endpoint_uri.dart';
 import '../../../../../protocol/navivox_json.dart';
 
+import 'saved_session_base_url.dart';
 import 'saved_session_web_socket_endpoint.dart';
 
 /// Normalized non-secret gateway connection metadata shared by saved-session
@@ -22,11 +22,15 @@ class SessionConnectionMetadata {
       throw ArgumentError.value(baseUrl, 'baseUrl', 'must not be blank');
     }
 
-    return _fromNormalizedValues(
+    final metadata = _fromNormalizedValues(
       baseUrl: normalizedBaseUrl,
       webSocketUrl: webSocketUrl,
       gatewayId: gatewayId,
     );
+    if (metadata == null) {
+      throw ArgumentError.value(baseUrl, 'baseUrl', 'must be a safe endpoint');
+    }
+    return metadata;
   }
 
   static SessionConnectionMetadata? maybeFromStoredValues({
@@ -44,13 +48,16 @@ class SessionConnectionMetadata {
     );
   }
 
-  static SessionConnectionMetadata _fromNormalizedValues({
+  static SessionConnectionMetadata? _fromNormalizedValues({
     required String baseUrl,
     Object? webSocketUrl,
     Object? gatewayId,
   }) {
+    final durableBaseUrl = sanitizedSavedSessionBaseUrl(baseUrl);
+    if (durableBaseUrl == null) return null;
+
     return SessionConnectionMetadata(
-      baseUrl: sanitizedSavedSessionBaseUrl(baseUrl),
+      baseUrl: durableBaseUrl,
       webSocketUrl: sanitizedSavedSessionWebSocketUrl(webSocketUrl),
       gatewayId: navivoxOptionalStringFromJson(gatewayId),
     );
@@ -66,9 +73,10 @@ class SessionConnectionMetadata {
 /// Saved sessions are non-secret metadata. Connection/setup URLs can be pasted
 /// with bootstrap token query params, so persistence strips path/query/fragment
 /// whenever an endpoint origin can be derived. Non-endpoint legacy values keep
-/// their existing trimmed compatibility behavior.
-String sanitizedSavedSessionBaseUrl(String value) {
-  return navivoxHttpBaseUrlFromEndpointString(value) ?? value;
+/// their existing trimmed compatibility behavior. Unsafe URL-shaped values that
+/// cannot be sanitized are rejected.
+String? sanitizedSavedSessionBaseUrl(String value) {
+  return durableSavedSessionBaseUrlFromMetadata(value);
 }
 
 /// Returns a websocket endpoint without non-durable bootstrap state.

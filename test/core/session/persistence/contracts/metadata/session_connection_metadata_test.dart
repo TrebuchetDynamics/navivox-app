@@ -1,9 +1,73 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_base_url.dart';
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_web_socket_endpoint.dart';
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/session_connection_metadata.dart';
 
 void main() {
+  group('sanitizedSavedSessionBaseUrl', () {
+    test('strips setup path and bootstrap-only URL state', () {
+      expect(
+        sanitizedSavedSessionBaseUrl(
+          ' https://gateway.example:9443/setup?pairing_token=secret#handoff ',
+        ),
+        'https://gateway.example:9443',
+      );
+    });
+
+    test('preserves non-url legacy base URL metadata', () {
+      expect(
+        sanitizedSavedSessionBaseUrl(' gateway.local:8765/custom/setup '),
+        'gateway.local:8765/custom/setup',
+      );
+    });
+
+    test(
+      'rejects malformed endpoint URLs instead of throwing or leaking state',
+      () {
+        expect(
+          sanitizedSavedSessionBaseUrl(
+            'https://gateway.example:bad/setup?pairing_token=secret#handoff',
+          ),
+          isNull,
+        );
+        expect(
+          SessionConnectionMetadata.maybeFromStoredValues(
+            baseUrl:
+                'https://gateway.example:bad/setup?pairing_token=secret#handoff',
+          ),
+          isNull,
+        );
+      },
+    );
+  });
+
+  group('SavedSessionBaseUrlMetadata', () {
+    test('classifies absent, durable, rejected, and legacy inputs', () {
+      expect(SavedSessionBaseUrlMetadata.fromStoredValue(' ').isAbsent, isTrue);
+
+      final durable = SavedSessionBaseUrlMetadata.fromStoredValue(
+        'https://gateway.example/setup?pairing_token=secret#handoff',
+      );
+      expect(durable.durableBaseUrl, 'https://gateway.example');
+      expect(durable.isLegacyText, isFalse);
+      expect(durable.isRejectedUrl, isFalse);
+
+      final rejected = SavedSessionBaseUrlMetadata.fromStoredValue(
+        'https://gateway.example:bad/setup?pairing_token=secret#handoff',
+      );
+      expect(rejected.durableBaseUrl, isNull);
+      expect(rejected.isRejectedUrl, isTrue);
+      expect(rejected.isAbsent, isFalse);
+
+      final legacy = SavedSessionBaseUrlMetadata.fromStoredValue(
+        ' gateway.local:8765/setup ',
+      );
+      expect(legacy.durableBaseUrl, 'gateway.local:8765/setup');
+      expect(legacy.isLegacyText, isTrue);
+    });
+  });
+
   group('sanitizedSavedSessionWebSocketUrl', () {
     test('strips non-durable authority/query/fragment secret material', () {
       expect(
