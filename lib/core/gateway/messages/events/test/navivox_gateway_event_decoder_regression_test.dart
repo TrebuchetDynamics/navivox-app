@@ -9,6 +9,7 @@ void main() {
   decodedObjectWithBlankEventTypeBecomesBadResponseEvent();
   decodedObjectWithNonStringEventTypeBecomesBadResponseEvent();
   decodedMapWithNonStringKeyBecomesBadResponseEvent();
+  decodedObjectWithMalformedMetadataDoesNotThrow();
 }
 
 void invalidJsonStringBecomesBadResponseEvent() {
@@ -95,6 +96,18 @@ void decodedMapWithNonStringKeyBecomesBadResponseEvent() {
     event.code == navivoxGatewayBadResponseCode,
     'adapter maps with non-string keys should be bad_response',
   );
+}
+
+void decodedObjectWithMalformedMetadataDoesNotThrow() {
+  final event = navivoxGatewayEventFromWire({
+    'type': 'message',
+    'text': 'hello',
+    'metadata': {1: 'not a json object'},
+  });
+
+  _expect(event.type == 'message', 'malformed metadata should not drop event');
+  _expect(event.text == 'hello', 'malformed metadata should preserve text');
+  _expect(event.metadata.isEmpty, 'malformed metadata should decode as empty');
 }
 
 void _expect(bool condition, String message) {

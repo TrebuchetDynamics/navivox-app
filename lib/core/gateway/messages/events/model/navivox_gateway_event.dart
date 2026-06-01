@@ -1,5 +1,5 @@
 import '../../../../protocol/navivox_json.dart'
-    show navivoxMapFieldFromJson, navivoxOptionalStringFromJson;
+    show navivoxOptionalStringFromJson;
 import '../../../shared/navivox_gateway_json.dart';
 import '../../contracts/navivox_gateway_message_fields.dart';
 
@@ -25,7 +25,7 @@ class NavivoxGatewayEvent {
   });
 
   factory NavivoxGatewayEvent.fromJson(Map<String, Object?> json) {
-    final metadata = navivoxMapFieldFromJson(json, navivoxGatewayMetadataField);
+    final metadata = navivoxGatewayEventMetadataFromJson(json);
     final contact = navivoxGatewayOptionalObjectFromJson(json['contact']);
     return NavivoxGatewayEvent(
       type: navivoxGatewayRawStringField(json, navivoxGatewayTypeField),
@@ -71,6 +71,15 @@ class NavivoxGatewayEvent {
   final Map<String, Object?>? contact;
 
   bool get isError => type == navivoxGatewayErrorEventType;
+}
+
+Map<String, Object?> navivoxGatewayEventMetadataFromJson(
+  Map<String, Object?> json,
+) {
+  return navivoxGatewayOptionalObjectFromJson(
+        json[navivoxGatewayMetadataField],
+      ) ??
+      const {};
 }
 
 String? _runRecordReferenceFromJson(
