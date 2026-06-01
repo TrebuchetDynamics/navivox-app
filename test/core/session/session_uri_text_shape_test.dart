@@ -76,6 +76,27 @@ void main() {
       expect(safe.hasNonDurableUriStateDelimiter, isFalse);
       expect(safe.unsafeLegacyDelimiters, isEmpty);
     });
+
+    test('exposes unsafe preservation reasons separately from shape', () {
+      final explicitUrl = SavedSessionUriTextFacts.fromText(
+        'wss://gateway.example/stream',
+      );
+      final legacyWithTokenState = SavedSessionUriTextFacts.fromText(
+        'gateway.example:8765/stream?token=secret#handoff',
+      );
+      final safeLegacy = SavedSessionUriTextFacts.fromText(
+        'gateway.example:8765/stream',
+      );
+
+      expect(explicitUrl.unsafeLegacyPreservationReasons, [
+        SavedSessionUriTextUnsafeReason.explicitUriScheme,
+      ]);
+      expect(legacyWithTokenState.unsafeLegacyPreservationReasons, [
+        SavedSessionUriTextUnsafeReason.query,
+        SavedSessionUriTextUnsafeReason.fragment,
+      ]);
+      expect(safeLegacy.unsafeLegacyPreservationReasons, isEmpty);
+    });
   });
 
   group('saved session URI text classification', () {

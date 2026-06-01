@@ -18,6 +18,18 @@ enum SavedSessionUriTextShape {
   };
 }
 
+/// Reasons saved-session metadata text must not be preserved verbatim.
+///
+/// These are replayable evidence for the reconnect-safety decision: explicit
+/// URI schemes may hide authority/userinfo semantics, while legacy-shaped text
+/// can still carry one-time pairing state in URI subfields.
+enum SavedSessionUriTextUnsafeReason {
+  explicitUriScheme,
+  query,
+  fragment,
+  userInfo,
+}
+
 /// Legacy-shaped metadata delimiters that can hide one-time pairing state.
 enum SavedSessionUriTextUnsafeDelimiter { query, fragment, userInfo }
 
@@ -44,11 +56,34 @@ class SavedSessionUriTextFacts {
   final SavedSessionUriTextSyntax syntax;
   final SavedSessionUriTextShape shape;
 
+  /// Replayable reasons the raw text must not be kept as compatibility text.
+  List<SavedSessionUriTextUnsafeReason> get unsafeLegacyPreservationReasons {
+    return [
+      if (shape.isExplicitUriScheme)
+        SavedSessionUriTextUnsafeReason.explicitUriScheme,
+      for (final delimiter in syntax.unsafeLegacyDelimiters)
+        _unsafeReasonFromDelimiter(delimiter),
+    ];
+  }
+
   /// True when the raw text is visibly URI-shaped or carries URI subfields that
   /// can hold one-time pairing credentials and must not be kept as legacy text.
   bool get isUnsafeToPreserveAsLegacy {
-    return shape.isExplicitUriScheme || syntax.hasNonDurableUriStateDelimiter;
+    return unsafeLegacyPreservationReasons.isNotEmpty;
   }
+}
+
+SavedSessionUriTextUnsafeReason _unsafeReasonFromDelimiter(
+  SavedSessionUriTextUnsafeDelimiter delimiter,
+) {
+  return switch (delimiter) {
+    SavedSessionUriTextUnsafeDelimiter.query =>
+      SavedSessionUriTextUnsafeReason.query,
+    SavedSessionUriTextUnsafeDelimiter.fragment =>
+      SavedSessionUriTextUnsafeReason.fragment,
+    SavedSessionUriTextUnsafeDelimiter.userInfo =>
+      SavedSessionUriTextUnsafeReason.userInfo,
+  };
 }
 
 SavedSessionUriTextShape _classifySavedSessionUriTextSyntax(
