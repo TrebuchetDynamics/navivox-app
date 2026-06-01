@@ -12,13 +12,9 @@ class PairingDescriptorQueryFields {
     required this.descriptor,
     required Map<String, List<String>> queryParametersAll,
     required String rawQuery,
-  }) : _firstValues = navivoxFirstNonBlankQueryParameterValues(
-         queryParametersAll,
-       ),
-       _orderedPairs = _orderedQueryPairs(rawQuery);
+  }) : _orderedPairs = _orderedQueryPairs(rawQuery, queryParametersAll);
 
   final String descriptor;
-  final Map<String, String> _firstValues;
   final List<_PairingDescriptorQueryPair> _orderedPairs;
 
   String required(String name) {
@@ -30,7 +26,7 @@ class PairingDescriptorQueryFields {
   }
 
   String? optional(String name) {
-    return navivoxFirstStringFieldFromJson(_firstValues, [name]);
+    return _pairingDescriptorFirstScalarQueryValue(_orderedPairs, name);
   }
 
   bool boolean(String name) {
@@ -53,11 +49,39 @@ class PairingDescriptorQueryFields {
 String normalizePairingDescriptorFieldName(String value) =>
     value.toLowerCase().replaceAll('_', '');
 
-List<_PairingDescriptorQueryPair> _orderedQueryPairs(String rawQuery) {
-  if (rawQuery.isEmpty) return const [];
-  return rawQuery
-      .split('&')
-      .map(_PairingDescriptorQueryPair.parse)
+String? _pairingDescriptorFirstScalarQueryValue(
+  Iterable<_PairingDescriptorQueryPair> pairs,
+  String name,
+) {
+  final normalizedName = normalizePairingDescriptorFieldName(name);
+  for (final pair in pairs) {
+    if (pair.normalizedName != normalizedName) continue;
+    final value = navivoxOptionalStringFromJson(pair.value);
+    if (value != null) return value;
+  }
+  return null;
+}
+
+List<_PairingDescriptorQueryPair> _orderedQueryPairs(
+  String rawQuery,
+  Map<String, List<String>> queryParametersAll,
+) {
+  if (rawQuery.isNotEmpty) {
+    return rawQuery
+        .split('&')
+        .map(_PairingDescriptorQueryPair.parse)
+        .toList(growable: false);
+  }
+
+  return queryParametersAll.entries
+      .expand(
+        (entry) => entry.value.map(
+          (value) => _PairingDescriptorQueryPair(
+            normalizedName: normalizePairingDescriptorFieldName(entry.key),
+            value: value,
+          ),
+        ),
+      )
       .toList(growable: false);
 }
 

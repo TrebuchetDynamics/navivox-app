@@ -34,4 +34,21 @@ void main() {
       ]);
     },
   );
+
+  test('uses first non-blank scalar alias in descriptor query order', () {
+    final descriptor = NavivoxPairingDescriptor.parse(
+      'navivox://connect?'
+      'websocketUrl=ws%3A%2F%2F127.0.0.1%3A8765%2Fv1%2Fnavivox%2Fstream&'
+      'websocket_url=ws%3A%2F%2Fshadow.example%2Fstream&'
+      'tokenRequired=true&'
+      'restToken=first-token&'
+      'rest_token=shadow-token&'
+      'serverId=first-server&'
+      'server_id=shadow-server',
+    );
+
+    expect(descriptor.webSocketUri.host, '127.0.0.1');
+    expect(descriptor.token, 'first-token');
+    expect(descriptor.serverId, 'first-server');
+  });
 }
