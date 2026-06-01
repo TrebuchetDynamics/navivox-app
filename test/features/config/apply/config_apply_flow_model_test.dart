@@ -232,4 +232,25 @@ void main() {
     expect(() => flow.changes.clear(), throwsUnsupportedError);
     expect(flow.changes.single.path, 'providers.default');
   });
+
+  test('freezes validation message snapshots for draft changes', () {
+    final validationMessages = ['Provider is not available.'];
+
+    final change = ConfigDraftChange(
+      path: 'providers.default',
+      label: 'Default provider',
+      oldDisplayValue: 'openai',
+      newDisplayValue: 'missing',
+      applyValue: 'missing',
+      isSecret: false,
+      requiresConfirmation: false,
+      restartRequired: false,
+      validationMessages: validationMessages,
+    );
+
+    validationMessages.add('Mutated after snapshot.');
+
+    expect(change.validationMessages, ['Provider is not available.']);
+    expect(() => change.validationMessages.clear(), throwsUnsupportedError);
+  });
 }

@@ -8,7 +8,7 @@ const configApplyChangeSummarySeparator = ' -> ';
 enum ConfigDraftValidationState { unknown, valid, invalid }
 
 class ConfigDraftChange {
-  const ConfigDraftChange({
+  ConfigDraftChange({
     required this.path,
     required this.label,
     required this.oldDisplayValue,
@@ -17,8 +17,8 @@ class ConfigDraftChange {
     required this.isSecret,
     required this.requiresConfirmation,
     required this.restartRequired,
-    this.validationMessages = const [],
-  });
+    List<String> validationMessages = const [],
+  }) : validationMessages = List.unmodifiable(validationMessages);
 
   static ConfigDraftChange? fromRow(
     ConfigFormRow row,
