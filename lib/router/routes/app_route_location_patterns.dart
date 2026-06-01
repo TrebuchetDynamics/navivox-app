@@ -6,6 +6,22 @@
 class AppRouteLocationPattern {
   const AppRouteLocationPattern._();
 
+  static String pathOnly(String location) {
+    try {
+      return Uri.parse(location).path;
+    } on FormatException {
+      return _fallbackPathOnly(location);
+    }
+  }
+
+  static bool hasPathPrefix({
+    required String location,
+    required String pathPrefix,
+  }) {
+    final path = pathOnly(location);
+    return path == pathPrefix || path.startsWith('$pathPrefix/');
+  }
+
   static bool hasExactPathSegments({
     required String location,
     required List<String> expectedSegments,
@@ -24,11 +40,13 @@ class AppRouteLocationPattern {
     try {
       return Uri.parse(location).pathSegments;
     } on FormatException {
-      final pathOnly = location.split(RegExp('[?#]')).first;
-      return pathOnly
-          .split('/')
-          .where((segment) => segment.isNotEmpty)
-          .toList();
+      return _fallbackPathOnly(
+        location,
+      ).split('/').where((segment) => segment.isNotEmpty).toList();
     }
+  }
+
+  static String _fallbackPathOnly(String location) {
+    return location.split(RegExp('[?#]')).first;
   }
 }

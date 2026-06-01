@@ -27,13 +27,16 @@ void main() {
     );
   });
 
-  test('recognizes setup and chat thread locations', () {
+  test('recognizes setup and chat thread locations by path only', () {
     expect(AppRoutes.isSetupLocation('/setup'), isTrue);
     expect(AppRoutes.isSetupLocation('/setup/import'), isTrue);
+    expect(AppRoutes.isSetupLocation('/setup?invite=abc#qr'), isTrue);
     expect(AppRoutes.isSetupLocation('/settings'), isFalse);
 
     expect(
-      AppRoutes.isChatThreadLocation('/chats/office%20team/support%2Fdesk'),
+      AppRoutes.isChatThreadLocation(
+        '/chats/office%20team/support%2Fdesk?draft=1#composer',
+      ),
       isTrue,
     );
     expect(AppRoutes.isChatThreadLocation('/chats'), isFalse);
@@ -43,5 +46,29 @@ void main() {
       isFalse,
     );
     expect(AppRoutes.isChatThreadLocation('/servers'), isFalse);
+  });
+
+  test('recognizes navigation destinations by path only', () {
+    expect(
+      AppRoutes.isNavigationDestinationLocation(
+        location: '/config?section=voice#capture',
+        destinationPath: AppRoutes.config,
+      ),
+      isTrue,
+    );
+    expect(
+      AppRoutes.isNavigationDestinationLocation(
+        location: '/config/voice?advanced=true',
+        destinationPath: AppRoutes.config,
+      ),
+      isTrue,
+    );
+    expect(
+      AppRoutes.isNavigationDestinationLocation(
+        location: '/configuration',
+        destinationPath: AppRoutes.config,
+      ),
+      isFalse,
+    );
   });
 }

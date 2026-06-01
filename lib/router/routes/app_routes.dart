@@ -31,7 +31,10 @@ abstract final class AppRoutes {
   }
 
   static bool isSetupLocation(String location) {
-    return location == setup || location.startsWith('$setup/');
+    return AppRouteLocationPattern.hasPathPrefix(
+      location: location,
+      pathPrefix: setup,
+    );
   }
 
   static bool isChatThreadLocation(String location) {
@@ -45,7 +48,9 @@ abstract final class AppRoutes {
     required String location,
     required String destinationPath,
   }) {
-    return location == destinationPath ||
-        location.startsWith('$destinationPath/');
+    return AppRouteLocationPattern.hasPathPrefix(
+      location: location,
+      pathPrefix: destinationPath,
+    );
   }
 }
