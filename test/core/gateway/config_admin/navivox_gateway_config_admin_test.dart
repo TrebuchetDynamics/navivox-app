@@ -59,6 +59,43 @@ void main() {
     );
   });
 
+  test('type-secret config diffs do not retain raw echoed values', () {
+    final diff = NavivoxConfigAdminDiff.fromJson(const {
+      'key': 'providers.openai.api_key',
+      'type': ' Secret ',
+      'before': 'old-leaked-api-key',
+      'after': 'new-leaked-api-key',
+      'secretStatus': 'rotated',
+    });
+
+    expect(diff.secret, isTrue);
+    expect(diff.before, isNull);
+    expect(diff.after, isNull);
+    expect(diff.beforeRedacted, isTrue);
+    expect(diff.afterRedacted, isTrue);
+    expect(diff.summaryLabel, contains('[redacted:rotated]'));
+    expect(diff.toJson().toString(), isNot(contains('leaked-api-key')));
+  });
+
+  test(
+    'constructed type-secret config diffs redact snapshots and summaries',
+    () {
+      const diff = NavivoxConfigAdminDiff(
+        key: 'providers.openai.api_key',
+        type: 'secret',
+        before: 'old-leaked-api-key',
+        after: 'new-leaked-api-key',
+        secretStatus: 'set',
+      );
+
+      expect(
+        diff.summaryLabel,
+        'providers.openai.api_key: [redacted] -> [redacted:set]',
+      );
+      expect(diff.toJson().toString(), isNot(contains('leaked-api-key')));
+    },
+  );
+
   test('secret config values never retain raw gateway value payloads', () {
     final value = NavivoxConfigAdminValue.fromJson(const {
       'key': 'providers.openai.api_key',

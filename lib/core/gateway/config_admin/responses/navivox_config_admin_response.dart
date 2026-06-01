@@ -3,6 +3,8 @@ import '../../../protocol/navivox_json.dart';
 import '../../shared/navivox_gateway_json.dart';
 import '../changes/config_admin_value_codec.dart';
 import '../status/config_admin_status_fields.dart';
+import '../values/config_admin_secret_policy.dart';
+import 'config_admin_diff_redaction.dart';
 
 class NavivoxConfigAdminDiff {
   const NavivoxConfigAdminDiff({
@@ -17,20 +19,32 @@ class NavivoxConfigAdminDiff {
   });
 
   factory NavivoxConfigAdminDiff.fromJson(Map<String, Object?> json) {
-    return NavivoxConfigAdminDiff(
-      key: configWireStringFromAliases(json, const ['key', 'path']) ?? '',
-      type: configWireString(json['type']) ?? 'string',
-      secret: navivoxGatewayBoolField(json, 'secret'),
-      before: json['before'],
-      after: json['after'],
-      beforeRedacted: configAdminStatusBoolFromAliases(
+    final secret = configAdminIsSecret(json);
+    final beforeRedaction = ConfigAdminDiffRedaction(
+      isSecret: secret,
+      explicitlyRedacted: configAdminStatusBoolFromAliases(
         json,
         configAdminBeforeRedactedAliases,
       ),
-      afterRedacted: configAdminStatusBoolFromAliases(
+      hasRawValue: json.containsKey('before') && json['before'] != null,
+    );
+    final afterRedaction = ConfigAdminDiffRedaction(
+      isSecret: secret,
+      explicitlyRedacted: configAdminStatusBoolFromAliases(
         json,
         configAdminAfterRedactedAliases,
       ),
+      hasRawValue: json.containsKey('after') && json['after'] != null,
+    );
+
+    return NavivoxConfigAdminDiff(
+      key: configWireStringFromAliases(json, const ['key', 'path']) ?? '',
+      type: configWireString(json['type']) ?? 'string',
+      secret: secret,
+      before: beforeRedaction.safeValue(json['before']),
+      after: afterRedaction.safeValue(json['after']),
+      beforeRedacted: beforeRedaction.shouldRedact,
+      afterRedacted: afterRedaction.shouldRedact,
       secretStatus: configAdminStatusStringFromAliases(
         json,
         configAdminSecretStatusAliases,
@@ -47,19 +61,33 @@ class NavivoxConfigAdminDiff {
   final bool afterRedacted;
   final String secretStatus;
 
+  bool get _isSecret => secret || configAdminTypeIsSecret(type);
+
+  bool get _beforeRedacted => ConfigAdminDiffRedaction(
+    isSecret: _isSecret,
+    explicitlyRedacted: beforeRedacted,
+    hasRawValue: before != null,
+  ).shouldRedact;
+
+  bool get _afterRedacted => ConfigAdminDiffRedaction(
+    isSecret: _isSecret,
+    explicitlyRedacted: afterRedacted,
+    hasRawValue: after != null,
+  ).shouldRedact;
+
   String get summaryLabel {
-    return '$key: ${configAdminDisplayValue(before, redacted: beforeRedacted)} -> ${configAdminDisplayValue(after, redacted: afterRedacted, secretStatus: secretStatus)}';
+    return '$key: ${configAdminDisplayValue(before, redacted: _beforeRedacted)} -> ${configAdminDisplayValue(after, redacted: _afterRedacted, secretStatus: secretStatus)}';
   }
 
   Map<String, Object?> toJson() {
     return {
       'key': key,
       'type': type,
-      if (secret) 'secret': true,
-      if (!beforeRedacted && before != null) 'before': before,
-      if (!afterRedacted && after != null) 'after': after,
-      if (beforeRedacted) 'before_redacted': true,
-      if (afterRedacted) 'after_redacted': true,
+      if (_isSecret) 'secret': true,
+      if (!_beforeRedacted && before != null) 'before': before,
+      if (!_afterRedacted && after != null) 'after': after,
+      if (_beforeRedacted) 'before_redacted': true,
+      if (_afterRedacted) 'after_redacted': true,
       if (secretStatus.isNotEmpty) 'secret_status': secretStatus,
     };
   }
