@@ -40,6 +40,16 @@ void main() {
         );
       },
     );
+
+    test('rejects explicit non-endpoint URI shapes as unsafe metadata', () {
+      expect(sanitizedSavedSessionBaseUrl('mailto:pairing-token'), isNull);
+      expect(
+        sanitizedSavedSessionBaseUrl(
+          'ftp://gateway.example/setup?token=secret',
+        ),
+        isNull,
+      );
+    });
   });
 
   group('SavedSessionBaseUrlMetadata', () {

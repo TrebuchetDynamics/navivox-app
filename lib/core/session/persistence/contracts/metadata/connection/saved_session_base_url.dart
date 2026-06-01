@@ -1,6 +1,8 @@
 import '../../../../../protocol/navivox_endpoint_uri.dart';
 import '../../../../../protocol/navivox_json.dart';
 
+import 'session_uri_text_shape.dart';
+
 /// Reconnect-safe projection for saved HTTP base URL metadata.
 ///
 /// Setup/pairing URLs can include bootstrap-only query parameters, so valid
@@ -62,9 +64,5 @@ String? _httpBaseUrlFromEndpointText(String value) {
 }
 
 bool _looksLikeEndpointUrl(String value) {
-  final text = value.trim().toLowerCase();
-  for (final scheme in navivoxEndpointSchemes) {
-    if (text.startsWith('$scheme://')) return true;
-  }
-  return false;
+  return classifySavedSessionUriTextShape(value).isExplicitUriScheme;
 }

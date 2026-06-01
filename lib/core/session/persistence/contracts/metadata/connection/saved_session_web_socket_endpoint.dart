@@ -1,5 +1,7 @@
 import '../../../../../protocol/navivox_json.dart';
 
+import 'session_uri_text_shape.dart';
+
 /// Reconnect-safe projection for a saved websocket endpoint.
 ///
 /// Saved session metadata may keep the websocket path because deployments can
@@ -106,19 +108,7 @@ bool _hasExplicitUriScheme(String value) {
 /// `host:8765/path` and `[::1]:8765/stream` are legacy endpoint-like text, while
 /// `scheme:value` and `scheme://authority` are explicit URI shapes that may
 /// carry bootstrap-only state and should not be preserved as compatibility text.
-enum SavedSessionWebSocketTextShape {
-  none,
-  authorityUrl,
-  namedScheme,
-  hostPortLike,
-  bracketedHostLiteral;
-
-  bool get isExplicitUriScheme => switch (this) {
-    SavedSessionWebSocketTextShape.authorityUrl ||
-    SavedSessionWebSocketTextShape.namedScheme => true,
-    _ => false,
-  };
-}
+typedef SavedSessionWebSocketTextShape = SavedSessionUriTextShape;
 
 SavedSessionWebSocketTextShape classifySavedSessionWebSocketTextShape(
   String value,
@@ -126,62 +116,5 @@ SavedSessionWebSocketTextShape classifySavedSessionWebSocketTextShape(
   final text = value.trim();
   if (text.isEmpty) return SavedSessionWebSocketTextShape.none;
 
-  // Dart's URI parser treats bracketed IPv6 host literals such as
-  // `[::1]:8765/stream` as scheme-shaped because the first colon appears inside
-  // the address. They are legacy host metadata, not bootstrap-token URLs.
-  if (_startsWithBracketedHostLiteral(text)) {
-    return SavedSessionWebSocketTextShape.bracketedHostLiteral;
-  }
-
-  // Classify visibly URL-shaped text before consulting Uri.tryParse. Malformed
-  // authority URLs such as `wss://host:bad/path` may not parse, but they are
-  // still unsafe to preserve as legacy text because query/fragment/userinfo
-  // could carry bootstrap credentials.
-  if (_hasAuthoritySchemeSeparator(text)) {
-    return SavedSessionWebSocketTextShape.authorityUrl;
-  }
-
-  final uri = Uri.tryParse(text);
-  if (uri == null || !uri.hasScheme) return SavedSessionWebSocketTextShape.none;
-
-  // Dart's URI parser treats `host:8765/path` as a URI with scheme `host`.
-  // Saved-session metadata also accepts legacy non-URL text, so only discard
-  // values that are visibly URL/scheme-shaped rather than host-port-shaped.
-  if (_hasPortLikeSchemeSeparator(text)) {
-    return SavedSessionWebSocketTextShape.hostPortLike;
-  }
-  return _hasNonPortSchemeSeparator(text)
-      ? SavedSessionWebSocketTextShape.namedScheme
-      : SavedSessionWebSocketTextShape.none;
-}
-
-bool _startsWithBracketedHostLiteral(String value) {
-  if (!value.startsWith('[')) return false;
-  final closingBracket = value.indexOf(']');
-  if (closingBracket <= 1) return false;
-  if (closingBracket == value.length - 1) return true;
-
-  final nextCodeUnit = value.codeUnitAt(closingBracket + 1);
-  return nextCodeUnit == 0x2f || nextCodeUnit == 0x3a; // `/` or `:`.
-}
-
-bool _hasAuthoritySchemeSeparator(String value) {
-  return value.indexOf('://') > 0;
-}
-
-bool _hasPortLikeSchemeSeparator(String value) {
-  final separator = value.indexOf(':');
-  if (separator <= 0 || separator == value.length - 1) return false;
-  return _startsWithAsciiDigit(value, separator + 1);
-}
-
-bool _hasNonPortSchemeSeparator(String value) {
-  final separator = value.indexOf(':');
-  if (separator <= 0 || separator == value.length - 1) return false;
-  return !_startsWithAsciiDigit(value, separator + 1);
-}
-
-bool _startsWithAsciiDigit(String value, int index) {
-  final codeUnit = value.codeUnitAt(index);
-  return codeUnit >= 0x30 && codeUnit <= 0x39;
+  return classifySavedSessionUriTextShape(text);
 }
