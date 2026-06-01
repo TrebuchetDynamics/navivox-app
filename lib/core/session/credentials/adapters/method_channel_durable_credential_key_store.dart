@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 
-import '../key_store/durable_credential_key_alias.dart';
-import '../key_store/durable_credential_key_store.dart';
-import '../key_store/public_json_web_key.dart';
+import '../key_store/aliases/durable_credential_key_alias.dart';
+import '../key_store/contracts/durable_credential_key_store.dart';
+import '../key_store/public_keys/public_json_web_key.dart';
 
 class MethodChannelDurableCredentialKeyStore
     implements DurableCredentialKeyStore {
