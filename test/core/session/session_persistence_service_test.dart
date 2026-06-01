@@ -71,6 +71,20 @@ void main() {
     );
   });
 
+  test('write plan drops malformed websocket URLs instead of throwing', () {
+    final writes = sessionPreferenceWritesForConnection(
+      baseUrl: 'https://gateway.example.test',
+      webSocketUrl: ' wss://gateway.example.test:bad/stream?token=secret ',
+      gatewayId: 'gateway-1',
+      connectedAt: DateTime.utc(2026, 5, 31),
+    );
+
+    expect(
+      writes.where((write) => write.isRemove).map((write) => write.key),
+      contains(SessionPreferenceKeys.webSocketUrl),
+    );
+  });
+
   test('websocket metadata shape exposes legacy versus unsafe URL text', () {
     expect(
       classifySavedSessionWebSocketTextShape(

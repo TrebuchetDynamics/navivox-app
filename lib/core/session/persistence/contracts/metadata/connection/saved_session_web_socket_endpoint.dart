@@ -1,5 +1,6 @@
 import '../../../../../protocol/navivox_json.dart';
 
+import 'saved_session_metadata_projection.dart';
 import 'session_uri_text_shape.dart';
 
 /// Reconnect-safe projection for a saved websocket endpoint.
@@ -40,50 +41,35 @@ class SavedSessionWebSocketEndpoint {
 /// value became a durable endpoint, a compatibility legacy value, or a removal
 /// because the text looked like an unsafe URL carrying bootstrap-only state.
 class SavedSessionWebSocketMetadata {
-  const SavedSessionWebSocketMetadata._({
-    required this.durableUrl,
-    required this.isLegacyText,
-    required this.isRejectedUrl,
-  });
+  const SavedSessionWebSocketMetadata._(this._projection);
 
   factory SavedSessionWebSocketMetadata.fromStoredValue(Object? value) {
     final text = navivoxOptionalStringFromJson(value);
     if (text == null) return const SavedSessionWebSocketMetadata.absent();
 
-    final endpoint = SavedSessionWebSocketEndpoint.tryParse(text);
-    if (endpoint != null) {
-      return SavedSessionWebSocketMetadata.durableEndpoint(endpoint);
-    }
-
-    if (_hasExplicitUriScheme(text)) {
-      return const SavedSessionWebSocketMetadata.rejectedUrl();
-    }
-
-    return SavedSessionWebSocketMetadata.legacyText(text);
+    return SavedSessionWebSocketMetadata._(_projectSavedSessionWebSocket(text));
   }
 
   const SavedSessionWebSocketMetadata.absent()
-    : this._(durableUrl: null, isLegacyText: false, isRejectedUrl: false);
+    : this._(const SavedSessionMetadataProjection.absent());
 
   SavedSessionWebSocketMetadata.durableEndpoint(
     SavedSessionWebSocketEndpoint endpoint,
-  ) : this._(
-        durableUrl: endpoint.durableUrl,
-        isLegacyText: false,
-        isRejectedUrl: false,
-      );
+  ) : this._(SavedSessionMetadataProjection.durable(endpoint.durableUrl));
 
-  const SavedSessionWebSocketMetadata.legacyText(String value)
-    : this._(durableUrl: value, isLegacyText: true, isRejectedUrl: false);
+  SavedSessionWebSocketMetadata.legacyText(String value)
+    : this._(SavedSessionMetadataProjection.legacy(value));
 
   const SavedSessionWebSocketMetadata.rejectedUrl()
-    : this._(durableUrl: null, isLegacyText: false, isRejectedUrl: true);
+    : this._(const SavedSessionMetadataProjection.rejectedUrl());
 
-  final String? durableUrl;
-  final bool isLegacyText;
-  final bool isRejectedUrl;
+  final SavedSessionMetadataProjection _projection;
 
-  bool get isAbsent => durableUrl == null && !isRejectedUrl;
+  String? get durableUrl => _projection.durableValue;
+  bool get isLegacyText => _projection.isLegacyText;
+  bool get isRejectedUrl => _projection.isRejectedUrl;
+
+  bool get isAbsent => _projection.isAbsent;
 }
 
 /// Returns websocket metadata that is safe to persist for reconnect.
@@ -94,6 +80,17 @@ class SavedSessionWebSocketMetadata {
 /// bootstrap credentials in query strings or fragments.
 String? durableSavedSessionWebSocketUrlFromMetadata(Object? value) {
   return SavedSessionWebSocketMetadata.fromStoredValue(value).durableUrl;
+}
+
+SavedSessionMetadataProjection _projectSavedSessionWebSocket(String text) {
+  final endpoint = SavedSessionWebSocketEndpoint.tryParse(text);
+  if (endpoint != null) {
+    return SavedSessionMetadataProjection.durable(endpoint.durableUrl);
+  }
+  if (_hasExplicitUriScheme(text)) {
+    return const SavedSessionMetadataProjection.rejectedUrl();
+  }
+  return SavedSessionMetadataProjection.legacy(text);
 }
 
 bool _hasExplicitUriScheme(String value) {

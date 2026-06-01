@@ -1,6 +1,7 @@
 import '../../../../../protocol/navivox_endpoint_uri.dart';
 import '../../../../../protocol/navivox_json.dart';
 
+import 'saved_session_metadata_projection.dart';
 import 'session_uri_text_shape.dart';
 
 /// Reconnect-safe projection for saved HTTP base URL metadata.
@@ -10,49 +11,47 @@ import 'session_uri_text_shape.dart';
 /// endpoint parsing are rejected instead of being kept as legacy text because
 /// they can still carry secrets in query strings or fragments.
 class SavedSessionBaseUrlMetadata {
-  const SavedSessionBaseUrlMetadata._({
-    required this.durableBaseUrl,
-    required this.isLegacyText,
-    required this.isRejectedUrl,
-  });
+  const SavedSessionBaseUrlMetadata._(this._projection);
 
   factory SavedSessionBaseUrlMetadata.fromStoredValue(Object? value) {
     final text = navivoxOptionalStringFromJson(value);
     if (text == null) return const SavedSessionBaseUrlMetadata.absent();
 
-    final baseUrl = _httpBaseUrlFromEndpointText(text);
-    if (baseUrl != null) {
-      return SavedSessionBaseUrlMetadata.durableEndpoint(baseUrl);
-    }
-
-    if (_looksLikeEndpointUrl(text)) {
-      return const SavedSessionBaseUrlMetadata.rejectedUrl();
-    }
-
-    return SavedSessionBaseUrlMetadata.legacyText(text);
+    return SavedSessionBaseUrlMetadata._(_projectSavedSessionBaseUrl(text));
   }
 
   const SavedSessionBaseUrlMetadata.absent()
-    : this._(durableBaseUrl: null, isLegacyText: false, isRejectedUrl: false);
+    : this._(const SavedSessionMetadataProjection.absent());
 
-  const SavedSessionBaseUrlMetadata.durableEndpoint(String value)
-    : this._(durableBaseUrl: value, isLegacyText: false, isRejectedUrl: false);
+  SavedSessionBaseUrlMetadata.durableEndpoint(String value)
+    : this._(SavedSessionMetadataProjection.durable(value));
 
-  const SavedSessionBaseUrlMetadata.legacyText(String value)
-    : this._(durableBaseUrl: value, isLegacyText: true, isRejectedUrl: false);
+  SavedSessionBaseUrlMetadata.legacyText(String value)
+    : this._(SavedSessionMetadataProjection.legacy(value));
 
   const SavedSessionBaseUrlMetadata.rejectedUrl()
-    : this._(durableBaseUrl: null, isLegacyText: false, isRejectedUrl: true);
+    : this._(const SavedSessionMetadataProjection.rejectedUrl());
 
-  final String? durableBaseUrl;
-  final bool isLegacyText;
-  final bool isRejectedUrl;
+  final SavedSessionMetadataProjection _projection;
 
-  bool get isAbsent => durableBaseUrl == null && !isRejectedUrl;
+  String? get durableBaseUrl => _projection.durableValue;
+  bool get isLegacyText => _projection.isLegacyText;
+  bool get isRejectedUrl => _projection.isRejectedUrl;
+
+  bool get isAbsent => _projection.isAbsent;
 }
 
 String? durableSavedSessionBaseUrlFromMetadata(Object? value) {
   return SavedSessionBaseUrlMetadata.fromStoredValue(value).durableBaseUrl;
+}
+
+SavedSessionMetadataProjection _projectSavedSessionBaseUrl(String text) {
+  final baseUrl = _httpBaseUrlFromEndpointText(text);
+  if (baseUrl != null) return SavedSessionMetadataProjection.durable(baseUrl);
+  if (_looksLikeEndpointUrl(text)) {
+    return const SavedSessionMetadataProjection.rejectedUrl();
+  }
+  return SavedSessionMetadataProjection.legacy(text);
 }
 
 String? _httpBaseUrlFromEndpointText(String value) {
