@@ -43,6 +43,25 @@ void main() {
     expect(result, isNull);
   });
 
+  test('does not let metadata-only JSON entries outrank explicit entries', () {
+    final result = parseNavivoxConnectionImportPayload('''
+{
+  "base_url": "https://default.example",
+  "token": "nvbx_default",
+  "entries": [
+    {"server_id": "metadata-only", "profile_id": "demo"},
+    {"base_url": "https://gateway.example", "token": "nvbx_pairing"}
+  ]
+}
+''');
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, 'nvbx_pairing');
+    expect(result.serverId, isNull);
+    expect(result.profileId, isNull);
+  });
+
   test('binds a trailing token only to the selected endpoint window', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_old https://docs.example/help. Then open '
