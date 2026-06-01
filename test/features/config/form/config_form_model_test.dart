@@ -361,6 +361,37 @@ void main() {
     expect(model.sections.last.rows.single.field, 'tools.allow_shell');
   });
 
+  test('falls back past stale section field reference aliases', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'sections': [
+          {
+            'id': 'providers',
+            'label': 'Providers',
+            'fields': ['providers.removed'],
+            'fieldRefs': [
+              {'field': 'providers.default'},
+              {'path': 'model.temperature'},
+            ],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default'},
+          {'path': 'model.temperature'},
+          {'path': 'tools.allow_shell'},
+        ],
+      },
+      values: const {},
+    );
+
+    expect(model.sections.map((section) => section.id), ['providers', 'other']);
+    expect(model.sections.first.rows.map((row) => row.field), [
+      'providers.default',
+      'model.temperature',
+    ]);
+    expect(model.sections.last.rows.single.field, 'tools.allow_shell');
+  });
+
   test('does not infer restart from negative reload modes', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {

@@ -59,13 +59,11 @@ List<ConfigFormSection> buildConfigFormSections({
 
   for (final raw in rawSections) {
     if (raw is! Map) continue;
-    final sectionRows = <ConfigFormRow>[];
-    for (final field in configFormSectionFieldRefsFromSchemaMap(raw)) {
-      final row = rowsByField[field];
-      if (row == null || usedFields.contains(row.field)) continue;
-      sectionRows.add(row);
-      usedFields.add(row.field);
-    }
+    final sectionRows = _sectionRowsFromFirstUsefulFieldRefCandidate(
+      rawSection: raw,
+      rowsByField: rowsByField,
+      usedFields: usedFields,
+    );
     if (sectionRows.isEmpty) continue;
     final fallbackId = 'section-${sections.length + 1}';
     final requestedId = configFormSectionIdFromSchema(raw, fallbackId);
@@ -93,6 +91,27 @@ List<ConfigFormSection> buildConfigFormSections({
     );
   }
   return sections;
+}
+
+List<ConfigFormRow> _sectionRowsFromFirstUsefulFieldRefCandidate({
+  required Map rawSection,
+  required Map<String, ConfigFormRow> rowsByField,
+  required Set<String> usedFields,
+}) {
+  for (final candidate in configFormSectionFieldRefAliasCandidates(
+    rawSection,
+  )) {
+    final candidateRows = <ConfigFormRow>[];
+    for (final field in configFormSectionFieldRefsFromSchema(candidate)) {
+      final row = rowsByField[field];
+      if (row == null || usedFields.contains(row.field)) continue;
+      candidateRows.add(row);
+    }
+    if (candidateRows.isEmpty) continue;
+    usedFields.addAll(candidateRows.map((row) => row.field));
+    return candidateRows;
+  }
+  return const [];
 }
 
 ConfigFormSection _unsectionedRowsSection({
