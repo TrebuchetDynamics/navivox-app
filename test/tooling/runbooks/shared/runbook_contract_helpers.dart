@@ -4,10 +4,20 @@ import '../../shared/file_contract_helpers.dart';
 
 const androidDeviceAndSecretContractsRunbook =
     'docs/runbooks/shared/android-device-and-secret-contracts.md';
+const pairingSecretHandlingRunbook =
+    'docs/runbooks/shared/pairing-secret-handling.md';
+
+String readRunbookContractWithPairingSecretPolicy(String runbookPath) {
+  return readRequiredFiles([
+    resolveRunbookFacade(runbookPath),
+    pairingSecretHandlingRunbook,
+  ]);
+}
 
 String readRunbookContractWithSharedPolicy(String runbookPath) {
   return readRequiredFiles([
     resolveRunbookFacade(runbookPath),
+    pairingSecretHandlingRunbook,
     androidDeviceAndSecretContractsRunbook,
   ]);
 }

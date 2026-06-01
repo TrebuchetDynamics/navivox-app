@@ -15,6 +15,7 @@ void main() {
       'docs/runbooks/android/durable-keystore-smoke.md',
       'docs/runbooks/android/release-handoff.md',
       'docs/runbooks/shared/android-device-and-secret-contracts.md',
+      'docs/runbooks/shared/pairing-secret-handling.md',
       'docs/runbooks/web-qa/dl-mphmcspi-bb46a2.md',
     ];
 

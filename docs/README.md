@@ -31,6 +31,7 @@ Start with `../CONTEXT.md` for stable product language, then use this index to f
 - [Android durable keystore smoke](runbooks/android/durable-keystore-smoke.md)
 - [Android release handoff](runbooks/android/release-handoff.md)
 - [Android device and secret handling contracts](runbooks/shared/android-device-and-secret-contracts.md)
+- [Pairing secret handling contract](runbooks/shared/pairing-secret-handling.md)
 - [Web QA handoff](runbooks/web-qa/dl-mphmcspi-bb46a2.md)
 
 ## Assets
