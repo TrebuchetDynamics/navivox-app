@@ -1108,7 +1108,14 @@ String? _readTokenAt(String text, int start, {int? end}) {
     index++;
   }
   if (index == tokenStart) return null;
+  if (_tokenContinuesPastWindow(text, index, tokenSearchEnd)) return null;
   return _trimTokenTrailingPunctuationOrNull(text.substring(tokenStart, index));
+}
+
+bool _tokenContinuesPastWindow(String text, int tokenEnd, int windowEnd) {
+  return tokenEnd == windowEnd &&
+      windowEnd < text.length &&
+      _isTokenChar(text.codeUnitAt(windowEnd));
 }
 
 int _skipTokenLeadingIgnoredChars(String text, int start, {int? end}) {

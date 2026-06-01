@@ -24,6 +24,7 @@ void main() {
   doesNotLetLabelBeforeLaterSharedTextUrlConsumeThatUrlAsToken();
   doesNotUseUrlAfterSharedTextTokenLabelAsToken();
   doesNotTreatSingleUrlAfterSharedTextTokenLabelAsToken();
+  doesNotSplitTokenAtEmbeddedUrlWindowBoundary();
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
@@ -483,6 +484,25 @@ void doesNotTreatSingleUrlAfterSharedTextTokenLabelAsToken() {
   _expect(
     result.token == null,
     'a single URL after a token label is prose/navigation, not a pairing token',
+  );
+}
+
+void doesNotSplitTokenAtEmbeddedUrlWindowBoundary() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Token: nvbx_stalehttps://gateway.example/connect has setup steps.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with a URL attached to a token-like prefix should still parse the URL',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'the embedded URL should still provide the baseUrl',
+  );
+  _expect(
+    result.token == null,
+    'token extraction must not truncate a token at a URL candidate boundary',
   );
 }
 
