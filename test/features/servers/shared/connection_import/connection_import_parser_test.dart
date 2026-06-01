@@ -46,6 +46,31 @@ void main() {
     expect(result.token, isNull);
   });
 
+  test(
+    'keeps connection-route precedence above stale docs token proximity',
+    () {
+      final result = parseNavivoxConnectionImportPayload(
+        'Read https://docs.example/setup. Token: nvbx_docs. Then open '
+        'https://gateway.example/connection to pair Navivox.',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.baseUrl, 'https://gateway.example');
+      expect(result.token, isNull);
+    },
+  );
+
+  test('treats connection-route signal as a path segment only', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Read https://connect-docs.example/setup?token=nvbx_docs. Then open '
+      'https://gateway.example/setup. Token: nvbx_pairing',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, 'nvbx_pairing');
+  });
+
   test('parses copied core pairing descriptor scheme case-insensitively', () {
     final result = parseNavivoxConnectionImportPayload(
       'NaviVox://CONNECT?'

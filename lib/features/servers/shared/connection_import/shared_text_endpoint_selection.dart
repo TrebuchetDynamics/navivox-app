@@ -60,18 +60,66 @@ class _SharedTextEndpointSelectionSignals {
   final bool hasConnectionPath;
 
   bool isPreferredOver(_SharedTextEndpointSelectionSignals other) {
+    final decision = _SharedTextEndpointSelectionDecisionFactory.between(
+      candidate: this,
+      incumbent: other,
+    );
+    return decision == _SharedTextEndpointSelectionDecision.candidate;
+  }
+}
+
+enum _SharedTextEndpointSelectionDecision { candidate, incumbent, tie }
+
+abstract final class _SharedTextEndpointSelectionDecisionFactory {
+  static _SharedTextEndpointSelectionDecision between({
+    required _SharedTextEndpointSelectionSignals candidate,
+    required _SharedTextEndpointSelectionSignals incumbent,
+  }) {
     // Shared text often contains documentation URLs before the actual pairing
     // handoff URL. Prefer explicit connection-route vocabulary before generic
     // richness so a stale docs query token cannot outrank the real endpoint.
-    if (hasConnectionPath != other.hasConnectionPath) return hasConnectionPath;
+    final connectionPathDecision = _preferTrue(
+      candidate.hasConnectionPath,
+      incumbent.hasConnectionPath,
+    );
+    if (connectionPathDecision != _SharedTextEndpointSelectionDecision.tie) {
+      return connectionPathDecision;
+    }
 
     // When two URLs expose the same connection-route signal, bind prose tokens
     // to the URL whose following segment actually contains the token.
-    if (hasFollowingToken != other.hasFollowingToken) return hasFollowingToken;
+    final followingTokenDecision = _preferTrue(
+      candidate.hasFollowingToken,
+      incumbent.hasFollowingToken,
+    );
+    if (followingTokenDecision != _SharedTextEndpointSelectionDecision.tie) {
+      return followingTokenDecision;
+    }
 
-    if (rank.isRicherThan(other.rank)) return true;
-    if (other.rank.isRicherThan(rank)) return false;
-    return false;
+    return _preferRicherRank(candidate.rank, incumbent.rank);
+  }
+
+  static _SharedTextEndpointSelectionDecision _preferTrue(
+    bool candidate,
+    bool incumbent,
+  ) {
+    if (candidate == incumbent) return _SharedTextEndpointSelectionDecision.tie;
+    return candidate
+        ? _SharedTextEndpointSelectionDecision.candidate
+        : _SharedTextEndpointSelectionDecision.incumbent;
+  }
+
+  static _SharedTextEndpointSelectionDecision _preferRicherRank(
+    _ConnectionImportCandidateRank candidate,
+    _ConnectionImportCandidateRank incumbent,
+  ) {
+    if (candidate.isRicherThan(incumbent)) {
+      return _SharedTextEndpointSelectionDecision.candidate;
+    }
+    if (incumbent.isRicherThan(candidate)) {
+      return _SharedTextEndpointSelectionDecision.incumbent;
+    }
+    return _SharedTextEndpointSelectionDecision.tie;
   }
 }
 
