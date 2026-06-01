@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/session/durable_credential_key_store.dart';
 
-import '../support/credentials/durable_key_store_test_support.dart';
+import '../support/durable_key_store_test_support.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -102,6 +102,14 @@ void main() {
           'y': 'public-y',
           'alg': 'ES256',
           'd': 'private-key-material',
+        },
+        {
+          'kty': 'EC',
+          'crv': 'P-256',
+          'x': 'public-x',
+          'y': 'public-y',
+          'alg': 'ES256',
+          'd': [1, 2, 3],
         },
         {
           'kty': 'RSA',

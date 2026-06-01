@@ -55,11 +55,7 @@ class PublicJsonWebKeyFields {
   });
 
   factory PublicJsonWebKeyFields.fromJson(Map<Object?, Object?> json) {
-    if (navivoxOptionalLiteralStringFromJson(json['d']) != null) {
-      throw const FormatException(
-        'Public JWK must not include private key material.',
-      );
-    }
+    _rejectPrivateKeyMaterial(json);
 
     final fields = PublicJsonWebKeyFields(
       kty: _requiredString(json, 'kty'),
@@ -90,6 +86,13 @@ class PublicJsonWebKeyFields {
     if (alg != 'ES256') {
       throw const FormatException('Public JWK alg must be ES256.');
     }
+  }
+
+  static void _rejectPrivateKeyMaterial(Map<Object?, Object?> json) {
+    if (!json.containsKey('d')) return;
+    throw const FormatException(
+      'Public JWK must not include private key material.',
+    );
   }
 
   static String _requiredString(Map<Object?, Object?> json, String key) {
