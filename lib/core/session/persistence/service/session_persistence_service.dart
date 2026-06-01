@@ -1,10 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/session_text.dart';
-import '../contracts/saved_connection_fields.dart';
 import '../contracts/saved_session.dart';
 import '../contracts/saved_session_fields.dart';
 import '../storage/session_preference_keys.dart';
+import '../storage/session_preference_write_plan.dart';
 
 /// Persists non-secret gateway metadata for later reconnect flows.
 ///
@@ -36,30 +36,13 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return;
-    final fields = SavedConnectionFields.fromInput(
+    final writes = sessionPreferenceWritesForConnection(
       baseUrl: baseUrl,
       webSocketUrl: webSocketUrl,
       gatewayId: gatewayId,
+      connectedAt: _clock(),
     );
-    await prefs.setString(SessionPreferenceKeys.baseUrl, fields.baseUrl);
-    await prefs.remove(SessionPreferenceKeys.legacyToken);
-    if (fields.webSocketUrl != null) {
-      await prefs.setString(
-        SessionPreferenceKeys.webSocketUrl,
-        fields.webSocketUrl!,
-      );
-    } else {
-      await prefs.remove(SessionPreferenceKeys.webSocketUrl);
-    }
-    if (fields.gatewayId != null) {
-      await prefs.setString(SessionPreferenceKeys.gatewayId, fields.gatewayId!);
-    } else {
-      await prefs.remove(SessionPreferenceKeys.gatewayId);
-    }
-    await prefs.setString(
-      SessionPreferenceKeys.lastConnectedAt,
-      _clock().toUtc().toIso8601String(),
-    );
+    await _applyPreferenceWrites(prefs, writes);
   }
 
   /// Load saved connection state. Returns null if no session is saved.
@@ -89,11 +72,7 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return;
-    await prefs.remove(SessionPreferenceKeys.baseUrl);
-    await prefs.remove(SessionPreferenceKeys.legacyToken);
-    await prefs.remove(SessionPreferenceKeys.webSocketUrl);
-    await prefs.remove(SessionPreferenceKeys.lastConnectedAt);
-    await prefs.remove(SessionPreferenceKeys.gatewayId);
+    await _applyPreferenceWrites(prefs, sessionPreferenceWritesForClear);
   }
 
   /// Check if a saved session exists without loading all fields.
@@ -103,5 +82,19 @@ class SessionPersistenceService {
     if (prefs == null) return false;
     final baseUrl = prefs.getString(SessionPreferenceKeys.baseUrl);
     return isNonBlankSessionText(baseUrl);
+  }
+}
+
+Future<void> _applyPreferenceWrites(
+  SharedPreferences prefs,
+  Iterable<SessionPreferenceWrite> writes,
+) async {
+  for (final write in writes) {
+    final value = write.value;
+    if (value == null) {
+      await prefs.remove(write.key);
+    } else {
+      await prefs.setString(write.key, value);
+    }
   }
 }
