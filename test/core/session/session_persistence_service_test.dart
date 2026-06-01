@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/session/persistence/contracts/saved_session.dart';
 import 'package:navivox/core/session/persistence/service/session_persistence_service.dart';
 import 'package:navivox/core/session/persistence/storage/session_preference_keys.dart';
+import 'package:navivox/core/session/persistence/storage/session_preference_snapshot.dart';
 import 'package:navivox/core/session/persistence/storage/session_preference_write_plan.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,6 +68,48 @@ void main() {
       _writeMap(writes),
       isNot(contains(SessionPreferenceKeys.webSocketUrl)),
     );
+  });
+
+  test('preference snapshot replays stored-session read sanitization', () {
+    final session = savedSessionFromPreferenceSnapshot(
+      baseUrl: ' https://gateway.example.test/setup?pairing_token=secret ',
+      webSocketUrl:
+          ' wss://user:secret@gateway.example.test/stream?token=secret#frag ',
+      gatewayId: ' gateway-1 ',
+      lastConnectedAt: '2026-05-31T12:34:56+02:00',
+    );
+
+    expect(session?.baseUrl, 'https://gateway.example.test');
+    expect(session?.webSocketUrl, 'wss://gateway.example.test/stream');
+    expect(session?.gatewayId, 'gateway-1');
+    expect(
+      session?.lastConnectedAt?.toUtc().toIso8601String(),
+      '2026-05-31T10:34:56.000Z',
+    );
+  });
+
+  test('preference snapshot invalidates missing base URL only', () {
+    expect(
+      savedSessionFromPreferenceSnapshot(
+        baseUrl: ' ',
+        webSocketUrl: 'wss://gateway.example.test/stream',
+        gatewayId: 'gateway-1',
+        lastConnectedAt: 'not-a-date',
+      ),
+      isNull,
+    );
+
+    final session = savedSessionFromPreferenceSnapshot(
+      baseUrl: 'https://gateway.example.test',
+      webSocketUrl: 'https://gateway.example.test/stream?token=secret#frag',
+      gatewayId: 'gateway-1',
+      lastConnectedAt: 'not-a-date',
+    );
+
+    expect(session?.baseUrl, 'https://gateway.example.test');
+    expect(session?.webSocketUrl, isNull);
+    expect(session?.gatewayId, 'gateway-1');
+    expect(session?.lastConnectedAt, isNull);
   });
 
   test('save, load, and clear apply the same preference write plan', () async {

@@ -2,8 +2,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/session_text.dart';
 import '../contracts/saved_session.dart';
-import '../contracts/saved_session_fields.dart';
 import '../storage/session_preference_keys.dart';
+import '../storage/session_preference_snapshot.dart';
 import '../storage/session_preference_write_plan.dart';
 
 /// Persists non-secret gateway metadata for later reconnect flows.
@@ -50,19 +50,11 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return null;
-    final fields = SavedSessionFields.fromStoredValues(
+    return savedSessionFromPreferenceSnapshot(
       baseUrl: prefs.getString(SessionPreferenceKeys.baseUrl),
       webSocketUrl: prefs.getString(SessionPreferenceKeys.webSocketUrl),
       gatewayId: prefs.getString(SessionPreferenceKeys.gatewayId),
       lastConnectedAt: prefs.getString(SessionPreferenceKeys.lastConnectedAt),
-    );
-    if (fields == null) return null;
-
-    return SavedSession(
-      baseUrl: fields.baseUrl,
-      webSocketUrl: fields.webSocketUrl,
-      gatewayId: fields.gatewayId,
-      lastConnectedAt: fields.lastConnectedAt,
     );
   }
 
