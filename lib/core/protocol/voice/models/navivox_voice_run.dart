@@ -77,35 +77,67 @@ class NavivoxVoiceRun {
     required String requestId,
     String? sessionId,
   }) {
+    return _withLifecycleStatus(
+      status: NavivoxVoiceRunStatus.submitted,
+      requestId: requestId,
+      replaceRequestId: true,
+      sessionId: sessionId,
+      replaceSessionId: true,
+      clearReason: true,
+    );
+  }
+
+  NavivoxVoiceRun markCompleted() {
+    return _withLifecycleStatus(
+      status: NavivoxVoiceRunStatus.completed,
+      clearReason: true,
+    );
+  }
+
+  NavivoxVoiceRun markCancelled(String reason) {
+    return _withLifecycleStatus(
+      status: NavivoxVoiceRunStatus.cancelled,
+      reason: reason,
+    );
+  }
+
+  NavivoxVoiceRun markFailed(String reason) {
+    return _withLifecycleStatus(
+      status: NavivoxVoiceRunStatus.failed,
+      reason: reason,
+    );
+  }
+
+  NavivoxVoiceRun _withLifecycleStatus({
+    required NavivoxVoiceRunStatus status,
+    String? sessionId,
+    bool replaceSessionId = false,
+    String? requestId,
+    bool replaceRequestId = false,
+    String? reason,
+    bool clearReason = false,
+  }) {
+    assert(
+      !clearReason || reason == null,
+      'A voice-run transition cannot set and clear reason at the same time.',
+    );
     return NavivoxVoiceRun(
       id: id,
       serverId: serverId,
       profileId: profileId,
-      sessionId: sessionId,
-      requestId: requestId,
-      status: NavivoxVoiceRunStatus.submitted,
+      sessionId: replaceSessionId ? sessionId : this.sessionId,
+      requestId: replaceRequestId ? requestId : this.requestId,
+      status: status,
       transcriptSource: transcriptSource,
       ttsStatus: ttsStatus,
       transcript: transcript,
       duration: duration,
       confidence: confidence,
-      reason: null,
+      reason: clearReason ? null : reason ?? this.reason,
       retentionPolicy: retentionPolicy,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
-  }
-
-  NavivoxVoiceRun markCompleted() {
-    return copyWith(status: NavivoxVoiceRunStatus.completed);
-  }
-
-  NavivoxVoiceRun markCancelled(String reason) {
-    return copyWith(status: NavivoxVoiceRunStatus.cancelled, reason: reason);
-  }
-
-  NavivoxVoiceRun markFailed(String reason) {
-    return copyWith(status: NavivoxVoiceRunStatus.failed, reason: reason);
   }
 
   NavivoxVoiceRun copyWith({

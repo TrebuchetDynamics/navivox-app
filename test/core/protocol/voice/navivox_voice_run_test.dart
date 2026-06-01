@@ -51,4 +51,19 @@ void main() {
       );
     },
   );
+
+  test('completed transition does not keep stale terminal reason', () {
+    final completedAfterFailure = recordingVoiceRun()
+        .withDeviceTranscript(
+          transcript: 'hello',
+          duration: const Duration(seconds: 1),
+          confidence: 1,
+          updatedAt: DateTime.utc(2026, 5, 21, 12, 0, 1),
+        )
+        .markFailed('gateway timeout')
+        .markCompleted();
+
+    expect(completedAfterFailure.status, NavivoxVoiceRunStatus.completed);
+    expect(completedAfterFailure.reason, isNull);
+  });
 }
