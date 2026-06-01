@@ -38,11 +38,27 @@ class NavivoxConfigAdminValue {
 
   Object? get formValue {
     if (!secret) return value;
-    return {
-      'secret_status': secretStatus,
-      if (source.isNotEmpty) 'source': source,
-    };
+    return configAdminSecretFormValue(
+      secretStatus: secretStatus,
+      source: source,
+    );
   }
+}
+
+/// Returns non-secret form metadata for secret config values.
+///
+/// Constructed DTOs and parsed gateway values must expose the same trimmed
+/// provenance shape so UI snapshots cannot diverge based on construction path.
+Map<String, Object?> configAdminSecretFormValue({
+  required String secretStatus,
+  String source = '',
+}) {
+  final normalizedStatus = secretStatus.trim();
+  final normalizedSource = source.trim();
+  return {
+    'secret_status': normalizedStatus,
+    if (normalizedSource.isNotEmpty) 'source': normalizedSource,
+  };
 }
 
 /// Returns the non-secret value payload that may be retained in app memory.

@@ -114,6 +114,21 @@ void main() {
     expect(value.toString(), isNot(contains('leaked-api-key')));
   });
 
+  test('constructed secret config values normalize non-secret provenance', () {
+    const value = NavivoxConfigAdminValue(
+      key: 'providers.openai.api_key',
+      type: 'secret',
+      secret: true,
+      secretStatus: ' set ',
+      source: ' env:GORMES_OPENAI_API_KEY ',
+    );
+
+    expect(value.formValue, {
+      'secret_status': 'set',
+      'source': 'env:GORMES_OPENAI_API_KEY',
+    });
+  });
+
   test(
     'type-secret config values are redacted without duplicate secret flag',
     () {
