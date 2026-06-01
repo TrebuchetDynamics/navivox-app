@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/router/app_routes.dart';
+import 'package:navivox/router/routes/app_route_location_patterns.dart';
 
 void main() {
   test('defines route patterns from shared parameter names', () {
@@ -46,6 +47,21 @@ void main() {
       isFalse,
     );
     expect(AppRoutes.isChatThreadLocation('/servers'), isFalse);
+  });
+
+  test('keeps encoded slash route parameters in one path segment', () {
+    final location = AppRoutes.chatLocation(
+      serverId: 'office/team',
+      profileId: 'support/desk',
+    );
+
+    expect(location, '/chats/office%2Fteam/support%2Fdesk');
+    expect(AppRoutes.isChatThreadLocation(location), isTrue);
+    expect(AppRouteLocationView.parse(location).segments, [
+      'chats',
+      'office/team',
+      'support/desk',
+    ]);
   });
 
   test('recognizes navigation destinations by path only', () {

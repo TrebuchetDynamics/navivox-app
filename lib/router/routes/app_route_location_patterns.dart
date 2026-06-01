@@ -7,43 +7,67 @@ class AppRouteLocationPattern {
   const AppRouteLocationPattern._();
 
   static String pathOnly(String location) {
-    try {
-      return Uri.parse(location).path;
-    } on FormatException {
-      return _fallbackPathOnly(location);
-    }
+    return AppRouteLocationView.parse(location).path;
   }
 
   static bool hasPathPrefix({
     required String location,
     required String pathPrefix,
   }) {
-    final path = pathOnly(location);
-    return path == pathPrefix || path.startsWith('$pathPrefix/');
+    return AppRouteLocationView.parse(location).hasPathPrefix(pathPrefix);
   }
 
   static bool hasExactPathSegments({
     required String location,
     required List<String> expectedSegments,
   }) {
-    final actual = _pathSegments(location);
-    if (actual.length != expectedSegments.length) return false;
+    return AppRouteLocationView.parse(
+      location,
+    ).hasExactPathSegments(expectedSegments);
+  }
+}
+
+/// Parsed route-location shape used for matching app-owned routes.
+///
+/// Query strings and fragments are discarded. Segment comparisons use decoded
+/// [Uri.pathSegments] when parsing succeeds, which keeps encoded slash values
+/// inside a route parameter from creating extra route segments.
+class AppRouteLocationView {
+  const AppRouteLocationView._({required this.path, required this.segments});
+
+  final String path;
+  final List<String> segments;
+
+  static AppRouteLocationView parse(String location) {
+    try {
+      final uri = Uri.parse(location);
+      return AppRouteLocationView._(path: uri.path, segments: uri.pathSegments);
+    } on FormatException {
+      final fallbackPath = _fallbackPathOnly(location);
+      return AppRouteLocationView._(
+        path: fallbackPath,
+        segments: _fallbackPathSegments(fallbackPath),
+      );
+    }
+  }
+
+  bool hasPathPrefix(String pathPrefix) {
+    return path == pathPrefix || path.startsWith('$pathPrefix/');
+  }
+
+  bool hasExactPathSegments(List<String> expectedSegments) {
+    if (segments.length != expectedSegments.length) return false;
     for (var index = 0; index < expectedSegments.length; index += 1) {
       final expected = expectedSegments[index];
-      if (expected.isNotEmpty && actual[index] != expected) return false;
-      if (expected.isEmpty && actual[index].isEmpty) return false;
+      final actual = segments[index];
+      if (expected.isNotEmpty && actual != expected) return false;
+      if (expected.isEmpty && actual.isEmpty) return false;
     }
     return true;
   }
 
-  static List<String> _pathSegments(String location) {
-    try {
-      return Uri.parse(location).pathSegments;
-    } on FormatException {
-      return _fallbackPathOnly(
-        location,
-      ).split('/').where((segment) => segment.isNotEmpty).toList();
-    }
+  static List<String> _fallbackPathSegments(String path) {
+    return path.split('/').where((segment) => segment.isNotEmpty).toList();
   }
 
   static String _fallbackPathOnly(String location) {
