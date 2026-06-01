@@ -1,6 +1,7 @@
 import '../../../protocol/config_wire_fields.dart';
 import '../../../protocol/navivox_json.dart';
 import '../../shared/navivox_gateway_json.dart';
+import '../values/config_admin_secret_policy.dart';
 import 'config_admin_schema_field_projection.dart';
 
 class NavivoxConfigAdminField {
@@ -23,7 +24,7 @@ class NavivoxConfigAdminField {
           configWireStringFromAliases(json, const ['title', 'label', 'key']) ??
           '',
       description: configWireString(json['description']) ?? '',
-      secret: navivoxGatewayBoolField(json, 'secret'),
+      secret: configAdminIsSecret(json),
       allowed: configAdminSchemaAllowedValues(json),
       actions: configAdminSchemaActions(json),
       reload: configWireString(json['reload']) ?? '',

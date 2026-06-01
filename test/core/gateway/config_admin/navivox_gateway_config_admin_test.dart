@@ -77,6 +77,34 @@ void main() {
     expect(value.toString(), isNot(contains('leaked-api-key')));
   });
 
+  test(
+    'type-secret config values are redacted without duplicate secret flag',
+    () {
+      final value = NavivoxConfigAdminValue.fromJson(const {
+        'key': 'providers.openai.api_key',
+        'type': 'secret',
+        'value': 'leaked-api-key',
+        'secretStatus': 'set',
+      });
+
+      expect(value.secret, isTrue);
+      expect(value.value, isNull);
+      expect(value.formValue, {'secret_status': 'set'});
+      expect(value.toString(), isNot(contains('leaked-api-key')));
+    },
+  );
+
+  test('type-secret schema fields expose secret form metadata', () {
+    final field = NavivoxConfigAdminField.fromJson(const {
+      'path': 'providers.openai.api_key',
+      'type': 'secret',
+      'label': 'OpenAI API key',
+    });
+
+    expect(field.secret, isTrue);
+    expect(field.toFormField()['secret'], isTrue);
+  });
+
   test('redaction and reload status aliases survive gateway normalization', () {
     final value = NavivoxConfigAdminValue.fromJson(const {
       'key': 'providers.openai.api_key',
