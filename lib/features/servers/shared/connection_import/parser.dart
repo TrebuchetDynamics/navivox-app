@@ -7,6 +7,7 @@ import '../../models/connection_import.dart';
 
 part 'candidate.dart';
 part 'candidate_rank.dart';
+part 'endpoint_uri_identity.dart';
 part 'json_candidate_maps.dart';
 part 'shared_text_endpoint.dart';
 
@@ -65,9 +66,7 @@ SetupQrImageImport? _importFromCopiedUriPayload(_CopiedUriPayload payload) {
 }
 
 SetupQrImageImport? _importFromLegacyNavivoxConnectCompatibilityUri(Uri uri) {
-  return _connectionImportCandidateFromFields(
-    _genericUriFields(uri),
-  )?.toImport();
+  return _connectionImportCandidateFromFields(_uriQueryFields(uri))?.toImport();
 }
 
 bool _isLegacyNavivoxConnectCompatibilityUri(Uri uri) {
@@ -217,19 +216,19 @@ SetupQrImageImport? _importFromGenericUri(Uri uri) {
 }
 
 _ConnectionImportCandidate? _connectionImportCandidateFromGenericUri(Uri uri) {
-  final schemeKind = _genericEndpointSchemeKind(uri);
-  if (schemeKind == _GenericEndpointSchemeKind.unsupported) return null;
+  final identity = _ConnectionImportEndpointUriIdentity.fromUri(uri);
+  if (!identity.isSupported) return null;
 
   final candidate = _connectionImportCandidateFromFields(
-    _genericUriFields(uri),
-    fallbackBaseUrl: _baseUrlFromGenericUri(uri),
+    _genericUriFields(uri, identity: identity),
+    fallbackBaseUrl: identity.baseUrl,
   );
   if (candidate != null) return candidate;
-  if (schemeKind == _GenericEndpointSchemeKind.http) {
-    return _ConnectionImportCandidate(baseUrl: navivoxOriginFromUri(uri));
+  if (identity.kind == _GenericEndpointSchemeKind.http) {
+    return _ConnectionImportCandidate(baseUrl: identity.baseUrl);
   }
   return _ConnectionImportCandidate(
-    baseUrl: _webSocketUriBaseUrl(uri),
+    baseUrl: identity.baseUrl,
     webSocketUrl: uri.toString(),
   );
 }
@@ -563,11 +562,12 @@ final _corePairingDescriptorUriPattern = RegExp(
   caseSensitive: false,
 );
 
-Map<String, String> _genericUriFields(Uri uri) {
-  final fields = navivoxFirstNonBlankQueryParameterValues(
-    uri.queryParametersAll,
-  );
-  if (_isWebSocketUri(uri) &&
+Map<String, String> _genericUriFields(
+  Uri uri, {
+  required _ConnectionImportEndpointUriIdentity identity,
+}) {
+  final fields = _uriQueryFields(uri);
+  if (identity.isWebSocket &&
       navivoxFirstStringFieldFromJson(fields, _webSocketUrlFieldNames) ==
           null) {
     fields['websocket_url'] = uri.toString();
@@ -575,32 +575,13 @@ Map<String, String> _genericUriFields(Uri uri) {
   return fields;
 }
 
-String? _baseUrlFromGenericUri(Uri uri) {
-  return switch (_genericEndpointSchemeKind(uri)) {
-    _GenericEndpointSchemeKind.http => navivoxOriginFromUri(uri),
-    _GenericEndpointSchemeKind.webSocket => _webSocketUriBaseUrl(uri),
-    _GenericEndpointSchemeKind.unsupported => null,
-  };
-}
+Map<String, String> _uriQueryFields(Uri uri) =>
+    navivoxFirstNonBlankQueryParameterValues(uri.queryParametersAll);
 
 enum _GenericEndpointSchemeKind { http, webSocket, unsupported }
 
-_GenericEndpointSchemeKind _genericEndpointSchemeKind(Uri uri) {
-  if (!_hasGenericEndpointIdentity(uri)) {
-    return _GenericEndpointSchemeKind.unsupported;
-  }
-  return switch (uri.scheme.toLowerCase()) {
-    'http' || 'https' => _GenericEndpointSchemeKind.http,
-    'ws' || 'wss' => _GenericEndpointSchemeKind.webSocket,
-    _ => _GenericEndpointSchemeKind.unsupported,
-  };
-}
-
 bool _hasGenericEndpointIdentity(Uri uri) =>
     uri.hasScheme && uri.host.isNotEmpty;
-
-bool _isWebSocketUri(Uri uri) =>
-    _genericEndpointSchemeKind(uri) == _GenericEndpointSchemeKind.webSocket;
 
 String? _webSocketUriBaseUrl(Uri uri) {
   try {

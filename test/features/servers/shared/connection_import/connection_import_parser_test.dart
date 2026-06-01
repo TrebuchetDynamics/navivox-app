@@ -35,6 +35,20 @@ void main() {
     expect(result.token, isNull);
   });
 
+  test('parses copied core pairing descriptor scheme case-insensitively', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'NaviVox://CONNECT?'
+      'baseUrl=https%3A%2F%2Fgateway.example%2Fsetup&'
+      'websocketUrl=wss%3A%2F%2Fgateway.example%2Fv1%2Fnavivox%2Fstream&'
+      'restToken=setup-secret-token',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.webSocketUrl, 'wss://gateway.example/v1/navivox/stream');
+    expect(result.token, 'setup-secret-token');
+  });
+
   test('rejects copied URL tokens from unsupported endpoint schemes', () {
     final result = parseNavivoxConnectionImportPayload(
       'ftp://gateway.example/connect?token=nvbx_unsupported',
