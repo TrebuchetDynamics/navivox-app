@@ -12,21 +12,48 @@ class PairingDescriptorQueryPair {
   });
 
   factory PairingDescriptorQueryPair.parse(String component) {
-    final separator = component.indexOf('=');
-    final rawName = separator == -1
-        ? component
-        : component.substring(0, separator);
-    final rawValue = separator == -1 ? '' : component.substring(separator + 1);
+    final parts = pairingDescriptorRawQueryPairParts(component);
     return PairingDescriptorQueryPair(
       normalizedName: navivoxCanonicalWireFieldName(
-        Uri.decodeQueryComponent(rawName),
+        pairingDescriptorDecodeQueryPart(parts.name, component),
       ),
-      value: Uri.decodeQueryComponent(rawValue),
+      value: pairingDescriptorDecodeQueryPart(parts.value, component),
     );
   }
 
   final String normalizedName;
   final String value;
+}
+
+class PairingDescriptorRawQueryPairParts {
+  const PairingDescriptorRawQueryPairParts({
+    required this.name,
+    required this.value,
+  });
+
+  final String name;
+  final String value;
+}
+
+PairingDescriptorRawQueryPairParts pairingDescriptorRawQueryPairParts(
+  String component,
+) {
+  final separator = component.indexOf('=');
+  return PairingDescriptorRawQueryPairParts(
+    name: separator == -1 ? component : component.substring(0, separator),
+    value: separator == -1 ? '' : component.substring(separator + 1),
+  );
+}
+
+String pairingDescriptorDecodeQueryPart(String value, String sourceComponent) {
+  try {
+    return Uri.decodeQueryComponent(value);
+  } on ArgumentError {
+    throw FormatException(
+      'Pairing descriptor query contains invalid percent encoding',
+      sourceComponent,
+    );
+  }
 }
 
 List<PairingDescriptorQueryPair> pairingDescriptorOrderedQueryPairs({

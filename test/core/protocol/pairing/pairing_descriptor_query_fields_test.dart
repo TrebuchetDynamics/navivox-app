@@ -31,4 +31,14 @@ void main() {
       ]);
     },
   );
+
+  test('malformed percent escapes fail as descriptor format errors', () {
+    expect(
+      () => pairingDescriptorOrderedQueryPairs(
+        rawQuery: 'server_id=%ZZ',
+        queryParametersAll: const {},
+      ),
+      throwsFormatException,
+    );
+  });
 }
