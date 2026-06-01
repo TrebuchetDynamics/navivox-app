@@ -46,6 +46,27 @@ String? durableSavedSessionWebSocketUrlFromMetadata(Object? value) {
 }
 
 bool _hasExplicitUriScheme(String value) {
-  final uri = Uri.tryParse(value);
-  return uri != null && uri.hasScheme;
+  final text = value.trim();
+  final uri = Uri.tryParse(text);
+  if (uri == null || !uri.hasScheme) return false;
+
+  // Dart's URI parser treats `host:8765/path` as a URI with scheme `host`.
+  // Saved-session metadata also accepts legacy non-URL text, so only discard
+  // values that are visibly URL/scheme-shaped rather than host-port-shaped.
+  return _hasAuthoritySchemeSeparator(text) || _hasNonPortSchemeSeparator(text);
+}
+
+bool _hasAuthoritySchemeSeparator(String value) {
+  return value.indexOf('://') > 0;
+}
+
+bool _hasNonPortSchemeSeparator(String value) {
+  final separator = value.indexOf(':');
+  if (separator <= 0 || separator == value.length - 1) return false;
+  return !_startsWithAsciiDigit(value, separator + 1);
+}
+
+bool _startsWithAsciiDigit(String value, int index) {
+  final codeUnit = value.codeUnitAt(index);
+  return codeUnit >= 0x30 && codeUnit <= 0x39;
 }

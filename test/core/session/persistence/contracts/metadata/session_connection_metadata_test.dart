@@ -24,6 +24,13 @@ void main() {
     test('drops invalid websocket-shaped values', () {
       expect(sanitizedSavedSessionWebSocketUrl('wss:/missing-host'), isNull);
     });
+
+    test('preserves legacy host-port websocket metadata', () {
+      expect(
+        sanitizedSavedSessionWebSocketUrl(' gateway.local:8765/custom/stream '),
+        'gateway.local:8765/custom/stream',
+      );
+    });
   });
 
   group('SavedSessionWebSocketEndpoint', () {
