@@ -36,6 +36,7 @@ bool _isPreferredSharedTextEndpointCandidate(
 class _SharedTextEndpointSelectionSignals {
   const _SharedTextEndpointSelectionSignals({
     required this.rank,
+    required this.hasCompleteConnection,
     required this.hasFollowingToken,
     required this.hasConnectionPath,
   });
@@ -45,12 +46,14 @@ class _SharedTextEndpointSelectionSignals {
   ) {
     return _SharedTextEndpointSelectionSignals(
       rank: candidate.candidate.rank,
+      hasCompleteConnection: candidate.candidate.hasCompleteConnection,
       hasFollowingToken: candidate.hasFollowingToken,
       hasConnectionPath: candidate.hasConnectionPath,
     );
   }
 
   final _ConnectionImportCandidateRank rank;
+  final bool hasCompleteConnection;
   final bool hasFollowingToken;
   final bool hasConnectionPath;
 
@@ -70,6 +73,18 @@ abstract final class _SharedTextEndpointSelectionDecisionFactory {
     required _SharedTextEndpointSelectionSignals candidate,
     required _SharedTextEndpointSelectionSignals incumbent,
   }) {
+    // A URL carrying both endpoint and token is already an actionable handoff.
+    // Do not let a nearby bare documentation/setup URL steal selection merely
+    // because its path happens to contain connection-route vocabulary.
+    final completeConnectionDecision = _preferTrue(
+      candidate.hasCompleteConnection,
+      incumbent.hasCompleteConnection,
+    );
+    if (completeConnectionDecision !=
+        _SharedTextEndpointSelectionDecision.tie) {
+      return completeConnectionDecision;
+    }
+
     // Shared text often contains documentation URLs before the actual pairing
     // handoff URL. Prefer explicit connection-route vocabulary before generic
     // richness so a stale docs query token cannot outrank the real endpoint.
@@ -81,8 +96,9 @@ abstract final class _SharedTextEndpointSelectionDecisionFactory {
       return connectionPathDecision;
     }
 
-    // When two URLs expose the same connection-route signal, bind prose tokens
-    // to the URL whose following segment actually contains the token.
+    // When two URLs expose the same completeness/connection-route signals,
+    // bind prose tokens to the URL whose following segment actually contains
+    // the token.
     final followingTokenDecision = _preferTrue(
       candidate.hasFollowingToken,
       incumbent.hasFollowingToken,

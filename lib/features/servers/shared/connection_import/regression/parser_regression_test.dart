@@ -18,6 +18,7 @@ void main() {
   prefersNearestLeadingTokenBeforeSelectedEmbeddedUrl();
   readsEarliestLabeledSharedTextTokenAfterSelectedUrl();
   prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl();
+  prefersCredentialedEndpointOverEarlierConnectionPathOnlyUrl();
   prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl();
   prefersConnectionPathOverEarlierEqualRankMetadataUrl();
   doesNotBorrowTokenFromLaterSharedTextUrlWindow();
@@ -378,6 +379,23 @@ void prefersRicherEmbeddedUrlOverEarlierUnrelatedUrl() {
   );
   _expect(result.token == 'nvbx_embedded', 'embedded URL token is preserved');
   _expect(result.serverId == 'srv', 'embedded URL metadata is preserved');
+}
+
+void prefersCredentialedEndpointOverEarlierConnectionPathOnlyUrl() {
+  final result = parseNavivoxConnectionImportPayload(
+    'Read https://docs.example/connect first. Then open '
+    'https://gateway.example/api?token=nvbx_fresh to finish setup.',
+  );
+
+  _expect(
+    result != null,
+    'shared text with docs URL before credentialed endpoint should parse',
+  );
+  _expect(
+    result!.baseUrl == 'https://gateway.example',
+    'a complete credentialed endpoint must not be hidden by an earlier connection-path-only URL',
+  );
+  _expect(result.token == 'nvbx_fresh', 'credentialed endpoint token kept');
 }
 
 void prefersLaterSharedTextUrlWhenTokenBelongsToThatUrl() {
