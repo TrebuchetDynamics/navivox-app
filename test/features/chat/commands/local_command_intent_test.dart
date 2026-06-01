@@ -327,6 +327,38 @@ void main() {
     expect(intent.target?.profileId, 'mineru');
   });
 
+  test('coalesces repeated profile snapshots before ambiguity checks', () {
+    final intent = resolver.resolve(
+      raw: 'navi office mineru',
+      commandWord: 'navi',
+      commandMode: false,
+      fromVoice: false,
+      profileSwitchingEnabled: true,
+      contacts: const [
+        NavivoxProfileContact(
+          serverId: 'office',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'office',
+          health: NavivoxProfileHealth.offline,
+          latestPreview: 'Older snapshot',
+        ),
+        NavivoxProfileContact(
+          serverId: 'office',
+          profileId: 'mineru',
+          displayName: 'Mineru',
+          serverLabel: 'office',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+      ],
+    );
+
+    expect(intent.action, LocalCommandAction.switchProfile);
+    expect(intent.target?.serverId, 'office');
+    expect(intent.target?.profileId, 'mineru');
+  });
+
   test('classifies profile resolution before policy gates', () {
     const profileResolver = LocalCommandProfileResolver();
 

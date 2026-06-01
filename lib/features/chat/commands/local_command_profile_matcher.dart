@@ -30,14 +30,25 @@ List<NavivoxProfileContact> matchingLocalCommandContacts({
   required String Function(String value) normalize,
 }) {
   if (normalized.isEmpty) return const [];
-  return contacts
-      .where(
-        (contact) => localCommandContactNames(
-          contact,
-          normalize: normalize,
-        ).contains(normalized),
-      )
-      .toList(growable: false);
+
+  final matchesByProfileKey = <String, NavivoxProfileContact>{};
+  for (final contact in contacts) {
+    if (!localCommandContactNames(
+      contact,
+      normalize: normalize,
+    ).contains(normalized)) {
+      continue;
+    }
+    matchesByProfileKey.putIfAbsent(
+      localCommandContactIdentity(contact),
+      () => contact,
+    );
+  }
+  return matchesByProfileKey.values.toList(growable: false);
+}
+
+String localCommandContactIdentity(NavivoxProfileContact contact) {
+  return contact.key;
 }
 
 String _joinLocalCommandParts(Iterable<String> parts) {
