@@ -18,6 +18,9 @@ enum SavedSessionUriTextShape {
   };
 }
 
+/// Legacy-shaped metadata delimiters that can hide one-time pairing state.
+enum SavedSessionUriTextUnsafeDelimiter { query, fragment, userInfo }
+
 SavedSessionUriTextShape classifySavedSessionUriTextShape(String value) {
   return SavedSessionUriTextFacts.fromText(value).shape;
 }
@@ -138,11 +141,22 @@ class SavedSessionUriTextSyntax {
     return !_startsWithAsciiDigit(text, _firstColonIndex + 1);
   }
 
+  /// URI subfield delimiters found in otherwise legacy-shaped metadata.
+  ///
+  /// Keeping the exact delimiter reasons replayable prevents the base-url and
+  /// websocket projections from drifting on whether `?`, `#`, or `@` should
+  /// reject preservation of old host-port text.
+  List<SavedSessionUriTextUnsafeDelimiter> get unsafeLegacyDelimiters {
+    return [
+      if (text.contains('?')) SavedSessionUriTextUnsafeDelimiter.query,
+      if (text.contains('#')) SavedSessionUriTextUnsafeDelimiter.fragment,
+      if (text.contains('@')) SavedSessionUriTextUnsafeDelimiter.userInfo,
+    ];
+  }
+
   /// True when legacy-shaped metadata still contains URI subfields that can
   /// carry one-time pairing state and should not be preserved verbatim.
-  bool get hasNonDurableUriStateDelimiter {
-    return text.contains('?') || text.contains('#') || text.contains('@');
-  }
+  bool get hasNonDurableUriStateDelimiter => unsafeLegacyDelimiters.isNotEmpty;
 }
 
 const int _colon = 0x3a;

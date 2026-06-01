@@ -40,30 +40,41 @@ void main() {
     });
 
     test('exposes URI state delimiters in legacy-shaped metadata', () {
-      expect(
-        SavedSessionUriTextSyntax.parse(
-          'gateway.example:8765/stream?token=secret',
-        ).hasNonDurableUriStateDelimiter,
-        isTrue,
+      final query = SavedSessionUriTextSyntax.parse(
+        'gateway.example:8765/stream?token=secret',
       );
-      expect(
-        SavedSessionUriTextSyntax.parse(
-          'gateway.example:8765/stream#handoff',
-        ).hasNonDurableUriStateDelimiter,
-        isTrue,
+      final fragment = SavedSessionUriTextSyntax.parse(
+        'gateway.example:8765/stream#handoff',
       );
-      expect(
-        SavedSessionUriTextSyntax.parse(
-          'pairing-token@gateway.example:8765/stream',
-        ).hasNonDurableUriStateDelimiter,
-        isTrue,
+      final userInfo = SavedSessionUriTextSyntax.parse(
+        'pairing-token@gateway.example:8765/stream',
       );
-      expect(
-        SavedSessionUriTextSyntax.parse(
-          'gateway.example:8765/stream',
-        ).hasNonDurableUriStateDelimiter,
-        isFalse,
+      final combined = SavedSessionUriTextSyntax.parse(
+        'pairing-token@gateway.example:8765/stream?token=secret#handoff',
       );
+      final safe = SavedSessionUriTextSyntax.parse(
+        'gateway.example:8765/stream',
+      );
+
+      expect(query.unsafeLegacyDelimiters, [
+        SavedSessionUriTextUnsafeDelimiter.query,
+      ]);
+      expect(fragment.unsafeLegacyDelimiters, [
+        SavedSessionUriTextUnsafeDelimiter.fragment,
+      ]);
+      expect(userInfo.unsafeLegacyDelimiters, [
+        SavedSessionUriTextUnsafeDelimiter.userInfo,
+      ]);
+      expect(combined.unsafeLegacyDelimiters, [
+        SavedSessionUriTextUnsafeDelimiter.query,
+        SavedSessionUriTextUnsafeDelimiter.fragment,
+        SavedSessionUriTextUnsafeDelimiter.userInfo,
+      ]);
+      expect(query.hasNonDurableUriStateDelimiter, isTrue);
+      expect(fragment.hasNonDurableUriStateDelimiter, isTrue);
+      expect(userInfo.hasNonDurableUriStateDelimiter, isTrue);
+      expect(safe.hasNonDurableUriStateDelimiter, isFalse);
+      expect(safe.unsafeLegacyDelimiters, isEmpty);
     });
   });
 
