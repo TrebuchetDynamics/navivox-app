@@ -739,12 +739,18 @@ String? _baseUrlFromGenericUri(Uri uri) {
 enum _GenericEndpointSchemeKind { http, webSocket, unsupported }
 
 _GenericEndpointSchemeKind _genericEndpointSchemeKind(Uri uri) {
-  return switch (uri.scheme) {
+  if (!_hasGenericEndpointIdentity(uri)) {
+    return _GenericEndpointSchemeKind.unsupported;
+  }
+  return switch (uri.scheme.toLowerCase()) {
     'http' || 'https' => _GenericEndpointSchemeKind.http,
     'ws' || 'wss' => _GenericEndpointSchemeKind.webSocket,
     _ => _GenericEndpointSchemeKind.unsupported,
   };
 }
+
+bool _hasGenericEndpointIdentity(Uri uri) =>
+    uri.hasScheme && uri.host.isNotEmpty;
 
 bool _isWebSocketUri(Uri uri) =>
     _genericEndpointSchemeKind(uri) == _GenericEndpointSchemeKind.webSocket;

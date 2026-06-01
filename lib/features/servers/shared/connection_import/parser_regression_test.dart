@@ -60,6 +60,7 @@ void main() {
   doesNotBorrowTokenFromMalformedCoreDescriptorBeforeGenericSharedTextUrl();
   rejectsCorePairingDescriptorWithHttpWebSocketUrl();
   rejectsCorePairingDescriptorWithNonHttpBaseUrl();
+  rejectsHostlessGenericEndpointInsteadOfFabricatingTokenOnlyImport();
   doesNotTreatInvalidJsonWebSocketUrlAsBaseUrl();
   doesNotTreatUnsupportedJsonBaseUrlSchemeAsBaseUrl();
 }
@@ -1040,6 +1041,24 @@ void rejectsCorePairingDescriptorWithNonHttpBaseUrl() {
   _expect(
     result == null,
     'core pairing base_url must be an HTTP(S) endpoint, not an arbitrary URI',
+  );
+}
+
+void rejectsHostlessGenericEndpointInsteadOfFabricatingTokenOnlyImport() {
+  final hostlessHttp = parseNavivoxConnectionImportPayload(
+    'http:/missing-host?token=nvbx_bad',
+  );
+  final hostlessWebSocket = parseNavivoxConnectionImportPayload(
+    'ws:/missing-host?token=nvbx_bad',
+  );
+
+  _expect(
+    hostlessHttp == null,
+    'hostless HTTP URL must not fabricate an http:// baseUrl with a token',
+  );
+  _expect(
+    hostlessWebSocket == null,
+    'hostless websocket URL must not degrade to a token-only import',
   );
 }
 
