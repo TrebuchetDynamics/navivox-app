@@ -1,4 +1,4 @@
-part of '../parser.dart';
+part of '../../parser.dart';
 
 _ConnectionImportEndpointFields _connectionImportEndpointFields(
   Map<dynamic, dynamic> fields,

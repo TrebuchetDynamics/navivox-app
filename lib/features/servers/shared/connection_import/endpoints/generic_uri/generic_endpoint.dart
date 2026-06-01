@@ -1,4 +1,4 @@
-part of '../parser.dart';
+part of '../../parser.dart';
 
 Map<String, String> _genericUriFields(
   Uri uri, {

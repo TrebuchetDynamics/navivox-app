@@ -1,4 +1,4 @@
-part of '../parser.dart';
+part of '../../parser.dart';
 
 String _trimCopiedEndpointUrl(String url) {
   final start = _copiedEndpointUrlStart(url);
