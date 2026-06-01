@@ -96,8 +96,7 @@ String? _durableWebSocketUrlFromText(String text) {
 }
 
 bool _isUnsafeSavedSessionWebSocketShape(String value) {
-  return classifySavedSessionWebSocketTextShape(value).isExplicitUriScheme ||
-      SavedSessionUriTextSyntax.parse(value).hasNonDurableUriStateDelimiter;
+  return SavedSessionUriTextFacts.fromText(value).isUnsafeToPreserveAsLegacy;
 }
 
 /// Replayable shape classification for saved websocket metadata text.

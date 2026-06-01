@@ -63,6 +63,5 @@ String? _httpBaseUrlFromEndpointText(String value) {
 }
 
 bool _isUnsafeSavedSessionBaseUrlShape(String value) {
-  return classifySavedSessionUriTextShape(value).isExplicitUriScheme ||
-      SavedSessionUriTextSyntax.parse(value).hasNonDurableUriStateDelimiter;
+  return SavedSessionUriTextFacts.fromText(value).isUnsafeToPreserveAsLegacy;
 }

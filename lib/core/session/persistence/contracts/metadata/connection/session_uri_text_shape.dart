@@ -19,7 +19,38 @@ enum SavedSessionUriTextShape {
 }
 
 SavedSessionUriTextShape classifySavedSessionUriTextShape(String value) {
-  final syntax = SavedSessionUriTextSyntax.parse(value);
+  return SavedSessionUriTextFacts.fromText(value).shape;
+}
+
+/// Replayable URI-ish text facts that drive saved-session persistence safety.
+///
+/// This value type keeps shape classification and secret-bearing delimiter
+/// checks on the same normalized text, so base-url and websocket metadata cannot
+/// drift on whether legacy text is safe to preserve.
+class SavedSessionUriTextFacts {
+  const SavedSessionUriTextFacts._({required this.syntax, required this.shape});
+
+  factory SavedSessionUriTextFacts.fromText(String value) {
+    final syntax = SavedSessionUriTextSyntax.parse(value);
+    return SavedSessionUriTextFacts._(
+      syntax: syntax,
+      shape: _classifySavedSessionUriTextSyntax(syntax),
+    );
+  }
+
+  final SavedSessionUriTextSyntax syntax;
+  final SavedSessionUriTextShape shape;
+
+  /// True when the raw text is visibly URI-shaped or carries URI subfields that
+  /// can hold one-time pairing credentials and must not be kept as legacy text.
+  bool get isUnsafeToPreserveAsLegacy {
+    return shape.isExplicitUriScheme || syntax.hasNonDurableUriStateDelimiter;
+  }
+}
+
+SavedSessionUriTextShape _classifySavedSessionUriTextSyntax(
+  SavedSessionUriTextSyntax syntax,
+) {
   if (syntax.isBlank) return SavedSessionUriTextShape.none;
 
   // Dart's URI parser treats bracketed IPv6 host literals such as

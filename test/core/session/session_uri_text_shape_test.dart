@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_base_url.dart';
+import 'package:navivox/core/session/persistence/contracts/metadata/connection/saved_session_web_socket_endpoint.dart';
 import 'package:navivox/core/session/persistence/contracts/metadata/connection/session_uri_text_shape.dart';
 
 void main() {
@@ -88,6 +90,46 @@ void main() {
         expect(
           classifySavedSessionUriTextShape('[::1]://stream?token=secret'),
           SavedSessionUriTextShape.authorityUrl,
+        );
+      },
+    );
+
+    test('exposes the shared unsafe legacy-preservation decision', () {
+      final safeLegacy = SavedSessionUriTextFacts.fromText(
+        'gateway.example:8765/stream',
+      );
+      expect(safeLegacy.shape, SavedSessionUriTextShape.hostPortLike);
+      expect(safeLegacy.isUnsafeToPreserveAsLegacy, isFalse);
+
+      final legacyWithTokenDelimiter = SavedSessionUriTextFacts.fromText(
+        'gateway.example:8765/stream?pairing_token=secret',
+      );
+      expect(
+        legacyWithTokenDelimiter.shape,
+        SavedSessionUriTextShape.hostPortLike,
+      );
+      expect(legacyWithTokenDelimiter.isUnsafeToPreserveAsLegacy, isTrue);
+
+      final malformedUrl = SavedSessionUriTextFacts.fromText(
+        'wss://gateway.example:bad/stream',
+      );
+      expect(malformedUrl.shape, SavedSessionUriTextShape.authorityUrl);
+      expect(malformedUrl.isUnsafeToPreserveAsLegacy, isTrue);
+    });
+
+    test(
+      'base-url and websocket projections share unsafe legacy filtering',
+      () {
+        const legacyWithTokenDelimiter =
+            'gateway.example:8765/stream?pairing_token=secret';
+
+        expect(
+          durableSavedSessionBaseUrlFromMetadata(legacyWithTokenDelimiter),
+          isNull,
+        );
+        expect(
+          durableSavedSessionWebSocketUrlFromMetadata(legacyWithTokenDelimiter),
+          isNull,
         );
       },
     );
