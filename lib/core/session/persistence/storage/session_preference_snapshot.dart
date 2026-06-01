@@ -14,7 +14,7 @@ SavedSession? savedSessionFromPreferenceSnapshot({
   Object? gatewayId,
   Object? lastConnectedAt,
 }) {
-  final fields = SavedSessionFields.fromStoredValues(
+  final fields = savedSessionFieldsFromPreferenceSnapshot(
     baseUrl: baseUrl,
     webSocketUrl: webSocketUrl,
     gatewayId: gatewayId,
@@ -27,5 +27,35 @@ SavedSession? savedSessionFromPreferenceSnapshot({
     webSocketUrl: fields.webSocketUrl,
     gatewayId: fields.gatewayId,
     lastConnectedAt: fields.lastConnectedAt,
+  );
+}
+
+/// True only when the stored values can replay into a loadable saved session.
+bool hasSavedSessionInPreferenceSnapshot({
+  required Object? baseUrl,
+  Object? webSocketUrl,
+  Object? gatewayId,
+  Object? lastConnectedAt,
+}) {
+  return savedSessionFieldsFromPreferenceSnapshot(
+        baseUrl: baseUrl,
+        webSocketUrl: webSocketUrl,
+        gatewayId: gatewayId,
+        lastConnectedAt: lastConnectedAt,
+      ) !=
+      null;
+}
+
+SavedSessionFields? savedSessionFieldsFromPreferenceSnapshot({
+  required Object? baseUrl,
+  Object? webSocketUrl,
+  Object? gatewayId,
+  Object? lastConnectedAt,
+}) {
+  return SavedSessionFields.fromStoredValues(
+    baseUrl: baseUrl,
+    webSocketUrl: webSocketUrl,
+    gatewayId: gatewayId,
+    lastConnectedAt: lastConnectedAt,
   );
 }

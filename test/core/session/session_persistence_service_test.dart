@@ -136,6 +136,20 @@ void main() {
     expect(session?.lastConnectedAt, isNull);
   });
 
+  test(
+    'hasSession replays base URL sanitization instead of raw nonblank check',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        SessionPreferenceKeys.baseUrl: 'https://gateway.example.test:bad/setup',
+        SessionPreferenceKeys.gatewayId: 'gateway-1',
+      });
+      final service = SessionPersistenceService();
+
+      expect(await service.loadSession(), isNull);
+      expect(await service.hasSession(), isFalse);
+    },
+  );
+
   test('save, load, and clear apply the same preference write plan', () async {
     SharedPreferences.setMockInitialValues({
       SessionPreferenceKeys.legacyToken: 'bootstrap-secret',

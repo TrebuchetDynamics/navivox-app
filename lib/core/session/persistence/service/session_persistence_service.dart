@@ -1,6 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../shared/session_text.dart';
 import '../contracts/saved_session.dart';
 import '../storage/session_preference_keys.dart';
 import '../storage/session_preference_snapshot.dart';
@@ -67,13 +66,17 @@ class SessionPersistenceService {
     await _applyPreferenceWrites(prefs, sessionPreferenceWritesForClear);
   }
 
-  /// Check if a saved session exists without loading all fields.
+  /// Check if a loadable saved session exists.
   Future<bool> hasSession() async {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return false;
-    final baseUrl = prefs.getString(SessionPreferenceKeys.baseUrl);
-    return isNonBlankSessionText(baseUrl);
+    return hasSavedSessionInPreferenceSnapshot(
+      baseUrl: prefs.getString(SessionPreferenceKeys.baseUrl),
+      webSocketUrl: prefs.getString(SessionPreferenceKeys.webSocketUrl),
+      gatewayId: prefs.getString(SessionPreferenceKeys.gatewayId),
+      lastConnectedAt: prefs.getString(SessionPreferenceKeys.lastConnectedAt),
+    );
   }
 }
 
