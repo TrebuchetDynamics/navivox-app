@@ -1,5 +1,6 @@
 import '../../gateway/client/navivox_gateway_config.dart';
 import 'pairing_descriptor_endpoints.dart';
+import 'pairing_descriptor_envelope.dart';
 import 'pairing_descriptor_query_fields.dart';
 
 class NavivoxPairingDescriptor {
@@ -18,12 +19,11 @@ class NavivoxPairingDescriptor {
   });
 
   factory NavivoxPairingDescriptor.parse(String value) {
-    final uri = Uri.parse(value.trim());
-    _validatePairingDescriptorEnvelope(uri, descriptor: value);
+    final envelope = PairingDescriptorEnvelope.parse(value);
     final fields = PairingDescriptorQueryFields(
       descriptor: value,
-      queryParametersAll: uri.queryParametersAll,
-      rawQuery: uri.query,
+      queryParametersAll: envelope.queryParametersAll,
+      rawQuery: envelope.rawQuery,
     );
     final tokenRequired = fields.boolean('token_required');
     final token = fields.optional('rest_token');
@@ -67,18 +67,6 @@ class NavivoxPairingDescriptor {
       baseUri: baseUri,
       token: token,
       webSocketUri: webSocketUri,
-    );
-  }
-}
-
-void _validatePairingDescriptorEnvelope(Uri uri, {required String descriptor}) {
-  if (uri.scheme != 'navivox' || uri.host != 'connect') {
-    throw FormatException('Expected navivox://connect descriptor', descriptor);
-  }
-  if (uri.path.isNotEmpty || uri.hasFragment) {
-    throw FormatException(
-      'Pairing descriptor must not include path or fragment state',
-      descriptor,
     );
   }
 }

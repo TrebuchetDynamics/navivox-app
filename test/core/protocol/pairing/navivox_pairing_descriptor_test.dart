@@ -14,6 +14,19 @@ void main() {
     }
   });
 
+  test(
+    'rejects descriptor userinfo instead of dropping hidden credentials',
+    () {
+      expect(
+        () => NavivoxPairingDescriptor.parse(
+          'navivox://operator:secret@connect?'
+          'websocket_url=ws%3A%2F%2F127.0.0.1%3A8765%2Fstream',
+        ),
+        throwsFormatException,
+      );
+    },
+  );
+
   test('rejects explicit base_url fragments instead of dropping them', () {
     expect(
       () => NavivoxPairingDescriptor.parse(
