@@ -1,6 +1,7 @@
 import '../../../protocol/config_wire_fields.dart';
 import '../../../protocol/navivox_json.dart';
 import '../../shared/navivox_gateway_json.dart';
+import '../status/config_admin_status_fields.dart';
 
 class NavivoxConfigAdminValue {
   const NavivoxConfigAdminValue({
@@ -18,7 +19,10 @@ class NavivoxConfigAdminValue {
       type: configWireString(json['type']) ?? 'string',
       value: json['value'],
       secret: navivoxGatewayBoolField(json, 'secret'),
-      secretStatus: configWireString(json['secret_status']) ?? '',
+      secretStatus: configAdminStatusStringFromAliases(
+        json,
+        configAdminSecretStatusAliases,
+      ),
       source: configWireString(json['source']) ?? '',
     );
   }

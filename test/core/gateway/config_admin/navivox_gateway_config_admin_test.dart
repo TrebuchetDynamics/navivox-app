@@ -51,6 +51,42 @@ void main() {
     );
   });
 
+  test('redaction and reload status aliases survive gateway normalization', () {
+    final value = NavivoxConfigAdminValue.fromJson(const {
+      'key': 'providers.openai.api_key',
+      'secret': true,
+      'secretStatus': 'set',
+    });
+    expect(value.secretStatus, 'set');
+    expect(value.formValue, {'secret_status': 'set'});
+
+    final response = NavivoxConfigAdminResponse.fromJson(const {
+      'action': 'config.apply',
+      'valid': true,
+      'reloadApplied': true,
+      'pendingRestart': true,
+      'reloadError': 'restart required',
+      'changes': [
+        {
+          'key': 'providers.openai.api_key',
+          'type': 'secret',
+          'beforeRedacted': true,
+          'afterRedacted': true,
+          'secretStatus': 'set',
+        },
+      ],
+    });
+
+    expect(response.reloadApplied, isTrue);
+    expect(response.pendingRestart, isTrue);
+    expect(response.reloadError, 'restart required');
+    expect(response.changes.single.beforeRedacted, isTrue);
+    expect(response.changes.single.afterRedacted, isTrue);
+    expect(response.changes.single.secretStatus, 'set');
+    expect(response.snapshot['reload_applied'], isTrue);
+    expect(response.changes.single.summaryLabel, contains('[redacted:set]'));
+  });
+
   test('schema list aliases expose fallback candidate order', () {
     const schemaField = {
       'path': 'voice.capture_mode',

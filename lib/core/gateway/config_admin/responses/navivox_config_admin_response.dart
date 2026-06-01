@@ -2,6 +2,7 @@ import '../../../protocol/config_wire_fields.dart';
 import '../../../protocol/navivox_json.dart';
 import '../../shared/navivox_gateway_json.dart';
 import '../changes/config_admin_value_codec.dart';
+import '../status/config_admin_status_fields.dart';
 
 class NavivoxConfigAdminDiff {
   const NavivoxConfigAdminDiff({
@@ -22,9 +23,18 @@ class NavivoxConfigAdminDiff {
       secret: navivoxGatewayBoolField(json, 'secret'),
       before: json['before'],
       after: json['after'],
-      beforeRedacted: navivoxGatewayBoolField(json, 'before_redacted'),
-      afterRedacted: navivoxGatewayBoolField(json, 'after_redacted'),
-      secretStatus: configWireString(json['secret_status']) ?? '',
+      beforeRedacted: configAdminStatusBoolFromAliases(
+        json,
+        configAdminBeforeRedactedAliases,
+      ),
+      afterRedacted: configAdminStatusBoolFromAliases(
+        json,
+        configAdminAfterRedactedAliases,
+      ),
+      secretStatus: configAdminStatusStringFromAliases(
+        json,
+        configAdminSecretStatusAliases,
+      ),
     );
   }
 
@@ -104,9 +114,18 @@ class NavivoxConfigAdminResponse {
       action: navivoxStringFieldFromJson(json, 'action'),
       valid: navivoxGatewayBoolField(json, 'valid'),
       applied: navivoxGatewayBoolField(json, 'applied'),
-      reloadApplied: navivoxGatewayBoolField(json, 'reload_applied'),
-      pendingRestart: navivoxGatewayBoolField(json, 'pending_restart'),
-      reloadError: configWireString(json['reload_error']) ?? '',
+      reloadApplied: configAdminStatusBoolFromAliases(
+        json,
+        configAdminReloadAppliedAliases,
+      ),
+      pendingRestart: configAdminStatusBoolFromAliases(
+        json,
+        configAdminPendingRestartAliases,
+      ),
+      reloadError: configAdminStatusStringFromAliases(
+        json,
+        configAdminReloadErrorAliases,
+      ),
       changes: navivoxGatewayObjectListWhereHasText(
         json['changes'],
         NavivoxConfigAdminDiff.fromJson,
