@@ -1,8 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../protocol/navivox_json.dart';
 import '../../shared/session_text.dart';
 import '../contracts/saved_connection_fields.dart';
+import '../contracts/saved_session_fields.dart';
 import '../contracts/session_staleness.dart';
 import '../storage/session_preference_keys.dart';
 
@@ -63,22 +63,19 @@ class SessionPersistenceService {
     await ensureInitialized();
     final prefs = _prefs;
     if (prefs == null) return null;
-    final baseUrl = navivoxOptionalStringFromJson(
-      prefs.getString(SessionPreferenceKeys.baseUrl),
+    final fields = SavedSessionFields.fromStoredValues(
+      baseUrl: prefs.getString(SessionPreferenceKeys.baseUrl),
+      webSocketUrl: prefs.getString(SessionPreferenceKeys.webSocketUrl),
+      gatewayId: prefs.getString(SessionPreferenceKeys.gatewayId),
+      lastConnectedAt: prefs.getString(SessionPreferenceKeys.lastConnectedAt),
     );
-    if (baseUrl == null) return null;
+    if (fields == null) return null;
 
     return SavedSession(
-      baseUrl: baseUrl,
-      webSocketUrl: navivoxOptionalStringFromJson(
-        prefs.getString(SessionPreferenceKeys.webSocketUrl),
-      ),
-      gatewayId: navivoxOptionalStringFromJson(
-        prefs.getString(SessionPreferenceKeys.gatewayId),
-      ),
-      lastConnectedAt: navivoxDateTimeFromJson(
-        prefs.getString(SessionPreferenceKeys.lastConnectedAt),
-      ),
+      baseUrl: fields.baseUrl,
+      webSocketUrl: fields.webSocketUrl,
+      gatewayId: fields.gatewayId,
+      lastConnectedAt: fields.lastConnectedAt,
     );
   }
 
