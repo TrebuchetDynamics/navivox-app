@@ -1,5 +1,5 @@
-import '../../../../../core/protocol/navivox_event.dart';
-import '../shared/text/transcript_display_text.dart';
+import '../../../../../../core/protocol/navivox_event.dart';
+import '../../shared/text/transcript_display_text.dart';
 
 class TranscriptVoiceMessagePresentation {
   const TranscriptVoiceMessagePresentation({

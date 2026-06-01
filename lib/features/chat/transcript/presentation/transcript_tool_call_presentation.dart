@@ -1,1 +1,1 @@
-export 'message/transcript_tool_call_presentation.dart';
+export 'message/tool/transcript_tool_call_presentation.dart';
