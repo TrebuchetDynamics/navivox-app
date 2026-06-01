@@ -66,7 +66,7 @@ class SavedSessionWebSocketMetadata {
 
   final SavedSessionMetadataProjection _projection;
 
-  String? get durableUrl => _projection.durableValue;
+  String? get durableUrl => _projection.persistableValue;
   bool get isLegacyText => _projection.isLegacyText;
   bool get isRejectedUrl => _projection.isRejectedUrl;
 

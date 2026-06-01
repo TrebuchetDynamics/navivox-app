@@ -35,7 +35,7 @@ class SavedSessionBaseUrlMetadata {
 
   final SavedSessionMetadataProjection _projection;
 
-  String? get durableBaseUrl => _projection.durableValue;
+  String? get durableBaseUrl => _projection.persistableValue;
   bool get isLegacyText => _projection.isLegacyText;
   bool get isRejectedUrl => _projection.isRejectedUrl;
 

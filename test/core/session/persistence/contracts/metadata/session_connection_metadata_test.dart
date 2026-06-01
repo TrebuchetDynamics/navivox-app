@@ -37,14 +37,18 @@ void main() {
 
         expect(durable.kind, SavedSessionMetadataProjectionKind.durable);
         expect(durable.projectedValue, 'https://gateway.example');
+        expect(durable.persistableValue, 'https://gateway.example');
         expect(durable.durableValue, 'https://gateway.example');
         expect(durable.isAbsent, isFalse);
+        expect(durable.isDurableEndpoint, isTrue);
         expect(durable.isLegacyText, isFalse);
 
         expect(legacy.kind, SavedSessionMetadataProjectionKind.legacy);
         expect(legacy.projectedValue, 'gateway.local:8765/setup');
+        expect(legacy.persistableValue, 'gateway.local:8765/setup');
         expect(legacy.durableValue, 'gateway.local:8765/setup');
         expect(legacy.isAbsent, isFalse);
+        expect(legacy.isDurableEndpoint, isFalse);
         expect(legacy.isLegacyText, isTrue);
 
         expect(rejected.kind, SavedSessionMetadataProjectionKind.rejectedUrl);

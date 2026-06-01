@@ -32,7 +32,21 @@ class SavedSessionMetadataProjection {
   final String? projectedValue;
   final SavedSessionMetadataProjectionKind kind;
 
-  String? get durableValue => projectedValue;
+  /// Value that may be safely written back to saved-session metadata.
+  ///
+  /// This includes both sanitized durable endpoint values and legacy
+  /// compatibility text. Reconnect capability decisions must still inspect
+  /// [kind] before treating the value as a parsed endpoint.
+  String? get persistableValue => projectedValue;
+
+  /// Backwards-compatible alias for [persistableValue].
+  ///
+  /// Some callers historically used this for all persisted metadata, including
+  /// legacy text; keep that behavior explicit rather than changing public shape.
+  String? get durableValue => persistableValue;
+
+  bool get isDurableEndpoint =>
+      kind == SavedSessionMetadataProjectionKind.durable;
   bool get isLegacyText => kind == SavedSessionMetadataProjectionKind.legacy;
   bool get isRejectedUrl =>
       kind == SavedSessionMetadataProjectionKind.rejectedUrl;
