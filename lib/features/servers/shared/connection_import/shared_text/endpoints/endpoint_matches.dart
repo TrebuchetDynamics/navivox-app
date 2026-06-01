@@ -23,7 +23,7 @@ Iterable<_SharedTextEndpointMatch> _endpointUrlMatches(String text) sync* {
     final matchedText = match.group(0);
     if (matchedText == null) continue;
     final trimmedUrlStart = _copiedEndpointUrlStart(matchedText);
-    final rawUrlEnd = _matchedEndpointUrlEndBeforeAttachedTokenLabel(
+    final rawUrlEnd = _endpointUrlEndBeforeAttachedTokenLabel(
       matchedText,
       start: trimmedUrlStart,
     );
@@ -44,7 +44,7 @@ Iterable<_SharedTextEndpointMatch> _endpointUrlMatches(String text) sync* {
   }
 }
 
-int _matchedEndpointUrlEndBeforeAttachedTokenLabel(
+int _endpointUrlEndBeforeAttachedTokenLabel(
   String matchedText, {
   required int start,
 }) {
@@ -64,6 +64,11 @@ int _matchedEndpointUrlEndBeforeAttachedTokenLabel(
     }
   }
   return earliestTokenLabelStart ?? matchedText.length;
+}
+
+bool _hasAttachedTokenLabelAfterCopiedEndpoint(String copiedUrl) {
+  return _endpointUrlEndBeforeAttachedTokenLabel(copiedUrl, start: 0) <
+      copiedUrl.length;
 }
 
 bool _hasConnectionPath(Uri uri) {

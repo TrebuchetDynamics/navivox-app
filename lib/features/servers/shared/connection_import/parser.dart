@@ -43,6 +43,7 @@ class ConnectionImportParser {
   _CopiedUriPayload? _copiedUriPayload(String text) {
     final copiedUrl = _trimCopiedEndpointUrl(text);
     if (_containsWhitespace(copiedUrl)) return null;
+    if (_hasAttachedTokenLabelAfterCopiedEndpoint(copiedUrl)) return null;
     final uri = Uri.tryParse(copiedUrl);
     if (uri == null || !uri.hasScheme) return null;
     return _CopiedUriPayload(text: copiedUrl, uri: uri);
