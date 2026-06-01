@@ -28,6 +28,7 @@ void main() {
   preservesGenericWebSocketUrlImports();
   prefersCompleteJsonEntryOverEarlierPartialCandidate();
   prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate();
+  prefersWebSocketJsonEntryOverEarlierMinimallyCompleteCandidate();
   preservesFirstJsonEntryWhenCandidatesHaveEqualRank();
   doesNotPreferIncompleteMetadataEntryOverCompleteConnectionEntry();
   appliesTopLevelJsonConnectionDefaultsToEntries();
@@ -555,6 +556,22 @@ void prefersRicherJsonEntryOverEarlierMinimallyCompleteCandidate() {
   _expect(
     result.profileId == 'profile',
     'richer profile_id should be preserved',
+  );
+}
+
+void prefersWebSocketJsonEntryOverEarlierMinimallyCompleteCandidate() {
+  final result = parseNavivoxConnectionImportPayload(
+    '{"entries":[{"base_url":"https://gateway.example","token":"nvbx_minimal"},{"base_url":"https://gateway.example","token":"nvbx_ws","websocket_url":"wss://gateway.example/ws"}]}',
+  );
+
+  _expect(result != null, 'JSON entries should parse');
+  _expect(
+    result!.token == 'nvbx_ws',
+    'later complete entry with websocket provenance should outrank an earlier minimal complete entry',
+  );
+  _expect(
+    result.webSocketUrl == 'wss://gateway.example/ws',
+    'websocket provenance should be preserved on the selected candidate',
   );
 }
 

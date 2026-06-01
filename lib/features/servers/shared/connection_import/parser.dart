@@ -5,6 +5,8 @@ import '../../../../core/protocol/navivox_json.dart';
 import '../../../../core/protocol/navivox_pairing_descriptor.dart';
 import '../../models/connection_import.dart';
 
+part 'candidate.dart';
+
 class ConnectionImportParser {
   const ConnectionImportParser();
 
@@ -753,94 +755,6 @@ String? _webSocketUriBaseUrl(Uri uri) {
   } on FormatException {
     return null;
   }
-}
-
-class _ConnectionImportCandidate {
-  const _ConnectionImportCandidate({
-    this.baseUrl,
-    this.token,
-    this.webSocketUrl,
-    this.serverId,
-    this.profileId,
-    this.hasExplicitConnectionFields = true,
-  }) : assert(baseUrl == null || baseUrl.length > 0),
-       assert(token == null || token.length > 0),
-       assert(webSocketUrl == null || webSocketUrl.length > 0),
-       assert(serverId == null || serverId.length > 0),
-       assert(profileId == null || profileId.length > 0);
-
-  final String? baseUrl;
-  final String? token;
-  final String? webSocketUrl;
-  final String? serverId;
-  final String? profileId;
-  final bool hasExplicitConnectionFields;
-
-  bool get hasImportValues => baseUrl != null || token != null;
-
-  bool get hasCompleteConnection => baseUrl != null && token != null;
-
-  _ConnectionImportCandidateRank get rank => _ConnectionImportCandidateRank(
-    isCompleteConnection: hasCompleteConnection,
-    hasExplicitConnectionFields: hasExplicitConnectionFields,
-    fieldScore: _fieldScore,
-  );
-
-  int get _fieldScore {
-    var result = 0;
-    if (baseUrl != null) result += 2;
-    if (token != null) result += 2;
-    if (webSocketUrl != null) result += 1;
-    if (serverId != null) result += 1;
-    if (profileId != null) result += 1;
-    return result;
-  }
-
-  bool isRicherThan(_ConnectionImportCandidate? other) {
-    return other == null || rank.isRicherThan(other.rank);
-  }
-
-  SetupQrImageImport toImport() {
-    return SetupQrImageImport(
-      baseUrl: baseUrl,
-      token: token,
-      webSocketUrl: webSocketUrl,
-      serverId: serverId,
-      profileId: profileId,
-    );
-  }
-}
-
-class _ConnectionImportCandidateRank {
-  const _ConnectionImportCandidateRank({
-    required this.isCompleteConnection,
-    required this.hasExplicitConnectionFields,
-    required this.fieldScore,
-  });
-
-  final bool isCompleteConnection;
-  final bool hasExplicitConnectionFields;
-  final int fieldScore;
-
-  bool isRicherThan(_ConnectionImportCandidateRank other) {
-    if (isCompleteConnection != other.isCompleteConnection) {
-      return isCompleteConnection;
-    }
-    if (hasExplicitConnectionFields != other.hasExplicitConnectionFields) {
-      return hasExplicitConnectionFields;
-    }
-    return fieldScore > other.fieldScore;
-  }
-}
-
-_ConnectionImportCandidate _richerConnectionImportCandidate({
-  required _ConnectionImportCandidate? currentBest,
-  required _ConnectionImportCandidate candidate,
-}) {
-  // A complete baseUrl+token candidate can still be lower-fidelity than a later
-  // complete candidate carrying provenance metadata. Selection therefore scores
-  // all candidates instead of short-circuiting at the first complete import.
-  return candidate.isRicherThan(currentBest) ? candidate : currentBest!;
 }
 
 const _tokenFieldNames = [
