@@ -18,7 +18,7 @@ const configAllowedValuesFieldAliases = [
 String? configWireString(Object? raw) => navivoxOptionalStringFromJson(raw);
 
 Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
-  for (final value in _configWireAliasCandidates(raw, aliases)) {
+  for (final value in configWireAliasCandidates(raw, aliases)) {
     if (value != null) return value;
   }
   return null;
@@ -29,14 +29,14 @@ Object? configWireValueFromAliases(Map raw, Iterable<String> aliases) {
 /// Use this for collection-shaped aliases where an empty preferred alias should
 /// not suppress a later populated compatibility alias from the same payload.
 Object? configWirePopulatedValueFromAliases(Map raw, Iterable<String> aliases) {
-  for (final value in _configWireAliasCandidates(raw, aliases)) {
+  for (final value in configWireAliasCandidates(raw, aliases)) {
     if (_configWireValueIsPopulated(value)) return value;
   }
   return null;
 }
 
 String? configWireStringFromAliases(Map raw, Iterable<String> aliases) {
-  for (final value in _configWireAliasCandidates(raw, aliases)) {
+  for (final value in configWireAliasCandidates(raw, aliases)) {
     final text = configWireString(value);
     if (text != null) return text;
   }
@@ -47,7 +47,7 @@ List<String> configWireStringListFromAliases(
   Map raw,
   Iterable<String> aliases,
 ) {
-  for (final value in _configWireAliasCandidates(raw, aliases)) {
+  for (final value in configWireAliasCandidates(raw, aliases)) {
     final list = navivoxStringListFromJson(value);
     if (list.isNotEmpty) return list;
   }
@@ -55,24 +55,36 @@ List<String> configWireStringListFromAliases(
 }
 
 bool? configWireBoolFromAliases(Map raw, Iterable<String> aliases) {
-  for (final value in _configWireAliasCandidates(raw, aliases)) {
+  for (final value in configWireAliasCandidates(raw, aliases)) {
     if (value is bool) return value;
   }
   return null;
 }
 
-Iterable<Object?> _configWireAliasCandidates(
+/// Replays loose config wire alias lookup in parsing order.
+///
+/// Exact aliases are considered first in caller-provided order. Canonical
+/// compatibility spellings (for example camelCase versus snake_case) are then
+/// considered in source map order, excluding exact keys that were already
+/// yielded. Keeping this as a pure helper makes field provenance replayable in
+/// tests instead of hiding dropped or fallback candidates inside each parser.
+Iterable<Object?> configWireAliasCandidates(
   Map raw,
   Iterable<String> aliases,
 ) sync* {
-  for (final alias in aliases) {
-    if (raw.containsKey(alias)) yield raw[alias];
+  final exactAliases = aliases.toSet();
+  final yieldedKeys = <Object?>{};
+  for (final alias in exactAliases) {
+    if (!raw.containsKey(alias)) continue;
+    yieldedKeys.add(alias);
+    yield raw[alias];
   }
 
   final normalizedAliases = {
-    for (final alias in aliases) _configNormalizeWireFieldName(alias),
+    for (final alias in exactAliases) _configNormalizeWireFieldName(alias),
   };
   for (final entry in raw.entries) {
+    if (yieldedKeys.contains(entry.key)) continue;
     if (normalizedAliases.contains(
       _configNormalizeWireFieldName('${entry.key}'),
     )) {
