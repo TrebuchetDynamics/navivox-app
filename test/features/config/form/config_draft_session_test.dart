@@ -117,15 +117,36 @@ void main() {
   });
 
   test('snapshots draft values at session boundaries', () {
-    final mutable = <String, Object?>{'providers.default': 'local'};
+    final nestedMap = <String, Object?>{'provider': 'local'};
+    final nestedList = <Object?>['fast'];
+    final mutable = <String, Object?>{
+      'providers.default': 'local',
+      'providers.options': nestedMap,
+      'model.tags': nestedList,
+    };
     final session = ConfigDraftSession(draftValues: mutable);
 
     mutable['providers.default'] = 'openai';
     mutable['model.temperature'] = 0.9;
+    nestedMap['provider'] = 'openai';
+    nestedList.add('slow');
 
-    expect(session.draftValues, {'providers.default': 'local'});
+    expect(session.draftValues, {
+      'providers.default': 'local',
+      'providers.options': {'provider': 'local'},
+      'model.tags': ['fast'],
+    });
     expect(
       () => session.draftValues['providers.default'] = 'anthropic',
+      throwsUnsupportedError,
+    );
+    expect(
+      () => (session.draftValues['providers.options']! as Map)['provider'] =
+          'anthropic',
+      throwsUnsupportedError,
+    );
+    expect(
+      () => (session.draftValues['model.tags']! as List).add('debug'),
       throwsUnsupportedError,
     );
   });
