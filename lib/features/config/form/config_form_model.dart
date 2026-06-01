@@ -1,7 +1,7 @@
 import '../shared/config_value_display.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
-import 'config_wire_fields.dart';
+import 'config_form_schema_wire.dart';
 
 export 'config_form_field_type.dart';
 
@@ -20,33 +20,30 @@ class ConfigFormModel {
     final rows = <ConfigFormRow>[];
     for (final raw in rawFields) {
       if (raw is! Map) continue;
-      final field = configWireStringFromAliases(raw, const [
-        'path',
-        'key',
-        'name',
-      ]);
+      final field = configFormFieldPathFromSchema(raw);
       if (field == null || field.isEmpty) continue;
       final type = ConfigFormFieldType.fromWire(raw['type']?.toString());
       final secret =
-          raw['secret'] == true || type == ConfigFormFieldType.secret;
-      final riskLevel = _fieldRiskLevel(raw);
-      final reloadMode = _fieldReloadMode(raw);
+          configFormBoolFromSchema(raw, const ['secret']) ||
+          type == ConfigFormFieldType.secret;
+      final riskLevel = configFormRiskLevelFromSchema(raw);
+      final reloadMode = configFormReloadModeFromSchema(raw);
       rows.add(
         ConfigFormRow(
           field: field,
-          label: _fieldLabel(raw, field),
+          label: configFormFieldLabelFromSchema(raw, field),
           type: secret ? ConfigFormFieldType.secret : type,
-          required: _fieldBool(raw, const ['required']),
+          required: configFormBoolFromSchema(raw, const ['required']),
           restartRequired:
-              _fieldBool(raw, const ['restart_required']) ||
+              configFormBoolFromSchema(raw, const ['restart_required']) ||
               _reloadModeRequiresRestart(reloadMode),
           riskLevel: riskLevel,
           requiresConfirmation:
-              _fieldBool(raw, const ['requires_confirmation']) ||
+              configFormBoolFromSchema(raw, const ['requires_confirmation']) ||
               riskLevel == 'high',
           rawValue: values[field],
-          allowedValues: _fieldAllowedValues(raw),
-          actions: _fieldActions(raw),
+          allowedValues: configFormAllowedValuesFromSchema(raw),
+          actions: configFormActionsFromSchema(raw),
           reloadMode: reloadMode,
         ),
       );
@@ -93,20 +90,22 @@ class ConfigFormModel {
     for (final raw in rawSections) {
       if (raw is! Map) continue;
       final sectionRows = <ConfigFormRow>[];
-      for (final field in _sectionFieldRefs(raw['fields'])) {
+      for (final field in configFormSectionFieldRefsFromSchema(raw['fields'])) {
         final row = rowsByField[field];
         if (row == null || usedFields.contains(row.field)) continue;
         sectionRows.add(row);
         usedFields.add(row.field);
       }
       if (sectionRows.isEmpty) continue;
-      final id =
-          configWireString(raw['id']) ?? 'section-${sections.length + 1}';
+      final id = configFormSectionIdFromSchema(
+        raw,
+        'section-${sections.length + 1}',
+      );
       sections.add(
         ConfigFormSection(
           id: id,
-          label: configWireString(raw['label']) ?? id,
-          description: configWireString(raw['description']),
+          label: configFormSectionLabelFromSchema(raw, id),
+          description: configFormSectionDescriptionFromSchema(raw),
           rows: sectionRows,
         ),
       );
@@ -125,55 +124,8 @@ class ConfigFormModel {
     return sections;
   }
 
-  static String _fieldLabel(Map raw, String fallback) {
-    return configWireStringFromAliases(raw, const ['label', 'title']) ??
-        fallback;
-  }
-
-  static bool _fieldBool(Map raw, Iterable<String> aliases) {
-    return configWireBoolFromAliases(raw, aliases) == true;
-  }
-
-  static String _fieldRiskLevel(Map raw) {
-    return configWireStringFromAliases(raw, const [
-          'risk_level',
-        ])?.toLowerCase() ??
-        'low';
-  }
-
-  static String _fieldReloadMode(Map raw) {
-    return configWireStringFromAliases(raw, const ['reload', 'reload_mode']) ??
-        '';
-  }
-
   static bool _reloadModeRequiresRestart(String reloadMode) {
     return reloadMode.toLowerCase().contains('restart');
-  }
-
-  static List<String> _fieldAllowedValues(Map raw) {
-    return configWireStringListFromAliases(
-      raw,
-      configAllowedValuesFieldAliases,
-    );
-  }
-
-  static List<String> _fieldActions(Map raw) {
-    return configWireStringListFromAliases(raw, const [
-      'actions',
-      'supported_actions',
-    ]);
-  }
-
-  static List<String> _sectionFieldRefs(Object? rawFields) {
-    if (rawFields is! List) return const [];
-    final refs = <String>[];
-    for (final raw in rawFields) {
-      final text = raw is Map
-          ? configWireStringFromAliases(raw, const ['path', 'key', 'name'])
-          : configWireString(raw);
-      if (text != null) refs.add(text);
-    }
-    return refs;
   }
 }
 

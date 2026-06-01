@@ -143,6 +143,39 @@ void main() {
     expect(model.sections.single.rows.single.field, 'temperature');
   });
 
+  test('accepts strict string boolean schema flags', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {
+            'path': 'server.port',
+            'type': 'integer',
+            'required': 'true',
+            'restartRequired': 'TRUE',
+            'requiresConfirmation': 'false',
+          },
+          {
+            'path': 'danger.zone',
+            'riskLevel': 'high',
+            'requires_confirmation': 'FALSE',
+          },
+          {
+            'path': 'providers.openai.api_key',
+            'type': 'string',
+            'secret': 'true',
+          },
+        ],
+      },
+      values: const {'server.port': 8080, 'danger.zone': 'disabled'},
+    );
+
+    expect(model.rows[0].required, isTrue);
+    expect(model.rows[0].restartRequired, isTrue);
+    expect(model.rows[0].requiresConfirmation, isFalse);
+    expect(model.rows[1].requiresConfirmation, isTrue);
+    expect(model.rows[2].isSecret, isTrue);
+  });
+
   test('selects one config section by route id and reports misses', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
