@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/gateway/config_admin/config_admin_schema_field_projection.dart';
 import 'package:navivox/core/gateway/config_admin/navivox_gateway_config_admin.dart';
 
 void main() {
@@ -48,6 +49,22 @@ void main() {
       diff.summaryLabel,
       'navivox.token: [redacted] -> [redacted:rotated]',
     );
+  });
+
+  test('schema list aliases expose fallback candidate order', () {
+    const schemaField = {
+      'path': 'voice.capture_mode',
+      'allowed': <String>[],
+      'allowedValues': ['push-to-talk', 'wake-word'],
+      'actions': <String>[],
+      'supportedActions': ['restart-audio'],
+    };
+
+    expect(configAdminSchemaAllowedValues(schemaField), [
+      'push-to-talk',
+      'wake-word',
+    ]);
+    expect(configAdminSchemaActions(schemaField), ['restart-audio']);
   });
 
   test('preserves enum_values as config admin allowed values', () {
