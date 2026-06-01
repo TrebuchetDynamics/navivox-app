@@ -26,7 +26,7 @@ class ConfigScreen extends ConsumerStatefulWidget {
 class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   NavivoxChannel? _subscribed;
   final ConfigApplyDispatcher _applyDispatcher = const ConfigApplyDispatcher();
-  ConfigDraftSession _draftSession = const ConfigDraftSession();
+  ConfigDraftSession _draftSession = ConfigDraftSession();
   final TextEditingController _controller = TextEditingController();
   NavivoxConfigAdminResponse? _lastConfigAdminApply;
   String? _configAdminError;

@@ -2,9 +2,13 @@ import '../../apply/config_apply_flow_model.dart';
 import '../../apply/model/config_draft_value_equality.dart';
 import '../presentation/config_field_presentation.dart';
 import 'config_draft_edit_value.dart';
+import 'config_draft_values.dart';
 
 class ConfigDraftSession {
-  const ConfigDraftSession({this.draftValues = const {}, this.editingField});
+  ConfigDraftSession({
+    Map<String, Object?> draftValues = const {},
+    this.editingField,
+  }) : draftValues = configDraftValuesSnapshot(draftValues);
 
   final Map<String, Object?> draftValues;
   final String? editingField;
@@ -20,13 +24,13 @@ class ConfigDraftSession {
 
   ConfigDraftSession beginEditing(ConfigFieldPresentation field) {
     return ConfigDraftSession(
-      draftValues: Map.unmodifiable(draftValues),
+      draftValues: draftValues,
       editingField: field.path,
     );
   }
 
   ConfigDraftSession cancelEditing() {
-    return ConfigDraftSession(draftValues: Map.unmodifiable(draftValues));
+    return ConfigDraftSession(draftValues: draftValues);
   }
 
   ConfigDraftSession stageEdit(ConfigFieldPresentation field, String rawText) {
@@ -37,7 +41,7 @@ class ConfigDraftSession {
     } else {
       nextDraft[field.path] = value;
     }
-    return ConfigDraftSession(draftValues: Map.unmodifiable(nextDraft));
+    return ConfigDraftSession(draftValues: nextDraft);
   }
 
   ConfigDraftSession clearApplied(ConfigApplyFlowModel flow) {
@@ -53,7 +57,7 @@ class ConfigDraftSession {
       }
     }
     return ConfigDraftSession(
-      draftValues: Map.unmodifiable(nextDraft),
+      draftValues: nextDraft,
       editingField: editingField,
     );
   }
@@ -64,6 +68,10 @@ bool _draftValueStillMatchesApplied({
   required String path,
   required Object? appliedValue,
 }) {
-  return draftValues.containsKey(path) &&
-      configDraftValuesEqual(draftValues[path], appliedValue);
+  return configDraftValuesContainsSameEntry(
+    draftValues: draftValues,
+    path: path,
+    appliedValue: appliedValue,
+    valuesEqual: configDraftValuesEqual,
+  );
 }

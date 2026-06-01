@@ -14,9 +14,7 @@ void main() {
           NavivoxServer(id: 'local', name: 'Local Gormes', status: 'online'),
         ],
         activeServerId: 'local',
-        profileContacts: [
-          mineruBuilderProfile(latestPreview: 'Config active'),
-        ],
+        profileContacts: [mineruBuilderProfile(latestPreview: 'Config active')],
         selectedProfileContactKey: 'local::mineru',
         configSchema: const {
           'sections': [
@@ -58,8 +56,8 @@ void main() {
       final presentation = ConfigScreenPresentation.fromState(
         state: state,
         sectionId: 'gateway',
-        draftSession: const ConfigDraftSession(
-          draftValues: {'navivox.exposure_mode': 'public'},
+        draftSession: ConfigDraftSession(
+          draftValues: const {'navivox.exposure_mode': 'public'},
           editingField: 'navivox.exposure_mode',
         ),
       );
@@ -115,7 +113,7 @@ void main() {
           configValues: {'providers.default': 'openai'},
         ),
         sectionId: 'missing',
-        draftSession: const ConfigDraftSession(),
+        draftSession: ConfigDraftSession(),
       );
 
       expect(presentation.isEmpty, isFalse);
@@ -133,7 +131,7 @@ void main() {
     final presentation = ConfigScreenPresentation.fromState(
       state: const NavivoxChannelState(),
       sectionId: 'missing',
-      draftSession: const ConfigDraftSession(),
+      draftSession: ConfigDraftSession(),
     );
 
     expect(presentation.isEmpty, isTrue);

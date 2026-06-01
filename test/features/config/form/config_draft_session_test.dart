@@ -20,7 +20,7 @@ void main() {
     );
     final field = ConfigFieldPresentation.fromRow(form.rows.single);
 
-    final editing = const ConfigDraftSession().beginEditing(field);
+    final editing = ConfigDraftSession().beginEditing(field);
     expect(editing.editingField, 'model.temperature');
     expect(editing.isEditing(field), isTrue);
     expect(editing.editInitialValueFor(field), '0.4');
@@ -49,7 +49,7 @@ void main() {
     );
     final field = ConfigFieldPresentation.fromRow(form.rows.single);
 
-    final withSecret = const ConfigDraftSession()
+    final withSecret = ConfigDraftSession()
         .stageEdit(field, 'rotated-secret')
         .beginEditing(field);
     expect(withSecret.draftValues, {
@@ -79,8 +79,11 @@ void main() {
       form: form,
       draftValues: const {'providers.default': 'local'},
     );
-    final session = const ConfigDraftSession(
-      draftValues: {'providers.default': 'local', 'model.temperature': 0.9},
+    final session = ConfigDraftSession(
+      draftValues: const {
+        'providers.default': 'local',
+        'model.temperature': 0.9,
+      },
       editingField: 'model.temperature',
     );
 
@@ -102,8 +105,8 @@ void main() {
       form: form,
       draftValues: const {'providers.default': 'local'},
     );
-    final session = const ConfigDraftSession(
-      draftValues: {'providers.default': 'anthropic'},
+    final session = ConfigDraftSession(
+      draftValues: const {'providers.default': 'anthropic'},
       editingField: 'providers.default',
     );
 
@@ -113,9 +116,23 @@ void main() {
     expect(cleaned.draftValues, {'providers.default': 'anthropic'});
   });
 
+  test('snapshots draft values at session boundaries', () {
+    final mutable = <String, Object?>{'providers.default': 'local'};
+    final session = ConfigDraftSession(draftValues: mutable);
+
+    mutable['providers.default'] = 'openai';
+    mutable['model.temperature'] = 0.9;
+
+    expect(session.draftValues, {'providers.default': 'local'});
+    expect(
+      () => session.draftValues['providers.default'] = 'anthropic',
+      throwsUnsupportedError,
+    );
+  });
+
   test('cancels editing without changing draft values', () {
-    final session = const ConfigDraftSession(
-      draftValues: {'providers.default': 'local'},
+    final session = ConfigDraftSession(
+      draftValues: const {'providers.default': 'local'},
       editingField: 'providers.default',
     );
 
