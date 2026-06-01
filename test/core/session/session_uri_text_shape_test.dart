@@ -13,6 +13,15 @@ void main() {
       expect(syntax.hasNonPortSchemeSeparator, isTrue);
     });
 
+    test('does not let bracketed host compatibility hide authority URLs', () {
+      final syntax = SavedSessionUriTextSyntax.parse(
+        '[::1]://stream?token=secret',
+      );
+
+      expect(syntax.startsWithBracketedHostLiteral, isFalse);
+      expect(syntax.hasAuthoritySchemeSeparator, isTrue);
+    });
+
     test('exposes host-port versus named scheme separators', () {
       expect(
         SavedSessionUriTextSyntax.parse(
@@ -48,6 +57,10 @@ void main() {
         expect(
           classifySavedSessionUriTextShape('[::1]:8765/stream'),
           SavedSessionUriTextShape.bracketedHostLiteral,
+        );
+        expect(
+          classifySavedSessionUriTextShape('[::1]://stream?token=secret'),
+          SavedSessionUriTextShape.authorityUrl,
         );
       },
     );

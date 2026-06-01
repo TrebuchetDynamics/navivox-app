@@ -81,8 +81,14 @@ class SavedSessionUriTextSyntax {
     if (closingBracket <= 1) return false;
     if (closingBracket == text.length - 1) return true;
 
-    final nextCodeUnit = text.codeUnitAt(closingBracket + 1);
-    return nextCodeUnit == _slash || nextCodeUnit == _colon;
+    final nextIndex = closingBracket + 1;
+    final nextCodeUnit = text.codeUnitAt(nextIndex);
+    if (nextCodeUnit == _slash) return true;
+    if (nextCodeUnit != _colon) return false;
+
+    // `[::1]:8765/stream` is legacy bracketed-host text. `[::1]://...` is
+    // visibly authority-URL-shaped and can carry query/fragment credentials.
+    return !_startsWithAuthoritySeparator(text, nextIndex);
   }
 
   bool get hasAuthoritySchemeSeparator => text.indexOf('://') > 0;
@@ -108,4 +114,8 @@ const int _slash = 0x2f;
 bool _startsWithAsciiDigit(String value, int index) {
   final codeUnit = value.codeUnitAt(index);
   return codeUnit >= 0x30 && codeUnit <= 0x39;
+}
+
+bool _startsWithAuthoritySeparator(String value, int index) {
+  return value.startsWith('://', index);
 }

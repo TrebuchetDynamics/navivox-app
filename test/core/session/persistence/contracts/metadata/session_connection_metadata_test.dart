@@ -133,6 +133,13 @@ void main() {
         '[::1]:8765/custom/stream',
       );
     });
+
+    test('rejects bracketed-host authority-shaped metadata', () {
+      expect(
+        sanitizedSavedSessionWebSocketUrl('[::1]://stream?token=secret'),
+        isNull,
+      );
+    });
   });
 
   group('durableSavedSessionWebSocketUri', () {
