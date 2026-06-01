@@ -197,6 +197,34 @@ void main() {
     expect(model.rows.single.requiresConfirmation, isTrue);
   });
 
+  test('falls back across section field reference aliases', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'sections': [
+          {
+            'id': 'providers',
+            'label': 'Providers',
+            'fields': [],
+            'fieldRefs': [
+              {'field': 'providers.default'},
+              {'path': 'model.temperature'},
+            ],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default'},
+          {'path': 'model.temperature'},
+        ],
+      },
+      values: const {},
+    );
+
+    expect(model.sections.single.rows.map((row) => row.field), [
+      'providers.default',
+      'model.temperature',
+    ]);
+  });
+
   test('selects one config section by route id and reports misses', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {

@@ -94,7 +94,7 @@ class ConfigFormModel {
     for (final raw in rawSections) {
       if (raw is! Map) continue;
       final sectionRows = <ConfigFormRow>[];
-      for (final field in configFormSectionFieldRefsFromSchema(raw['fields'])) {
+      for (final field in configFormSectionFieldRefsFromSchemaMap(raw)) {
         final row = rowsByField[field];
         if (row == null || usedFields.contains(row.field)) continue;
         sectionRows.add(row);

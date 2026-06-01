@@ -49,16 +49,29 @@ List<String> configFormActionsFromSchema(Map raw) {
   ]);
 }
 
+List<String> configFormSectionFieldRefsFromSchemaMap(Map raw) {
+  final rawFields = configWirePopulatedValueFromAliases(raw, const [
+    'fields',
+    'field_refs',
+    'field_paths',
+  ]);
+  return configFormSectionFieldRefsFromSchema(rawFields);
+}
+
 List<String> configFormSectionFieldRefsFromSchema(Object? rawFields) {
   if (rawFields is! List) return const [];
   final refs = <String>[];
   for (final raw in rawFields) {
     final text = raw is Map
-        ? configFormFieldPathFromSchema(raw)
+        ? _configFormSectionFieldRefFromSchema(raw)
         : configWireString(raw);
     if (text != null) refs.add(text);
   }
   return refs;
+}
+
+String? _configFormSectionFieldRefFromSchema(Map raw) {
+  return configWireStringFromAliases(raw, const ['path', 'field', 'key', 'name']);
 }
 
 bool? _configFormStrictBoolFromAliases(Map raw, Iterable<String> aliases) {
