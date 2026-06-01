@@ -124,6 +124,14 @@ void main() {
     },
   );
 
+  test('rejects attached tokens after unsupported connection URLs', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Open ftp://gateway.example/connect:Token: nvbx_unsupported.',
+    );
+
+    expect(result, isNull);
+  });
+
   test('rejects malformed endpoint ports before reading query tokens', () {
     final copiedUrl = parseNavivoxConnectionImportPayload(
       'http://127.0.0.1:99999/connect?token=nvbx_bad',

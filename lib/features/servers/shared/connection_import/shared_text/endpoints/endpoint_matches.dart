@@ -7,8 +7,9 @@ bool _hasUnsupportedConnectionEndpointUrl(String text) {
   for (final match in _uriLikeUrlPattern.allMatches(text)) {
     final matchedText = match.group(0);
     if (matchedText == null) continue;
-    final url = _trimCopiedEndpointUrl(matchedText);
-    final uri = Uri.tryParse(url);
+    final endpointText = _endpointUrlCandidateText(matchedText);
+    if (endpointText == null) continue;
+    final uri = Uri.tryParse(endpointText.url);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) continue;
     if (!_hasConnectionPath(uri)) continue;
     if (_isCorePairingDescriptorUri(uri)) continue;
@@ -22,26 +23,50 @@ Iterable<_SharedTextEndpointMatch> _endpointUrlMatches(String text) sync* {
   for (final match in _endpointUrlPattern.allMatches(text)) {
     final matchedText = match.group(0);
     if (matchedText == null) continue;
-    final trimmedUrlStart = _copiedEndpointUrlStart(matchedText);
-    final rawUrlEnd = _endpointUrlEndBeforeAttachedTokenLabel(
-      matchedText,
-      start: trimmedUrlStart,
-    );
-    final trimmedUrlEnd = _copiedEndpointUrlEnd(
-      matchedText.substring(0, rawUrlEnd),
-      start: trimmedUrlStart,
-    );
-    if (trimmedUrlEnd <= trimmedUrlStart) continue;
+    final endpointText = _endpointUrlCandidateText(matchedText);
+    if (endpointText == null) continue;
 
     yield _SharedTextEndpointMatch(
-      url: matchedText.substring(trimmedUrlStart, trimmedUrlEnd),
+      url: endpointText.url,
       sourceWindow: _TextWindow(start: match.start, end: match.end),
       trailingPunctuationWindow: _TextWindow(
-        start: match.start + trimmedUrlEnd,
+        start: match.start + endpointText.end,
         end: match.end,
       ),
     );
   }
+}
+
+_EndpointUrlCandidateText? _endpointUrlCandidateText(String matchedText) {
+  final start = _copiedEndpointUrlStart(matchedText);
+  final rawEnd = _endpointUrlEndBeforeAttachedTokenLabel(
+    matchedText,
+    start: start,
+  );
+  final end = _copiedEndpointUrlEnd(
+    matchedText.substring(0, rawEnd),
+    start: start,
+  );
+  if (end <= start) return null;
+  return _EndpointUrlCandidateText(
+    start: start,
+    end: end,
+    url: matchedText.substring(start, end),
+  );
+}
+
+class _EndpointUrlCandidateText {
+  const _EndpointUrlCandidateText({
+    required this.start,
+    required this.end,
+    required this.url,
+  }) : assert(start >= 0),
+       assert(end >= start),
+       assert(url.length > 0);
+
+  final int start;
+  final int end;
+  final String url;
 }
 
 int _endpointUrlEndBeforeAttachedTokenLabel(
