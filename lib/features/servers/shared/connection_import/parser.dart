@@ -305,18 +305,13 @@ _SharedTextEndpointCandidate? _sharedTextEndpointCandidate(
       : _connectionImportCandidateFromFields({'base_url': endpoint.url});
   if (candidate == null) return null;
 
+  final followingToken = endpoint.followingToken(text);
   return _SharedTextEndpointCandidate(
     candidate: candidate,
     tokenSearchStart: endpoint.tokenWindow.start,
     tokenSearchEnd: endpoint.tokenWindow.end,
     leadingTokenSearchEnd: endpoint.sourceWindow.start,
-    hasFollowingToken:
-        _firstToken(
-          text,
-          start: endpoint.tokenWindow.start,
-          end: endpoint.tokenWindow.end,
-        ) !=
-        null,
+    hasFollowingToken: followingToken != null,
     canUseLeadingToken: !endpoint.hasPriorEndpoint,
     hasConnectionPath: uri != null && _hasConnectionPath(uri),
   );

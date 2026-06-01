@@ -133,4 +133,26 @@ void main() {
     expect(result!.baseUrl, 'https://gateway.example');
     expect(result.token, isNull);
   });
+
+  test('does not borrow a token from a later endpoint window', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Open https://gateway.example/connect?server_id=srv. Then read '
+      'https://docs.example/help Token: nvbx_docs.',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.serverId, 'srv');
+    expect(result.token, isNull);
+  });
+
+  test('does not split tokens at an embedded endpoint boundary', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Token: nvbx_stalehttps://gateway.example/connect has setup steps.',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, isNull);
+  });
 }
