@@ -1,4 +1,4 @@
-import 'config_form_model.dart';
+import '../model/config_form_model.dart';
 
 void main() {
   preservesUnrecognizedBooleanEditTextForValidation();

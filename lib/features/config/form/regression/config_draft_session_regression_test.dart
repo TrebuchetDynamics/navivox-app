@@ -1,4 +1,4 @@
-import 'config_draft_edit_value.dart';
+import '../draft/config_draft_edit_value.dart';
 
 void main() {
   reEditingAStagedNonSecretDraftUsesTheStagedValue();

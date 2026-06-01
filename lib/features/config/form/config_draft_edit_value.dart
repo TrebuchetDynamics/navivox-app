@@ -1,3 +1,1 @@
-String configDraftEditInitialValue(Object? draftValue) {
-  return draftValue == null ? '' : '$draftValue';
-}
+export 'draft/config_draft_edit_value.dart';
