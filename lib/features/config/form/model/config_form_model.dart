@@ -2,6 +2,7 @@ import '../../shared/config_value_display.dart';
 import '../editing/config_edit_text.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
+import 'config_form_row_value.dart';
 import 'config_form_schema_candidates.dart';
 import 'config_form_schema_row.dart';
 import 'config_form_sections.dart';
@@ -117,25 +118,18 @@ class ConfigFormRow {
 
   bool get isSecret => type == ConfigFormFieldType.secret;
 
-  Object? get plainValue => _plainValue(rawValue);
+  Object? get plainValue => configFormPlainRowValue(rawValue);
 
   String get displayValue {
     if (isSecret) return configSecretDisplayValue(rawValue);
-    return configDisplayValue(_plainValue(rawValue));
+    return configDisplayValue(plainValue);
   }
 
   String get editInitialValue {
     if (isSecret) return '';
-    return configEditTextFromValue(_plainValue(rawValue));
+    return configEditTextFromValue(plainValue);
   }
 
   Object? coerceEditValue(String raw) =>
       coerceConfigEditValue(raw: raw, type: type, isSecret: isSecret);
-
-  static Object? _plainValue(Object? rawValue) {
-    if (rawValue is Map && rawValue.containsKey('value')) {
-      return rawValue['value'];
-    }
-    return rawValue;
-  }
 }

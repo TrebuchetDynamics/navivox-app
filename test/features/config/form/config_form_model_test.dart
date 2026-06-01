@@ -183,6 +183,45 @@ void main() {
     expect(model.rows[1].coerceEditValue('NaN'), 'NaN');
   });
 
+  test('unwraps narrow value envelopes for compatibility', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'type': 'string'},
+        ],
+      },
+      values: const {
+        'providers.default': {'value': 'openai', 'source': 'runtime'},
+      },
+    );
+
+    final row = model.rows.single;
+
+    expect(row.plainValue, 'openai');
+    expect(row.displayValue, 'openai');
+  });
+
+  test(
+    'preserves structured non-secret map values that happen to contain value key',
+    () {
+      final model = ConfigFormModel.fromSchema(
+        schema: const {
+          'fields': [
+            {'path': 'retention.window', 'type': 'string'},
+          ],
+        },
+        values: const {
+          'retention.window': {'value': 30, 'unit': 'days'},
+        },
+      );
+
+      final row = model.rows.single;
+
+      expect(row.plainValue, {'value': 30, 'unit': 'days'});
+      expect(row.displayValue, '{value: 30, unit: days}');
+    },
+  );
+
   test('redacts secret values and prepares write-only secret edits', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
