@@ -95,6 +95,23 @@ void main() {
     expect(model.rows.single.allowedValues, ['local', 'tunnel']);
   });
 
+  test('keeps non-finite numeric edits as text for validation replay', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'model.temperature', 'type': 'number'},
+          {'path': 'server.port', 'type': 'integer'},
+        ],
+      },
+      values: const {'model.temperature': 0.4, 'server.port': 8080},
+    );
+
+    expect(model.rows[0].coerceEditValue('NaN'), 'NaN');
+    expect(model.rows[0].coerceEditValue('Infinity'), 'Infinity');
+    expect(model.rows[0].coerceEditValue('-Infinity'), '-Infinity');
+    expect(model.rows[1].coerceEditValue('NaN'), 'NaN');
+  });
+
   test('redacts secret values and prepares write-only secret edits', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {
