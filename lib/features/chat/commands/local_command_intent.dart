@@ -1,5 +1,6 @@
 import '../../../core/channel/navivox_channel.dart';
 import 'local_command_body_parser.dart';
+import 'local_command_builtins.dart';
 import 'local_command_profile_matcher.dart';
 
 enum LocalCommandAction {
@@ -46,8 +47,7 @@ class LocalCommandIntent {
   LocalCommandIntent.help(String commandWord)
     : this._(
         action: LocalCommandAction.showMessage,
-        message:
-            'Voice commands: $commandWord <profile>, cancel, stop, settings, help.',
+        message: localCommandHelpMessage(commandWord),
       );
 
   const LocalCommandIntent.profileSwitchingDisabled()
@@ -109,18 +109,16 @@ class LocalCommandResolver {
     if (body.isEmpty) return const LocalCommandIntent.enterCommandMode();
 
     final normalized = normalize(body);
-    return switch (normalized) {
-      'cancel' => const LocalCommandIntent.cancel(),
-      'stop' => const LocalCommandIntent.stop(),
-      'settings' => const LocalCommandIntent.openSettings(),
-      'help' => LocalCommandIntent.help(commandWord.trim().toLowerCase()),
-      _ => _resolveProfileCommand(
-        body: body,
-        normalized: normalized,
-        profileSwitchingEnabled: profileSwitchingEnabled,
-        contacts: contacts,
-      ),
-    };
+    final builtin = localCommandBuiltinFromNormalizedBody(normalized);
+    if (builtin != null) {
+      return _resolveBuiltinCommand(builtin, commandWord: commandWord);
+    }
+    return _resolveProfileCommand(
+      body: body,
+      normalized: normalized,
+      profileSwitchingEnabled: profileSwitchingEnabled,
+      contacts: contacts,
+    );
   }
 
   String? commandBody(
@@ -135,6 +133,20 @@ class LocalCommandResolver {
       commandMode: commandMode,
       fromVoice: fromVoice,
     );
+  }
+
+  LocalCommandIntent _resolveBuiltinCommand(
+    LocalCommandBuiltin command, {
+    required String commandWord,
+  }) {
+    return switch (command) {
+      LocalCommandBuiltin.cancel => const LocalCommandIntent.cancel(),
+      LocalCommandBuiltin.stop => const LocalCommandIntent.stop(),
+      LocalCommandBuiltin.settings => const LocalCommandIntent.openSettings(),
+      LocalCommandBuiltin.help => LocalCommandIntent.help(
+        commandWord.trim().toLowerCase(),
+      ),
+    };
   }
 
   LocalCommandIntent _resolveProfileCommand({

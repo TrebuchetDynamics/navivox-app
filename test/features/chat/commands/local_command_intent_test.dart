@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/chat/commands/local_command_body_parser.dart';
+import 'package:navivox/features/chat/commands/local_command_builtins.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/features/chat/commands/local_command_profile_matcher.dart';
 
@@ -122,6 +123,24 @@ void main() {
     expect(intent.message, 'Switched to Support Triage.');
   });
 
+  test('exposes normalized reserved built-in command words', () {
+    expect(localCommandBuiltinWords.keys, [
+      'cancel',
+      'stop',
+      'settings',
+      'help',
+    ]);
+    expect(
+      localCommandBuiltinFromNormalizedBody('settings'),
+      LocalCommandBuiltin.settings,
+    );
+    expect(localCommandBuiltinFromNormalizedBody('settings please'), isNull);
+    expect(
+      localCommandHelpMessage('hey'),
+      'Voice commands: hey <profile>, cancel, stop, settings, help.',
+    );
+  });
+
   test('classifies built-in commands and custom command-word help copy', () {
     final cancel = resolver.resolve(
       raw: 'hey cancel',
@@ -191,6 +210,29 @@ void main() {
       names,
       containsAll(['mineru', 'office 1 mineru', 'office gateway mineru']),
     );
+  });
+
+  test('reserved built-in words take precedence over profile names', () {
+    final intent = resolver.resolve(
+      raw: 'navi settings',
+      commandWord: 'navi',
+      commandMode: false,
+      fromVoice: false,
+      profileSwitchingEnabled: true,
+      contacts: const [
+        NavivoxProfileContact(
+          serverId: 'office',
+          profileId: 'settings',
+          displayName: 'settings',
+          serverLabel: 'office',
+          health: NavivoxProfileHealth.online,
+          latestPreview: 'Ready',
+        ),
+      ],
+    );
+
+    expect(intent.action, LocalCommandAction.openSettings);
+    expect(intent.target, isNull);
   });
 
   test('server-qualified profile commands select one duplicate contact', () {
