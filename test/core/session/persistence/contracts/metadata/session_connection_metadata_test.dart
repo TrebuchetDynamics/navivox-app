@@ -18,6 +18,41 @@ void main() {
         throwsA(isA<AssertionError>()),
       );
     });
+
+    test(
+      'exposes projection kind without inferring state from value presence',
+      () {
+        const absent = SavedSessionMetadataProjection.absent();
+        const durable = SavedSessionMetadataProjection.durable(
+          'https://gateway.example',
+        );
+        const legacy = SavedSessionMetadataProjection.legacy(
+          'gateway.local:8765/setup',
+        );
+        const rejected = SavedSessionMetadataProjection.rejectedUrl();
+
+        expect(absent.kind, SavedSessionMetadataProjectionKind.absent);
+        expect(absent.projectedValue, isNull);
+        expect(absent.isAbsent, isTrue);
+
+        expect(durable.kind, SavedSessionMetadataProjectionKind.durable);
+        expect(durable.projectedValue, 'https://gateway.example');
+        expect(durable.durableValue, 'https://gateway.example');
+        expect(durable.isAbsent, isFalse);
+        expect(durable.isLegacyText, isFalse);
+
+        expect(legacy.kind, SavedSessionMetadataProjectionKind.legacy);
+        expect(legacy.projectedValue, 'gateway.local:8765/setup');
+        expect(legacy.durableValue, 'gateway.local:8765/setup');
+        expect(legacy.isAbsent, isFalse);
+        expect(legacy.isLegacyText, isTrue);
+
+        expect(rejected.kind, SavedSessionMetadataProjectionKind.rejectedUrl);
+        expect(rejected.projectedValue, isNull);
+        expect(rejected.isRejectedUrl, isTrue);
+        expect(rejected.isAbsent, isFalse);
+      },
+    );
   });
 
   group('projectSavedSessionMetadataValue', () {

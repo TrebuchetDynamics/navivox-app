@@ -3,34 +3,38 @@
 /// This keeps the decision shape shared across base URL and websocket metadata:
 /// a raw value is either absent, transformed to durable reconnect metadata,
 /// preserved as legacy text, or rejected because it is URL-shaped but unsafe.
-class SavedSessionMetadataProjection {
-  const SavedSessionMetadataProjection._({
-    required this.durableValue,
-    required this.isLegacyText,
-    required this.isRejectedUrl,
-  });
+enum SavedSessionMetadataProjectionKind { absent, durable, legacy, rejectedUrl }
 
+class SavedSessionMetadataProjection {
   const SavedSessionMetadataProjection.absent()
-    : this._(durableValue: null, isLegacyText: false, isRejectedUrl: false);
+    : projectedValue = null,
+      kind = SavedSessionMetadataProjectionKind.absent;
 
   const SavedSessionMetadataProjection.durable(String value)
     : assert(value.length > 0, 'durable projection values must not be blank'),
-      durableValue = value,
-      isLegacyText = false,
-      isRejectedUrl = false;
+      projectedValue = value,
+      kind = SavedSessionMetadataProjectionKind.durable;
 
   const SavedSessionMetadataProjection.legacy(String value)
     : assert(value.length > 0, 'legacy projection values must not be blank'),
-      durableValue = value,
-      isLegacyText = true,
-      isRejectedUrl = false;
+      projectedValue = value,
+      kind = SavedSessionMetadataProjectionKind.legacy;
 
   const SavedSessionMetadataProjection.rejectedUrl()
-    : this._(durableValue: null, isLegacyText: false, isRejectedUrl: true);
+    : projectedValue = null,
+      kind = SavedSessionMetadataProjectionKind.rejectedUrl;
 
-  final String? durableValue;
-  final bool isLegacyText;
-  final bool isRejectedUrl;
+  /// The non-secret value to persist or replay.
+  ///
+  /// Legacy compatibility text deliberately appears here too; callers that need
+  /// to distinguish sanitized endpoint metadata from legacy text must inspect
+  /// [kind] or [isLegacyText] instead of inferring from value presence.
+  final String? projectedValue;
+  final SavedSessionMetadataProjectionKind kind;
 
-  bool get isAbsent => durableValue == null && !isRejectedUrl;
+  String? get durableValue => projectedValue;
+  bool get isLegacyText => kind == SavedSessionMetadataProjectionKind.legacy;
+  bool get isRejectedUrl =>
+      kind == SavedSessionMetadataProjectionKind.rejectedUrl;
+  bool get isAbsent => kind == SavedSessionMetadataProjectionKind.absent;
 }
