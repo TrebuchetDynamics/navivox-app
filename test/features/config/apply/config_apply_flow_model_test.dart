@@ -209,6 +209,35 @@ void main() {
     ]);
   });
 
+  test('ignores stale field validation errors outside the current form', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      },
+      values: const {'providers.default': 'openai'},
+    );
+
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {'providers.default': 'local'},
+      validationSnapshot: const {
+        'field_errors': {
+          'providers.removed': ['Removed provider is unavailable.'],
+        },
+      },
+    );
+
+    expect(flow.hasPendingChanges, isTrue);
+    expect(flow.hasInvalidChanges, isFalse);
+    expect(flow.canApply, isTrue);
+    expect(flow.validationMessagesFor('providers.default'), isEmpty);
+    expect(flow.validationMessagesFor('providers.removed'), [
+      'Removed provider is unavailable.',
+    ]);
+  });
+
   test('deduplicates repeated validation messages for a field', () {
     final form = ConfigFormModel.fromSchema(
       schema: const {

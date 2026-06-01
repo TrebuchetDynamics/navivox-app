@@ -7,9 +7,14 @@ class ConfigApplyFlowModel {
     required List<ConfigDraftChange> changes,
     List<String> globalValidationMessages = const [],
     ConfigValidationState? validation,
+    bool? hasVisibleFieldErrors,
   }) : changes = List.unmodifiable(changes),
        globalValidationMessages = List.unmodifiable(globalValidationMessages),
-       _validation = validation ?? ConfigValidationState.fromSnapshot(null);
+       _validation = validation ?? ConfigValidationState.fromSnapshot(null),
+       _hasVisibleFieldErrors =
+           hasVisibleFieldErrors ??
+           (validation ?? ConfigValidationState.fromSnapshot(null))
+               .hasFieldErrors;
 
   factory ConfigApplyFlowModel.fromDraft({
     required ConfigFormModel form,
@@ -25,18 +30,23 @@ class ConfigApplyFlowModel {
       ),
       globalValidationMessages: validation.globalMessages,
       validation: validation,
+      hasVisibleFieldErrors: _hasValidationMessagesForRows(
+        rows: form.rows,
+        validation: validation,
+      ),
     );
   }
 
   final List<ConfigDraftChange> changes;
   final List<String> globalValidationMessages;
   final ConfigValidationState _validation;
+  final bool _hasVisibleFieldErrors;
 
   bool get hasPendingChanges => changes.isNotEmpty;
 
   bool get hasInvalidChanges =>
       globalValidationMessages.isNotEmpty ||
-      _validation.hasFieldErrors ||
+      _hasVisibleFieldErrors ||
       changes.any((change) => change.isInvalid);
 
   bool get canApply => hasPendingChanges && !hasInvalidChanges;
@@ -52,6 +62,13 @@ class ConfigApplyFlowModel {
         .expand((change) => change.validationMessages)
         .toList(growable: false);
   }
+}
+
+bool _hasValidationMessagesForRows({
+  required Iterable<ConfigFormRow> rows,
+  required ConfigValidationState validation,
+}) {
+  return rows.any((row) => validation.messagesFor(row.field).isNotEmpty);
 }
 
 List<ConfigDraftChange> _draftChangesFromRows({
