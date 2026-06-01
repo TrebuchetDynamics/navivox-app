@@ -10,15 +10,18 @@ import 'package:navivox/router/app_routes.dart';
 import '../../../../support/test_navivox_channel.dart';
 import '../../../shared/fixtures/profile_contact_fixtures.dart';
 import '../../../shared/fixtures/seed_fixtures.dart';
+import '../../shared/profiles/profile_scope_test_contracts.dart';
 import '../../shared/widgets/chat_screen_test_fixtures.dart';
 
-const _seedServers = [
-  NavivoxServer(id: 'srv1', name: 'Local', status: 'ready'),
+const _seedProfileScope = (serverId: 'srv1', profileId: chatMineruProfileId);
+
+final _seedServers = [
+  NavivoxServer(id: _seedProfileScope.serverId, name: 'Local', status: 'ready'),
 ];
 
 final _seedProfiles = [
   mineruBuilderProfile(
-    serverId: 'srv1',
+    serverId: _seedProfileScope.serverId,
     serverLabel: 'Local',
     latestPreview: 'Ready for scoped chat',
   ),
@@ -29,12 +32,12 @@ void main() {
     'chat AppBar omits the active-agent indicator when no agent is selected',
     (tester) async {
       final channel = TestNavivoxChannel()
-        ..seedServers(_seedServers, activeServerId: 'srv1')
+        ..seedServers(_seedServers, activeServerId: _seedProfileScope.serverId)
         ..seedAgents(defaultSeedAgents);
 
       await pumpChatScreen(tester, channel: channel);
 
-      expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
+      expect(find.byKey(const ValueKey(chatActiveAgentKey)), findsNothing);
     },
   );
 
@@ -42,12 +45,12 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(_seedServers, activeServerId: 'srv1')
+      ..seedServers(_seedServers, activeServerId: _seedProfileScope.serverId)
       ..seedAgents(defaultSeedAgents, selectedAgentId: 'arch');
 
     await pumpChatScreen(tester, channel: channel);
 
-    expect(find.byKey(const ValueKey('chat-active-agent')), findsNothing);
+    expect(find.byKey(const ValueKey(chatActiveAgentKey)), findsNothing);
     expect(find.byKey(const ValueKey(chatContextActionKey)), findsOneWidget);
 
     await openChatInfoSheet(tester);
@@ -59,8 +62,11 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(_seedServers, activeServerId: 'srv1')
-      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+      ..seedServers(_seedServers, activeServerId: _seedProfileScope.serverId)
+      ..seedProfileContacts(
+        _seedProfiles,
+        selectedKey: chatProfileScopeKey(_seedProfileScope),
+      );
 
     await pumpChatScreen(tester, channel: channel);
 
@@ -82,8 +88,11 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(_seedServers, activeServerId: 'srv1')
-      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+      ..seedServers(_seedServers, activeServerId: _seedProfileScope.serverId)
+      ..seedProfileContacts(
+        _seedProfiles,
+        selectedKey: chatProfileScopeKey(_seedProfileScope),
+      );
 
     await pumpChatScreen(tester, channel: channel);
 
@@ -98,14 +107,17 @@ void main() {
     tester,
   ) async {
     final channel = TestNavivoxChannel()
-      ..seedServers(_seedServers, activeServerId: 'srv1')
-      ..seedProfileContacts(_seedProfiles, selectedKey: 'srv1::mineru');
+      ..seedServers(_seedServers, activeServerId: _seedProfileScope.serverId)
+      ..seedProfileContacts(
+        _seedProfiles,
+        selectedKey: chatProfileScopeKey(_seedProfileScope),
+      );
 
     final navigatedRoutes = <String>[];
     final goRouter = GoRouter(
       initialLocation: AppRoutes.chatLocation(
-        serverId: 'srv1',
-        profileId: 'mineru',
+        serverId: _seedProfileScope.serverId,
+        profileId: _seedProfileScope.profileId,
       ),
       routes: [
         GoRoute(
@@ -192,7 +204,10 @@ void main() {
 
       // Navigate back to the chat screen for the next action
       goRouter.go(
-        AppRoutes.chatLocation(serverId: 'srv1', profileId: 'mineru'),
+        AppRoutes.chatLocation(
+          serverId: _seedProfileScope.serverId,
+          profileId: _seedProfileScope.profileId,
+        ),
       );
       await tester.pumpAndSettle();
     }
