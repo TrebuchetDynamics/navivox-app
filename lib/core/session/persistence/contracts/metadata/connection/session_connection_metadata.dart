@@ -1,3 +1,4 @@
+import '../../../../../protocol/navivox_endpoint_uri.dart';
 import '../../../../../protocol/navivox_json.dart';
 
 /// Normalized non-secret gateway connection metadata shared by saved-session
@@ -47,8 +48,8 @@ class SessionConnectionMetadata {
     Object? gatewayId,
   }) {
     return SessionConnectionMetadata(
-      baseUrl: baseUrl,
-      webSocketUrl: navivoxOptionalStringFromJson(webSocketUrl),
+      baseUrl: sanitizedSavedSessionBaseUrl(baseUrl),
+      webSocketUrl: sanitizedSavedSessionWebSocketUrl(webSocketUrl),
       gatewayId: navivoxOptionalStringFromJson(gatewayId),
     );
   }
@@ -56,4 +57,34 @@ class SessionConnectionMetadata {
   final String baseUrl;
   final String? webSocketUrl;
   final String? gatewayId;
+}
+
+/// Returns only the reconnect-safe HTTP origin for endpoint-shaped base URLs.
+///
+/// Saved sessions are non-secret metadata. Connection/setup URLs can be pasted
+/// with bootstrap token query params, so persistence strips path/query/fragment
+/// whenever an endpoint origin can be derived. Non-endpoint legacy values keep
+/// their existing trimmed compatibility behavior.
+String sanitizedSavedSessionBaseUrl(String value) {
+  return navivoxHttpBaseUrlFromEndpointString(value) ?? value;
+}
+
+/// Returns a websocket endpoint without query/fragment bootstrap state.
+///
+/// The path is preserved because websocket deployments may serve the stream
+/// outside the default Navivox path, but query params are not durable metadata.
+String? sanitizedSavedSessionWebSocketUrl(Object? value) {
+  final text = navivoxOptionalStringFromJson(value);
+  if (text == null) return null;
+  final uri = Uri.tryParse(text);
+  if (uri == null || uri.host.isEmpty) return text;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme != 'ws' && scheme != 'wss') return text;
+  return Uri(
+    scheme: uri.scheme,
+    userInfo: uri.userInfo,
+    host: uri.host,
+    port: uri.hasPort ? uri.port : null,
+    path: uri.path,
+  ).toString();
 }

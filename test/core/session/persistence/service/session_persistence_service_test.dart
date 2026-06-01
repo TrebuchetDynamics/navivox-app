@@ -100,10 +100,22 @@ void main() {
         SessionPreferenceKeys.legacyToken: 'nvbx_legacy_token',
       });
       final service = SessionPersistenceService();
-      await service.saveConnection(baseUrl: localGatewayBaseUrl);
+      await service.saveConnection(
+        baseUrl: 'https://gateway.example:9443/setup?token=nvbx_pairing_token',
+        webSocketUrl:
+            'wss://gateway.example:9443/v1/navivox/stream?token=nvbx_pairing_token',
+      );
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(SessionPreferenceKeys.legacyToken), isNull);
+      expect(
+        prefs.getString(SessionPreferenceKeys.baseUrl),
+        'https://gateway.example:9443',
+      );
+      expect(
+        prefs.getString(SessionPreferenceKeys.webSocketUrl),
+        'wss://gateway.example:9443/v1/navivox/stream',
+      );
       for (final key in prefs.getKeys()) {
         final value = prefs.getString(key);
         if (value != null) {
