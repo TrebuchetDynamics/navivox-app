@@ -88,7 +88,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       if (!mounted) return;
       if (!validation.valid) {
         setState(() {
-          _configAdminError = 'Config validation failed.';
+          _configAdminError = _configAdminValidationErrorMessage(validation);
         });
         return;
       }
@@ -189,6 +189,15 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       ),
     );
   }
+}
+
+String _configAdminValidationErrorMessage(
+  NavivoxConfigAdminResponse validation,
+) {
+  for (final error in validation.errors) {
+    if (error.message.trim().isNotEmpty) return error.message.trim();
+  }
+  return 'Config validation failed.';
 }
 
 List<NavivoxConfigAdminChange> _configAdminChangesFromFlow(

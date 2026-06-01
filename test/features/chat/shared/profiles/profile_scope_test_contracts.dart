@@ -21,6 +21,7 @@ const chatSupportProfileScope = (
 
 const chatActiveAgentKey = 'chat-active-agent';
 const chatActiveProfileAvatarKey = 'chat-active-profile-avatar';
+const chatActiveProfileKey = 'chat-active-profile';
 const chatContextActionKey = 'chat-context-action';
 const chatProfileSearchFieldKey = 'profile-search-field';
 const chatAllServersFilterKey = 'server-filter-all';
