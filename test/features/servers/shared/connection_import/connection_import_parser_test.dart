@@ -47,6 +47,20 @@ void main() {
   });
 
   test(
+    'prefers later credentialed endpoint over earlier connection-route docs URL',
+    () {
+      final result = parseNavivoxConnectionImportPayload(
+        'Read https://docs.example/connect first. Then open '
+        'https://gateway.example/api?token=nvbx_fresh to finish setup.',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.baseUrl, 'https://gateway.example');
+      expect(result.token, 'nvbx_fresh');
+    },
+  );
+
+  test(
     'keeps connection-route precedence above stale docs token proximity',
     () {
       final result = parseNavivoxConnectionImportPayload(

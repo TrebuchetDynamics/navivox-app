@@ -64,6 +64,12 @@ class _SharedTextEndpointSelectionSignals {
     );
     return decision == _SharedTextEndpointSelectionDecision.candidate;
   }
+
+  bool get hasExactlyOneActionableSignal =>
+      hasCompleteConnection != hasConnectionPath;
+
+  bool get hasExactlyOneTokenProvenanceSignal =>
+      hasCompleteConnection != hasFollowingToken;
 }
 
 enum _SharedTextEndpointSelectionDecision { candidate, incumbent, tie }
@@ -73,6 +79,22 @@ abstract final class _SharedTextEndpointSelectionDecisionFactory {
     required _SharedTextEndpointSelectionSignals candidate,
     required _SharedTextEndpointSelectionSignals incumbent,
   }) {
+    // Shared text commonly reads as "docs/example first, then actual handoff".
+    // When the incumbent and candidate each expose exactly one strong but
+    // different signal (embedded credential vs. route path, or embedded
+    // credential vs. following-token provenance on non-route URLs), keep the
+    // later URL window. This avoids letting an earlier docs query token hide a
+    // later handoff while still allowing a later credentialed endpoint to beat
+    // an earlier route-only docs URL.
+    final laterComplementarySignalDecision = _preferLaterComplementarySignal(
+      candidate,
+      incumbent,
+    );
+    if (laterComplementarySignalDecision !=
+        _SharedTextEndpointSelectionDecision.tie) {
+      return laterComplementarySignalDecision;
+    }
+
     // A URL carrying both endpoint and token is already an actionable handoff.
     // Do not let a nearby bare documentation/setup URL steal selection merely
     // because its path happens to contain connection-route vocabulary.
@@ -108,6 +130,40 @@ abstract final class _SharedTextEndpointSelectionDecisionFactory {
     }
 
     return _preferRicherRank(candidate.rank, incumbent.rank);
+  }
+
+  static _SharedTextEndpointSelectionDecision _preferLaterComplementarySignal(
+    _SharedTextEndpointSelectionSignals candidate,
+    _SharedTextEndpointSelectionSignals incumbent,
+  ) {
+    if (_hasComplementaryActionableSignals(candidate, incumbent)) {
+      return _SharedTextEndpointSelectionDecision.candidate;
+    }
+    if (_hasComplementaryTokenProvenanceSignals(candidate, incumbent)) {
+      return _SharedTextEndpointSelectionDecision.candidate;
+    }
+    return _SharedTextEndpointSelectionDecision.tie;
+  }
+
+  static bool _hasComplementaryActionableSignals(
+    _SharedTextEndpointSelectionSignals candidate,
+    _SharedTextEndpointSelectionSignals incumbent,
+  ) {
+    return candidate.hasExactlyOneActionableSignal &&
+        incumbent.hasExactlyOneActionableSignal &&
+        candidate.hasCompleteConnection != incumbent.hasCompleteConnection;
+  }
+
+  static bool _hasComplementaryTokenProvenanceSignals(
+    _SharedTextEndpointSelectionSignals candidate,
+    _SharedTextEndpointSelectionSignals incumbent,
+  ) {
+    if (candidate.hasConnectionPath || incumbent.hasConnectionPath) {
+      return false;
+    }
+    return candidate.hasExactlyOneTokenProvenanceSignal &&
+        incumbent.hasExactlyOneTokenProvenanceSignal &&
+        candidate.hasCompleteConnection != incumbent.hasCompleteConnection;
   }
 
   static _SharedTextEndpointSelectionDecision _preferTrue(
