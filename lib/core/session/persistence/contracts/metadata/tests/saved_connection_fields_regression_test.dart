@@ -1,4 +1,4 @@
-import 'saved_connection_fields.dart';
+import '../fields/saved_connection_fields.dart';
 
 void main() {
   saveConnectionFieldsClearBlankOptionalValues();
