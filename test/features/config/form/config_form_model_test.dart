@@ -299,6 +299,29 @@ void main() {
     ]);
   });
 
+  test('deduplicates repeated field refs inside one section', () {
+    final model = ConfigFormModel.fromSchema(
+      schema: const {
+        'sections': [
+          {
+            'id': 'providers',
+            'fields': ['providers.default', 'providers.default'],
+          },
+        ],
+        'fields': [
+          {'path': 'providers.default'},
+          {'path': 'model.temperature'},
+        ],
+      },
+      values: const {},
+    );
+
+    expect(model.sections.first.rows.map((row) => row.field), [
+      'providers.default',
+    ]);
+    expect(model.sections.last.rows.single.field, 'model.temperature');
+  });
+
   test('falls back across section field reference aliases', () {
     final model = ConfigFormModel.fromSchema(
       schema: const {

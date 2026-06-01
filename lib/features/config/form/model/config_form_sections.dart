@@ -101,17 +101,58 @@ List<ConfigFormRow> _sectionRowsFromFirstUsefulFieldRefCandidate({
   for (final candidate in configFormSectionFieldRefAliasCandidates(
     rawSection,
   )) {
-    final candidateRows = <ConfigFormRow>[];
-    for (final field in configFormSectionFieldRefsFromSchema(candidate)) {
-      final row = rowsByField[field];
-      if (row == null || usedFields.contains(row.field)) continue;
-      candidateRows.add(row);
-    }
-    if (candidateRows.isEmpty) continue;
-    usedFields.addAll(candidateRows.map((row) => row.field));
-    return candidateRows;
+    final plan = configFormSectionRowsCandidatePlan(
+      rawFieldRefs: candidate,
+      rowsByField: rowsByField,
+      usedFields: usedFields,
+    );
+    if (plan.rows.isEmpty) continue;
+    usedFields.addAll(plan.rows.map((row) => row.field));
+    return plan.rows;
   }
   return const [];
+}
+
+class ConfigFormSectionRowsCandidatePlan {
+  ConfigFormSectionRowsCandidatePlan({
+    required List<ConfigFormRow> rows,
+    required this.skippedStaleRefs,
+    required this.skippedDuplicateRefs,
+  }) : rows = List.unmodifiable(rows);
+
+  final List<ConfigFormRow> rows;
+  final int skippedStaleRefs;
+  final int skippedDuplicateRefs;
+}
+
+ConfigFormSectionRowsCandidatePlan configFormSectionRowsCandidatePlan({
+  required Object? rawFieldRefs,
+  required Map<String, ConfigFormRow> rowsByField,
+  required Set<String> usedFields,
+}) {
+  final candidateRows = <ConfigFormRow>[];
+  final seenCandidateFields = <String>{};
+  var skippedStaleRefs = 0;
+  var skippedDuplicateRefs = 0;
+
+  for (final field in configFormSectionFieldRefsFromSchema(rawFieldRefs)) {
+    final row = rowsByField[field];
+    if (row == null || usedFields.contains(row.field)) {
+      skippedStaleRefs += 1;
+      continue;
+    }
+    if (!seenCandidateFields.add(row.field)) {
+      skippedDuplicateRefs += 1;
+      continue;
+    }
+    candidateRows.add(row);
+  }
+
+  return ConfigFormSectionRowsCandidatePlan(
+    rows: candidateRows,
+    skippedStaleRefs: skippedStaleRefs,
+    skippedDuplicateRefs: skippedDuplicateRefs,
+  );
 }
 
 ConfigFormSection _unsectionedRowsSection({
