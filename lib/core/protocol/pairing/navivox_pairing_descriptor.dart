@@ -1,6 +1,6 @@
 import '../../gateway/client/navivox_gateway_config.dart';
 import '../endpoint/navivox_endpoint_uri.dart';
-import '../serialization/navivox_json.dart';
+import 'pairing_descriptor_query_fields.dart';
 
 class NavivoxPairingDescriptor {
   const NavivoxPairingDescriptor({
@@ -22,9 +22,10 @@ class NavivoxPairingDescriptor {
     if (uri.scheme != 'navivox' || uri.host != 'connect') {
       throw FormatException('Expected navivox://connect descriptor', value);
     }
-    final fields = _PairingDescriptorFields(
+    final fields = PairingDescriptorQueryFields(
       descriptor: value,
       queryParametersAll: uri.queryParametersAll,
+      rawQuery: uri.query,
     );
     final tokenRequired = fields.boolean('token_required');
     final token = fields.optional('rest_token');
@@ -75,60 +76,6 @@ class NavivoxPairingDescriptor {
     );
   }
 }
-
-class _PairingDescriptorFields {
-  _PairingDescriptorFields({
-    required this.descriptor,
-    required Map<String, List<String>> queryParametersAll,
-  }) : firstValues = navivoxFirstNonBlankQueryParameterValues(
-         queryParametersAll,
-       ),
-       allValues = queryParametersAll;
-
-  final String descriptor;
-  final Map<String, String> firstValues;
-  final Map<String, List<String>> allValues;
-
-  String required(String name) {
-    final value = optional(name);
-    if (value == null) {
-      throw FormatException('Pairing descriptor missing $name', descriptor);
-    }
-    return value;
-  }
-
-  String? optional(String name) {
-    return navivoxFirstStringFieldFromJson(firstValues, [name]);
-  }
-
-  bool boolean(String name) {
-    return navivoxStrictBoolFromJson(optional(name));
-  }
-
-  List<String> csv(String name) {
-    return _allNormalizedQueryValues(name)
-        .map(navivoxOptionalStringFromJson)
-        .whereType<String>()
-        .expand((value) => value.split(','))
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
-  }
-
-  List<String> _allNormalizedQueryValues(String name) {
-    final normalizedName = _normalizePairingDescriptorFieldName(name);
-    final values = <String>[];
-    for (final entry in allValues.entries) {
-      if (_normalizePairingDescriptorFieldName(entry.key) == normalizedName) {
-        values.addAll(entry.value);
-      }
-    }
-    return values;
-  }
-}
-
-String _normalizePairingDescriptorFieldName(String value) =>
-    value.toLowerCase().replaceAll('_', '');
 
 Uri _baseUriFromPairingParams({
   required String? explicitBaseUrl,
