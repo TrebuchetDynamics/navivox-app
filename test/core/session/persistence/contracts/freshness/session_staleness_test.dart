@@ -11,6 +11,19 @@ void main() {
     });
 
     test(
+      'exposes the saved connection age for replayable staleness checks',
+      () {
+        expect(
+          savedSessionConnectionAge(
+            lastConnectedAt: now.subtract(const Duration(hours: 3)),
+            now: now,
+          ),
+          const Duration(hours: 3),
+        );
+      },
+    );
+
+    test(
       'uses the full stale duration instead of truncating to calendar days',
       () {
         expect(
@@ -22,6 +35,23 @@ void main() {
         );
       },
     );
+
+    test('treats future timestamps as stale instead of indefinitely fresh', () {
+      expect(
+        savedSessionConnectionAge(
+          lastConnectedAt: now.add(const Duration(hours: 1)),
+          now: now,
+        ),
+        const Duration(hours: -1),
+      );
+      expect(
+        isSavedSessionStale(
+          lastConnectedAt: now.add(const Duration(hours: 1)),
+          now: now,
+        ),
+        isTrue,
+      );
+    });
 
     test('keeps sessions fresh until the stale duration elapses', () {
       expect(
