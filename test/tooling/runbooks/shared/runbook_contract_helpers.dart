@@ -7,9 +7,21 @@ const androidDeviceAndSecretContractsRunbook =
 
 String readRunbookContractWithSharedPolicy(String runbookPath) {
   return readRequiredFiles([
-    runbookPath,
+    resolveRunbookFacade(runbookPath),
     androidDeviceAndSecretContractsRunbook,
   ]);
+}
+
+String resolveRunbookFacade(String runbookPath) {
+  final text = readRequiredFile(runbookPath);
+  final movedLink = RegExp(r'Moved to \[.*?\]\((.*?)\)\.').firstMatch(text);
+  if (movedLink == null) {
+    return runbookPath;
+  }
+
+  final destination = movedLink.group(1)!;
+  final directory = runbookPath.split('/')..removeLast();
+  return [...directory, destination].join('/');
 }
 
 void expectRunbookContainsAll(String text, Iterable<String> snippets) {
