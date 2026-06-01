@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/chat/approval/approval_banner.dart';
 
+import '../../shared/app/test_material_app.dart';
+import '../../../support/test_navivox_channel.dart';
 import 'shared/approval_banner_widget_test_fixtures.dart';
 import 'shared/approval_request_test_fixtures.dart';
 
@@ -54,5 +56,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.approvalResponses.single.approved, isFalse);
+  });
+
+  testWidgets('resubscribes when the banner channel changes', (tester) async {
+    final oldChannel = TestNavivoxChannel();
+    final newChannel = TestNavivoxChannel();
+
+    await tester.pumpWidget(
+      TestMaterialScaffold(body: ApprovalBanner(channel: oldChannel)),
+    );
+    oldChannel.emitApprovalRequest(
+      approvalRequest(
+        id: 'old-approval',
+        toolCallId: 'tc-old',
+        prompt: 'Old channel approval?',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Old channel approval?'), findsOneWidget);
+
+    await tester.pumpWidget(
+      TestMaterialScaffold(body: ApprovalBanner(channel: newChannel)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Old channel approval?'), findsNothing);
+
+    oldChannel.emitApprovalRequest(
+      approvalRequest(
+        id: 'stale-approval',
+        toolCallId: 'tc-stale',
+        prompt: 'Stale channel approval?',
+      ),
+    );
+    newChannel.emitApprovalRequest(
+      approvalRequest(
+        id: 'new-approval',
+        toolCallId: 'tc-new',
+        prompt: 'New channel approval?',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stale channel approval?'), findsNothing);
+    expect(find.text('New channel approval?'), findsOneWidget);
   });
 }

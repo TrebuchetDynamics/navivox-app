@@ -91,6 +91,30 @@ void main() {
     await expectLater(channel.runRecord('run-1'), throwsA(isA<StateError>()));
   });
 
+  test('new gateway connection does not reuse previous session id', () async {
+    final firstServer = await _FakeGatewayServer.start();
+    final secondServer = await _FakeGatewayServer.start();
+    addTearDown(firstServer.close);
+    addTearDown(secondServer.close);
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(baseUrl: firstServer.baseUrl, token: gatewayTestToken);
+    channel.sendText('first session');
+    await firstServer.nextClientMessage;
+    await Future<void>.delayed(Duration.zero);
+
+    await channel.connect(
+      baseUrl: secondServer.baseUrl,
+      token: gatewayTestToken,
+    );
+    channel.sendText('second session');
+    final sent = await secondServer.nextClientMessage;
+
+    expect(sent, isNot(contains('session_id')));
+  });
+
   test('selected profile scope is included in gateway turn metadata', () async {
     final server = await _FakeGatewayServer.start();
     addTearDown(server.close);
@@ -111,6 +135,97 @@ void main() {
     expect(metadata['server_id'], 'navivox-gateway');
     expect(metadata['profile_id'], 'default');
     expect(metadata['client'], 'navivox');
+  });
+
+  test('failed reconnect clears stale gateway state', () async {
+    final server = await _FakeGatewayServer.start();
+    addTearDown(server.close);
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+    expect(channel.state.hasServers, isTrue);
+
+    await server.close();
+    await expectLater(
+      channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken),
+      throwsA(anything),
+    );
+
+    expect(channel.state.hasServers, isFalse);
+    expect(channel.state.activeServerId, isNull);
+    expect(channel.state.profileContacts, isEmpty);
+  });
+
+  test('disconnect clears active gateway state', () async {
+    final server = await _FakeGatewayServer.start();
+    addTearDown(server.close);
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+    expect(channel.state.hasServers, isTrue);
+    expect(channel.state.activeServerId, isNotNull);
+    expect(channel.state.profileContacts, isNotEmpty);
+
+    await channel.disconnect();
+
+    expect(channel.state.hasServers, isFalse);
+    expect(channel.state.activeServerId, isNull);
+    expect(channel.state.profileContacts, isEmpty);
+    expect(channel.state.selectedProfileContactKey, isNull);
+  });
+
+  test('stream disconnect preserves all profile servers', () async {
+    final server = await _FakeGatewayServer.start(
+      contacts: [
+        {
+          'server_id': 'local-gormes',
+          'profile_id': 'mineru',
+          'display_name': 'Mineru Builder',
+          'server_label': 'local',
+          'health': 'online',
+        },
+        {
+          'server_id': 'office-gormes',
+          'profile_id': 'support',
+          'display_name': 'Support Triage',
+          'server_label': 'office',
+          'health': 'needs_auth',
+        },
+      ],
+    );
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+
+    expect(channel.state.servers.map((server) => server.id), [
+      'local-gormes',
+      'office-gormes',
+    ]);
+
+    final disconnected = Completer<void>();
+    channel.addListener(() {
+      if (channel.state.servers.every(
+            (server) => server.status == 'Gateway disconnected',
+          ) &&
+          !disconnected.isCompleted) {
+        disconnected.complete();
+      }
+    });
+
+    await server.close();
+    await disconnected.future.timeout(const Duration(seconds: 2));
+
+    expect(channel.state.servers.map((server) => server.id), [
+      'local-gormes',
+      'office-gormes',
+    ]);
+    expect(channel.state.activeServerId, 'local-gormes');
   });
 
   test(
@@ -216,6 +331,7 @@ void main() {
       expect(contact.workspaceRootsWarning, 1);
       expect(contact.micAvailable, isFalse);
       expect(contact.activeTurnState, 'active');
+      expect(channel.state.servers.single.status, 'Profile warning');
     },
   );
 
@@ -694,6 +810,7 @@ class _FakeGatewayServer {
   final bool _capabilitiesUnavailable;
   final bool _runRecordsAvailable;
   final Completer<Map<String, Object?>> _nextClientMessage = Completer();
+  final List<WebSocket> _sockets = [];
   var profileContactsRequests = 0;
   var streamRequests = 0;
 
@@ -725,6 +842,9 @@ class _FakeGatewayServer {
   }
 
   Future<void> close() async {
+    for (final socket in _sockets) {
+      await socket.close();
+    }
     await _server.close(force: true);
   }
 
@@ -769,6 +889,7 @@ class _FakeGatewayServer {
     if (request.uri.path == '/v1/navivox/stream') {
       streamRequests++;
       final socket = await WebSocketTransformer.upgrade(request);
+      _sockets.add(socket);
       socket.listen((raw) {
         final decoded = Map<String, Object?>.from(jsonDecode(raw as String));
         if (!_nextClientMessage.isCompleted) {

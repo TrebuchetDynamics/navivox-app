@@ -24,16 +24,29 @@ class _ApprovalBannerState extends State<ApprovalBanner> {
   @override
   void initState() {
     super.initState();
-    _subscription = widget.channel.approvalRequests.listen((request) {
-      if (!mounted) return;
-      setState(() => _pending = request);
-    });
+    _subscribeToApprovals();
+  }
+
+  @override
+  void didUpdateWidget(covariant ApprovalBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.channel == widget.channel) return;
+    _subscription?.cancel();
+    _pending = null;
+    _subscribeToApprovals();
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
     super.dispose();
+  }
+
+  void _subscribeToApprovals() {
+    _subscription = widget.channel.approvalRequests.listen((request) {
+      if (!mounted) return;
+      setState(() => _pending = request);
+    });
   }
 
   void _resolve(bool approved) {

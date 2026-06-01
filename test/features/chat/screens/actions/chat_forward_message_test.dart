@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 import '../../transcript/shared/transcript_test_fixtures.dart';
 import '../../shared/protocol/chat_message_test_fixtures.dart';
 import '../../shared/widgets/chat_screen_test_fixtures.dart';

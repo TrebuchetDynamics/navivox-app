@@ -236,39 +236,78 @@ class NavivoxChannelState {
   NavivoxChannelState copyWith({
     List<NavivoxServer>? servers,
     String? activeServerId,
+    bool clearActiveServerId = false,
     Map<String, NavivoxChatMessage>? messages,
     Map<String, NavivoxVoiceRun>? voiceRuns,
     String? activeVoiceRunId,
+    bool clearActiveVoiceRunId = false,
     bool? runRecordInspectionAvailable,
     List<NavivoxAgent>? agents,
     String? selectedAgentId,
+    bool clearSelectedAgentId = false,
     List<NavivoxProfileContact>? profileContacts,
     String? selectedProfileContactKey,
+    bool clearSelectedProfileContactKey = false,
     NavivoxProfileRoutingReport? profileRouting,
     Map<String, NavivoxProfileRoutingSelection>? profileRoutingSelections,
     Map<String, Object?>? configSchema,
+    bool clearConfigSchema = false,
     Map<String, Object?>? configValues,
     Map<String, Object?>? configDiff,
+    bool clearConfigDiff = false,
   }) {
+    assert(
+      !clearActiveServerId || activeServerId == null,
+      'copyWith cannot set and clear activeServerId at the same time.',
+    );
+    assert(
+      !clearActiveVoiceRunId || activeVoiceRunId == null,
+      'copyWith cannot set and clear activeVoiceRunId at the same time.',
+    );
+    assert(
+      !clearSelectedAgentId || selectedAgentId == null,
+      'copyWith cannot set and clear selectedAgentId at the same time.',
+    );
+    assert(
+      !clearSelectedProfileContactKey || selectedProfileContactKey == null,
+      'copyWith cannot set and clear selectedProfileContactKey at the same time.',
+    );
+    assert(
+      !clearConfigSchema || configSchema == null,
+      'copyWith cannot set and clear configSchema at the same time.',
+    );
+    assert(
+      !clearConfigDiff || configDiff == null,
+      'copyWith cannot set and clear configDiff at the same time.',
+    );
     return NavivoxChannelState(
       servers: servers ?? this.servers,
-      activeServerId: activeServerId ?? this.activeServerId,
+      activeServerId: clearActiveServerId
+          ? null
+          : activeServerId ?? this.activeServerId,
       messages: messages ?? this.messages,
       voiceRuns: voiceRuns ?? this.voiceRuns,
-      activeVoiceRunId: activeVoiceRunId ?? this.activeVoiceRunId,
+      activeVoiceRunId: clearActiveVoiceRunId
+          ? null
+          : activeVoiceRunId ?? this.activeVoiceRunId,
       runRecordInspectionAvailable:
           runRecordInspectionAvailable ?? this.runRecordInspectionAvailable,
       agents: agents ?? this.agents,
-      selectedAgentId: selectedAgentId ?? this.selectedAgentId,
+      selectedAgentId: clearSelectedAgentId
+          ? null
+          : selectedAgentId ?? this.selectedAgentId,
       profileContacts: profileContacts ?? this.profileContacts,
-      selectedProfileContactKey:
-          selectedProfileContactKey ?? this.selectedProfileContactKey,
+      selectedProfileContactKey: clearSelectedProfileContactKey
+          ? null
+          : selectedProfileContactKey ?? this.selectedProfileContactKey,
       profileRouting: profileRouting ?? this.profileRouting,
       profileRoutingSelections:
           profileRoutingSelections ?? this.profileRoutingSelections,
-      configSchema: configSchema ?? this.configSchema,
+      configSchema: clearConfigSchema
+          ? null
+          : configSchema ?? this.configSchema,
       configValues: configValues ?? this.configValues,
-      configDiff: configDiff ?? this.configDiff,
+      configDiff: clearConfigDiff ? null : configDiff ?? this.configDiff,
     );
   }
 }

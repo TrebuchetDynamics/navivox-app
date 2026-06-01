@@ -42,7 +42,7 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
   void didUpdateWidget(ProfileVoiceProfileCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     final key = widget.channel.state.activeProfileContact?.key;
-    if (key != _loadedProfileKey) {
+    if (oldWidget.channel != widget.channel || key != _loadedProfileKey) {
       _loadProfiles();
     }
   }
@@ -189,7 +189,8 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
   }
 
   Future<void> _loadProfiles() async {
-    final key = widget.channel.state.activeProfileContact?.key;
+    final channel = widget.channel;
+    final key = channel.state.activeProfileContact?.key;
     setState(() {
       _loadedProfileKey = key;
       _loading = key != null;
@@ -201,8 +202,8 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
     });
     if (key == null) return;
     try {
-      final profiles = await widget.channel.voiceProfiles();
-      if (!mounted) return;
+      final profiles = await channel.voiceProfiles();
+      if (!mounted || widget.channel != channel) return;
       setState(() {
         _profiles = profiles;
         _loading = false;

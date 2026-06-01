@@ -94,6 +94,38 @@ void main() {
     expect(find.text('TTS: text_only fallback'), findsOneWidget);
   });
 
+  testWidgets('reloads voice profiles when the channel changes', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final firstChannel = _seedChannel()
+      ..seedVoiceProfiles(_voiceProfiles(ttsProvider: 'openai'));
+    final secondChannel = _seedChannel()
+      ..seedVoiceProfiles(_voiceProfiles(ttsProvider: 'piper'));
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(channel: firstChannel, home: const ConfigScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(firstChannel.voiceProfileRequests, 1);
+    expect(find.text('TTS provider: openai'), findsOneWidget);
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(
+        channel: secondChannel,
+        home: const ConfigScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(secondChannel.voiceProfileRequests, 1);
+    expect(find.text('TTS provider: openai'), findsNothing);
+    expect(find.text('TTS provider: piper'), findsOneWidget);
+  });
+
   testWidgets('invalid voice providers do not dispatch config writes', (
     tester,
   ) async {
@@ -150,8 +182,8 @@ TestNavivoxChannel _seedChannel() {
   ]);
 }
 
-NavivoxVoiceProfilesResponse _voiceProfiles() {
-  return const NavivoxVoiceProfilesResponse(
+NavivoxVoiceProfilesResponse _voiceProfiles({String ttsProvider = 'openai'}) {
+  return NavivoxVoiceProfilesResponse(
     action: 'voice_profiles.get',
     providerMatrix: NavivoxVoiceProviderMatrix(
       sttProviders: ['local', 'whisper'],
@@ -163,7 +195,7 @@ NavivoxVoiceProfilesResponse _voiceProfiles() {
         displayName: 'Mineru Builder',
         voiceProfile: NavivoxProfileVoiceProfile(
           sttProvider: 'local',
-          ttsProvider: 'openai',
+          ttsProvider: ttsProvider,
           voiceId: 'alloy',
           languagePolicy: 'match_user_language',
           fallbackVoice: 'text_only',

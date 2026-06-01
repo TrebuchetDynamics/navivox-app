@@ -26,6 +26,6 @@ Map<String, Object?> navivoxGatewayRequestEnvelope({
   return {
     navivoxGatewayTypeField: type,
     navivoxGatewayRequestIdField: requestId,
-    if (sessionId != null) navivoxGatewaySessionIdField: sessionId,
+    navivoxGatewaySessionIdField: ?sessionId,
   };
 }

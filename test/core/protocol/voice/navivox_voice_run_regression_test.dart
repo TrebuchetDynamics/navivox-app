@@ -3,6 +3,7 @@ import 'package:navivox/core/protocol/navivox_voice_run.dart';
 void main() {
   markSubmittedDoesNotCarryStaleFailureReason();
   markSubmittedUsesCurrentNullableSession();
+  copyWithCanClearNullableFields();
 }
 
 void markSubmittedDoesNotCarryStaleFailureReason() {
@@ -42,6 +43,34 @@ void markSubmittedUsesCurrentNullableSession() {
     resubmitted.sessionId == null,
     'resubmission should reflect the current absent session id',
   );
+}
+
+void copyWithCanClearNullableFields() {
+  final run = _pendingRun()
+      .markFailed('Device STT unavailable.')
+      .markSubmitted(requestId: 'request-1', sessionId: 'session-1')
+      .copyWith(
+        transcript: 'stale transcript',
+        duration: const Duration(seconds: 2),
+        confidence: 0.7,
+        reason: 'stale reason',
+      );
+
+  final cleared = run.copyWith(
+    clearSessionId: true,
+    clearRequestId: true,
+    clearTranscript: true,
+    clearDuration: true,
+    clearConfidence: true,
+    clearReason: true,
+  );
+
+  _expect(cleared.sessionId == null, 'copyWith should clear session id');
+  _expect(cleared.requestId == null, 'copyWith should clear request id');
+  _expect(cleared.transcript == null, 'copyWith should clear transcript');
+  _expect(cleared.duration == null, 'copyWith should clear duration');
+  _expect(cleared.confidence == null, 'copyWith should clear confidence');
+  _expect(cleared.reason == null, 'copyWith should clear reason');
 }
 
 NavivoxVoiceRun _pendingRun() {

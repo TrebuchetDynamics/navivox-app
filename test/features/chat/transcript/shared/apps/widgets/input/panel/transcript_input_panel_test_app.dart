@@ -13,6 +13,7 @@ Widget transcriptInputPanelTestApp({
   TranscriptVoiceCaptureCallback? onVoice,
   VoidCallback? onVoiceCaptureStarted,
   ValueChanged<Object>? onVoiceCaptureFailed,
+  Duration voiceCaptureTimeout = const Duration(seconds: 30),
 }) {
   return transcriptWidgetTestHost(
     TranscriptInputPanel(
@@ -22,6 +23,7 @@ Widget transcriptInputPanelTestApp({
       onVoice: onVoice,
       onVoiceCaptureStarted: onVoiceCaptureStarted,
       onVoiceCaptureFailed: onVoiceCaptureFailed,
+      voiceCaptureTimeout: voiceCaptureTimeout,
     ),
   );
 }

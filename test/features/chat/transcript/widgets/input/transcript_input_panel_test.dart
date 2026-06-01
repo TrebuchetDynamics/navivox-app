@@ -151,4 +151,103 @@ void main() {
 
     await tester.pumpAndSettle();
   });
+
+  testWidgets('stop ignores a late voice capture result', (tester) async {
+    final controller = transcriptTextController();
+    VoiceCapture? captured;
+
+    await tester.pumpWidget(
+      transcriptInputPanelTestApp(
+        controller: controller,
+        onSend: transcriptNoopSend,
+        voiceCaptureService: successfulVoiceCaptureService(
+          transcript: 'cancelled voice',
+          captureLatency: const Duration(milliseconds: 100),
+        ),
+        onVoice: (capture) => captured = capture,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 30));
+
+    expectVoiceCaptureInFlightIndicator();
+
+    await tester.tap(find.byIcon(Icons.stop));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.stop), findsNothing);
+
+    await tester.pumpAndSettle();
+
+    expect(captured, isNull);
+  });
+
+  testWidgets('timeout ignores a late voice capture success', (tester) async {
+    final controller = transcriptTextController();
+    VoiceCapture? captured;
+    Object? failed;
+
+    await tester.pumpWidget(
+      transcriptInputPanelTestApp(
+        controller: controller,
+        onSend: transcriptNoopSend,
+        voiceCaptureService: successfulVoiceCaptureService(
+          transcript: 'late success after timeout',
+          captureLatency: const Duration(milliseconds: 100),
+        ),
+        voiceCaptureTimeout: const Duration(milliseconds: 1),
+        onVoice: (capture) => captured = capture,
+        onVoiceCaptureFailed: (error) => failed = error,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic));
+    await tester.pumpAndSettle();
+
+    expect(failed, isA<VoiceCaptureTimeout>());
+    expect(find.text('Voice capture timed out.'), findsOneWidget);
+    expect(captured, isNull);
+  });
+
+  testWidgets('service change ignores a late voice capture result', (
+    tester,
+  ) async {
+    final controller = transcriptTextController();
+    VoiceCapture? captured;
+
+    await tester.pumpWidget(
+      transcriptInputPanelTestApp(
+        controller: controller,
+        onSend: transcriptNoopSend,
+        voiceCaptureService: successfulVoiceCaptureService(
+          transcript: 'stale service voice',
+          captureLatency: const Duration(milliseconds: 100),
+        ),
+        onVoice: (capture) => captured = capture,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.mic));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 30));
+
+    expectVoiceCaptureInFlightIndicator();
+
+    await tester.pumpWidget(
+      transcriptInputPanelTestApp(
+        controller: controller,
+        onSend: transcriptNoopSend,
+        onVoice: (capture) => captured = capture,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byIcon(Icons.stop), findsNothing);
+
+    await tester.pumpAndSettle();
+
+    expect(captured, isNull);
+  });
 }

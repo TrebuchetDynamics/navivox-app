@@ -52,6 +52,164 @@ class SetupScreen extends ConsumerStatefulWidget {
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
 }
 
+class _SetupHero extends StatelessWidget {
+  const _SetupHero({required this.title, required this.instructions});
+
+  final String title;
+  final String instructions;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorScheme.primaryContainer,
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.primary.withAlpha(48),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.graphic_eq,
+            color: colorScheme.onPrimaryContainer,
+            size: 36,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Text(
+            instructions,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.45,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SetupInfoCard extends StatelessWidget {
+  const _SetupInfoCard({required this.icon, required this.child});
+
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: colorScheme.onSecondaryContainer),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SetupNoticeBanner extends StatelessWidget {
+  const _SetupNoticeBanner({required this.notice});
+
+  final SetupScreenNotice notice;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final background = notice.isError
+        ? colorScheme.errorContainer
+        : colorScheme.primaryContainer;
+    final foreground = notice.isError
+        ? colorScheme.onErrorContainer
+        : colorScheme.onPrimaryContainer;
+
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              notice.isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: foreground,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notice.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w700,
+                      height: 1.35,
+                    ),
+                  ),
+                  if (notice.recoveryMessage != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      notice.recoveryMessage!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: foreground,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   final _addressController = TextEditingController(text: '127.0.0.1');
   final _portController = TextEditingController(text: '8765');
@@ -119,229 +277,298 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Navivox')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    _setupScreenPresentation.title,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_setupScreenPresentation.pairingInstructions),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        _setupScreenPresentation.networkHint,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 560;
+
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    colorScheme.primaryContainer.withAlpha(
+                      colorScheme.brightness == Brightness.dark ? 44 : 96,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Semantics(
-                          label: _setupScreenPresentation
-                              .addressFieldSemanticLabel,
-                          hint:
-                              _setupScreenPresentation.addressFieldSemanticHint,
-                          textField: true,
-                          child: TextField(
-                            controller: _addressController,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              labelText:
-                                  _setupScreenPresentation.addressFieldLabel,
-                            ),
-                            keyboardType: TextInputType.url,
-                            textInputAction: TextInputAction.next,
-                            onChanged: _handleAddressChanged,
-                            onSubmitted: (_) =>
-                                FocusScope.of(context).nextFocus(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 112,
-                        child: Semantics(
-                          label:
-                              _setupScreenPresentation.portFieldSemanticLabel,
-                          hint: _setupScreenPresentation.portFieldSemanticHint,
-                          textField: true,
-                          child: TextField(
-                            controller: _portController,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              labelText:
-                                  _setupScreenPresentation.portFieldLabel,
-                            ),
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.next,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: _handlePortChanged,
-                            onSubmitted: (_) =>
-                                FocusScope.of(context).nextFocus(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Semantics(
-                    label: _setupScreenPresentation.tokenFieldSemanticLabel,
-                    hint: _setupScreenPresentation.tokenFieldSemanticHint,
-                    textField: true,
-                    obscured: !_showToken,
-                    child: TextField(
-                      controller: _tokenController,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText: _setupScreenPresentation.tokenFieldLabel,
-                      ),
-                      obscureText: !_showToken,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: _connecting
-                          ? null
-                          : (_) => _connectGateway(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 8,
-                    children: [
-                      TextButton.icon(
-                        key: const ValueKey('setup-import-qr-button'),
-                        onPressed: _connecting || _importingQr
-                            ? null
-                            : _importQrImage,
-                        icon: _importingQr
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.image_search),
-                        label: Text(
-                          _setupScreenPresentation.importQrButtonLabel,
-                        ),
-                      ),
-                      TextButton.icon(
-                        key: const ValueKey(
-                          'setup-copy-fix-instructions-button',
-                        ),
-                        onPressed: () => _copySetupGuideEntry(
-                          _setupGuidePresentation.entry(
-                            SetupGuideEntryId.navivoxPairHandoff,
-                          ),
-                        ),
-                        icon: const Icon(Icons.content_copy),
-                        label: Text(
-                          _setupScreenPresentation.fixInstructionsButtonLabel,
-                        ),
-                      ),
-                      TextButton.icon(
-                        key: const ValueKey('setup-token-visibility-button'),
-                        onPressed: () {
-                          setState(() => _showToken = !_showToken);
-                        },
-                        icon: Icon(
-                          _showToken ? Icons.visibility_off : Icons.visibility,
-                        ),
-                        label: Text(
-                          _setupScreenPresentation.tokenVisibilityLabel(
-                            showToken: _showToken,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_notice != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _notice!.message,
-                      style: TextStyle(
-                        color: _notice!.isError
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    if (_notice!.recoveryMessage != null) ...[
-                      const SizedBox(height: 8),
-                      Text(_notice!.recoveryMessage!),
-                    ],
+                    colorScheme.surface,
+                    colorScheme.surface,
                   ],
-                  const SizedBox(height: 12),
-                  Semantics(
-                    label: _setupScreenPresentation.connectButtonLabel,
-                    hint: _setupScreenPresentation.connectButtonSemanticHint,
-                    button: true,
-                    enabled: !_connecting,
-                    onTap: _connecting ? null : _connectGateway,
-                    child: ExcludeSemantics(
-                      child: FilledButton.icon(
-                        onPressed: _connecting ? null : _connectGateway,
-                        icon: _connecting
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.hub),
-                        label: Text(
-                          _setupScreenPresentation.connectButtonLabel,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            _setupGuidePresentation.introCopy,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          for (final entry
-                              in _setupGuidePresentation.visibleEntries) ...[
-                            if (entry.id != SetupGuideEntryId.bootstrap)
-                              const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: () => _copySetupGuideEntry(entry),
-                              icon: Icon(_setupGuideIcon(entry.id)),
-                              label: Text(entry.label),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 16 : 24,
+                    vertical: compact ? 20 : 32,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _SetupHero(
+                          title: _setupScreenPresentation.title,
+                          instructions:
+                              _setupScreenPresentation.pairingInstructions,
+                        ),
+                        const SizedBox(height: 20),
+                        _SetupInfoCard(
+                          icon: Icons.security,
+                          child: Text(
+                            _setupScreenPresentation.networkHint,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          elevation: 0,
+                          child: Padding(
+                            padding: EdgeInsets.all(compact ? 16 : 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Connection details',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                if (compact) ...[
+                                  _addressField(),
+                                  const SizedBox(height: 12),
+                                  _portField(width: double.infinity),
+                                ] else
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: _addressField()),
+                                      const SizedBox(width: 12),
+                                      _portField(width: 124),
+                                    ],
+                                  ),
+                                const SizedBox(height: 12),
+                                _tokenField(),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  alignment: WrapAlignment.end,
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    TextButton.icon(
+                                      key: const ValueKey(
+                                        'setup-import-qr-button',
+                                      ),
+                                      onPressed: _connecting || _importingQr
+                                          ? null
+                                          : _importQrImage,
+                                      icon: _importingQr
+                                          ? const SizedBox.square(
+                                              dimension: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(Icons.qr_code_scanner),
+                                      label: Text(
+                                        _setupScreenPresentation
+                                            .importQrButtonLabel,
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      key: const ValueKey(
+                                        'setup-copy-fix-instructions-button',
+                                      ),
+                                      onPressed: () => _copySetupGuideEntry(
+                                        _setupGuidePresentation.entry(
+                                          SetupGuideEntryId.navivoxPairHandoff,
+                                        ),
+                                      ),
+                                      icon: const Icon(Icons.content_copy),
+                                      label: Text(
+                                        _setupScreenPresentation
+                                            .fixInstructionsButtonLabel,
+                                      ),
+                                    ),
+                                    TextButton.icon(
+                                      key: const ValueKey(
+                                        'setup-token-visibility-button',
+                                      ),
+                                      onPressed: () {
+                                        setState(
+                                          () => _showToken = !_showToken,
+                                        );
+                                      },
+                                      icon: Icon(
+                                        _showToken
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                      ),
+                                      label: Text(
+                                        _setupScreenPresentation
+                                            .tokenVisibilityLabel(
+                                              showToken: _showToken,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_notice != null) ...[
+                                  const SizedBox(height: 12),
+                                  _SetupNoticeBanner(notice: _notice!),
+                                ],
+                                const SizedBox(height: 16),
+                                Semantics(
+                                  container: true,
+                                  label: _setupScreenPresentation
+                                      .connectButtonLabel,
+                                  hint: _setupScreenPresentation
+                                      .connectButtonSemanticHint,
+                                  button: true,
+                                  enabled: !_connecting,
+                                  onTap: _connecting ? null : _connectGateway,
+                                  child: ExcludeSemantics(
+                                    child: FilledButton.icon(
+                                      style: FilledButton.styleFrom(
+                                        minimumSize: const Size.fromHeight(52),
+                                        textStyle: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      onPressed: _connecting
+                                          ? null
+                                          : _connectGateway,
+                                      icon: _connecting
+                                          ? const SizedBox.square(
+                                              dimension: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(Icons.hub),
+                                      label: Text(
+                                        _setupScreenPresentation
+                                            .connectButtonLabel,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _SetupInfoCard(
+                          icon: Icons.terminal,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                _setupGuidePresentation.introCopy,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              for (final entry
+                                  in _setupGuidePresentation
+                                      .visibleEntries) ...[
+                                if (entry.id != SetupGuideEntryId.bootstrap)
+                                  const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  onPressed: () => _copySetupGuideEntry(entry),
+                                  icon: Icon(_setupGuideIcon(entry.id)),
+                                  label: Text(entry.label),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _addressField() {
+    return Semantics(
+      label: _setupScreenPresentation.addressFieldSemanticLabel,
+      hint: _setupScreenPresentation.addressFieldSemanticHint,
+      textField: true,
+      child: TextField(
+        controller: _addressController,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.dns_outlined),
+          labelText: _setupScreenPresentation.addressFieldLabel,
+        ),
+        keyboardType: TextInputType.url,
+        textInputAction: TextInputAction.next,
+        onChanged: _handleAddressChanged,
+        onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+      ),
+    );
+  }
+
+  Widget _portField({required double width}) {
+    return SizedBox(
+      width: width,
+      child: Semantics(
+        label: _setupScreenPresentation.portFieldSemanticLabel,
+        hint: _setupScreenPresentation.portFieldSemanticHint,
+        textField: true,
+        child: TextField(
+          controller: _portController,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            prefixIcon: width > 160 ? const Icon(Icons.tag) : null,
+            labelText: _setupScreenPresentation.portFieldLabel,
+          ),
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: _handlePortChanged,
+          onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+        ),
+      ),
+    );
+  }
+
+  Widget _tokenField() {
+    return Semantics(
+      label: _setupScreenPresentation.tokenFieldSemanticLabel,
+      hint: _setupScreenPresentation.tokenFieldSemanticHint,
+      textField: true,
+      obscured: !_showToken,
+      child: TextField(
+        controller: _tokenController,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          prefixIcon: const Icon(Icons.key_outlined),
+          labelText: _setupScreenPresentation.tokenFieldLabel,
+        ),
+        obscureText: !_showToken,
+        textInputAction: TextInputAction.done,
+        onSubmitted: _connecting ? null : (_) => _connectGateway(),
       ),
     );
   }
@@ -386,10 +613,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final available = await _connectIntentSource.isAvailable();
     if (!mounted || !available) return;
     final result = await _connectIntentSource.initialImport();
+    if (!mounted) return;
     if (result != null && result.hasValues) {
       _applyConnectIntentImport(result);
     }
-    if (!mounted) return;
     _connectIntentSubscription = _connectIntentSource.imports.listen(
       _applyConnectIntentImport,
     );

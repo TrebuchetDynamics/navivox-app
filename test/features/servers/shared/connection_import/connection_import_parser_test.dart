@@ -136,6 +136,17 @@ void main() {
     expect(sharedText, isNull);
   });
 
+  test('rejects malformed core descriptors without salvaging tokens', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'navivox://connect?'
+      'base_url=http%3A%2F%2F127.0.0.1%3A99999%2Fsetup&'
+      'websocket_url=wss%3A%2F%2Fgateway.example%2Fstream%23frag&'
+      'rest_token=nvbx_bad_descriptor',
+    );
+
+    expect(result, isNull);
+  });
+
   test('does not let metadata-only JSON entries outrank explicit entries', () {
     final result = parseNavivoxConnectionImportPayload('''
 {

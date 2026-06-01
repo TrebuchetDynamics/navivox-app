@@ -12,6 +12,8 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   NavivoxChannelState _state = const NavivoxChannelState();
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
+  int _messageCounter = 0;
+  int _voiceRunCounter = 0;
 
   @override
   NavivoxChannelState get state => _state;
@@ -71,7 +73,9 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
-  Future<void> disconnect() async {}
+  Future<void> disconnect() async {
+    state = const NavivoxChannelState();
+  }
 
   @override
   void sendText(String text) {
@@ -99,10 +103,34 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   @override
-  void sendVoice({required String transcript}) {}
+  void sendVoice({required String transcript}) {
+    final trimmed = transcript.trim();
+    if (trimmed.isEmpty) return;
+    final id = startVoiceRun();
+    stageVoiceRunTranscript(
+      voiceRunId: id,
+      transcript: trimmed,
+      duration: Duration.zero,
+      confidence: 1,
+    );
+    submitVoiceRun(id);
+  }
 
   @override
-  String startVoiceRun() => '';
+  String startVoiceRun() {
+    final active = _state.activeProfileContact;
+    final id = 'e2e-voice-${++_voiceRunCounter}';
+    final run = NavivoxVoiceRun.recording(
+      id: id,
+      serverId: active?.serverId ?? _state.activeServerId ?? 'local',
+      profileId: active?.profileId ?? 'mineru',
+      createdAt: DateTime.now(),
+    );
+    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
+    runs[id] = run;
+    state = _state.copyWith(voiceRuns: runs, activeVoiceRunId: id);
+    return id;
+  }
 
   @override
   void stageVoiceRunTranscript({
@@ -111,16 +139,77 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
     required Duration duration,
     required double confidence,
     NavivoxTranscriptSource transcriptSource = NavivoxTranscriptSource.device,
-  }) {}
+  }) {
+    final run = _state.voiceRuns[voiceRunId];
+    if (run == null) return;
+    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
+    runs[voiceRunId] = run.copyWith(
+      status: NavivoxVoiceRunStatus.pendingSend,
+      transcriptSource: transcriptSource,
+      transcript: transcript,
+      duration: duration,
+      confidence: confidence,
+      updatedAt: DateTime.now(),
+    );
+    state = _state.copyWith(voiceRuns: runs, activeVoiceRunId: voiceRunId);
+  }
 
   @override
-  void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'}) {}
+  void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'}) {
+    final run = _state.voiceRuns[voiceRunId];
+    if (run == null) return;
+    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
+    runs[voiceRunId] = run.markCancelled(reason);
+    state = _state.copyWith(voiceRuns: runs, activeVoiceRunId: voiceRunId);
+  }
 
   @override
-  void failVoiceRun(String voiceRunId, {required String reason}) {}
+  void failVoiceRun(String voiceRunId, {required String reason}) {
+    final run = _state.voiceRuns[voiceRunId];
+    if (run == null) return;
+    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
+    runs[voiceRunId] = run.markFailed(reason);
+    state = _state.copyWith(voiceRuns: runs, activeVoiceRunId: voiceRunId);
+  }
 
   @override
-  void submitVoiceRun(String voiceRunId) {}
+  void submitVoiceRun(String voiceRunId) {
+    final run = _state.voiceRuns[voiceRunId];
+    final transcript = run?.transcript?.trim() ?? '';
+    if (run == null || transcript.isEmpty) return;
+    final runs = Map<String, NavivoxVoiceRun>.from(_state.voiceRuns);
+    runs[voiceRunId] = run.markSubmitted(requestId: 'e2e-request-$voiceRunId');
+    state = _state.copyWith(voiceRuns: runs, activeVoiceRunId: voiceRunId);
+
+    final messages = Map<String, NavivoxChatMessage>.from(_state.messages);
+    final userId = 'voice-user-${++_messageCounter}';
+    messages[userId] = NavivoxChatMessage(
+      id: userId,
+      author: NavivoxMessageAuthor.user,
+      kind: NavivoxMessageKind.voice,
+      createdAt: DateTime.now(),
+      text: transcript,
+      serverId: run.serverId,
+      profileId: run.profileId,
+      voice: NavivoxVoiceMessage(
+        voiceRunId: voiceRunId,
+        transcript: transcript,
+        duration: run.duration ?? Duration.zero,
+        confidence: run.confidence ?? 1,
+      ),
+    );
+    final assistantId = 'voice-assistant-${++_messageCounter}';
+    messages[assistantId] = NavivoxChatMessage(
+      id: assistantId,
+      author: NavivoxMessageAuthor.assistant,
+      kind: NavivoxMessageKind.text,
+      createdAt: DateTime.now(),
+      text: 'Echo: $transcript',
+      serverId: run.serverId,
+      profileId: run.profileId,
+    );
+    state = _state.copyWith(messages: messages);
+  }
 
   @override
   void cancelActiveTurn() {}

@@ -186,6 +186,41 @@ void main() {
     );
   });
 
+  testWidgets('setup ignores late initial Android link after dispose', (
+    tester,
+  ) async {
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+    final initialImport = Completer<SetupQrImageImport?>();
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: SetupScreen(
+          connectIntentSource: _DelayedInitialConnectIntentSource(
+            initial: initialImport.future,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(channel: channel, home: const SizedBox.shrink()),
+    );
+    initialImport.complete(
+      const SetupQrImageImport(
+        baseUrl: 'http://127.0.0.1:8765',
+        token: 'nvbx_late_token',
+        source: PairingHandoffSource.sharedText,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(channel.connectedBaseUrl, isNull);
+  });
+
   testWidgets('setup imports initial Android Navivox connection link', (
     tester,
   ) async {
@@ -250,6 +285,42 @@ void main() {
     },
   );
 
+  testWidgets('setup ignores foreground Android link after dispose', (
+    tester,
+  ) async {
+    final channel = ConnectAndTalkChannel();
+    addTearDown(channel.dispose);
+    final intentStream = StreamController<SetupQrImageImport>();
+    addTearDown(intentStream.close);
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: SetupScreen(
+          connectIntentSource: _FakeConnectIntentSource(
+            imports: intentStream.stream,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(channel: channel, home: const SizedBox.shrink()),
+    );
+    intentStream.add(
+      const SetupQrImageImport(
+        baseUrl: 'https://gateway.example:8765',
+        token: 'nvbx_late_foreground_token',
+        source: PairingHandoffSource.sharedText,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(channel.connectedBaseUrl, isNull);
+  });
+
   testWidgets('setup imports foreground Android Navivox connection link', (
     tester,
   ) async {
@@ -290,6 +361,38 @@ void main() {
     expect(
       channel.connectedWebSocketUrl,
       'wss://gateway.example:8765/v1/navivox/stream',
+    );
+  });
+
+  testWidgets('direct app-open auto-connect failure does not leak token', (
+    tester,
+  ) async {
+    final channel = FailingConnectChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: SetupScreen(
+          connectIntentSource: _FakeConnectIntentSource(
+            initial: const SetupQrImageImport(
+              baseUrl: 'http://127.0.0.1:8765',
+              token: 'nvbx_direct_secret_should_not_render',
+              source: PairingHandoffSource.directAppOpen,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not connect from the pairing link.'),
+      findsOneWidget,
+    );
+    expect(
+      caseInsensitiveText('nvbx_direct_secret_should_not_render'),
+      findsNothing,
     );
   });
 
@@ -456,6 +559,21 @@ void main() {
       expect(caseInsensitiveText('telephony'), findsNothing);
     },
   );
+}
+
+class _DelayedInitialConnectIntentSource extends NavivoxConnectIntentSource {
+  _DelayedInitialConnectIntentSource({required this.initial});
+
+  final Future<SetupQrImageImport?> initial;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<SetupQrImageImport?> initialImport() => initial;
+
+  @override
+  Stream<SetupQrImageImport> get imports => const Stream.empty();
 }
 
 class _FakeConnectIntentSource extends NavivoxConnectIntentSource {

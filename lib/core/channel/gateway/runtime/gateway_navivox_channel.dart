@@ -19,11 +19,11 @@ import '../memory/gateway_memory_request_policy.dart';
 import '../profiles/gateway_profile_contact_policy.dart';
 import '../profiles/gateway_voice_run_policy.dart';
 import '../state/gateway_channel_state_policy.dart';
-import '../messages/safety/gateway_safety_notice_policy.dart';
-import '../messages/scope/gateway_message_scope_policy.dart';
-import '../messages/submissions/gateway_user_turn_policy.dart';
-import '../messages/tools/gateway_tool_call_policy.dart';
-import '../messages/transcript/gateway_assistant_message_policy.dart';
+import '../messages/gateway_assistant_message_policy.dart';
+import '../messages/gateway_message_scope_policy.dart';
+import '../messages/gateway_safety_notice_policy.dart';
+import '../messages/gateway_tool_call_policy.dart';
+import '../messages/gateway_user_turn_policy.dart';
 import '../turns/gateway_turn_control_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
@@ -74,81 +74,94 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     String? webSocketUrl,
   }) async {
     await _closeConnection(clearSavedSession: false);
-    final config = NavivoxGatewayConfig(
-      baseUri: Uri.parse(baseUrl),
-      token: token,
-      webSocketUri: _optionalUri(webSocketUrl),
-    );
-    final client = NavivoxGatewayClient(config: config);
-    final status = await client.gatewayStatus();
-    _client = client;
-    if (!status.enabled) {
-      _capabilities = null;
-      _enterClosedCapabilityMode(config, status: 'Gateway disabled');
-      return;
-    }
-    final capabilities = await _loadCapabilities(client);
-    _capabilities = capabilities;
-    if (capabilities == null) {
-      _enterClosedCapabilityMode(config, status: 'Capabilities unavailable');
-      return;
-    }
+    try {
+      final config = NavivoxGatewayConfig(
+        baseUri: Uri.parse(baseUrl),
+        token: token,
+        webSocketUri: _optionalUri(webSocketUrl),
+      );
+      final client = NavivoxGatewayClient(config: config);
+      final status = await client.gatewayStatus();
+      _client = client;
+      if (!status.enabled) {
+        _capabilities = null;
+        _enterClosedCapabilityMode(config, status: 'Gateway disabled');
+        return;
+      }
+      final capabilities = await _loadCapabilities(client);
+      _capabilities = capabilities;
+      if (capabilities == null) {
+        _enterClosedCapabilityMode(config, status: 'Capabilities unavailable');
+        return;
+      }
 
-    final contacts = navivoxProfileContactsAvailable(capabilities)
-        ? await _loadProfileContacts(client)
-        : [navivoxFallbackProfileContact()];
-    final profileRouting = navivoxProfileRoutingAvailable(capabilities)
-        ? await client.profileRouting()
-        : const NavivoxProfileRoutingReport();
-    final configAdminState = await navivoxLoadGatewayConfigAdminState(
-      client: client,
-      capabilities: capabilities,
-    );
-    _configAdminAvailable = configAdminState != null;
-    final streamAvailable = navivoxStreamAvailable(capabilities);
-    if (streamAvailable) {
-      final socket = await client.connectStream();
-      _socket = socket;
-      _events = client
-          .decodeEvents(socket.events)
-          .listen(
-            _onEvent,
-            onError: (Object error) =>
-                _appendSystemMessage('Gateway stream error'),
-            onDone: () => _setServerStatus('Gateway disconnected'),
+      final contacts = navivoxProfileContactsAvailable(capabilities)
+          ? await _loadProfileContacts(client)
+          : [navivoxFallbackProfileContact()];
+      final profileRouting = navivoxProfileRoutingAvailable(capabilities)
+          ? await client.profileRouting()
+          : const NavivoxProfileRoutingReport();
+      final configAdminState = await navivoxLoadGatewayConfigAdminState(
+        client: client,
+        capabilities: capabilities,
+      );
+      _configAdminAvailable = configAdminState != null;
+      final streamAvailable = navivoxStreamAvailable(capabilities);
+      if (streamAvailable) {
+        final socket = await client.connectStream();
+        _socket = socket;
+        _events = client
+            .decodeEvents(socket.events)
+            .listen(
+              _onEvent,
+              onError: (Object error) =>
+                  _appendSystemMessage('Gateway stream error'),
+              onDone: () => _setServerStatus('Gateway disconnected'),
+            );
+      }
+      _state =
+          navivoxStateWithProfileContacts(
+            state: _state,
+            contacts: contacts,
+            config: config,
+          ).copyWith(
+            profileRouting: profileRouting,
+            runRecordInspectionAvailable: navivoxRunRecordsSupported(
+              capabilities,
+            ),
+            configSchema: configAdminState?.schema ?? const {},
+            configValues: configAdminState?.values ?? const {},
+            configDiff: const {},
           );
-    }
-    _state =
-        navivoxStateWithProfileContacts(
-          state: _state,
-          contacts: contacts,
-          config: config,
-        ).copyWith(
-          profileRouting: profileRouting,
-          runRecordInspectionAvailable: navivoxRunRecordsSupported(
-            capabilities,
-          ),
-          configSchema: configAdminState?.schema ?? const {},
-          configValues: configAdminState?.values ?? const {},
-          configDiff: const {},
+      notifyListeners();
+      // Persist connection parameters so the app can reconnect automatically.
+      unawaited(
+        _sessionService.saveConnection(
+          baseUrl: baseUrl,
+          webSocketUrl: webSocketUrl,
+          gatewayId: status.gatewayId,
+        ),
+      );
+      if (!streamAvailable) {
+        _appendSystemMessage(
+          'Navivox stream is not advertised by this gateway.',
         );
-    notifyListeners();
-    // Persist connection parameters so the app can reconnect automatically.
-    unawaited(
-      _sessionService.saveConnection(
-        baseUrl: baseUrl,
-        webSocketUrl: webSocketUrl,
-        gatewayId: status.gatewayId,
-      ),
-    );
-    if (!streamAvailable) {
-      _appendSystemMessage('Navivox stream is not advertised by this gateway.');
+      }
+    } catch (_) {
+      await _closeConnection(clearSavedSession: false);
+      _activeSessionId = null;
+      _state = const NavivoxChannelState();
+      notifyListeners();
+      rethrow;
     }
   }
 
   @override
   Future<void> disconnect() async {
     await _closeConnection(clearSavedSession: true);
+    _activeSessionId = null;
+    _state = const NavivoxChannelState();
+    notifyListeners();
   }
 
   Future<void> _closeConnection({required bool clearSavedSession}) async {
@@ -158,6 +171,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _socket = null;
     _client = null;
     _capabilities = null;
+    _activeSessionId = null;
     _configAdminAvailable = false;
     if (clearSavedSession) {
       unawaited(_sessionService.clearSession());
@@ -726,7 +740,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     } catch (_) {
       // Saved session expired or invalid — clear it so the user sees setup.
       await _sessionService.clearSession();
-      _state = _state.copyWith(servers: [], activeServerId: null);
+      _state = _state.copyWith(servers: [], clearActiveServerId: true);
       notifyListeners();
       _appendSystemMessage(
         'Saved session expired. Please re-pair with your gateway.',
@@ -892,10 +906,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void _setServerStatus(String status) {
     if (_state.servers.isEmpty) return;
-    final server = _state.servers.first;
     _state = _state.copyWith(
       servers: [
-        NavivoxServer(id: server.id, name: server.name, status: status),
+        for (final server in _state.servers)
+          NavivoxServer(id: server.id, name: server.name, status: status),
       ],
     );
     notifyListeners();

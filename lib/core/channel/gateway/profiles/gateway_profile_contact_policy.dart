@@ -120,15 +120,16 @@ List<NavivoxServer> navivoxUpsertProfileServer(
   List<NavivoxServer> servers,
   NavivoxProfileContact contact,
 ) {
+  final updated = NavivoxServer(
+    id: contact.serverId,
+    name: contact.serverLabel,
+    status: _profileHealthStatus(contact),
+  );
   final index = servers.indexWhere((server) => server.id == contact.serverId);
-  if (index >= 0) return servers;
+  if (index < 0) return [...servers, updated];
   return [
-    ...servers,
-    NavivoxServer(
-      id: contact.serverId,
-      name: contact.serverLabel,
-      status: _profileHealthStatus(contact),
-    ),
+    for (var i = 0; i < servers.length; i += 1)
+      if (i == index) updated else servers[i],
   ];
 }
 

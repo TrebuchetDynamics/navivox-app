@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/features/agents/screens/agents_screen.dart';
 
 import '../../../support/test_navivox_channel.dart';
@@ -101,6 +102,36 @@ void main() {
 
     expect(find.text('Create from seed'), findsOneWidget);
     expect(find.byKey(const ValueKey('profile-seed-input')), findsOneWidget);
+  });
+
+  testWidgets('ignores old channel updates after channel swap', (tester) async {
+    final oldChannel = TestNavivoxChannel()..seedAgents(defaultSeedAgents);
+    final newChannel = TestNavivoxChannel()
+      ..seedAgents([
+        const NavivoxAgent(id: 'new', name: 'New Agent', status: 'ready'),
+      ]);
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(channel: oldChannel, home: const AgentsScreen()),
+    );
+
+    expect(find.text('Default'), findsOneWidget);
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(channel: newChannel, home: const AgentsScreen()),
+    );
+    await tester.pump();
+
+    expect(find.text('Default'), findsNothing);
+    expect(find.text('New Agent'), findsOneWidget);
+
+    oldChannel.seedAgents([
+      const NavivoxAgent(id: 'old-update', name: 'Old Update', status: 'ready'),
+    ]);
+    await tester.pump();
+
+    expect(find.text('Old Update'), findsNothing);
+    expect(find.text('New Agent'), findsOneWidget);
   });
 
   testWidgets('tapping an agent tile selects it through the channel', (

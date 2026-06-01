@@ -44,6 +44,15 @@ class _TranscriptInputPanelState extends State<TranscriptInputPanel> {
   final _voiceCaptureFlow = const TranscriptVoiceCaptureFlow();
   bool _capturing = false;
   String? _captureError;
+  int _captureGeneration = 0;
+
+  @override
+  void didUpdateWidget(covariant TranscriptInputPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.voiceCaptureService == widget.voiceCaptureService) return;
+    _captureGeneration += 1;
+    if (_capturing) _capturing = false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,10 +97,12 @@ class _TranscriptInputPanelState extends State<TranscriptInputPanel> {
     if (widget.voiceCaptureService == null) return;
 
     if (_capturing) {
+      _captureGeneration += 1;
       setState(() => _capturing = false);
       return;
     }
 
+    final generation = ++_captureGeneration;
     setState(() {
       _capturing = true;
       _captureError = null;
@@ -102,6 +113,7 @@ class _TranscriptInputPanelState extends State<TranscriptInputPanel> {
       onStarted: widget.onVoiceCaptureStarted,
     );
     try {
+      if (!mounted || generation != _captureGeneration) return;
       switch (outcome.status) {
         case TranscriptVoiceCaptureStatus.unavailable:
           return;
@@ -119,7 +131,9 @@ class _TranscriptInputPanelState extends State<TranscriptInputPanel> {
           break;
       }
     } finally {
-      if (mounted) setState(() => _capturing = false);
+      if (mounted && generation == _captureGeneration) {
+        setState(() => _capturing = false);
+      }
     }
   }
 }

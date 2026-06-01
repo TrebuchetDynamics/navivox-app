@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:navivox/core/channel/navivox_channel.dart';
 
 import '../../../../../support/test_navivox_channel.dart';
 import '../../../../shared/app/test_router_app.dart';

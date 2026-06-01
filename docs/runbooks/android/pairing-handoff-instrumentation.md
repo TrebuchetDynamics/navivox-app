@@ -10,4 +10,4 @@ flutter test integration_test/android_pairing_handoff_smoke_test.dart -d <androi
 
 The test uses the sentinel token `ci-secret-token-do-not-render`. If a failure screenshot or log shows that value in visible UI, treat it as a token leak.
 
-This does not replace manual OS intent checks. For real Android `ACTION_VIEW` and `ACTION_SEND` commands, see `docs/runbooks/android-pairing-handoff-smoke.md`.
+This does not replace manual OS intent checks. For real Android `ACTION_VIEW` and `ACTION_SEND` commands, see `docs/runbooks/android/pairing-handoff-smoke.md`.

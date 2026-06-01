@@ -142,30 +142,60 @@ class NavivoxVoiceRun {
 
   NavivoxVoiceRun copyWith({
     String? sessionId,
+    bool clearSessionId = false,
     String? requestId,
+    bool clearRequestId = false,
     NavivoxVoiceRunStatus? status,
     NavivoxTranscriptSource? transcriptSource,
     NavivoxTtsStatus? ttsStatus,
     String? transcript,
+    bool clearTranscript = false,
     Duration? duration,
+    bool clearDuration = false,
     double? confidence,
+    bool clearConfidence = false,
     String? reason,
+    bool clearReason = false,
     String? retentionPolicy,
     DateTime? updatedAt,
   }) {
+    assert(
+      !clearSessionId || sessionId == null,
+      'copyWith cannot set and clear sessionId at the same time.',
+    );
+    assert(
+      !clearRequestId || requestId == null,
+      'copyWith cannot set and clear requestId at the same time.',
+    );
+    assert(
+      !clearTranscript || transcript == null,
+      'copyWith cannot set and clear transcript at the same time.',
+    );
+    assert(
+      !clearDuration || duration == null,
+      'copyWith cannot set and clear duration at the same time.',
+    );
+    assert(
+      !clearConfidence || confidence == null,
+      'copyWith cannot set and clear confidence at the same time.',
+    );
+    assert(
+      !clearReason || reason == null,
+      'copyWith cannot set and clear reason at the same time.',
+    );
     return NavivoxVoiceRun(
       id: id,
       serverId: serverId,
       profileId: profileId,
-      sessionId: sessionId ?? this.sessionId,
-      requestId: requestId ?? this.requestId,
+      sessionId: clearSessionId ? null : sessionId ?? this.sessionId,
+      requestId: clearRequestId ? null : requestId ?? this.requestId,
       status: status ?? this.status,
       transcriptSource: transcriptSource ?? this.transcriptSource,
       ttsStatus: ttsStatus ?? this.ttsStatus,
-      transcript: transcript ?? this.transcript,
-      duration: duration ?? this.duration,
-      confidence: confidence ?? this.confidence,
-      reason: reason ?? this.reason,
+      transcript: clearTranscript ? null : transcript ?? this.transcript,
+      duration: clearDuration ? null : duration ?? this.duration,
+      confidence: clearConfidence ? null : confidence ?? this.confidence,
+      reason: clearReason ? null : reason ?? this.reason,
       retentionPolicy: retentionPolicy ?? this.retentionPolicy,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
