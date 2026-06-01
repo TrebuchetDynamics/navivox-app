@@ -65,4 +65,43 @@ void main() {
       'wss://gateway.example/socket',
     );
   });
+
+  group('base URL derivation invariants', () {
+    test(
+      'derives HTTP origin from websocket endpoint without dropping explicit port',
+      () {
+        expect(
+          navivoxHttpBaseUrlFromEndpointString(
+            'wss://gateway.example:443/navivox/ws?token=secret',
+          ),
+          'https://gateway.example:443',
+        );
+      },
+    );
+
+    test('strips path and query only for HTTP base URL derivation', () {
+      expect(
+        navivoxHttpBaseUrlFromEndpointString(
+          'https://gateway.example:8443/api?token=secret',
+        ),
+        'https://gateway.example:8443',
+      );
+    });
+
+    test('preserves websocket path and query for connection endpoint', () {
+      expect(
+        navivoxWebSocketUrlFromEndpointString(
+          'wss://gateway.example/navivox/ws?token=secret',
+        ),
+        'wss://gateway.example/navivox/ws?token=secret',
+      );
+    });
+
+    test('keeps original value when HTTP origin cannot be derived', () {
+      expect(
+        navivoxHttpOriginOrOriginalFromString('ftp://gateway.example/resource'),
+        'ftp://gateway.example/resource',
+      );
+    });
+  });
 }

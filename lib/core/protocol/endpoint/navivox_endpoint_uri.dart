@@ -24,21 +24,33 @@ String navivoxHttpSchemeFromEndpointScheme(
 }
 
 String navivoxOriginFromUri(Uri uri) {
-  return _navivoxOrigin(
-    scheme: uri.scheme,
-    host: uri.host,
-    explicitPort: uri.hasPort ? uri.port : null,
-  );
+  return _NavivoxEndpointOrigin.fromUri(uri).format();
 }
 
-String _navivoxOrigin({
-  required String scheme,
-  required String host,
-  required int? explicitPort,
-}) {
-  final formattedHost = host.contains(':') ? '[$host]' : host;
-  final formattedPort = explicitPort == null ? '' : ':$explicitPort';
-  return '$scheme://$formattedHost$formattedPort';
+class _NavivoxEndpointOrigin {
+  const _NavivoxEndpointOrigin({
+    required this.scheme,
+    required this.host,
+    required this.explicitPort,
+  });
+
+  factory _NavivoxEndpointOrigin.fromUri(Uri uri, {String? schemeOverride}) {
+    return _NavivoxEndpointOrigin(
+      scheme: schemeOverride ?? uri.scheme,
+      host: uri.host,
+      explicitPort: uri.hasPort ? uri.port : null,
+    );
+  }
+
+  final String scheme;
+  final String host;
+  final int? explicitPort;
+
+  String format() {
+    final formattedHost = host.contains(':') ? '[$host]' : host;
+    final formattedPort = explicitPort == null ? '' : ':$explicitPort';
+    return '$scheme://$formattedHost$formattedPort';
+  }
 }
 
 String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
@@ -54,11 +66,7 @@ String navivoxHttpBaseUrlFromEndpointUri(Uri uri, {String? descriptor}) {
     uri.scheme,
     descriptor: descriptor,
   );
-  return _navivoxOrigin(
-    scheme: scheme,
-    host: uri.host,
-    explicitPort: uri.hasPort ? uri.port : null,
-  );
+  return _NavivoxEndpointOrigin.fromUri(uri, schemeOverride: scheme).format();
 }
 
 String? navivoxHttpOriginOrOriginalFromString(String? raw) {
