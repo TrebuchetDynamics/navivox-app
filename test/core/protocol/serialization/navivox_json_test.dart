@@ -2,6 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/protocol/navivox_json.dart';
 
 void main() {
+  test('wire field values prefer exact aliases before canonical matches', () {
+    final json = <dynamic, dynamic>{
+      'serverId': 'server-camel',
+      'server_id': 'server-snake',
+      'profileID': 'profile-case',
+    };
+
+    expect(navivoxCanonicalWireFieldName('server_id'), 'serverid');
+    expect(
+      navivoxWireFieldValuesFromAliases(json, const ['server_id']).toList(),
+      ['server-snake', 'server-camel'],
+    );
+    expect(
+      navivoxWireFieldValuesFromAliases(json, const ['profile_id']).toList(),
+      ['profile-case'],
+    );
+  });
+
   test('first string field matches aliases and ignores non-string values', () {
     final json = <dynamic, dynamic>{
       'restToken': ' nvbx_exact ',
