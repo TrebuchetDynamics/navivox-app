@@ -156,7 +156,7 @@ void main() {
           },
           {
             'path': 'danger.zone',
-            'riskLevel': 'high',
+            'riskLevel': ' high ',
             'requires_confirmation': 'FALSE',
           },
           {

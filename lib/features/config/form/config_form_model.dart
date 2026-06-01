@@ -2,6 +2,7 @@ import '../shared/config_value_display.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
 import 'config_form_schema_wire.dart';
+import 'config_risk_level.dart';
 
 export 'config_form_field_type.dart';
 
@@ -38,9 +39,12 @@ class ConfigFormModel {
               configFormBoolFromSchema(raw, const ['restart_required']) ||
               _reloadModeRequiresRestart(reloadMode),
           riskLevel: riskLevel,
-          requiresConfirmation:
-              configFormBoolFromSchema(raw, const ['requires_confirmation']) ||
-              riskLevel == 'high',
+          requiresConfirmation: configRequiresConfirmation(
+            explicitRequiresConfirmation: configFormBoolFromSchema(raw, const [
+              'requires_confirmation',
+            ]),
+            riskLevel: riskLevel,
+          ),
           rawValue: values[field],
           allowedValues: configFormAllowedValuesFromSchema(raw),
           actions: configFormActionsFromSchema(raw),

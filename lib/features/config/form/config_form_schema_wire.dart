@@ -1,3 +1,4 @@
+import 'config_risk_level.dart';
 import 'config_wire_fields.dart';
 
 /// Schema-level wire helpers for config form rows and sections.
@@ -30,12 +31,7 @@ bool configFormBoolFromSchema(Map raw, Iterable<String> aliases) {
   return _configFormStrictBoolFromAliases(raw, aliases) == true;
 }
 
-String configFormRiskLevelFromSchema(Map raw) {
-  return configWireStringFromAliases(raw, const [
-        'risk_level',
-      ])?.toLowerCase() ??
-      'low';
-}
+String configFormRiskLevelFromSchema(Map raw) => configRiskLevelFromSchema(raw);
 
 String configFormReloadModeFromSchema(Map raw) {
   return configWireStringFromAliases(raw, const ['reload', 'reload_mode']) ??
