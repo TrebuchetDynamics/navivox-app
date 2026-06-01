@@ -357,6 +357,8 @@ void main() {
     expect(intent.action, LocalCommandAction.switchProfile);
     expect(intent.target?.serverId, 'office');
     expect(intent.target?.profileId, 'mineru');
+    expect(intent.target?.health, NavivoxProfileHealth.online);
+    expect(intent.target?.latestPreview, 'Ready');
   });
 
   test('classifies profile resolution before policy gates', () {

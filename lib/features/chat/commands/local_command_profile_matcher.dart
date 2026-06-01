@@ -31,18 +31,29 @@ List<NavivoxProfileContact> matchingLocalCommandContacts({
 }) {
   if (normalized.isEmpty) return const [];
 
+  return coalescedLocalCommandContactMatches(
+    contacts.where(
+      (contact) => localCommandContactNames(
+        contact,
+        normalize: normalize,
+      ).contains(normalized),
+    ),
+  );
+}
+
+/// Coalesces repeated snapshots by stable profile identity while preserving the
+/// first-seen identity order used for ambiguity checks.
+///
+/// The selected contact for an identity is the latest snapshot in the iterable;
+/// gateway upserts use the same replacement model, so local command resolution
+/// does not route with stale health/capability metadata when duplicate payloads
+/// are replayed.
+List<NavivoxProfileContact> coalescedLocalCommandContactMatches(
+  Iterable<NavivoxProfileContact> contacts,
+) {
   final matchesByProfileKey = <String, NavivoxProfileContact>{};
   for (final contact in contacts) {
-    if (!localCommandContactNames(
-      contact,
-      normalize: normalize,
-    ).contains(normalized)) {
-      continue;
-    }
-    matchesByProfileKey.putIfAbsent(
-      localCommandContactIdentity(contact),
-      () => contact,
-    );
+    matchesByProfileKey[localCommandContactIdentity(contact)] = contact;
   }
   return matchesByProfileKey.values.toList(growable: false);
 }
