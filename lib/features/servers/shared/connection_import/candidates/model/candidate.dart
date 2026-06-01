@@ -55,12 +55,12 @@ class _ConnectionImportCandidate {
   }
 }
 
-_ConnectionImportCandidate _richerConnectionImportCandidate({
-  required _ConnectionImportCandidate? currentBest,
-  required _ConnectionImportCandidate candidate,
-}) {
+bool _isPreferredConnectionImportCandidate(
+  _ConnectionImportCandidate candidate,
+  _ConnectionImportCandidate? currentBest,
+) {
   // A complete baseUrl+token candidate can still be lower-fidelity than a later
   // complete candidate carrying provenance metadata. Selection therefore scores
   // all candidates instead of short-circuiting at the first complete import.
-  return candidate.isRicherThan(currentBest) ? candidate : currentBest!;
+  return candidate.isRicherThan(currentBest);
 }

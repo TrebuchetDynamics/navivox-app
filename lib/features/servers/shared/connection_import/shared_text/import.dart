@@ -81,15 +81,12 @@ _SharedTextEndpointCandidate? _bestGenericUrlCandidateFromSharedText(
   String text,
   Iterable<_SharedTextEndpoint> endpoints,
 ) {
-  _SharedTextEndpointCandidate? bestCandidate;
-  for (final endpoint in endpoints) {
-    final candidate = _sharedTextEndpointCandidate(text, endpoint);
-    if (candidate == null) continue;
-    bestCandidate = candidate.isRicherThan(bestCandidate)
-        ? candidate
-        : bestCandidate;
-  }
-  return bestCandidate;
+  return _selectPreferredConnectionImportCandidate(
+    endpoints
+        .map((endpoint) => _sharedTextEndpointCandidate(text, endpoint))
+        .whereType<_SharedTextEndpointCandidate>(),
+    isPreferred: _isPreferredSharedTextEndpointCandidate,
+  );
 }
 
 _SharedTextEndpointCandidate? _sharedTextEndpointCandidate(

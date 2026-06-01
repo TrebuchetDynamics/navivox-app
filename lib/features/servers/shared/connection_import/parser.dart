@@ -7,6 +7,7 @@ import '../../models/connection_import.dart';
 
 part 'candidates/model/candidate.dart';
 part 'candidates/ranking/candidate_rank.dart';
+part 'candidates/ranking/candidate_selection.dart';
 part 'candidates/fields/field_names.dart';
 part 'candidates/fields/from_fields.dart';
 part 'endpoints/field_normalization/normalized_endpoint_fields.dart';

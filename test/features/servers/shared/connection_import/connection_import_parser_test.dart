@@ -226,6 +226,16 @@ void main() {
     expect(result.token, 'nvbx_fresh');
   });
 
+  test('keeps first shared-text endpoint when candidates tie', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Try https://primary.example/setup or https://fallback.example/setup.',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://primary.example');
+    expect(result.token, isNull);
+  });
+
   test('binds a trailing token only to the selected endpoint window', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_old https://docs.example/help. Then open '

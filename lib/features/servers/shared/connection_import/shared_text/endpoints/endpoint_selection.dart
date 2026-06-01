@@ -31,11 +31,20 @@ class _SharedTextEndpointCandidate {
   }
 
   bool isRicherThan(_SharedTextEndpointCandidate? other) {
-    if (other == null) return true;
-    return _SharedTextEndpointSelectionSignals.fromCandidate(
-      this,
-    ).isPreferredOver(_SharedTextEndpointSelectionSignals.fromCandidate(other));
+    return _isPreferredSharedTextEndpointCandidate(this, other);
   }
+}
+
+bool _isPreferredSharedTextEndpointCandidate(
+  _SharedTextEndpointCandidate candidate,
+  _SharedTextEndpointCandidate? currentBest,
+) {
+  if (currentBest == null) return true;
+  return _SharedTextEndpointSelectionSignals.fromCandidate(
+    candidate,
+  ).isPreferredOver(
+    _SharedTextEndpointSelectionSignals.fromCandidate(currentBest),
+  );
 }
 
 class _SharedTextEndpointSelectionSignals {

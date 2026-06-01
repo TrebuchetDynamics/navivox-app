@@ -23,14 +23,10 @@ Iterable<_ConnectionImportCandidate> _jsonConnectionImportCandidates(
 _ConnectionImportCandidate? _bestConnectionImportCandidate(
   Iterable<_ConnectionImportCandidate> candidates,
 ) {
-  _ConnectionImportCandidate? bestCandidate;
-  for (final candidate in candidates) {
-    bestCandidate = _richerConnectionImportCandidate(
-      currentBest: bestCandidate,
-      candidate: candidate,
-    );
-  }
-  return bestCandidate;
+  return _selectPreferredConnectionImportCandidate(
+    candidates,
+    isPreferred: _isPreferredConnectionImportCandidate,
+  );
 }
 
 _ConnectionImportCandidate? _connectionImportCandidateFromFields(
