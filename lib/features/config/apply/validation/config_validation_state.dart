@@ -22,6 +22,10 @@ class ConfigValidationState {
 
   bool get hasGlobalErrors => _issues.hasGlobalErrors;
 
+  bool get hasFieldErrors => _issues.hasFieldErrors;
+
+  bool get hasAnyErrors => _issues.hasAnyErrors;
+
   List<String> get globalMessages => _issues.globalMessages;
 
   List<String> messagesFor(String path) => _issues.messagesFor(path);

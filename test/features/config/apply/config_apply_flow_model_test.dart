@@ -172,6 +172,42 @@ void main() {
     expect(flow.validationMessagesFor('providers.default'), isEmpty);
   });
 
+  test('field validation errors remain visible for unchanged fields', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+          {'path': 'providers.local.enabled', 'label': 'Local enabled'},
+        ],
+      },
+      values: const {
+        'providers.default': 'openai',
+        'providers.local.enabled': false,
+      },
+    );
+
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {
+        'providers.default': 'local',
+        'providers.local.enabled': false,
+      },
+      validationSnapshot: const {
+        'field_errors': {
+          'providers.local.enabled': ['Local provider is not available.'],
+        },
+      },
+    );
+
+    expect(flow.hasPendingChanges, isTrue);
+    expect(flow.hasInvalidChanges, isTrue);
+    expect(flow.canApply, isFalse);
+    expect(flow.validationMessagesFor('providers.default'), isEmpty);
+    expect(flow.validationMessagesFor('providers.local.enabled'), [
+      'Local provider is not available.',
+    ]);
+  });
+
   test('deduplicates repeated validation messages for a field', () {
     final form = ConfigFormModel.fromSchema(
       schema: const {

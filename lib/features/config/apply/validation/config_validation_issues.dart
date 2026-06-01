@@ -30,6 +30,11 @@ class ConfigValidationIssues {
 
   bool get hasGlobalErrors => globalMessages.isNotEmpty;
 
+  bool get hasFieldErrors =>
+      messagesByPath.values.any((messages) => messages.isNotEmpty);
+
+  bool get hasAnyErrors => hasGlobalErrors || hasFieldErrors;
+
   List<String> messagesFor(String path) {
     return List.unmodifiable(messagesByPath[path] ?? const []);
   }
