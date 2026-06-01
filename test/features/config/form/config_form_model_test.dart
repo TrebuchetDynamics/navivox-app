@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/config/form/config_form_model.dart';
+import 'package:navivox/features/config/form/model/config_form_schema_candidates.dart';
 
 void main() {
   test('parses schema fields with labels values and typed edit coercion', () {
@@ -31,6 +32,27 @@ void main() {
     expect(model.rows[1].displayValue, '0.4');
     expect(model.rows[1].coerceEditValue('0.7'), 0.7);
     expect(model.rows[2].coerceEditValue('false'), false);
+  });
+
+  test('builds schema row candidates with explicit skip and dedupe rules', () {
+    final candidates = configFormSchemaRowCandidatesFromFields(
+      rawFields: const [
+        'not-a-field',
+        {'path': ' '},
+        {'path': 'providers.default', 'label': 'Default provider'},
+        {'path': 'providers.default', 'label': 'Duplicate provider'},
+        {'key': 'model.temperature', 'type': 'number'},
+      ],
+      values: const {'providers.default': 'openai', 'model.temperature': 0.4},
+    );
+
+    expect(candidates.map((candidate) => candidate.field), [
+      'providers.default',
+      'model.temperature',
+    ]);
+    expect(candidates.first.label, 'Default provider');
+    expect(candidates.first.rawValue, 'openai');
+    expect(candidates.last.rawValue, 0.4);
   });
 
   test('deduplicates duplicate schema field paths before section grouping', () {

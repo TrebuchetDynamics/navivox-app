@@ -2,6 +2,7 @@ import '../../shared/config_value_display.dart';
 import '../editing/config_edit_text.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
+import 'config_form_schema_candidates.dart';
 import 'config_form_schema_row.dart';
 import 'config_form_sections.dart';
 
@@ -63,17 +64,10 @@ List<ConfigFormRow> _buildRowsFromSchemaFields({
   required List rawFields,
   required Map<String, Object?> values,
 }) {
-  final rows = <ConfigFormRow>[];
-  final seenFields = <String>{};
-  for (final raw in rawFields) {
-    final candidate = ConfigFormSchemaRowCandidate.fromRaw(
-      raw: raw,
-      values: values,
-    );
-    if (candidate == null || !seenFields.add(candidate.field)) continue;
-    rows.add(ConfigFormRow.fromSchemaCandidate(candidate));
-  }
-  return rows;
+  return configFormSchemaRowCandidatesFromFields(
+    rawFields: rawFields,
+    values: values,
+  ).map(ConfigFormRow.fromSchemaCandidate).toList(growable: false);
 }
 
 class ConfigFormRow {
