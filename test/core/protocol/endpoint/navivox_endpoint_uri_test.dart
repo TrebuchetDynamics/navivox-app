@@ -17,6 +17,15 @@ void main() {
     expect(navivoxHttpOriginOrOriginalFromString('   '), isNull);
   });
 
+  test('does not silently strip userinfo from origin-or-original text', () {
+    expect(
+      navivoxHttpOriginOrOriginalFromString(
+        'https://operator:secret@gateway.example/setup',
+      ),
+      'https://operator:secret@gateway.example/setup',
+    );
+  });
+
   test('normalizes websocket endpoint strings separately from base URLs', () {
     expect(
       navivoxWebSocketUrlFromEndpointString(' wss://gateway.example/socket '),
@@ -72,9 +81,7 @@ void main() {
       isNull,
     );
     expect(
-      navivoxWebSocketUrlFromEndpointString(
-        'wss://gateway.example:bad/socket',
-      ),
+      navivoxWebSocketUrlFromEndpointString('wss://gateway.example:bad/socket'),
       isNull,
     );
   });

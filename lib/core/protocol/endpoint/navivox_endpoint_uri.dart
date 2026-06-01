@@ -80,8 +80,8 @@ String? navivoxHttpOriginOrOriginalFromString(String? raw) {
   if (value == null) return null;
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme || uri.host.isEmpty) return value;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme != 'http' && scheme != 'https') return value;
+  final facts = NavivoxEndpointUriFacts.fromUri(uri);
+  if (!facts.isHttp || facts.hasUserInfo) return value;
   return navivoxOriginFromUri(uri);
 }
 
@@ -112,18 +112,41 @@ void _validateNavivoxEndpointUri(
   required String invalidSchemeMessage,
   required String userinfoMessage,
 }) {
-  if (uri.host.isEmpty) {
+  final facts = NavivoxEndpointUriFacts.fromUri(uri);
+  if (!facts.hasHost) {
     throw FormatException(missingHostMessage, descriptor);
   }
-  if (!allowedSchemes.contains(uri.scheme.toLowerCase())) {
+  if (!allowedSchemes.contains(facts.scheme)) {
     throw FormatException(invalidSchemeMessage, descriptor);
   }
-  if (_navivoxEndpointUriHasUserInfo(uri)) {
+  if (facts.hasUserInfo) {
     throw FormatException(userinfoMessage, descriptor);
   }
 }
 
-bool _navivoxEndpointUriHasUserInfo(Uri uri) => uri.userInfo.isNotEmpty;
+/// Parsed endpoint URI facts that decide when it is safe to derive durable
+/// metadata by dropping path/query/fragment state.
+class NavivoxEndpointUriFacts {
+  const NavivoxEndpointUriFacts._({
+    required this.scheme,
+    required this.hasHost,
+    required this.hasUserInfo,
+  });
+
+  factory NavivoxEndpointUriFacts.fromUri(Uri uri) {
+    return NavivoxEndpointUriFacts._(
+      scheme: uri.scheme.toLowerCase(),
+      hasHost: uri.host.isNotEmpty,
+      hasUserInfo: uri.userInfo.isNotEmpty,
+    );
+  }
+
+  final String scheme;
+  final bool hasHost;
+  final bool hasUserInfo;
+
+  bool get isHttp => scheme == 'http' || scheme == 'https';
+}
 
 String? navivoxWebSocketUrlFromEndpointString(String? raw) {
   final value = navivoxOptionalStringFromJson(raw);
