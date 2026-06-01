@@ -116,9 +116,8 @@ class NavivoxVoiceProfileValidation {
       ),
       valid: navivoxGatewayBoolField(json, 'valid'),
       errors: _voiceProfileErrorsFromJson(json['errors']),
-      credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
+      credentialStatusRefs: _voiceCredentialStatusRefsFromJson(
         json['credential_status_refs'],
-        NavivoxVoiceCredentialStatus.fromJson,
       ),
     );
   }
@@ -154,9 +153,8 @@ class NavivoxVoiceProfileView {
         'voice_profile',
         NavivoxProfileVoiceProfile.fromJson,
       ),
-      credentialStatusRefs: navivoxGatewayObjectValueMapFromJson(
+      credentialStatusRefs: _voiceCredentialStatusRefsFromJson(
         json['credential_status_refs'],
-        NavivoxVoiceCredentialStatus.fromJson,
       ),
       valid: navivoxGatewayBoolField(json, 'valid'),
       errors: _voiceProfileErrorsFromJson(json['errors']),
@@ -234,6 +232,27 @@ class NavivoxVoiceProfileValidationResponse {
   final NavivoxVoiceProfileValidation? validation;
   final bool valid;
   final List<NavivoxVoiceProfileFieldError> errors;
+}
+
+Map<String, NavivoxVoiceCredentialStatus> _voiceCredentialStatusRefsFromJson(
+  Object? value,
+) {
+  if (value is! Map) return const {};
+
+  final refs = <String, NavivoxVoiceCredentialStatus>{};
+  for (final entry in value.entries) {
+    final key = _voiceCredentialStatusRefKey(entry.key);
+    final object = navivoxGatewayOptionalObjectFromJson(entry.value);
+    if (key == null || object == null) continue;
+    refs[key] = NavivoxVoiceCredentialStatus.fromJson(object);
+  }
+  return refs;
+}
+
+String? _voiceCredentialStatusRefKey(Object? value) {
+  if (value is! String) return null;
+  final key = value.trim();
+  return key.isEmpty ? null : key;
 }
 
 List<NavivoxVoiceProfileFieldError> _voiceProfileErrorsFromJson(Object? value) {
