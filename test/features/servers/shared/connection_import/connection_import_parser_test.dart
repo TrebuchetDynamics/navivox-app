@@ -34,4 +34,12 @@ void main() {
     expect(result!.baseUrl, 'https://gateway.example');
     expect(result.token, isNull);
   });
+
+  test('rejects copied URL tokens from unsupported endpoint schemes', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'ftp://gateway.example/connect?token=nvbx_unsupported',
+    );
+
+    expect(result, isNull);
+  });
 }

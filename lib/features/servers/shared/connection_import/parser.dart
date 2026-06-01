@@ -17,11 +17,7 @@ class ConnectionImportParser {
 
     final copiedUriPayload = _copiedUriPayload(text);
     if (copiedUriPayload != null) {
-      final copiedUriImport = _importFromCopiedUriPayload(copiedUriPayload);
-      if (copiedUriImport != null ||
-          _isCorePairingDescriptorUri(copiedUriPayload.uri)) {
-        return copiedUriImport;
-      }
+      return _importFromCopiedUriPayload(copiedUriPayload);
     }
 
     return _importFromSharedText(text);
@@ -29,6 +25,7 @@ class ConnectionImportParser {
 
   _CopiedUriPayload? _copiedUriPayload(String text) {
     final copiedUrl = _trimCopiedEndpointUrl(text);
+    if (_containsWhitespace(copiedUrl)) return null;
     final uri = Uri.tryParse(copiedUrl);
     if (uri == null || !uri.hasScheme) return null;
     return _CopiedUriPayload(text: copiedUrl, uri: uri);
@@ -56,10 +53,16 @@ SetupQrImageImport? _importFromCopiedUriPayload(_CopiedUriPayload payload) {
   if (_isCorePairingDescriptorUri(payload.uri)) {
     return _parseCorePairingDescriptorPayload(payload.text) ??
         (_isLegacyNavivoxConnectCompatibilityUri(payload.uri)
-            ? _importFromGenericUri(payload.uri)
+            ? _importFromLegacyNavivoxConnectCompatibilityUri(payload.uri)
             : null);
   }
   return _importFromGenericUri(payload.uri);
+}
+
+SetupQrImageImport? _importFromLegacyNavivoxConnectCompatibilityUri(Uri uri) {
+  return _connectionImportCandidateFromFields(
+    _genericUriFields(uri),
+  )?.toImport();
 }
 
 bool _isLegacyNavivoxConnectCompatibilityUri(Uri uri) {
@@ -182,6 +185,9 @@ bool _jsonEntryMentionsAlias(
 
 String _normalizeJsonConnectionImportFieldName(String value) =>
     value.toLowerCase().replaceAll('_', '');
+
+bool _containsWhitespace(String value) =>
+    value.codeUnits.any((unit) => unit <= 32);
 
 bool _hasNonBlankJsonConnectionField(Map<dynamic, dynamic> fields) {
   return navivoxFirstStringFieldFromJson(fields, _tokenFieldNames) != null ||
@@ -311,21 +317,21 @@ SetupQrImageImport? _importFromGenericUri(Uri uri) {
 }
 
 _ConnectionImportCandidate? _connectionImportCandidateFromGenericUri(Uri uri) {
+  final schemeKind = _genericEndpointSchemeKind(uri);
+  if (schemeKind == _GenericEndpointSchemeKind.unsupported) return null;
+
   final candidate = _connectionImportCandidateFromFields(
     _genericUriFields(uri),
     fallbackBaseUrl: _baseUrlFromGenericUri(uri),
   );
   if (candidate != null) return candidate;
-  if (uri.scheme == 'http' || uri.scheme == 'https') {
+  if (schemeKind == _GenericEndpointSchemeKind.http) {
     return _ConnectionImportCandidate(baseUrl: navivoxOriginFromUri(uri));
   }
-  if (_isWebSocketUri(uri)) {
-    return _ConnectionImportCandidate(
-      baseUrl: _webSocketUriBaseUrl(uri),
-      webSocketUrl: uri.toString(),
-    );
-  }
-  return null;
+  return _ConnectionImportCandidate(
+    baseUrl: _webSocketUriBaseUrl(uri),
+    webSocketUrl: uri.toString(),
+  );
 }
 
 SetupQrImageImport? _importFromSharedText(String text) {
@@ -721,14 +727,25 @@ Map<String, String> _genericUriFields(Uri uri) {
 }
 
 String? _baseUrlFromGenericUri(Uri uri) {
-  return switch (uri.scheme) {
-    'http' || 'https' => navivoxOriginFromUri(uri),
-    'ws' || 'wss' => _webSocketUriBaseUrl(uri),
-    _ => null,
+  return switch (_genericEndpointSchemeKind(uri)) {
+    _GenericEndpointSchemeKind.http => navivoxOriginFromUri(uri),
+    _GenericEndpointSchemeKind.webSocket => _webSocketUriBaseUrl(uri),
+    _GenericEndpointSchemeKind.unsupported => null,
   };
 }
 
-bool _isWebSocketUri(Uri uri) => uri.scheme == 'ws' || uri.scheme == 'wss';
+enum _GenericEndpointSchemeKind { http, webSocket, unsupported }
+
+_GenericEndpointSchemeKind _genericEndpointSchemeKind(Uri uri) {
+  return switch (uri.scheme) {
+    'http' || 'https' => _GenericEndpointSchemeKind.http,
+    'ws' || 'wss' => _GenericEndpointSchemeKind.webSocket,
+    _ => _GenericEndpointSchemeKind.unsupported,
+  };
+}
+
+bool _isWebSocketUri(Uri uri) =>
+    _genericEndpointSchemeKind(uri) == _GenericEndpointSchemeKind.webSocket;
 
 String? _webSocketUriBaseUrl(Uri uri) {
   try {
