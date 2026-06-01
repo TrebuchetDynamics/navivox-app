@@ -2,15 +2,16 @@ import '../model/config_apply_flow_model.dart';
 import '../model/config_draft_change.dart';
 
 class ConfigApplyPresentation {
-  const ConfigApplyPresentation({
+  ConfigApplyPresentation({
     required this.changes,
     required this.canApply,
     required this.requiresConfirmation,
+    List<String> globalValidationMessages = const [],
     this.title = 'Pending config changes',
     this.applyButtonLabel = 'Apply pending changes',
     this.confirmationTitle = 'Confirm high-risk config changes',
     this.confirmationIntro = 'Review before/after values before applying.',
-  });
+  }) : globalValidationMessages = List.unmodifiable(globalValidationMessages);
 
   factory ConfigApplyPresentation.fromFlow(ConfigApplyFlowModel flow) {
     return ConfigApplyPresentation(
@@ -19,6 +20,7 @@ class ConfigApplyPresentation {
           .toList(growable: false),
       canApply: flow.canApply,
       requiresConfirmation: flow.requiresConfirmation,
+      globalValidationMessages: flow.globalValidationMessages,
     );
   }
 
@@ -27,10 +29,13 @@ class ConfigApplyPresentation {
   final String confirmationTitle;
   final String confirmationIntro;
   final List<ConfigApplyChangePresentation> changes;
+  final List<String> globalValidationMessages;
   final bool canApply;
   final bool requiresConfirmation;
 
   bool get hasChanges => changes.isNotEmpty;
+
+  bool get hasGlobalValidationMessages => globalValidationMessages.isNotEmpty;
 }
 
 class ConfigApplyChangePresentation {

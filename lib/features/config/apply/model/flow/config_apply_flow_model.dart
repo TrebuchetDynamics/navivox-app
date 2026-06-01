@@ -3,8 +3,11 @@ import '../../validation/config_validation_state.dart';
 import '../change/config_draft_change.dart';
 
 class ConfigApplyFlowModel {
-  ConfigApplyFlowModel({required List<ConfigDraftChange> changes})
-    : changes = List.unmodifiable(changes);
+  ConfigApplyFlowModel({
+    required List<ConfigDraftChange> changes,
+    List<String> globalValidationMessages = const [],
+  }) : changes = List.unmodifiable(changes),
+       globalValidationMessages = List.unmodifiable(globalValidationMessages);
 
   factory ConfigApplyFlowModel.fromDraft({
     required ConfigFormModel form,
@@ -18,14 +21,18 @@ class ConfigApplyFlowModel {
         draftValues: draftValues,
         validation: validation,
       ),
+      globalValidationMessages: validation.globalMessages,
     );
   }
 
   final List<ConfigDraftChange> changes;
+  final List<String> globalValidationMessages;
 
   bool get hasPendingChanges => changes.isNotEmpty;
 
-  bool get hasInvalidChanges => changes.any((change) => change.isInvalid);
+  bool get hasInvalidChanges =>
+      globalValidationMessages.isNotEmpty ||
+      changes.any((change) => change.isInvalid);
 
   bool get canApply => hasPendingChanges && !hasInvalidChanges;
 

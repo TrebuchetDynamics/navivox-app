@@ -81,6 +81,33 @@ void main() {
     ]);
   });
 
+  test('carries global validation copy and disabled apply state', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      },
+      values: const {'providers.default': 'openai'},
+    );
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {'providers.default': 'local'},
+      validationSnapshot: const {
+        'errors': ['Gateway validation failed.'],
+      },
+    );
+
+    final presentation = ConfigApplyPresentation.fromFlow(flow);
+
+    expect(presentation.hasChanges, isTrue);
+    expect(presentation.canApply, isFalse);
+    expect(presentation.hasGlobalValidationMessages, isTrue);
+    expect(presentation.globalValidationMessages, [
+      'Gateway validation failed.',
+    ]);
+  });
+
   test('marks empty apply flows as non-displayable', () {
     final form = ConfigFormModel.fromSchema(
       schema: const {

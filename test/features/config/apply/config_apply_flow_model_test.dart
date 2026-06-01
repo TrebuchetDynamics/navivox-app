@@ -116,6 +116,31 @@ void main() {
     expect(provider.validationMessages, ['Provider is not available.']);
   });
 
+  test('generic validation errors block apply without field drift', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      },
+      values: const {'providers.default': 'openai'},
+    );
+
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {'providers.default': 'local'},
+      validationSnapshot: const {
+        'errors': ['Gateway validation failed.'],
+      },
+    );
+
+    expect(flow.hasPendingChanges, isTrue);
+    expect(flow.hasInvalidChanges, isTrue);
+    expect(flow.canApply, isFalse);
+    expect(flow.globalValidationMessages, ['Gateway validation failed.']);
+    expect(flow.validationMessagesFor('providers.default'), isEmpty);
+  });
+
   test('deduplicates repeated validation messages for a field', () {
     final form = ConfigFormModel.fromSchema(
       schema: const {
