@@ -95,18 +95,63 @@ String? durableSavedSessionWebSocketUrlFromMetadata(Object? value) {
 }
 
 bool _hasExplicitUriScheme(String value) {
-  final text = value.trim();
-  final uri = Uri.tryParse(text);
-  if (uri == null || !uri.hasScheme) return false;
+  return _classifyUriSchemeShape(value.trim()).isExplicitUriScheme;
+}
+
+enum _UriSchemeShape {
+  none,
+  authorityUrl,
+  namedScheme,
+  hostPortLike,
+  bracketedHostLiteral;
+
+  bool get isExplicitUriScheme => switch (this) {
+    _UriSchemeShape.authorityUrl || _UriSchemeShape.namedScheme => true,
+    _ => false,
+  };
+}
+
+_UriSchemeShape _classifyUriSchemeShape(String value) {
+  if (value.isEmpty) return _UriSchemeShape.none;
+
+  // Dart's URI parser treats bracketed IPv6 host literals such as
+  // `[::1]:8765/stream` as scheme-shaped because the first colon appears inside
+  // the address. They are legacy host metadata, not bootstrap-token URLs.
+  if (_startsWithBracketedHostLiteral(value)) {
+    return _UriSchemeShape.bracketedHostLiteral;
+  }
+
+  final uri = Uri.tryParse(value);
+  if (uri == null || !uri.hasScheme) return _UriSchemeShape.none;
 
   // Dart's URI parser treats `host:8765/path` as a URI with scheme `host`.
   // Saved-session metadata also accepts legacy non-URL text, so only discard
   // values that are visibly URL/scheme-shaped rather than host-port-shaped.
-  return _hasAuthoritySchemeSeparator(text) || _hasNonPortSchemeSeparator(text);
+  if (_hasAuthoritySchemeSeparator(value)) return _UriSchemeShape.authorityUrl;
+  if (_hasPortLikeSchemeSeparator(value)) return _UriSchemeShape.hostPortLike;
+  return _hasNonPortSchemeSeparator(value)
+      ? _UriSchemeShape.namedScheme
+      : _UriSchemeShape.none;
+}
+
+bool _startsWithBracketedHostLiteral(String value) {
+  if (!value.startsWith('[')) return false;
+  final closingBracket = value.indexOf(']');
+  if (closingBracket <= 1) return false;
+  if (closingBracket == value.length - 1) return true;
+
+  final nextCodeUnit = value.codeUnitAt(closingBracket + 1);
+  return nextCodeUnit == 0x2f || nextCodeUnit == 0x3a; // `/` or `:`.
 }
 
 bool _hasAuthoritySchemeSeparator(String value) {
   return value.indexOf('://') > 0;
+}
+
+bool _hasPortLikeSchemeSeparator(String value) {
+  final separator = value.indexOf(':');
+  if (separator <= 0 || separator == value.length - 1) return false;
+  return _startsWithAsciiDigit(value, separator + 1);
 }
 
 bool _hasNonPortSchemeSeparator(String value) {

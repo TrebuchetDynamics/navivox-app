@@ -31,6 +31,13 @@ void main() {
         'gateway.local:8765/custom/stream',
       );
     });
+
+    test('preserves bracketed IPv6 host-port websocket metadata', () {
+      expect(
+        sanitizedSavedSessionWebSocketUrl(' [::1]:8765/custom/stream '),
+        '[::1]:8765/custom/stream',
+      );
+    });
   });
 
   group('SavedSessionWebSocketEndpoint', () {
