@@ -195,6 +195,7 @@ void main() {
         ),
       ),
     );
+    expect(stub.NavivoxGatewaySocket().events, emitsDone);
     expect(
       () => stub.NavivoxGatewaySocket().add('{}'),
       throwsA(
