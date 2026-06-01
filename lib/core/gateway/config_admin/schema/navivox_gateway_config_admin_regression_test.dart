@@ -1,4 +1,4 @@
-import 'navivox_gateway_config_admin.dart';
+import '../navivox_gateway_config_admin.dart';
 
 void main() {
   schemaFieldListAliasesSurviveGatewayNormalization();
