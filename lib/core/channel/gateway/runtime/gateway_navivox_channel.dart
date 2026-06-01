@@ -19,11 +19,11 @@ import '../memory/gateway_memory_request_policy.dart';
 import '../profiles/gateway_profile_contact_policy.dart';
 import '../profiles/gateway_voice_run_policy.dart';
 import '../state/gateway_channel_state_policy.dart';
-import '../messages/gateway_assistant_message_policy.dart';
-import '../messages/gateway_message_scope_policy.dart';
-import '../messages/gateway_safety_notice_policy.dart';
-import '../messages/gateway_tool_call_policy.dart';
-import '../messages/gateway_user_turn_policy.dart';
+import '../messages/safety/gateway_safety_notice_policy.dart';
+import '../messages/scope/gateway_message_scope_policy.dart';
+import '../messages/submissions/gateway_user_turn_policy.dart';
+import '../messages/tools/gateway_tool_call_policy.dart';
+import '../messages/transcript/gateway_assistant_message_policy.dart';
 import '../turns/gateway_turn_control_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
