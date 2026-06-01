@@ -234,6 +234,16 @@ void main() {
     expect(result.token, isNull);
   });
 
+  test('parses shared text token after attached URL colon punctuation', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Server: https://gateway.example/connect:Token: shared_secret',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, 'shared_secret');
+  });
+
   test('does not split tokens at an embedded endpoint boundary', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_stalehttps://gateway.example/connect has setup steps.',

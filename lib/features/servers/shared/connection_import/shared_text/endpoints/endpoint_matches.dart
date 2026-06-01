@@ -33,13 +33,11 @@ int _matchedEndpointUrlEndBeforeAttachedTokenLabel(
   String matchedText, {
   required int start,
 }) {
-  final punctuationAlternation = _attachedTokenLabelPunctuation
-      .map(RegExp.escape)
-      .join('|');
+  final boundaryPattern = _attachedTokenLabelBoundaryPattern();
   int? earliestTokenLabelStart;
   for (final label in _tokenLabels) {
     final labelPattern = RegExp(
-      '(?:$punctuationAlternation)\\s*${RegExp.escape(label)}\\s*[:=]',
+      '$boundaryPattern\\s*${RegExp.escape(label)}\\s*[:=]',
       caseSensitive: false,
     );
     final match = labelPattern.firstMatch(matchedText.substring(start));
@@ -60,3 +58,10 @@ bool _hasConnectionPath(Uri uri) {
 }
 
 const _connectionPathSegments = {'connect', 'connection', 'pair', 'pairing'};
+
+String _attachedTokenLabelBoundaryPattern() {
+  final punctuationAlternation = _attachedTokenLabelPunctuation
+      .map(RegExp.escape)
+      .join('|');
+  return '(?:$punctuationAlternation)';
+}

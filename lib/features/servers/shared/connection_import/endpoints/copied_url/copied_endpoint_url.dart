@@ -81,6 +81,7 @@ const _attachedTokenLabelPunctuation = [
   ';',
   '.',
   '!',
+  ':',
   ')',
   ']',
   '}',
