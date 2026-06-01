@@ -167,4 +167,14 @@ void main() {
     expect(result!.baseUrl, 'https://gateway.example');
     expect(result.token, isNull);
   });
+
+  test('does not split navivox tokens out of larger words', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'Open https://gateway.example/connect. Internal id: usernvbx_stale.',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://gateway.example');
+    expect(result.token, isNull);
+  });
 }

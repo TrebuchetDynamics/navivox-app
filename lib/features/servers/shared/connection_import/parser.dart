@@ -680,23 +680,61 @@ String? _firstNavivoxToken(
   required int start,
   required int end,
 }) {
-  final navivoxIndex = text.toLowerCase().indexOf('nvbx_', start);
-  if (navivoxIndex < 0 || navivoxIndex >= end) return null;
-  return _readTokenAt(text, navivoxIndex, end: end);
+  final index = _firstNavivoxTokenStart(text, start: start, end: end);
+  if (index == null) return null;
+  return _readTokenAt(text, index, end: end);
 }
 
 String? _lastNavivoxToken(String text, {required int start, required int end}) {
+  final index = _lastNavivoxTokenStart(text, start: start, end: end);
+  if (index == null) return null;
+  return _readTokenAt(text, index, end: end);
+}
+
+int? _firstNavivoxTokenStart(
+  String text, {
+  required int start,
+  required int end,
+}) {
+  return _navivoxTokenStart(text, start: start, end: end, preferLatest: false);
+}
+
+int? _lastNavivoxTokenStart(
+  String text, {
+  required int start,
+  required int end,
+}) {
+  return _navivoxTokenStart(text, start: start, end: end, preferLatest: true);
+}
+
+int? _navivoxTokenStart(
+  String text, {
+  required int start,
+  required int end,
+  required bool preferLatest,
+}) {
   var searchStart = start;
-  var latestIndex = -1;
+  int? selectedIndex;
   final lower = text.toLowerCase();
   while (searchStart < end) {
     final navivoxIndex = lower.indexOf('nvbx_', searchStart);
     if (navivoxIndex < 0 || navivoxIndex >= end) break;
-    latestIndex = navivoxIndex;
+    if (_hasTokenStartBoundary(text, navivoxIndex, windowStart: start)) {
+      selectedIndex = navivoxIndex;
+      if (!preferLatest) break;
+    }
     searchStart = navivoxIndex + 1;
   }
-  if (latestIndex < 0) return null;
-  return _readTokenAt(text, latestIndex, end: end);
+  return selectedIndex;
+}
+
+bool _hasTokenStartBoundary(
+  String text,
+  int tokenStart, {
+  required int windowStart,
+}) {
+  if (tokenStart <= windowStart) return true;
+  return !_isTokenChar(text.codeUnitAt(tokenStart - 1));
 }
 
 class _TokenMatch {
