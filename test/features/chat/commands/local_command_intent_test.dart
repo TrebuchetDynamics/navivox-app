@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
+import 'package:navivox/features/chat/commands/local_command_body_parser.dart';
 import 'package:navivox/features/chat/commands/local_command_intent.dart';
 import 'package:navivox/features/chat/commands/local_command_profile_matcher.dart';
 
@@ -54,6 +55,35 @@ void main() {
       expect(intent.consumesInput, isTrue);
     },
   );
+
+  test('classifies command body parse source before resolving intents', () {
+    const parser = LocalCommandBodyParser();
+
+    final prefixed = parser.parse(
+      'navi, support',
+      commandWord: 'navi',
+      commandMode: false,
+      fromVoice: true,
+    );
+    final commandModeVoice = parser.parse(
+      'support',
+      commandWord: 'navi',
+      commandMode: true,
+      fromVoice: true,
+    );
+    final typedCommandMode = parser.parse(
+      'support',
+      commandWord: 'navi',
+      commandMode: true,
+      fromVoice: false,
+    );
+
+    expect(prefixed?.body, 'support');
+    expect(prefixed?.source, LocalCommandBodySource.prefixed);
+    expect(commandModeVoice?.body, 'support');
+    expect(commandModeVoice?.source, LocalCommandBodySource.commandModeVoice);
+    expect(typedCommandMode, isNull);
+  });
 
   test('requires an explicit command-word boundary outside voice mode', () {
     final prefixedWord = resolver.resolve(
