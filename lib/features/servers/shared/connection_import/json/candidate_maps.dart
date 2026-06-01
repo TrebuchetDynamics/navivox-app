@@ -143,8 +143,9 @@ class _JsonConnectionImportAliasGroup {
   }
 
   void removeAliasesFrom(Map<dynamic, dynamic> fields) {
-    for (final alias in aliases) {
-      fields.remove(alias);
+    final keysToRemove = fields.keys.where(matchesKey).toList(growable: false);
+    for (final key in keysToRemove) {
+      fields.remove(key);
     }
   }
 }

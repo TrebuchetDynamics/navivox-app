@@ -184,6 +184,22 @@ void main() {
     },
   );
 
+  test('blank JSON entry aliases block case-variant defaults', () {
+    final result = parseNavivoxConnectionImportPayload('''
+{
+  "REST_TOKEN": "nvbx_stale_default",
+  "entries": [
+    {"base_url": "https://gateway.example", "token": ""},
+    {"base_url": "https://fallback.example", "token": "nvbx_fresh"}
+  ]
+}
+''');
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, 'https://fallback.example');
+    expect(result.token, 'nvbx_fresh');
+  });
+
   test('binds a trailing token only to the selected endpoint window', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_old https://docs.example/help. Then open '
