@@ -4,10 +4,11 @@ Iterable<_JsonConnectionImportFields> _jsonCandidateMaps(
   Map<dynamic, dynamic> decoded,
 ) sync* {
   final entries = decoded['entries'];
+  final decodedPresence = _JsonConnectionImportFieldPresence.from(decoded);
   if (entries is! List) {
     yield _JsonConnectionImportFields(
       fields: decoded,
-      hasExplicitConnectionFields: _hasNonBlankJsonConnectionField(decoded),
+      hasExplicitConnectionFields: decodedPresence.hasUsableEndpointOrToken,
     );
     return;
   }
@@ -20,7 +21,7 @@ Iterable<_JsonConnectionImportFields> _jsonCandidateMaps(
   if (!yieldedEntry) {
     yield _JsonConnectionImportFields(
       fields: decoded,
-      hasExplicitConnectionFields: _hasNonBlankJsonConnectionField(decoded),
+      hasExplicitConnectionFields: decodedPresence.hasUsableEndpointOrToken,
     );
   }
 }
@@ -33,7 +34,9 @@ Iterable<_JsonConnectionImportFields> _entryCandidateMaps(
     if (entry is! Map) continue;
     yield _JsonConnectionImportFields(
       fields: _entryFieldsWithJsonDefaults(decoded, entry),
-      hasExplicitConnectionFields: _hasNonBlankJsonConnectionField(entry),
+      hasExplicitConnectionFields: _JsonConnectionImportFieldPresence.from(
+        entry,
+      ).hasUsableEndpointOrToken,
     );
   }
 }
@@ -84,7 +87,7 @@ void _removeDefaultJsonAliasesOverriddenByEntry(
 class _JsonEntryDefaultOverridePolicy {
   const _JsonEntryDefaultOverridePolicy({
     required this.entry,
-    required this.hasUsableConnectionField,
+    required this.presence,
   });
 
   factory _JsonEntryDefaultOverridePolicy.fromEntry(
@@ -92,23 +95,53 @@ class _JsonEntryDefaultOverridePolicy {
   ) {
     return _JsonEntryDefaultOverridePolicy(
       entry: entry,
-      hasUsableConnectionField: _hasNonBlankJsonConnectionField(entry),
+      presence: _JsonConnectionImportFieldPresence.from(entry),
     );
   }
 
   final Map<dynamic, dynamic> entry;
-
-  // Blank or non-string entry aliases are only treated as intentional blockers
-  // when the entry also carries a concrete connection field. This keeps
-  // metadata-only entries from erasing inherited connection defaults, while
-  // still preventing explicit-but-unusable aliases from manufacturing complete
-  // imports with stale defaults.
-  final bool hasUsableConnectionField;
+  final _JsonConnectionImportFieldPresence presence;
 
   bool shouldRemoveDefaultsFor(_JsonConnectionImportAliasGroup aliasGroup) {
     if (aliasGroup.hasNonBlankOverrideIn(entry)) return true;
-    return hasUsableConnectionField && aliasGroup.hasUnusableOverrideIn(entry);
+    if (!presence.hasUsableEndpointOrToken) return false;
+
+    // Blank or non-string entry aliases are only treated as intentional
+    // blockers when the entry also carries a concrete endpoint/token field.
+    // This keeps metadata-only entries from erasing inherited connection
+    // defaults, while still preventing explicit-but-unusable aliases from
+    // manufacturing complete imports with stale defaults.
+    return aliasGroup.hasUnusableOverrideIn(entry);
   }
+}
+
+class _JsonConnectionImportFieldPresence {
+  const _JsonConnectionImportFieldPresence({
+    required this.hasToken,
+    required this.hasBaseUrl,
+    required this.hasWebSocketUrl,
+  });
+
+  factory _JsonConnectionImportFieldPresence.from(
+    Map<dynamic, dynamic> fields,
+  ) {
+    return _JsonConnectionImportFieldPresence(
+      hasToken:
+          navivoxFirstStringFieldFromJson(fields, _tokenFieldNames) != null,
+      hasBaseUrl:
+          navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames) != null,
+      hasWebSocketUrl:
+          navivoxFirstStringFieldFromJson(fields, _webSocketUrlFieldNames) !=
+          null,
+    );
+  }
+
+  final bool hasToken;
+  final bool hasBaseUrl;
+  final bool hasWebSocketUrl;
+
+  bool get hasUsableEndpointOrToken =>
+      hasToken || hasBaseUrl || hasWebSocketUrl;
 }
 
 class _JsonConnectionImportAliasGroup {
@@ -158,12 +191,6 @@ bool _isJsonConnectionImportFieldName(String name) {
 
 String _normalizeJsonConnectionImportFieldName(String value) =>
     value.toLowerCase().replaceAll('_', '');
-
-bool _hasNonBlankJsonConnectionField(Map<dynamic, dynamic> fields) {
-  return navivoxFirstStringFieldFromJson(fields, _tokenFieldNames) != null ||
-      navivoxFirstStringFieldFromJson(fields, _baseUrlFieldNames) != null ||
-      navivoxFirstStringFieldFromJson(fields, _webSocketUrlFieldNames) != null;
-}
 
 bool _isBlankJsonValue(Object? value) {
   if (value == null) return true;

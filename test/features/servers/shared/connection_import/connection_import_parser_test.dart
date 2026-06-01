@@ -200,6 +200,21 @@ void main() {
     expect(result.token, 'nvbx_fresh');
   });
 
+  test('unusable JSON entry endpoints block stale inherited endpoints', () {
+    final result = parseNavivoxConnectionImportPayload('''
+{
+  "base_url": "https://stale-default.example",
+  "entries": [
+    {"base_url": 404, "token": "nvbx_fresh"}
+  ]
+}
+''');
+
+    expect(result, isNotNull);
+    expect(result!.baseUrl, isNull);
+    expect(result.token, 'nvbx_fresh');
+  });
+
   test('binds a trailing token only to the selected endpoint window', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_old https://docs.example/help. Then open '
