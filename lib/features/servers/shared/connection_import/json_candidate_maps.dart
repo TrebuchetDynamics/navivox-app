@@ -69,24 +69,26 @@ void _removeDefaultJsonAliasesOverriddenByEntry(
   Map<dynamic, dynamic> entry,
 ) {
   for (final aliases in _jsonConnectionImportFieldAliasGroups) {
-    if (!_jsonEntryMentionsAlias(entry, aliases)) continue;
+    if (!_jsonEntryOverridesAlias(entry, aliases)) continue;
     for (final alias in aliases) {
       fields.remove(alias);
     }
   }
 }
 
-bool _jsonEntryMentionsAlias(
+bool _jsonEntryOverridesAlias(
   Map<dynamic, dynamic> entry,
   Iterable<String> aliases,
 ) {
   final normalizedAliases = {
     for (final alias in aliases) _normalizeJsonConnectionImportFieldName(alias),
   };
-  return entry.keys.any(
-    (key) => normalizedAliases.contains(
-      _normalizeJsonConnectionImportFieldName('$key'),
-    ),
+  return entry.entries.any(
+    (entry) =>
+        !_isBlankJsonValue(entry.value) &&
+        normalizedAliases.contains(
+          _normalizeJsonConnectionImportFieldName('${entry.key}'),
+        ),
   );
 }
 

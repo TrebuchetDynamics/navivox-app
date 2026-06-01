@@ -144,6 +144,26 @@ void main() {
     expect(result.profileId, isNull);
   });
 
+  test(
+    'blank JSON entry aliases do not erase inherited connection defaults',
+    () {
+      final result = parseNavivoxConnectionImportPayload('''
+{
+  "base_url": "https://default.example/connect?token=nvbx_default",
+  "entries": [
+    {"baseUrl": " ", "server_id": "local", "profile_id": "mineru"}
+  ]
+}
+''');
+
+      expect(result, isNotNull);
+      expect(result!.baseUrl, 'https://default.example');
+      expect(result.token, 'nvbx_default');
+      expect(result.serverId, 'local');
+      expect(result.profileId, 'mineru');
+    },
+  );
+
   test('binds a trailing token only to the selected endpoint window', () {
     final result = parseNavivoxConnectionImportPayload(
       'Token: nvbx_old https://docs.example/help. Then open '
