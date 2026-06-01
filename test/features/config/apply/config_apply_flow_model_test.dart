@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/config/apply/config_apply_flow_model.dart';
+import 'package:navivox/features/config/apply/validation/config_validation_issues.dart';
 import 'package:navivox/features/config/form/config_form_model.dart';
 
 void main() {
@@ -347,6 +348,76 @@ void main() {
   });
 
   group('validation snapshot wire compatibility', () {
+    test('replays validation issue candidates before dedupe', () {
+      final candidates = configValidationIssueCandidatesFromSnapshotParts(
+        validationErrors: const [
+          {'field': 'feature.enabled', 'detail': 'Expected a boolean.'},
+          {'message': 'Global validation failed.'},
+          'not-an-error-object',
+        ],
+        genericErrors: const [
+          {'path': 'feature.enabled', 'message': 'Expected a boolean.'},
+          'Gateway validation failed.',
+        ],
+        fieldErrors: const {
+          'feature.enabled': [
+            'Expected a boolean.',
+            {'error': 'Still not a boolean.'},
+          ],
+          ' ': ['Dropped blank path.'],
+        },
+      ).toList();
+
+      expect(
+        candidates.map(
+          (candidate) => (
+            candidate.source,
+            candidate.path,
+            candidate.message,
+            candidate.isGlobal,
+          ),
+        ),
+        [
+          (
+            ConfigValidationIssueSource.validationErrors,
+            'feature.enabled',
+            'Expected a boolean.',
+            false,
+          ),
+          (
+            ConfigValidationIssueSource.validationErrors,
+            null,
+            'Global validation failed.',
+            true,
+          ),
+          (
+            ConfigValidationIssueSource.genericErrors,
+            'feature.enabled',
+            'Expected a boolean.',
+            false,
+          ),
+          (
+            ConfigValidationIssueSource.genericErrors,
+            null,
+            'Gateway validation failed.',
+            true,
+          ),
+          (
+            ConfigValidationIssueSource.fieldErrors,
+            'feature.enabled',
+            'Expected a boolean.',
+            false,
+          ),
+          (
+            ConfigValidationIssueSource.fieldErrors,
+            'feature.enabled',
+            'Still not a boolean.',
+            false,
+          ),
+        ],
+      );
+    });
+
     test('accepts camelCase validation snapshot aliases', () {
       final form = _singleBooleanFieldForm();
 
