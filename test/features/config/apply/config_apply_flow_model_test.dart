@@ -116,6 +116,41 @@ void main() {
     expect(provider.validationMessages, ['Provider is not available.']);
   });
 
+  test('deduplicates repeated validation messages for a field', () {
+    final form = ConfigFormModel.fromSchema(
+      schema: const {
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      },
+      values: const {'providers.default': 'openai'},
+    );
+
+    final flow = ConfigApplyFlowModel.fromDraft(
+      form: form,
+      draftValues: const {'providers.default': 'missing'},
+      validationSnapshot: const {
+        'validation_errors': [
+          {
+            'path': 'providers.default',
+            'message': 'Provider is not available.',
+          },
+        ],
+        'field_errors': {
+          'providers.default': [
+            'Provider is not available.',
+            'Choose an installed provider.',
+          ],
+        },
+      },
+    );
+
+    expect(flow.validationMessagesFor('providers.default'), [
+      'Provider is not available.',
+      'Choose an installed provider.',
+    ]);
+  });
+
   test('ignores unchanged values and blank secret drafts', () {
     final form = ConfigFormModel.fromSchema(
       schema: const {

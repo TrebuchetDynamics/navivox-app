@@ -31,7 +31,7 @@ class ConfigValidationState {
       final path = configFormValidationPathFromWire(raw);
       final message = configFormValidationMessageFromWire(raw);
       if (path == null || message == null) continue;
-      target.putIfAbsent(path, () => []).add(message);
+      _appendValidationMessage(target, path: path, message: message);
     }
   }
 
@@ -45,8 +45,20 @@ class ConfigValidationState {
       if (path == null) continue;
       final messages = _messagesFrom(entry.value);
       if (messages.isEmpty) continue;
-      target.putIfAbsent(path, () => []).addAll(messages);
+      for (final message in messages) {
+        _appendValidationMessage(target, path: path, message: message);
+      }
     }
+  }
+
+  static void _appendValidationMessage(
+    Map<String, List<String>> target, {
+    required String path,
+    required String message,
+  }) {
+    final pathMessages = target.putIfAbsent(path, () => []);
+    if (pathMessages.contains(message)) return;
+    pathMessages.add(message);
   }
 
   static List<String> _messagesFrom(Object? raw) {
