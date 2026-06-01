@@ -144,6 +144,26 @@ void main() {
     expect(sharedText, isNull);
   });
 
+  test('rejects endpoint userinfo instead of dropping hidden credentials', () {
+    final copiedUrl = parseNavivoxConnectionImportPayload(
+      'https://operator:secret@gateway.example/connect?token=nvbx_bad',
+    );
+    final sharedText = parseNavivoxConnectionImportPayload(
+      'Open wss://operator:secret@gateway.example/stream?token=nvbx_bad.',
+    );
+    final jsonBaseUrl = parseNavivoxConnectionImportPayload(
+      '{"base_url":"https://operator:secret@gateway.example/connect?token=nvbx_bad"}',
+    );
+    final jsonWebSocketUrl = parseNavivoxConnectionImportPayload(
+      '{"websocket_url":"wss://operator:secret@gateway.example/stream?token=nvbx_bad"}',
+    );
+
+    expect(copiedUrl, isNull);
+    expect(sharedText, isNull);
+    expect(jsonBaseUrl, isNull);
+    expect(jsonWebSocketUrl, isNull);
+  });
+
   test('rejects malformed core descriptors without salvaging tokens', () {
     final result = parseNavivoxConnectionImportPayload(
       'navivox://connect?'

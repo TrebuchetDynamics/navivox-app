@@ -88,7 +88,7 @@ String? _normalizeBaseUrl(String? raw) {
 
   final uri = Uri.tryParse(value);
   if (uri == null || !uri.hasScheme) return value;
-  if (uri.host.isEmpty || !_hasValidExplicitPort(uri)) return null;
+  if (!_hasSafeConnectionImportEndpointIdentity(uri)) return null;
 
   final scheme = uri.scheme.toLowerCase();
   if (scheme != 'http' && scheme != 'https') return null;
@@ -105,11 +105,16 @@ String? _normalizeWebSocketUrl(String? raw) {
 }
 
 bool _isValidConnectionImportWebSocketUri(Uri uri) {
-  if (!uri.hasScheme || uri.host.isEmpty || !_hasValidExplicitPort(uri)) {
-    return false;
-  }
+  if (!_hasSafeConnectionImportEndpointIdentity(uri)) return false;
   final scheme = uri.scheme.toLowerCase();
   return scheme == 'ws' || scheme == 'wss';
+}
+
+bool _hasSafeConnectionImportEndpointIdentity(Uri uri) {
+  return uri.hasScheme &&
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty &&
+      _hasValidExplicitPort(uri);
 }
 
 String? _normalizeBaseUrlFromWebSocketUrl(String? normalizedWebSocketUrl) =>

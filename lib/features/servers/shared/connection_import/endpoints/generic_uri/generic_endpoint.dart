@@ -19,7 +19,7 @@ Map<String, String> _uriQueryFields(Uri uri) =>
 enum _GenericEndpointSchemeKind { http, webSocket, unsupported }
 
 bool _hasGenericEndpointIdentity(Uri uri) =>
-    uri.hasScheme && uri.host.isNotEmpty && _hasValidExplicitPort(uri);
+    _hasSafeConnectionImportEndpointIdentity(uri);
 
 bool _hasValidExplicitPort(Uri uri) {
   if (!uri.hasPort) return true;
