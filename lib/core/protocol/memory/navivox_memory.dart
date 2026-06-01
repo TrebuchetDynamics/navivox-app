@@ -291,8 +291,7 @@ class NavivoxMemoryOverview {
        lastUpdatedAt = null;
 
   factory NavivoxMemoryOverview.fromJson(Map<String, Object?> json) {
-    final counts = json['counts'];
-    final countMap = counts is Map ? navivoxMapFromJson(counts) : json;
+    final counts = NavivoxMemoryOverviewCounts.fromJson(json);
     final health = navivoxMemoryHealthFromJson(json['health']);
 
     return NavivoxMemoryOverview(
@@ -302,48 +301,13 @@ class NavivoxMemoryOverview {
         json['database_label'] ?? json['database_path'],
       ),
       health: health,
-      totalTurns: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryTotalTurnsCountFields,
-        ),
-      ),
-      activeMemoryItems: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryActiveItemsCountFields,
-        ),
-      ),
-      observations: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryObservationsCountFields,
-        ),
-      ),
-      conclusions: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryConclusionsCountFields,
-        ),
-      ),
-      sessionSummaries: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemorySessionSummariesCountFields,
-        ),
-      ),
-      entities: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryEntitiesCountFields,
-        ),
-      ),
-      relationships: navivoxMemoryCountFromJson(
-        navivoxMemoryCountFieldFromJson(
-          countMap,
-          navivoxMemoryRelationshipsCountFields,
-        ),
-      ),
+      totalTurns: counts.totalTurns,
+      activeMemoryItems: counts.activeMemoryItems,
+      observations: counts.observations,
+      conclusions: counts.conclusions,
+      sessionSummaries: counts.sessionSummaries,
+      entities: counts.entities,
+      relationships: counts.relationships,
       degradedReason: navivoxMemoryDegradedReasonFromJson(json),
       lastUpdatedAt: navivoxDateTimeFromJson(json['last_updated_at']),
     );

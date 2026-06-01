@@ -146,6 +146,25 @@ void main() {
     expect(overview.relationships, 6);
   });
 
+  test(
+    'overview count projection exposes nested-versus-root source choice',
+    () {
+      final nestedCounts = NavivoxMemoryOverviewCounts.fromJson({
+        'total_turns': 99,
+        'counts': {'memory_items': 4},
+      });
+      final legacyRootCounts = NavivoxMemoryOverviewCounts.fromJson({
+        'total_turns': 99,
+        'memory_items': 4,
+      });
+
+      expect(nestedCounts.totalTurns, 0);
+      expect(nestedCounts.activeMemoryItems, 4);
+      expect(legacyRootCounts.totalTurns, 99);
+      expect(legacyRootCounts.activeMemoryItems, 4);
+    },
+  );
+
   test('memory degradation aliases share non-empty reason semantics', () {
     final search = NavivoxMemorySearchResult.fromJson({
       'items': const [],
