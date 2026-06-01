@@ -54,6 +54,28 @@ void main() {
     },
   );
 
+  test('requires an explicit command-word boundary outside voice mode', () {
+    final prefixedWord = resolver.resolve(
+      raw: 'navicancel',
+      commandWord: 'navi',
+      commandMode: false,
+      fromVoice: false,
+      profileSwitchingEnabled: true,
+      contacts: contacts,
+    );
+    final typedCommandMode = resolver.resolve(
+      raw: 'support',
+      commandWord: 'navi',
+      commandMode: true,
+      fromVoice: false,
+      profileSwitchingEnabled: true,
+      contacts: contacts,
+    );
+
+    expect(prefixedWord.action, LocalCommandAction.none);
+    expect(typedCommandMode.action, LocalCommandAction.none);
+  });
+
   test('uses command mode to resolve a bare voice profile command', () {
     final intent = resolver.resolve(
       raw: 'support',
