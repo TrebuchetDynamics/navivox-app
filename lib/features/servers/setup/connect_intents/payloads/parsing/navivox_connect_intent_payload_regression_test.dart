@@ -9,6 +9,8 @@ void main() {
   preservesMapPayloadSourceProvenance();
   trimsPlatformSourceTokenBeforeMappingProvenance();
   mapsPlatformSourceTokenCaseInsensitively();
+  parsesCaseInsensitiveDirectAppOpenCoreDescriptor();
+  rejectsMalformedCaseInsensitiveDirectAppOpenCoreDescriptor();
   rejectsStructuredMapPayloadValuesInsteadOfParsingObjectStrings();
   rejectsStructuredSourceValuesInsteadOfParsingObjectStrings();
 }
@@ -76,6 +78,47 @@ void mapsPlatformSourceTokenCaseInsensitively() {
   regressionExpect(
     result!.source == PairingHandoffSource.sharedText,
     'platform source tokens should be case-insensitive after trimming',
+  );
+}
+
+void parsesCaseInsensitiveDirectAppOpenCoreDescriptor() {
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      payload:
+          'NAVIVOX://CONNECT?websocket_url=ws%3A%2F%2Fgateway.example%2Fws&rest_token=nvbx_token&server_id=srv&profile_id=profile',
+      source: directAppOpenPairingHandoffPlatformSource,
+    ),
+  );
+
+  regressionExpect(
+    result != null,
+    'Android accepts direct app-open scheme/host case-insensitively, so Dart should parse the forwarded descriptor',
+  );
+  regressionExpect(
+    result!.webSocketUrl == 'ws://gateway.example/ws',
+    'case-insensitive direct app-open descriptor should preserve websocket URL',
+  );
+  regressionExpect(
+    result.token == 'nvbx_token',
+    'case-insensitive direct app-open descriptor should preserve REST token',
+  );
+  regressionExpect(
+    result.source == PairingHandoffSource.directAppOpen,
+    'case-insensitive direct app-open descriptor should preserve direct app-open provenance',
+  );
+}
+
+void rejectsMalformedCaseInsensitiveDirectAppOpenCoreDescriptor() {
+  final result = parseNavivoxConnectIntentPayload(
+    navivoxPlatformConnectIntentPayloadFixture(
+      payload: 'NAVIVOX://CONNECT?rest_token=nvbx_token_only',
+      source: directAppOpenPairingHandoffPlatformSource,
+    ),
+  );
+
+  regressionExpect(
+    result == null,
+    'case-insensitive direct app-open core descriptor must not bypass malformed navivox://connect rejection',
   );
 }
 

@@ -5,8 +5,9 @@ import 'navivox_connect_intent_initial_payload.dart';
 
 void main() {
   preservesPayloadObservedDuringAvailabilityProbe();
-  remembersNullAvailabilityProbePayload();
+  ignoresNullAvailabilityProbePayload();
   keepsFirstUnconsumedProbePayloadAcrossRepeatedAvailabilityChecks();
+  exposesCacheWriteInvariant();
 }
 
 void preservesPayloadObservedDuringAvailabilityProbe() {
@@ -29,22 +30,29 @@ void preservesPayloadObservedDuringAvailabilityProbe() {
   );
 }
 
-void remembersNullAvailabilityProbePayload() {
+void ignoresNullAvailabilityProbePayload() {
   final cache = NavivoxInitialConnectIntentPayloadCache();
 
   cache.remember(null);
 
   regressionExpect(
-    cache.hasPayload,
-    'null availability probe result should still be treated as a completed probe',
-  );
-  regressionExpect(
-    cache.take() == null,
-    'null availability probe result should be replayable without a second probe',
-  );
-  regressionExpect(
     !cache.hasPayload,
-    'null probe result should be consumed only once',
+    'null availability probe result should not mask a later non-null startup intent',
+  );
+}
+
+void exposesCacheWriteInvariant() {
+  regressionExpect(
+    shouldRememberInitialConnectIntentPayload(false, 'payload'),
+    'an empty cache should remember a non-null platform payload',
+  );
+  regressionExpect(
+    !shouldRememberInitialConnectIntentPayload(false, null),
+    'an empty probe is not a replayable startup intent payload',
+  );
+  regressionExpect(
+    !shouldRememberInitialConnectIntentPayload(true, 'later'),
+    'a cached startup intent payload must not be overwritten before take',
   );
 }
 

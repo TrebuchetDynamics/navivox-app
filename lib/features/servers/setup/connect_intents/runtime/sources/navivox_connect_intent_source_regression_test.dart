@@ -54,6 +54,35 @@ void main() {
   );
 
   test(
+    'later non-null availability payload replaces earlier empty probe',
+    () async {
+      var calls = 0;
+      final payload = {
+        'payload': 'https://gateway.example/connect?token=nvbx_token',
+        'source': directAppOpenPairingHandoffPlatformSource,
+      };
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(methodChannel, (call) async {
+            expect(call.method, initialNavivoxConnectIntentMethod);
+            calls += 1;
+            return calls == 1 ? null : payload;
+          });
+
+      final source = NavivoxConnectIntentSource(methodChannel: methodChannel);
+
+      expect(await source.isAvailable(), isTrue);
+      expect(await source.isAvailable(), isTrue);
+
+      final result = await source.initialImport();
+
+      expect(calls, 2);
+      expect(result, isNotNull);
+      expect(result!.token, 'nvbx_token');
+      expect(result.source, PairingHandoffSource.directAppOpen);
+    },
+  );
+
+  test(
     'repeated availability checks do not drop cached initial payload',
     () async {
       var calls = 0;
