@@ -69,6 +69,38 @@ void main() {
     });
   });
 
+  group('memory overview health', () {
+    test('decodes gateway aliases through one contract', () {
+      expect(navivoxMemoryHealthFromJson('active'), NavivoxMemoryHealth.active);
+      expect(navivoxMemoryHealthFromJson(' OK '), NavivoxMemoryHealth.active);
+      expect(
+        navivoxMemoryHealthFromJson('healthy'),
+        NavivoxMemoryHealth.active,
+      );
+      expect(
+        navivoxMemoryHealthFromJson('unavailable'),
+        NavivoxMemoryHealth.unavailable,
+      );
+      expect(
+        navivoxMemoryHealthFromJson(' offline '),
+        NavivoxMemoryHealth.unavailable,
+      );
+    });
+
+    test('treats absent or unknown health as degraded', () {
+      expect(navivoxMemoryHealthFromJson(null), NavivoxMemoryHealth.degraded);
+      expect(navivoxMemoryHealthFromJson(' '), NavivoxMemoryHealth.degraded);
+      expect(
+        navivoxMemoryHealthFromJson('warming_up'),
+        NavivoxMemoryHealth.degraded,
+      );
+      expect(
+        NavivoxMemoryOverview.fromJson({'health': 'warming_up'}).health,
+        NavivoxMemoryHealth.degraded,
+      );
+    });
+  });
+
   test('overview counts clamp impossible negative gateway values', () {
     final overview = NavivoxMemoryOverview.fromJson({
       'counts': {

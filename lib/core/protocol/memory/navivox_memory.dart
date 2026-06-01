@@ -1,8 +1,9 @@
 import '../serialization/navivox_json.dart';
 import 'navivox_memory_database_label.dart';
 import 'navivox_memory_degradation.dart';
+import 'navivox_memory_overview_health.dart';
 
-enum NavivoxMemoryHealth { active, degraded, unavailable }
+export 'navivox_memory_overview_health.dart';
 
 enum NavivoxMemoryType {
   all('all', 'All'),
@@ -290,14 +291,7 @@ class NavivoxMemoryOverview {
   factory NavivoxMemoryOverview.fromJson(Map<String, Object?> json) {
     final counts = json['counts'];
     final countMap = counts is Map ? navivoxMapFromJson(counts) : json;
-    final healthText = navivoxOptionalStringFromJson(
-      json['health'],
-    )?.toLowerCase();
-    final health = switch (healthText) {
-      'active' || 'ok' || 'healthy' => NavivoxMemoryHealth.active,
-      'unavailable' || 'offline' => NavivoxMemoryHealth.unavailable,
-      _ => NavivoxMemoryHealth.degraded,
-    };
+    final health = navivoxMemoryHealthFromJson(json['health']);
 
     return NavivoxMemoryOverview(
       profileId: navivoxStringFromJson(json['profile_id'], fallback: 'default'),
