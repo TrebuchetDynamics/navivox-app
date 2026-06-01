@@ -14,6 +14,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  test('write plan removes legacy token before writing durable metadata', () {
+    final writes = sessionPreferenceWritesForConnection(
+      baseUrl: 'https://gateway.example.test/setup?pairing_token=secret',
+      webSocketUrl: 'wss://gateway.example.test/stream?token=secret',
+      gatewayId: 'gateway-1',
+      connectedAt: DateTime.utc(2026, 5, 31),
+    );
+
+    expect(writes.first.key, SessionPreferenceKeys.legacyToken);
+    expect(writes.first.isRemove, isTrue);
+  });
+
   test('write plan strips bootstrap-only URL state before persistence', () {
     final writes = sessionPreferenceWritesForConnection(
       baseUrl: ' https://gateway.example.test/setup?pairing_token=secret#frag ',

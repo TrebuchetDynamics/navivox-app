@@ -3,7 +3,7 @@ import 'session_preference_keys.dart';
 
 /// A single deterministic mutation against saved session preferences.
 class SessionPreferenceWrite {
-  const SessionPreferenceWrite.set(this.key, this.value);
+  const SessionPreferenceWrite.set(this.key, String this.value);
 
   const SessionPreferenceWrite.remove(this.key) : value = null;
 
@@ -33,8 +33,8 @@ List<SessionPreferenceWrite> sessionPreferenceWritesForConnection({
   final timestamp = connectedAt.toUtc().toIso8601String();
 
   return [
-    SessionPreferenceWrite.set(SessionPreferenceKeys.baseUrl, fields.baseUrl),
     const SessionPreferenceWrite.remove(SessionPreferenceKeys.legacyToken),
+    SessionPreferenceWrite.set(SessionPreferenceKeys.baseUrl, fields.baseUrl),
     _writeOptional(SessionPreferenceKeys.webSocketUrl, fields.webSocketUrl),
     _writeOptional(SessionPreferenceKeys.gatewayId, fields.gatewayId),
     SessionPreferenceWrite.set(
