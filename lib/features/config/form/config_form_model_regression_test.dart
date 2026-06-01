@@ -9,6 +9,7 @@ void main() {
   readsAllowedValuesAndActionsWireAliases();
   fallsBackAcrossBlankStringSchemaAliases();
   fallsBackAcrossNullBooleanSchemaAliases();
+  skipsInvalidSchemaRowsBeforeValidRestartRows();
 }
 
 void preservesUnrecognizedBooleanEditTextForValidation() {
@@ -182,6 +183,32 @@ void fallsBackAcrossNullBooleanSchemaAliases() {
   _expect(
     row.requiresConfirmation,
     'null snake_case requires_confirmation alias should not hide later camelCase requiresConfirmation',
+  );
+}
+
+void skipsInvalidSchemaRowsBeforeValidRestartRows() {
+  final form = ConfigFormModel.fromSchema(
+    schema: {
+      'fields': [
+        'not a row',
+        {'path': ' '},
+        {'path': 'server.host', 'type': 'string', 'reloadMode': 'hot-restart'},
+      ],
+    },
+    values: {'server.host': 'gateway.example'},
+  );
+
+  _expect(
+    form.rows.length == 1,
+    'invalid schema rows should be ignored without dropping later valid rows',
+  );
+  _expect(
+    form.rows.single.field == 'server.host',
+    'valid rows after invalid candidates should keep their field path',
+  );
+  _expect(
+    form.rows.single.restartRequired,
+    'restart inference should remain attached to the valid schema row candidate',
   );
 }
 

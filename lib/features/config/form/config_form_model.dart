@@ -1,8 +1,8 @@
 import '../shared/config_value_display.dart';
 import 'config_edit_value_coercion.dart';
 import 'config_form_field_type.dart';
+import 'config_form_schema_row.dart';
 import 'config_form_schema_wire.dart';
-import 'config_risk_level.dart';
 
 export 'config_form_field_type.dart';
 
@@ -20,37 +20,12 @@ class ConfigFormModel {
 
     final rows = <ConfigFormRow>[];
     for (final raw in rawFields) {
-      if (raw is! Map) continue;
-      final field = configFormFieldPathFromSchema(raw);
-      if (field == null || field.isEmpty) continue;
-      final type = ConfigFormFieldType.fromWire(raw['type']?.toString());
-      final secret =
-          configFormBoolFromSchema(raw, const ['secret']) ||
-          type == ConfigFormFieldType.secret;
-      final riskLevel = configFormRiskLevelFromSchema(raw);
-      final reloadMode = configFormReloadModeFromSchema(raw);
-      rows.add(
-        ConfigFormRow(
-          field: field,
-          label: configFormFieldLabelFromSchema(raw, field),
-          type: secret ? ConfigFormFieldType.secret : type,
-          required: configFormBoolFromSchema(raw, const ['required']),
-          restartRequired:
-              configFormBoolFromSchema(raw, const ['restart_required']) ||
-              _reloadModeRequiresRestart(reloadMode),
-          riskLevel: riskLevel,
-          requiresConfirmation: configRequiresConfirmation(
-            explicitRequiresConfirmation: configFormBoolFromSchema(raw, const [
-              'requires_confirmation',
-            ]),
-            riskLevel: riskLevel,
-          ),
-          rawValue: values[field],
-          allowedValues: configFormAllowedValuesFromSchema(raw),
-          actions: configFormActionsFromSchema(raw),
-          reloadMode: reloadMode,
-        ),
+      final candidate = ConfigFormSchemaRowCandidate.fromRaw(
+        raw: raw,
+        values: values,
       );
+      if (candidate == null) continue;
+      rows.add(ConfigFormRow.fromSchemaCandidate(candidate));
     }
     return ConfigFormModel(
       rows: rows,
@@ -127,10 +102,6 @@ class ConfigFormModel {
     }
     return sections;
   }
-
-  static bool _reloadModeRequiresRestart(String reloadMode) {
-    return reloadMode.toLowerCase().contains('restart');
-  }
 }
 
 class ConfigSectionSelection {
@@ -174,6 +145,24 @@ class ConfigFormSection {
 }
 
 class ConfigFormRow {
+  factory ConfigFormRow.fromSchemaCandidate(
+    ConfigFormSchemaRowCandidate candidate,
+  ) {
+    return ConfigFormRow(
+      field: candidate.field,
+      label: candidate.label,
+      type: candidate.type,
+      required: candidate.required,
+      restartRequired: candidate.restartRequired,
+      riskLevel: candidate.riskLevel,
+      requiresConfirmation: candidate.requiresConfirmation,
+      rawValue: candidate.rawValue,
+      allowedValues: candidate.allowedValues,
+      actions: candidate.actions,
+      reloadMode: candidate.reloadMode,
+    );
+  }
+
   const ConfigFormRow({
     required this.field,
     required this.label,
