@@ -1,5 +1,12 @@
 import '../shared/navivox_gateway_json.dart';
 
+const _safeEffectiveSecurityValues = {
+  'https',
+  'loopback',
+  'private_network',
+  'private-network',
+};
+
 /// Operator-visible durable reconnect states shared by capability parsing and
 /// session readiness presentation.
 enum ReconnectReadinessKind { unknown, unsupported, blocked, available, saved }
@@ -37,12 +44,30 @@ class DurableReconnectReadinessContract {
     return List.unmodifiable(missing);
   }
 
+  bool get hasSafeEffectiveSecurity {
+    final value = effectiveSecurity.trim().toLowerCase();
+    if (value.isEmpty) return false;
+    return _safeEffectiveSecurityValues.contains(value);
+  }
+
+  String? get unsupportedEffectiveSecurity {
+    final value = effectiveSecurity.trim();
+    if (value.isEmpty || hasSafeEffectiveSecurity) return null;
+    return value;
+  }
+
   String? get recoveryMessage {
     final suppliedReason = blockedReason.trim();
     if (suppliedReason.isNotEmpty) return suppliedReason;
     final missingFields = missingIssueContractFields;
-    if (missingFields.isEmpty) return null;
-    return 'Durable reconnect is advertised but missing ${_readinessList(missingFields)}.';
+    if (missingFields.isNotEmpty) {
+      return 'Durable reconnect is advertised but missing ${_readinessList(missingFields)}.';
+    }
+    final unsafeSecurity = unsupportedEffectiveSecurity;
+    if (unsafeSecurity != null) {
+      return 'Durable reconnect is advertised with unsupported effective security "$unsafeSecurity".';
+    }
+    return null;
   }
 
   ReconnectReadinessKind get kind {
