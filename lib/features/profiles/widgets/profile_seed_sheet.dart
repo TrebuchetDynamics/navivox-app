@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../../core/protocol/navivox_json.dart';
+import '../actions/profile_seed_coordinator.dart';
+
+const _profileSeedCoordinator = ProfileSeedCoordinator();
 
 class ProfileSeedSheet extends StatefulWidget {
   const ProfileSeedSheet({super.key, required this.channel});
@@ -54,7 +57,13 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
   @override
   Widget build(BuildContext context) {
     final draft = _draftResult?.draft;
-    final canApply = !_loading && draft != null && _workspaceConfirmed;
+    final canApply =
+        !_loading &&
+        draft != null &&
+        _profileSeedCoordinator.workspaceConfirmed(
+          _workspaceRoots,
+          _confirmNoWorkspace,
+        );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -228,90 +237,100 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
     );
   }
 
-  bool get _workspaceConfirmed =>
-      _workspaceRoots.isNotEmpty || _confirmNoWorkspace;
-
-  List<String> get _workspaceRoots => navivoxTrimmedStringList(
-    _workspacePathController.text.split(RegExp(r'[\n,]')),
-  );
+  List<String> get _workspaceRoots => _profileSeedCoordinator
+      .parseWorkspaceRoots(_workspacePathController.text);
 
   void _onWorkspaceChanged() {
     if (mounted) setState(() {});
   }
 
   Future<void> _generateDraft() async {
-    final seed = _seedController.text.trim();
-    if (seed.isEmpty) {
-      setState(() => _error = 'Enter a profile seed first.');
-      return;
+    final plan = _profileSeedCoordinator.planDraft(_seedController.text);
+    switch (plan) {
+      case ShowProfileSeedDraftErrorPlan(:final message):
+        setState(() => _error = message);
+        return;
+      case RequestProfileSeedDraftPlan(:final request):
+        await _requestDraft(request);
     }
+  }
+
+  Future<void> _requestDraft(ProfileSeedDraftRequest request) async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final result = await widget.channel.profileSeed(seed: seed);
+      final result = await widget.channel.profileSeed(seed: request.seed);
       if (!mounted) return;
       setState(() {
         _draftResult = result;
-        _populateDraft(result.draft);
+        _applyProfileSeedEffect(
+          _profileSeedCoordinator.afterDraftResult(result),
+        );
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Gormes profile seed draft failed.');
+      setState(() {
+        _applyProfileSeedEffect(_profileSeedCoordinator.draftFailed());
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _applyDraft() async {
-    final seed = _seedController.text.trim();
-    if (seed.isEmpty || !_workspaceConfirmed) return;
+    final plan = _profileSeedCoordinator.planApply(
+      seedText: _seedController.text,
+      workspaceRootsText: _workspacePathController.text,
+      confirmNoWorkspace: _confirmNoWorkspace,
+    );
+    switch (plan) {
+      case BlockedProfileSeedApplyPlan():
+        return;
+      case RequestProfileSeedApplyPlan(:final request):
+        await _requestApply(request);
+    }
+  }
+
+  Future<void> _requestApply(ProfileSeedApplyRequest request) async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       await widget.channel.profileSeed(
-        seed: seed,
+        seed: request.seed,
         apply: true,
-        workspaceRoots: _workspaceRoots,
+        workspaceRoots: request.workspaceRoots,
       );
       if (!mounted) return;
-      Navigator.of(context).pop();
+      _applyProfileSeedEffect(_profileSeedCoordinator.applySucceeded());
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Gormes profile seed apply failed.');
+      setState(() {
+        _applyProfileSeedEffect(_profileSeedCoordinator.applyFailed());
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _populateDraft(Map<String, Object?> draft) {
-    final providerState = navivoxMapFieldFromJson(
-      draft,
-      'provider_model_state',
-    );
-    _profileIdController.text = navivoxStringFieldFromJson(draft, 'profile_id');
-    _displayNameController.text = navivoxStringFieldFromJson(
-      draft,
-      'display_name',
-    );
-    _instructionsController.text = navivoxStringFieldFromJson(
-      draft,
-      'instructions',
-    );
-    _providerController.text = navivoxStringFieldFromJson(
-      providerState,
-      'provider',
-    );
-    _modelController.text = navivoxStringFieldFromJson(providerState, 'model');
-    _toolPolicyController.text = _toolPolicyText(
-      navivoxMapFieldFromJson(draft, 'tool_policy'),
-    );
-    _voiceMetadataController.text = _keyValueText(
-      navivoxMapFieldFromJson(draft, 'voice_profile_metadata'),
-    );
+  void _applyProfileSeedEffect(ProfileSeedEffect effect) {
+    switch (effect) {
+      case PopulateProfileSeedDraftEffect(:final fields):
+        _profileIdController.text = fields.profileId;
+        _displayNameController.text = fields.displayName;
+        _instructionsController.text = fields.instructions;
+        _providerController.text = fields.provider;
+        _modelController.text = fields.model;
+        _toolPolicyController.text = fields.toolPolicy;
+        _voiceMetadataController.text = fields.voiceMetadata;
+      case ShowProfileSeedErrorEffect(:final message):
+        _error = message;
+      case CloseProfileSeedSheetEffect():
+        Navigator.of(context).pop();
+    }
   }
 }
 
@@ -379,36 +398,6 @@ class _WorkspaceSuggestions extends StatelessWidget {
       ],
     );
   }
-}
-
-String _toolPolicyText(Map<String, Object?> toolPolicy) {
-  final lines = <String>[];
-  final mode = navivoxStringFieldFromJson(toolPolicy, 'mode');
-  if (mode.isNotEmpty) lines.add('mode: $mode');
-  final allowed = navivoxStringListFieldFromJson(toolPolicy, 'allowed');
-  if (allowed.isNotEmpty) lines.add('allowed: ${allowed.join(', ')}');
-  final requiresApproval = navivoxStringListFieldFromJson(
-    toolPolicy,
-    'requires_approval',
-  );
-  if (requiresApproval.isNotEmpty) {
-    lines.add('requires_approval: ${requiresApproval.join(', ')}');
-  }
-  return lines.join('\n');
-}
-
-String _keyValueText(Map<String, Object?> values) {
-  final lines = <String>[];
-  for (final entry in values.entries) {
-    final value = entry.value;
-    if (value == null) continue;
-    if (value is List) {
-      lines.add('${entry.key}: ${value.join(', ')}');
-    } else {
-      lines.add('${entry.key}: $value');
-    }
-  }
-  return lines.join('\n');
 }
 
 bool _boolField(Map<String, Object?> json, String key) {

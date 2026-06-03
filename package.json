@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "flutter test --concurrency=1",
-    "web:e2e": "playwright test --config=playwright.config.mjs"
+    "web:e2e": "./playwright/scripts/run_tests.sh"
   },
   "repository": {
     "type": "git",

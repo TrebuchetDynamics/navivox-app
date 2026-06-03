@@ -12,6 +12,8 @@ import '../../../core/session/session_persistence_service.dart';
 import '../../../router/navigation_intent.dart';
 import '../models/connection_import.dart';
 import '../pairing/pairing_handoff_flow.dart';
+import '../pairing/pairing_intent.dart';
+import '../pairing/pairing_intent_coordinator.dart';
 import '../shared/gateway_connection_presentation.dart';
 import '../setup/navivox_connect_intent_source.dart';
 import '../setup/navivox_connect_intent_source_provider.dart';
@@ -246,7 +248,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   Future<void> _tryAutoReconnect() async {
     final session = SessionPersistenceService();
     final saved = await session.loadSession();
-    if (saved == null || saved.isStale || !saved.canAttemptReconnect) return;
+    if (saved == null || saved.isStale) return;
+    if (!saved.canAttemptReconnect) {
+      if (!mounted) return;
+      setState(() {
+        _notice = const SetupScreenNotice.info(
+          'Known gateway saved. Pair again to reconnect.',
+        );
+      });
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _connecting = true;
@@ -437,7 +448,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                       .connectButtonSemanticHint,
                                   button: true,
                                   enabled: !_connecting,
-                                  onTap: _connecting ? null : _connectGateway,
+                                  onTap: _connecting
+                                      ? null
+                                      : _submitManualPairingHandoff,
                                   child: ExcludeSemantics(
                                     child: FilledButton.icon(
                                       style: FilledButton.styleFrom(
@@ -449,7 +462,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                       ),
                                       onPressed: _connecting
                                           ? null
-                                          : _connectGateway,
+                                          : _submitManualPairingHandoff,
                                       icon: _connecting
                                           ? const SizedBox.square(
                                               dimension: 18,
@@ -568,7 +581,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         ),
         obscureText: !_showToken,
         textInputAction: TextInputAction.done,
-        onSubmitted: _connecting ? null : (_) => _connectGateway(),
+        onSubmitted: _connecting ? null : (_) => _submitManualPairingHandoff(),
       ),
     );
   }
@@ -589,7 +602,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         setState(() => _notice = notice);
         return;
       }
-      _applyConnectionImport(result, notice);
+      _handlePairingIntent(
+        PairingIntent.importHandoff(result),
+        importNotice: notice,
+      );
     } on SetupQrImageImportException catch (error) {
       if (mounted) {
         setState(
@@ -624,23 +640,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   void _applyConnectIntentImport(SetupQrImageImport result) {
     if (!mounted || !result.hasValues) return;
-    _applyConnectionImport(
-      result,
-      _setupScreenPresentation.connectIntentImportNotice,
+    _handlePairingIntent(
+      PairingIntent.importHandoff(result),
+      importNotice: _setupScreenPresentation.connectIntentImportNotice,
+      allowImmediateImportedConnect: true,
     );
-    final hasActiveGateway = ref
-        .read(gatewayNavivoxChannelProvider)
-        .state
-        .hasServers;
-    if (_handoffFlow.requiresActiveGatewayConfirmation(
-      hasActiveGateway: hasActiveGateway,
-    )) {
-      unawaited(_confirmActiveGatewayHandoff());
-      return;
-    }
-    if (_handoffFlow.shouldAutoConnect(hasActiveGateway: hasActiveGateway)) {
-      unawaited(_connectGateway(autoConnect: true));
-    }
   }
 
   void _applyConnectionImport(
@@ -686,7 +690,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  Future<void> _confirmActiveGatewayHandoff() async {
+  Future<void> _confirmActiveGatewayHandoff(SetupQrImageImport import) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -717,7 +721,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       ),
     );
     if (confirmed == true && mounted) {
-      await _connectGateway(autoConnect: true);
+      await _handlePairingIntent(PairingIntent.confirmHandoff(import));
     }
   }
 
@@ -729,7 +733,55 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  Future<void> _connectGateway({bool autoConnect = false}) async {
+  Future<void> _submitManualPairingHandoff() {
+    return _handlePairingIntent(
+      PairingIntent.submitManualHandoff(
+        baseUrl: _safeHandoffHostSummary(),
+        token: _tokenController.text,
+        webSocketUrl: _webSocketUrl,
+      ),
+    );
+  }
+
+  Future<void> _handlePairingIntent(
+    PairingIntent intent, {
+    SetupScreenNotice? importNotice,
+    bool allowImmediateImportedConnect = false,
+  }) async {
+    final hasActiveGateway = ref
+        .read(gatewayNavivoxChannelProvider)
+        .state
+        .hasServers;
+    final plan = const PairingIntentCoordinator().plan(
+      intent,
+      hasActiveGateway: hasActiveGateway,
+      allowImmediateImportedConnect: allowImmediateImportedConnect,
+    );
+    for (final effect in plan.effects) {
+      await _applyPairingIntentEffect(effect, importNotice: importNotice);
+    }
+  }
+
+  Future<void> _applyPairingIntentEffect(
+    PairingIntentEffect effect, {
+    SetupScreenNotice? importNotice,
+  }) async {
+    switch (effect) {
+      case ApplyPairingImportEffect(import: final handoffImport):
+        _applyConnectionImport(
+          handoffImport.import,
+          importNotice ?? _setupScreenPresentation.connectIntentImportNotice,
+        );
+      case RequestPairingConfirmationEffect(import: final handoffImport):
+        unawaited(_confirmActiveGatewayHandoff(handoffImport.import));
+      case ConnectPairingEffect(:final intent):
+        await _connectGateway(intent);
+      case IgnorePairingIntentEffect():
+        return;
+    }
+  }
+
+  Future<void> _connectGateway(PairingIntent intent) async {
     const presentation = GatewayConnectionPresentation();
     final validationError = presentation.validateAddressAndPort(
       address: _addressController.text,
@@ -752,6 +804,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       webSocketUrl: _webSocketUrl,
     );
 
+    final autoConnect =
+        intent.action == PairingIntentAction.confirmHandoff &&
+        intent.source != PairingHandoffSource.manual;
     setState(() {
       _connecting = true;
       _notice = autoConnect ? _setupScreenPresentation.autoConnectNotice : null;
@@ -777,7 +832,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => _notice = autoConnect && _handoffFlow.isDirectAppOpen
+          () => _notice = intent.source == PairingHandoffSource.directAppOpen
               ? _setupScreenPresentation.directPairingConnectFailureNotice
               : _setupScreenPresentation.connectFailureNotice,
         );

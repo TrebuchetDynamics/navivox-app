@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_memory.dart';
+import '../actions/memory_dashboard_action_coordinator.dart';
 import '../presentation/memory_dashboard_presentation.dart';
 
 const _memoryPresentation = MemoryDashboardPresentation();
+const _memoryActions = MemoryDashboardActionCoordinator();
 
 final memoryOverviewProvider =
     FutureProvider.autoDispose<NavivoxMemoryOverview>((ref) {
       final channel = ref.watch(navivoxChannelProvider);
       final activeProfile = channel.state.activeProfileContact;
+      final scope = _memoryActions.scopeFor(activeProfile);
       return channel.memoryOverview(
-        serverId: activeProfile?.serverId,
-        profileId: activeProfile?.profileId,
+        serverId: scope.serverId,
+        profileId: scope.profileId,
       );
     });
 
@@ -142,13 +145,17 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
 
   Future<NavivoxMemorySearchResult> _load() {
     final channel = ref.read(navivoxChannelProvider);
-    final activeProfile = channel.state.activeProfileContact;
-    return channel.memorySearch(
-      serverId: activeProfile?.serverId,
-      profileId: activeProfile?.profileId,
+    final request = _memoryActions.searchRequest(
+      activeProfile: channel.state.activeProfileContact,
       query: _query,
       type: _selectedType,
-      limit: 20,
+    );
+    return channel.memorySearch(
+      serverId: request.scope.serverId,
+      profileId: request.scope.profileId,
+      query: request.query,
+      type: request.type,
+      limit: request.limit,
     );
   }
 
@@ -162,12 +169,15 @@ class _MemorySearchSectionState extends ConsumerState<_MemorySearchSection> {
 
   void _showMemoryDetail(BuildContext context, NavivoxMemoryItem item) {
     final channel = ref.read(navivoxChannelProvider);
-    final activeProfile = channel.state.activeProfileContact;
+    final request = _memoryActions.detailRequest(
+      activeProfile: channel.state.activeProfileContact,
+      item: item,
+    );
     final detail = channel.memoryDetail(
-      serverId: activeProfile?.serverId,
-      profileId: activeProfile?.profileId,
-      id: item.id,
-      type: item.type,
+      serverId: request.scope.serverId,
+      profileId: request.scope.profileId,
+      id: request.id,
+      type: request.type,
     );
     showModalBottomSheet<void>(
       context: context,
@@ -313,23 +323,41 @@ class _MemoryDetailSheet extends ConsumerWidget {
     String? correction,
   }) async {
     final channel = ref.read(navivoxChannelProvider);
-    final activeProfile = channel.state.activeProfileContact;
-    final result = await channel.memoryAction(
-      serverId: activeProfile?.serverId,
-      profileId: activeProfile?.profileId,
-      id: item.id,
-      type: item.type,
+    final request = _memoryActions.actionRequest(
+      activeProfile: channel.state.activeProfileContact,
+      item: item,
       action: action,
       correction: correction,
     );
-    if (!context.mounted) return;
-    final message = _memoryPresentation.actionMessageFor(
-      result,
-      requestedAction: action,
+    final result = await channel.memoryAction(
+      serverId: request.scope.serverId,
+      profileId: request.scope.profileId,
+      id: request.id,
+      type: request.type,
+      action: request.action,
+      correction: request.correction,
     );
-    ScaffoldMessenger.of(
+    if (!context.mounted) return;
+    _applyMemoryActionEffect(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+      _memoryActions.afterAction(
+        result,
+        requestedAction: action,
+        messageFor: _memoryPresentation.actionMessageFor,
+      ),
+    );
+  }
+
+  void _applyMemoryActionEffect(
+    BuildContext context,
+    MemoryActionEffect effect,
+  ) {
+    switch (effect) {
+      case ShowMemorySnackbarEffect(:final message):
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   Future<void> _requestCorrection(

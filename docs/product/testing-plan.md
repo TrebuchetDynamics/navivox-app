@@ -227,12 +227,16 @@ Use the Go Navivox handler in a test fixture for one narrow smoke:
 ### 7.1 Web E2E Gate
 
 Navivox must keep the connect-and-talk loop working in Chrome, not only in
-hosted Flutter widget tests. The required browser smoke is:
+hosted Flutter widget tests. Broad Playwright tests may use a mock channel for
+fast UI coverage, but the required browser gate includes one fixture-gateway
+path that enters setup fields, proves health/status/stream, sends through the
+real composer, and observes gateway-driven assistant output.
 
 ```bash
 cd flutter-navivox/app
 flutter test --platform chrome test/e2e/connect_and_talk_web_e2e_test.dart
 flutter build web --no-web-resources-cdn
+npx playwright test --config=playwright.config.mjs
 ```
 
 Flutter's `integration_test` web runner remains available for environments

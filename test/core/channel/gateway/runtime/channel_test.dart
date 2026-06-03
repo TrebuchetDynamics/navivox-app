@@ -9,6 +9,7 @@ import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
 
 import '../../support/gateway_routing_test_support.dart';
+import '../../../session/support/session_persistence_test_support.dart';
 
 void main() {
   test('connects to gateway and streams a chat turn', () async {
@@ -100,7 +101,10 @@ void main() {
     final channel = GatewayNavivoxChannel();
     addTearDown(channel.dispose);
 
-    await channel.connect(baseUrl: firstServer.baseUrl, token: gatewayTestToken);
+    await channel.connect(
+      baseUrl: firstServer.baseUrl,
+      token: gatewayTestToken,
+    );
     channel.sendText('first session');
     await firstServer.nextClientMessage;
     await Future<void>.delayed(Duration.zero);
@@ -714,6 +718,24 @@ void main() {
           .map((message) => message.text ?? message.toolCall?.summary ?? '')
           .join('\n'),
       isNot(contains('must-not-render')),
+    );
+  });
+
+  test('saved gateway metadata alone does not silently reconnect', () async {
+    resetSessionPreferences();
+    final sessionService = await initializedSessionPersistenceService();
+    await saveLocalGatewayConnection(sessionService);
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    final reconnected = await channel.tryReconnect();
+
+    expect(reconnected, isFalse);
+    expect(channel.state.hasServers, isFalse);
+    expect(
+      channel.state.messagesList.map((message) => message.text),
+      contains('Known gateway saved. Pair again to reconnect.'),
     );
   });
 

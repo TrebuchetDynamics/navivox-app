@@ -9,6 +9,7 @@ import '../widgets/profile_contact_avatar.dart';
 import '../presentation/profile_contact_list_presentation.dart';
 import '../presentation/profile_contact_presentation.dart';
 import '../../profiles/widgets/profile_seed_sheet.dart';
+import '../actions/profile_contacts_action_coordinator.dart';
 
 const _profileContactsPresentation = ProfileContactsScreenPresentation();
 
@@ -22,6 +23,8 @@ class ProfileContactsScreen extends ConsumerStatefulWidget {
 
 class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
   NavivoxChannel? _subscribed;
+  final ProfileContactsActionCoordinator _actionCoordinator =
+      const ProfileContactsActionCoordinator();
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   bool _searching = false;
@@ -162,19 +165,10 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
                           selected:
                               contact.key ==
                               channel.state.selectedProfileContactKey,
-                          onTap: () {
-                            channel.selectProfileContact(
-                              serverId: contact.serverId,
-                              profileId: contact.profileId,
-                            );
-                            NavigationIntent.go(
-                              context,
-                              OpenChatThread(
-                                contact.serverId,
-                                contact.profileId,
-                              ),
-                            );
-                          },
+                          onTap: () => _applyProfileContactsEffects(
+                            channel,
+                            _actionCoordinator.selectContact(contact),
+                          ),
                           onLongPress: () =>
                               _showProfileDetails(context, contact),
                         );
@@ -211,22 +205,17 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     BuildContext context,
     ProfileContactsMenuActionKind action,
   ) {
-    NavigationIntent.go(context, switch (action) {
-      ProfileContactsMenuActionKind.manageGateways => const OpenGateways(),
-      ProfileContactsMenuActionKind.manageProfiles => const OpenAgents(),
-      ProfileContactsMenuActionKind.openMemory => const OpenWorkspace(),
-      ProfileContactsMenuActionKind.openConfig => const OpenConfig(),
-      ProfileContactsMenuActionKind.openSettings => const OpenSettings(),
-    });
+    _applyProfileContactsEffects(
+      ref.read(navivoxChannelProvider),
+      _actionCoordinator.menu(action),
+    );
   }
 
   void _handleAddProfileRow(ProfileContactsAddRowKind kind) {
-    switch (kind) {
-      case ProfileContactsAddRowKind.newProfile:
-        _showProfileSeedSheet(context);
-      case ProfileContactsAddRowKind.addServer:
-        NavigationIntent.go(context, const OpenGateways());
-    }
+    _applyProfileContactsEffects(
+      ref.read(navivoxChannelProvider),
+      _actionCoordinator.addProfile(kind),
+    );
   }
 
   void _showAddProfileSheet(BuildContext context) {
@@ -339,29 +328,30 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     NavivoxProfileContact contact,
     ProfileContactDetailActionKind kind,
   ) {
-    Navigator.of(context).pop();
-    switch (kind) {
-      case ProfileContactDetailActionKind.openChat:
-        channel.selectProfileContact(
-          serverId: contact.serverId,
-          profileId: contact.profileId,
-        );
-        NavigationIntent.go(
-          context,
-          OpenChatThread(contact.serverId, contact.profileId),
-        );
-      case ProfileContactDetailActionKind.openMemory:
-        channel.selectProfileContact(
-          serverId: contact.serverId,
-          profileId: contact.profileId,
-        );
-        NavigationIntent.go(context, const OpenWorkspace());
-      case ProfileContactDetailActionKind.editProfile:
-        channel.selectProfileContact(
-          serverId: contact.serverId,
-          profileId: contact.profileId,
-        );
-        NavigationIntent.go(context, const OpenConfig());
+    _applyProfileContactsEffects(
+      channel,
+      _actionCoordinator.detailAction(contact, kind),
+    );
+  }
+
+  void _applyProfileContactsEffects(
+    NavivoxChannel channel,
+    Iterable<ProfileContactsEffect> effects,
+  ) {
+    for (final effect in effects) {
+      switch (effect) {
+        case SelectProfileContactEffect(:final contact):
+          channel.selectProfileContact(
+            serverId: contact.serverId,
+            profileId: contact.profileId,
+          );
+        case NavigateProfileContactsEffect(:final intent):
+          NavigationIntent.go(context, intent);
+        case ShowProfileSeedSheetEffect():
+          _showProfileSeedSheet(context);
+        case DismissProfileContactsModalEffect():
+          Navigator.of(context).pop();
+      }
     }
   }
 }

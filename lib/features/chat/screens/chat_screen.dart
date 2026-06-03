@@ -17,12 +17,14 @@ import '../../settings/providers/voice_settings_provider.dart';
 import '../../voice/services/platform/default_voice_capture_service.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
+import '../actions/chat_operator_action_coordinator.dart';
 import '../presentation/chat_screen_presentation.dart';
 import '../forwarding/forward_message_intent.dart';
 import '../commands/local_command_dispatcher.dart';
 import '../commands/local_command_intent.dart';
 import '../transcript/presentation/transcript_message_action_presentation.dart';
 import '../voice/controllers/voice_run_controller.dart';
+import '../voice/widgets/continuous_voice_controls.dart';
 import '../approval/widgets/approval_banner.dart';
 import '../transcript/widgets/transcript_run_record_sheet.dart';
 import '../transcript/widgets/transcript_surface.dart';
@@ -95,6 +97,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   final LocalCommandDispatcher _localCommandDispatcher =
       const LocalCommandDispatcher();
   final VoiceRunController _voiceRunController = VoiceRunController();
+  final ChatOperatorActionCoordinator _operatorActionCoordinator =
+      const ChatOperatorActionCoordinator();
   Timer? _pendingVoiceTimer;
   Timer? _commandModeTimer;
   bool _commandMode = false;
@@ -224,7 +228,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       body: Column(
         children: [
           ApprovalBanner(channel: channel),
-          _VoiceModeBanner(
+          ContinuousVoiceControls(
             presentation: presentation.voiceMode,
             onTrustServer: activeProfile == null
                 ? null
@@ -232,6 +236,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                       .read(navivoxVoiceSettingsProvider.notifier)
                       .setServerTrusted(activeProfile.serverId, true),
             onCancelPending: _cancelPendingVoice,
+            onOpenVoiceSettings: () =>
+                NavigationIntent.maybeGo(context, const OpenSettings()),
           ),
           Expanded(
             child: TranscriptSurface(
@@ -431,9 +437,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Run record unavailable.')));
+      _applyChatOperatorEffect(
+        _operatorActionCoordinator.runRecordUnavailableEffect(),
+      );
     }
   }
 
@@ -447,17 +453,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       message: message,
       target: target,
     );
-    if (!result.forwarded) return;
-    final routeLocation = result.routeLocation;
-    if (routeLocation != null) {
-      GoRouter.maybeOf(context)?.go(routeLocation);
-    }
-    final snackbarMessage = result.snackbarMessage;
-    if (snackbarMessage != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(snackbarMessage)));
-    }
+    _applyChatOperatorEffects(
+      _operatorActionCoordinator.effectsForForward(result),
+    );
   }
 
   void _handleVoiceCapture(NavivoxChannel channel, VoiceCapture capture) {
@@ -468,18 +466,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       handleLocalCommand: (transcript) =>
           _handleLocalCommand(channel, transcript, fromVoice: true),
     );
-    final voiceRunId = result.scheduleAutoSendFor;
-    if (voiceRunId == null) {
-      if (result.handledLocalCommand) setState(() {});
-      return;
-    }
-
-    setState(() {});
-    _pendingVoiceTimer = Timer(widget.voiceAutoSendGrace, () {
-      if (!mounted) return;
-      final result = _voiceRunController.autoSendIfPending(channel, voiceRunId);
-      if (result.submitted) setState(() {});
-    });
+    _applyChatOperatorEffects(
+      _operatorActionCoordinator.effectsForVoiceCapture(result),
+    );
   }
 
   void _cancelPendingVoice() {
@@ -533,23 +522,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   bool _applyLocalCommandDispatchResult(LocalCommandDispatchResult result) {
     if (!result.consumed) return false;
-    if (result.enterCommandMode) {
-      _enterCommandMode();
-      return true;
-    }
-    _exitCommandMode(clearNotice: false);
-    if (result.cancelPendingVoice) {
-      _cancelPendingVoice();
-    }
-    final routeLocation = result.routeLocation;
-    if (routeLocation != null) {
-      GoRouter.maybeOf(context)?.go(routeLocation);
-    }
-    final message = result.message;
-    if (message != null) {
-      _showCommandMessage(message);
-    }
+    _applyChatOperatorEffects(
+      _operatorActionCoordinator.effectsForLocalCommandDispatch(result),
+    );
     return true;
+  }
+
+  void _applyChatOperatorEffects(Iterable<ChatOperatorEffect> effects) {
+    for (final effect in effects) {
+      _applyChatOperatorEffect(effect);
+    }
+  }
+
+  void _applyChatOperatorEffect(ChatOperatorEffect effect) {
+    switch (effect) {
+      case EnterCommandModeEffect():
+        _enterCommandMode();
+      case ExitCommandModeEffect(:final clearNotice):
+        _exitCommandMode(clearNotice: clearNotice);
+      case CancelPendingVoiceEffect():
+        _cancelPendingVoice();
+      case RouteChatEffect(:final location):
+        GoRouter.maybeOf(context)?.go(location);
+      case ShowCommandMessageEffect(:final message):
+        _showCommandMessage(message);
+      case ShowSnackbarEffect(:final message):
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      case ScheduleVoiceAutoSendEffect(:final voiceRunId):
+        _scheduleVoiceAutoSend(voiceRunId);
+      case RefreshChatUiEffect():
+        setState(() {});
+    }
+  }
+
+  void _scheduleVoiceAutoSend(String voiceRunId) {
+    _pendingVoiceTimer = Timer(widget.voiceAutoSendGrace, () {
+      if (!mounted) return;
+      final channel = _subscribed;
+      if (channel == null) return;
+      final result = _voiceRunController.autoSendIfPending(channel, voiceRunId);
+      if (result.submitted) setState(() {});
+    });
   }
 
   void _showCommandMessage(String message) {
@@ -622,179 +637,5 @@ class _ChatInfoRow extends StatelessWidget {
       title: Text(label, style: theme.textTheme.labelLarge),
       subtitle: Text(value),
     );
-  }
-}
-
-class _ContinuousVoiceLiveIndicator extends StatelessWidget {
-  const _ContinuousVoiceLiveIndicator({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final accent = active ? scheme.error : scheme.primary;
-    return Row(
-      key: const ValueKey('continuous-voice-live-indicator'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          key: const ValueKey('continuous-voice-live-dot'),
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        for (final height
-            in active ? const [9.0, 14.0, 11.0] : const [7.0, 10.0, 8.0]) ...[
-          Container(
-            width: 3,
-            height: height,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: active ? 0.9 : 0.55),
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 2),
-        ],
-      ],
-    );
-  }
-}
-
-class _VoiceModeBanner extends StatelessWidget {
-  const _VoiceModeBanner({
-    required this.presentation,
-    required this.onTrustServer,
-    required this.onCancelPending,
-  });
-
-  final VoiceModePresentation presentation;
-  final VoidCallback? onTrustServer;
-  final VoidCallback onCancelPending;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = presentation.bannerText;
-    if (text == null) return const SizedBox.shrink();
-    return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: InkWell(
-        key: const ValueKey('continuous-voice-banner'),
-        onTap: () => _showVoiceControls(context),
-        child: Semantics(
-          button: true,
-          enabled: true,
-          hint: presentation.controlsSemanticsHint,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Icon(
-                  presentation.disabledReason == null
-                      ? Icons.keyboard_voice
-                      : Icons.mic_off,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                if (presentation.disabledReason == null) ...[
-                  _ContinuousVoiceLiveIndicator(active: presentation.pending),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(child: Text(text)),
-                const Icon(Icons.tune, size: 18),
-                if (presentation.pending)
-                  TextButton(
-                    onPressed: onCancelPending,
-                    child: Text(presentation.cancelPendingButtonLabel),
-                  ),
-                if (!presentation.pending && presentation.canTrustServer)
-                  TextButton(
-                    onPressed: onTrustServer,
-                    child: Text(presentation.trustServerButtonLabel),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showVoiceControls(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: DraggableScrollableSheet(
-          key: const ValueKey('continuous-voice-control-sheet'),
-          expand: false,
-          initialChildSize: 0.86,
-          minChildSize: 0.32,
-          maxChildSize: 0.86,
-          builder: (context, scrollController) => ListView(
-            controller: scrollController,
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            children: [
-              Text(
-                presentation.sheetTitle,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              for (final row in presentation.sheetRows)
-                ListTile(
-                  leading: Icon(_voiceControlRowIcon(row.kind)),
-                  title: Text(row.title),
-                  subtitle: row.subtitle == null ? null : Text(row.subtitle!),
-                  onTap: _voiceControlRowTap(context, row.action),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  IconData _voiceControlRowIcon(VoiceControlRowKind kind) {
-    return switch (kind) {
-      VoiceControlRowKind.status =>
-        presentation.disabledReason == null
-            ? Icons.keyboard_voice
-            : Icons.mic_off,
-      VoiceControlRowKind.cancelPending => Icons.cancel_outlined,
-      VoiceControlRowKind.recoveryAction => Icons.tips_and_updates_outlined,
-      VoiceControlRowKind.openVoiceSettings => Icons.settings_voice_outlined,
-      VoiceControlRowKind.diagnostics => Icons.fact_check_outlined,
-      VoiceControlRowKind.androidRecognizer => Icons.android,
-      VoiceControlRowKind.microphonePermission =>
-        Icons.mic_external_on_outlined,
-      VoiceControlRowKind.gatewayProfileStt => Icons.cloud_outlined,
-      VoiceControlRowKind.commandWord => Icons.short_text,
-      VoiceControlRowKind.howItWorks => Icons.record_voice_over,
-      VoiceControlRowKind.trustServer => Icons.verified_user_outlined,
-    };
-  }
-
-  VoidCallback? _voiceControlRowTap(
-    BuildContext context,
-    VoiceControlActionKind action,
-  ) {
-    return switch (action) {
-      VoiceControlActionKind.none => null,
-      VoiceControlActionKind.cancelPending => () {
-        Navigator.of(context).pop();
-        onCancelPending();
-      },
-      VoiceControlActionKind.openVoiceSettings => () {
-        Navigator.of(context).pop();
-        NavigationIntent.maybeGo(context, const OpenSettings());
-      },
-      VoiceControlActionKind.trustServer => () {
-        Navigator.of(context).pop();
-        onTrustServer?.call();
-      },
-    };
   }
 }

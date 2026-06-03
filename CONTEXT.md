@@ -24,6 +24,10 @@ _Avoid_: QR type, intent action, trust level
 A flat chat-list identity made from one `server_id` plus one `profile_id`.
 _Avoid_: agent, user account, thread
 
+**Profile seed**:
+A natural-language operator request for the **Gormes gateway** to draft **Profile contact** configuration. Suggested workspace roots in the draft are not granted until the operator types or explicitly confirms the workspace choice in Navivox.
+_Avoid_: profile template, automatic workspace grant, TOML editor
+
 **Gateway identity**:
 A stable opaque-public identity for recognizing the same **Gormes gateway** across changed connection details.
 _Avoid_: Profile contact server_id, base URL, bearer token, display name
@@ -31,6 +35,10 @@ _Avoid_: Profile contact server_id, base URL, bearer token, display name
 **App install identity**:
 A non-secret random identity for one Navivox installation. It is distinct from a device fingerprint, user account, **Gateway identity**, or credential ID.
 _Avoid_: device ID, hardware ID, Android account, credential ID
+
+**Known gateway metadata**:
+Non-secret saved connection metadata that helps Navivox recognize or prefill a previously connected **Gormes gateway**. It is not a saved session and cannot silently reconnect without a **Durable reconnect credential**.
+_Avoid_: saved session, cached login, stored token
 
 **Durable reconnect credential**:
 A Gormes-issued, revocable credential that lets Navivox reconnect to a known **Gormes gateway** after a completed **Pairing handoff**. It is distinct from the Pairing handoff token and must not be stored in shared preferences or shown in normal UI.
@@ -64,6 +72,10 @@ _Avoid_: callback, command, server event
 A subtype of **Operator intent** that names the destination an operator wants to reach. Examples: open-agents, open-workspace, open-config, open-settings, manage-gateways, open-chat-thread. A **Navigation intent** module translates these to GoRouter routes.
 _Avoid_: route path, AppRoutes constant, GoRouter call
 
+**Pairing intent**:
+A subtype of **Operator intent** emitted by setup and pairing surfaces when the operator submits, imports, retries, confirms, or rejects a **Pairing handoff**. It carries the handoff source and operator choice without exposing pairing tokens as normal UI state.
+_Avoid_: form callback, connect button handler, login action
+
 **Voice run**:
 One end-to-end Navivox voice interaction, from capture through transcript, optional server STT, agent turn, optional server TTS, playback, cancellation, errors, and retention policy.
 _Avoid_: audio blob, transcript string, voice message
@@ -87,14 +99,17 @@ _Avoid_: message id, row id, guessed run id
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - A **Gormes gateway** has one **Gateway identity**.
 - An **App install identity** scopes one Navivox installation without identifying the physical device or operator account.
+- **Known gateway metadata** may identify a previously connected **Gormes gateway**, but only a **Durable reconnect credential** can authorize silent reconnect.
 - A **Durable reconnect credential** is scoped to one authenticated **Gateway identity** and one **App install identity**, and is not the **Pairing handoff** token.
 - **Reconnect readiness** may be unavailable even when a **Pairing handoff** succeeds and chat works for the current app session.
 - A **Gormes gateway** reports zero or more **Profile contacts**.
+- A **Profile seed** may ask the **Gormes gateway** to draft a **Profile contact**, but Navivox does not grant suggested workspace roots without operator confirmation.
 - A **Profile contact** is the target for chat turns and voice turns.
 - A **Profile contact conversation** belongs to one **Profile contact**; Navivox must not show another Profile contact's scoped transcript items in the active **Transcript surface**.
 - The **Transcript surface** renders the active **Profile contact** conversation, keeps tool activity distinct from ordinary assistant text, and owns composer/action-sheet behavior.
 - A **Local command** uses the **Command word** and produces a local intent for Navivox to execute.
 - The **Transcript surface** emits **Operator intents** upward instead of owning Gormes gateway calls or route changes.
+- Setup and pairing surfaces emit **Pairing intents** upward instead of treating handoff submission, import, retry, or confirmation as generic form callbacks.
 - **Voice readiness** determines whether the **Transcript surface** can start a **Voice run** for the active **Profile contact**.
 - Full **Voice readiness** is scoped to the active chat only; Profile contact lists may show simple profile-reported health or mic hints, but should not precompute combined trust, device, or session readiness for every contact.
 - **Voice readiness** is not persisted; Navivox recomputes it on app start, active **Profile contact** changes, voice settings or trust changes, runtime capture failures that prove a capability is unavailable, and app resume. Shared device readiness is only one input.
@@ -145,4 +160,7 @@ _Avoid_: message id, row id, guessed run id
 - "message id" can mean a display row identity rather than gateway evidence identity. Resolved: **Run record** inspection requires a Gormes-supplied **Run record reference**, not arbitrary transcript row ids.
 - "run id", "session id", and "request id" can describe storage details behind evidence lookup. Resolved: use **Run record reference** at the Navivox product boundary.
 - "login", "QR flow", and "connect-info flow" can imply separate setup products. Resolved: use **Pairing handoff** for the first-run transfer of Gormes gateway connection details, with direct Android link as the preferred path and QR/shared text/manual entry as fallbacks. Receiving fields is not completion; successful connection is completion.
+- "submit callback", "connect handler", and "retry button" can hide setup safety decisions. Resolved: use **Pairing intent** for operator setup actions that submit, import, retry, confirm, or reject Pairing handoffs.
 - "server" can mean the **Gormes gateway** or the `server_id` half of a **Profile contact**. Resolved: use **Gateway identity** for recognizing a Gormes gateway; keep Profile contact `server_id` scoped to profile/contact routing.
+- "profile template" and "seed prompt" can imply local Navivox config generation. Resolved: use **Profile seed** for a natural-language request that the Gormes gateway drafts, with operator-confirmed workspace roots.
+- "saved session" can imply stored authentication. Resolved: use **Known gateway metadata** for non-secret saved base URL/WebSocket/Gateway identity details, and reserve **Durable reconnect credential** for silent reconnect authorization.

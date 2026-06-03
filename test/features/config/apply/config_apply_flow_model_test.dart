@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/config/apply/config_apply_flow_model.dart';
 import 'package:navivox/features/config/apply/model/flow/config_draft_change_plan.dart';
 import 'package:navivox/features/config/apply/validation/config_validation_issues.dart';
-import 'package:navivox/features/config/apply/validation/config_validation_state.dart';
 import 'package:navivox/features/config/form/config_form_model.dart';
 
 void main() {

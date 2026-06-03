@@ -8,31 +8,34 @@ import '../../../protocol/navivox_event.dart';
 import '../../../protocol/navivox_memory.dart';
 import '../../../protocol/navivox_profile_contact_key.dart';
 import '../../../protocol/navivox_voice_run.dart';
+import '../../../session/credentials/durable_credential_store.dart';
 import '../../../session/session_persistence_service.dart';
 import '../../contracts/navivox_channel.dart';
-import '../../contracts/navivox_message_scope.dart';
 import '../../contracts/navivox_profile_contact_codec.dart';
-import '../approvals/gateway_approval_notice.dart';
+import '../events/gateway_event_reducer.dart';
 import '../client/gateway_capability_policy.dart';
 import '../client/gateway_config_admin_policy.dart';
+import '../lifecycle/gateway_connection_lifecycle_policy.dart';
 import '../memory/gateway_memory_request_policy.dart';
 import '../profiles/gateway_profile_contact_policy.dart';
 import '../profiles/gateway_voice_run_policy.dart';
 import '../state/gateway_channel_state_policy.dart';
-import '../messages/gateway_assistant_message_policy.dart';
-import '../messages/gateway_message_scope_policy.dart';
-import '../messages/gateway_safety_notice_policy.dart';
-import '../messages/gateway_tool_call_policy.dart';
 import '../messages/gateway_user_turn_policy.dart';
 import '../turns/gateway_turn_control_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
-  GatewayNavivoxChannel({Uuid? uuid, DateTime Function()? clock})
-    : _uuid = uuid ?? const Uuid(),
-      _clock = clock ?? DateTime.now;
+  GatewayNavivoxChannel({
+    Uuid? uuid,
+    DateTime Function()? clock,
+    DurableCredentialStore durableCredentialStore =
+        const EmptyDurableCredentialStore(),
+  }) : _uuid = uuid ?? const Uuid(),
+       _clock = clock ?? DateTime.now,
+       _durableCredentialStore = durableCredentialStore;
 
   final Uuid _uuid;
   final DateTime Function() _clock;
+  final DurableCredentialStore _durableCredentialStore;
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
 
@@ -119,20 +122,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
               onDone: () => _setServerStatus('Gateway disconnected'),
             );
       }
-      _state =
-          navivoxStateWithProfileContacts(
-            state: _state,
-            contacts: contacts,
-            config: config,
-          ).copyWith(
-            profileRouting: profileRouting,
-            runRecordInspectionAvailable: navivoxRunRecordsSupported(
-              capabilities,
-            ),
-            configSchema: configAdminState?.schema ?? const {},
-            configValues: configAdminState?.values ?? const {},
-            configDiff: const {},
-          );
+      _state = navivoxConnectedGatewayState(
+        state: _state,
+        config: config,
+        capabilities: capabilities,
+        contacts: contacts,
+        profileRouting: profileRouting,
+        configSchema: configAdminState?.schema ?? const {},
+        configValues: configAdminState?.values ?? const {},
+      );
       notifyListeners();
       // Persist connection parameters so the app can reconnect automatically.
       unawaited(
@@ -208,24 +206,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     NavivoxGatewayConfig config, {
     required String status,
   }) {
-    final contact = navivoxClosedCapabilityProfileContact(status);
-    _state = _state.copyWith(
-      servers: [
-        NavivoxServer(
-          id: contact.serverId,
-          name: contact.serverLabel,
-          status: '$status - ${config.baseUri.host}:${config.baseUri.port}',
-        ),
-      ],
-      activeServerId: contact.serverId,
-      profileContacts: [contact],
-      selectedProfileContactKey: contact.key,
-      profileRouting: const NavivoxProfileRoutingReport(),
-      profileRoutingSelections: const {},
-      runRecordInspectionAvailable: false,
-      configSchema: const {},
-      configValues: const {},
-      configDiff: const {},
+    _state = navivoxClosedCapabilityGatewayState(
+      state: _state,
+      config: config,
+      status: status,
     );
     notifyListeners();
   }
@@ -726,11 +710,25 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
   }
 
-  /// Attempt to reconnect using a previously saved session.
-  /// Returns true if a session was found and connection succeeded.
+  /// Attempt to reconnect using a saved durable reconnect credential.
+  ///
+  /// Saved connection metadata alone is not a session and is not sufficient for
+  /// silent reconnect. It can identify a known gateway, but reconnect remains
+  /// disabled until durable credential auth is available for that gateway.
   Future<bool> tryReconnect() async {
     final session = await _sessionService.loadSession();
-    if (session == null || !session.canAttemptReconnect) return false;
+    if (session == null || session.isStale) return false;
+    if (!session.canAttemptReconnect || session.gatewayId == null) {
+      _appendSystemMessage('Known gateway saved. Pair again to reconnect.');
+      return false;
+    }
+    final hasCredential = await _durableCredentialStore.containsCredential(
+      gatewayId: session.gatewayId!,
+    );
+    if (!hasCredential) {
+      _appendSystemMessage('Known gateway saved. Pair again to reconnect.');
+      return false;
+    }
     try {
       await connect(
         baseUrl: session.baseUrl,
@@ -738,12 +736,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       );
       return true;
     } catch (_) {
-      // Saved session expired or invalid — clear it so the user sees setup.
+      // Durable credential expired or invalid — clear it so the user sees setup.
       await _sessionService.clearSession();
-      _state = _state.copyWith(servers: [], clearActiveServerId: true);
+      await _durableCredentialStore.deleteCredential(
+        gatewayId: session.gatewayId!,
+      );
+      _state = navivoxFailedSavedSessionReconnectState(state: _state);
       notifyListeners();
       _appendSystemMessage(
-        'Saved session expired. Please re-pair with your gateway.',
+        'Reconnect credential expired. Please re-pair with your gateway.',
       );
       return false;
     }
@@ -757,135 +758,33 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   }
 
   void _onEvent(NavivoxGatewayEvent event) {
-    switch (event.type) {
-      case 'pong':
+    final reduction = navivoxReduceGatewayEvent(
+      event: event,
+      state: _state,
+      fallbackId: _uuid.v4,
+      clock: _clock,
+    );
+    _applyGatewayEventReduction(reduction);
+  }
+
+  void _applyGatewayEventReduction(GatewayEventReduction reduction) {
+    switch (reduction) {
+      case IgnoreGatewayEvent():
         return;
-      case 'session_started':
-        _activeSessionId = event.sessionId ?? _activeSessionId;
-      case 'gateway_identity':
-        // Gormes gateway identity updates are ignored by the client;
-        // persistent session identity is in saved session metadata.
-        return;
-      case 'assistant_delta':
-        _appendAssistantDelta(event);
-      case 'assistant_message':
-        _upsertAssistantMessage(event);
-      case 'tool_call_started':
-        _upsertToolCall(event, 'started');
-      case 'tool_call_updated':
-        _upsertToolCall(event, event.status ?? 'updated');
-      case 'tool_call_finished':
-        _upsertToolCall(event, event.status ?? 'finished');
-      case 'safety_warning':
-        _putSafetyWarning(event);
-      case 'approval_required':
-        _putApprovalRequest(event);
-      case 'profile_contact_update':
-        final contact = event.contact;
-        if (contact != null) {
-          _upsertProfileContact(navivoxProfileContactFromJson(contact));
+      case UpdateGatewayActiveSession(:final sessionId):
+        _activeSessionId = sessionId ?? _activeSessionId;
+      case PutGatewayEventMessage(:final message):
+        _putMessage(message);
+      case PutGatewayApprovalEvent(:final messages, :final notice):
+        for (final message in messages) {
+          _putMessage(message);
         }
-      case 'error':
-        _appendSystemMessage(event.message ?? 'Gateway error');
-      case 'done':
-        return;
-      default:
-        return;
+        _approvals.add(notice.toChannelRequest());
+      case UpsertGatewayProfileContact(:final contact):
+        _upsertProfileContact(contact);
+      case AppendGatewaySystemMessage(:final text):
+        _appendSystemMessage(text);
     }
-  }
-
-  void _appendAssistantDelta(NavivoxGatewayEvent event) {
-    final messageId = navivoxGatewayAssistantMessageId(
-      event: event,
-      fallbackRequestId: _uuid.v4,
-    );
-    _putMessage(
-      navivoxGatewayAssistantTextMessage(
-        id: messageId,
-        event: event,
-        existing: _state.messages[messageId],
-        createdAt: _clock(),
-        scope: _messageScopeFromEvent(event),
-        appendText: true,
-      ),
-    );
-  }
-
-  void _upsertAssistantMessage(NavivoxGatewayEvent event) {
-    final messageId = navivoxGatewayAssistantMessageId(
-      event: event,
-      fallbackRequestId: _uuid.v4,
-    );
-    _putMessage(
-      navivoxGatewayAssistantTextMessage(
-        id: messageId,
-        event: event,
-        existing: _state.messages[messageId],
-        createdAt: _clock(),
-        scope: _messageScopeFromEvent(event),
-        appendText: false,
-      ),
-    );
-  }
-
-  void _upsertToolCall(NavivoxGatewayEvent event, String status) {
-    final toolCallId = event.toolCallId ?? 'tool-${_uuid.v4()}';
-    _putMessage(
-      navivoxGatewayToolCallMessage(
-        id: toolCallId,
-        event: event,
-        status: status,
-        priorMessage: _state.messages[toolCallId],
-        createdAt: _clock(),
-        scope: _messageScopeFromEvent(event),
-      ),
-    );
-  }
-
-  NavivoxMessageScope _messageScopeFromEvent(NavivoxGatewayEvent event) {
-    return navivoxGatewayMessageScopeFromEvent(
-      event: event,
-      messages: _state.messages,
-    );
-  }
-
-  void _putSafetyWarning(NavivoxGatewayEvent event) {
-    final id = event.safetyId ?? 'safety-${_uuid.v4()}';
-    _putMessage(
-      navivoxGatewaySafetyWarningMessage(
-        event: event,
-        id: id,
-        createdAt: _clock(),
-        scope: _messageScopeFromEvent(event),
-      ),
-    );
-  }
-
-  void _putApprovalRequest(NavivoxGatewayEvent event) {
-    final notice = navivoxGatewayApprovalNotice(
-      event: event,
-      fallbackApprovalId: () => 'approval-${_uuid.v4()}',
-    );
-    final scope = _messageScopeFromEvent(event);
-    final priorMessage = _state.messages[notice.toolCallId];
-    final toolApprovalMessage = navivoxGatewayToolApprovalMessage(
-      id: notice.toolCallId,
-      event: event,
-      priorMessage: priorMessage,
-      notice: notice,
-      createdAt: _clock(),
-      scope: scope,
-    );
-    if (toolApprovalMessage != null) _putMessage(toolApprovalMessage);
-    _putMessage(
-      navivoxGatewayApprovalRequestMessage(
-        event: event,
-        notice: notice,
-        createdAt: _clock(),
-        scope: scope,
-      ),
-    );
-    _approvals.add(notice.toChannelRequest());
   }
 
   void _appendSystemMessage(String text) {

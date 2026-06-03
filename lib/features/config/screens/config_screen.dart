@@ -6,6 +6,7 @@ import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../../profiles/widgets/profile_voice_profile_card.dart';
+import '../actions/config_admin_apply_coordinator.dart';
 import '../apply/config_apply_dispatcher.dart';
 import '../apply/config_apply_flow_model.dart';
 import '../apply/config_apply_presentation.dart';
@@ -26,6 +27,8 @@ class ConfigScreen extends ConsumerStatefulWidget {
 class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   NavivoxChannel? _subscribed;
   final ConfigApplyDispatcher _applyDispatcher = const ConfigApplyDispatcher();
+  final ConfigAdminApplyCoordinator _configAdminApplyCoordinator =
+      const ConfigAdminApplyCoordinator();
   ConfigDraftSession _draftSession = ConfigDraftSession();
   final TextEditingController _controller = TextEditingController();
   NavivoxConfigAdminResponse? _lastConfigAdminApply;
@@ -77,7 +80,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     ConfigApplyFlowModel flow,
     NavivoxChannel channel,
   ) async {
-    final changes = _configAdminChangesFromFlow(flow);
+    final changes = _configAdminApplyCoordinator.changesFromFlow(flow);
     if (changes.isEmpty) return;
     setState(() {
       _configAdminError = null;
@@ -86,18 +89,18 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     try {
       final validation = await channel.validateConfigAdmin(changes);
       if (!mounted) return;
-      if (!validation.valid) {
-        setState(() {
-          _configAdminError = _configAdminValidationErrorMessage(validation);
-        });
+      if (!_applyConfigAdminEffect(
+        _configAdminApplyCoordinator.afterValidation(validation),
+        flow,
+      )) {
         return;
       }
       final diff = await channel.diffConfigAdmin(changes);
       if (!mounted) return;
-      if (!diff.valid) {
-        setState(() {
-          _configAdminError = 'Config diff failed.';
-        });
+      if (!_applyConfigAdminEffect(
+        _configAdminApplyCoordinator.afterDiff(diff),
+        flow,
+      )) {
         return;
       }
       final presentation = ConfigApplyPresentation.fromFlow(flow);
@@ -113,21 +116,37 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       }
       final applied = await channel.applyConfigAdmin(changes);
       if (!mounted) return;
-      if (!applied.applied) {
-        setState(() {
-          _configAdminError = 'Config apply was not accepted by Gormes.';
-        });
-        return;
-      }
-      setState(() {
-        _lastConfigAdminApply = applied;
-        _draftSession = _draftSession.clearApplied(flow);
-      });
+      _applyConfigAdminEffect(
+        _configAdminApplyCoordinator.afterApply(applied),
+        flow,
+      );
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _configAdminError = 'Config admin request failed.';
-      });
+      _applyConfigAdminEffect(
+        _configAdminApplyCoordinator.requestFailed(),
+        flow,
+      );
+    }
+  }
+
+  bool _applyConfigAdminEffect(
+    ConfigAdminApplyEffect effect,
+    ConfigApplyFlowModel flow,
+  ) {
+    switch (effect) {
+      case ContinueConfigAdminApplyEffect():
+        return true;
+      case ShowConfigAdminApplyErrorEffect(:final message):
+        setState(() {
+          _configAdminError = message;
+        });
+        return false;
+      case MarkConfigAdminAppliedEffect(:final response):
+        setState(() {
+          _lastConfigAdminApply = response;
+          _draftSession = _draftSession.clearApplied(flow);
+        });
+        return false;
     }
   }
 
@@ -189,28 +208,6 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       ),
     );
   }
-}
-
-String _configAdminValidationErrorMessage(
-  NavivoxConfigAdminResponse validation,
-) {
-  for (final error in validation.errors) {
-    if (error.message.trim().isNotEmpty) return error.message.trim();
-  }
-  return 'Config validation failed.';
-}
-
-List<NavivoxConfigAdminChange> _configAdminChangesFromFlow(
-  ConfigApplyFlowModel flow,
-) {
-  return flow.changes
-      .map(
-        (change) => NavivoxConfigAdminChange(
-          key: change.path,
-          value: change.applyValue,
-        ),
-      )
-      .toList(growable: false);
 }
 
 class _ConfigScopeCard extends StatelessWidget {

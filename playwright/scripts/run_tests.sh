@@ -11,8 +11,8 @@ sleep 1
 
 # Build the Flutter web app if not already built or if --rebuild flag is passed
 if [ ! -f "build/web/main.dart.js" ] || [ "$1" == "--rebuild" ]; then
-  echo "Building Flutter web app..."
-  flutter build web --release 2>&1 | tail -3
+  echo "Building Flutter web e2e app..."
+  flutter build web --release -t lib/main_e2e.dart 2>&1 | tail -3
   echo ""
 fi
 
