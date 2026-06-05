@@ -12,6 +12,10 @@ _Avoid_: generic chat client, server admin panel
 The server-side Navivox endpoint that owns agents, sessions, tools, config, secrets, provider execution, and the HTTP/WebSocket event stream.
 _Avoid_: backend, remote shell
 
+**Hermes Desktop reference**:
+The upstream Hermes Desktop app used as product and UX inspiration for Navivox surfaces. It is not the current Navivox runtime, gateway protocol, or source of Gormes domain terms.
+_Avoid_: Hermes runtime target, Hermes gateway migration, replacing Gormes
+
 **Pairing handoff**:
 The first-run transfer of Gormes gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway.
 _Avoid_: QR flow, connect-info flow, login
@@ -76,6 +80,10 @@ _Avoid_: route path, AppRoutes constant, GoRouter call
 A subtype of **Operator intent** emitted by setup and pairing surfaces when the operator submits, imports, retries, confirms, or rejects a **Pairing handoff**. It carries the handoff source and operator choice without exposing pairing tokens as normal UI state.
 _Avoid_: form callback, connect button handler, login action
 
+**Voice profile**:
+Per-**Profile contact** **Gormes gateway** configuration for STT/TTS providers, voice identity, language policy, fallback behavior, and write-only voice credentials. It is config state, not **Voice run** evidence.
+_Avoid_: voice run settings, local mic permission, raw provider credentials
+
 **Voice run**:
 One end-to-end Navivox voice interaction, from capture through transcript, optional server STT, agent turn, optional server TTS, playback, cancellation, errors, and retention policy.
 _Avoid_: audio blob, transcript string, voice message
@@ -95,6 +103,7 @@ _Avoid_: message id, row id, guessed run id
 ## Relationships
 
 - **Navivox** connects to one or more **Gormes gateways**.
+- A **Hermes Desktop reference** may inform Navivox app shape, but does not change the **Gormes gateway** runtime boundary.
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - A **Gormes gateway** has one **Gateway identity**.
@@ -110,6 +119,8 @@ _Avoid_: message id, row id, guessed run id
 - A **Local command** uses the **Command word** and produces a local intent for Navivox to execute.
 - The **Transcript surface** emits **Operator intents** upward instead of owning Gormes gateway calls or route changes.
 - Setup and pairing surfaces emit **Pairing intents** upward instead of treating handoff submission, import, retry, or confirmation as generic form callbacks.
+- A **Voice profile** belongs to a **Profile contact** and supplies gateway-owned STT/TTS/fallback configuration for future **Voice runs**.
+- Voice credentials inside a **Voice profile** are write-only config inputs and should not appear as **Run record** evidence.
 - **Voice readiness** determines whether the **Transcript surface** can start a **Voice run** for the active **Profile contact**.
 - Full **Voice readiness** is scoped to the active chat only; Profile contact lists may show simple profile-reported health or mic hints, but should not precompute combined trust, device, or session readiness for every contact.
 - **Voice readiness** is not persisted; Navivox recomputes it on app start, active **Profile contact** changes, voice settings or trust changes, runtime capture failures that prove a capability is unavailable, and app resume. Shared device readiness is only one input.
@@ -151,9 +162,11 @@ _Avoid_: message id, row id, guessed run id
 
 ## Flagged ambiguities
 
+- "Hermes app" can imply replacing the **Gormes gateway** runtime. Resolved: use **Hermes Desktop reference** when borrowing app-shape ideas from Hermes Desktop while keeping Navivox Gormes-first.
 - "profile", "agent", and "contact" can drift together. Resolved: use **Profile contact** for the `server_id + profile_id` chat-list identity; use agent only for server-owned runtime behavior.
 - "wake word" can imply always-listening audio. Resolved: use **Command word** for the local prefix active only in Navivox text or voice command mode.
 - "message list" can imply a passive log. Resolved: use **Transcript surface** for the active chat UI area because it renders tool activity, safety notices, approval prompts, and voice transcript bubbles as product state.
+- "voice profile" can be confused with local microphone state or a single **Voice run**. Resolved: use **Voice profile** for per-Profile contact gateway STT/TTS/fallback config and write-only voice credentials.
 - "voice message" can imply a single rendered bubble. Resolved: use **Voice run** for the full lifecycle and reserve voice bubble wording for Transcript surface rendering.
 - "mic enabled", "STT flag", and "voice status" each describe only part of the gate. Resolved: use **Voice readiness** for the combined operator-visible ability to start a **Voice run** now.
 - "voice run record" blurs local lifecycle state with gateway evidence. Resolved: use **Voice run** for the Navivox voice lifecycle and **Run record** for a redacted gateway evidence snapshot.

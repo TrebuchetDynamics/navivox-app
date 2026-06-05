@@ -6,8 +6,11 @@ import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
 import '../../../shared/widgets/profile_contact_avatar.dart';
+import '../actions/gateway_management_action_coordinator.dart';
 import '../overview/servers_screen_presentation.dart';
 import '../registration/presentation/register_gateway_presentation.dart';
+
+const _gatewayManagementActions = GatewayManagementActionCoordinator();
 
 class ServersScreen extends ConsumerWidget {
   const ServersScreen({super.key});
@@ -132,19 +135,12 @@ class ServersScreen extends ConsumerWidget {
                       const Icon(Icons.chevron_right),
                     ],
                   ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    channel.selectProfileContact(
-                      serverId: profile.contact.serverId,
-                      profileId: profile.contact.profileId,
-                    );
-                    GoRouter.maybeOf(parentContext)?.go(
-                      AppRoutes.chatLocation(
-                        serverId: profile.contact.serverId,
-                        profileId: profile.contact.profileId,
-                      ),
-                    );
-                  },
+                  onTap: () => _applyGatewayManagementEffect(
+                    parentContext,
+                    channel,
+                    _gatewayManagementActions.selectProfile(profile),
+                    sheetContext: context,
+                  ),
                 ),
           ],
         ),
@@ -175,23 +171,56 @@ class ServersScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed != true) return;
+    switch (_gatewayManagementActions.afterDisconnectConfirmation(confirmed)) {
+      case NoopGatewayDisconnectPlan():
+        return;
+      case DisconnectGatewayPlan():
+        break;
+    }
 
     try {
       await channel.disconnect();
       if (!context.mounted) return;
-      await Navigator.of(context).maybePop();
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(gateway.disconnectedMessage)));
+      _applyGatewayManagementEffect(
+        context,
+        channel,
+        _gatewayManagementActions.disconnectSucceeded(gateway),
+      );
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(content: Text(gateway.disconnectFailedMessage(error))),
-        );
+      _applyGatewayManagementEffect(
+        context,
+        channel,
+        _gatewayManagementActions.disconnectFailed(gateway, error),
+      );
+    }
+  }
+
+  void _applyGatewayManagementEffect(
+    BuildContext context,
+    NavivoxChannel channel,
+    GatewayManagementEffect effect, {
+    BuildContext? sheetContext,
+  }) {
+    switch (effect) {
+      case SelectGatewayProfileAndOpenChatEffect(
+        :final serverId,
+        :final profileId,
+      ):
+        if (sheetContext != null) Navigator.of(sheetContext).pop();
+        channel.selectProfileContact(serverId: serverId, profileId: profileId);
+        GoRouter.maybeOf(
+          context,
+        )?.go(AppRoutes.chatLocation(serverId: serverId, profileId: profileId));
+      case CloseGatewaySheetAndShowSnackbarEffect(:final message):
+        Navigator.of(context).maybePop();
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(message)));
+      case ShowGatewaySnackbarEffect(:final message):
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -323,21 +352,40 @@ class _RegisterGatewaySheetState extends State<_RegisterGatewaySheet> {
         token: request.token,
       );
       if (!mounted) return;
-      _showSnackBar(presentation.connectionPassedMessage(request));
+      _applyRegisterGatewayEffect(
+        _gatewayManagementActions.registerConnectionPassed(
+          presentation.connectionPassedMessage,
+          request,
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
-      _showSnackBar(presentation.connectionFailedMessage(error));
+      _applyRegisterGatewayEffect(
+        _gatewayManagementActions.registerConnectionFailed(
+          presentation.connectionFailedMessage,
+          error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _testing = false);
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(duration: const Duration(seconds: 8), content: Text(message)),
-      );
+  void _applyRegisterGatewayEffect(GatewayManagementEffect effect) {
+    switch (effect) {
+      case ShowGatewaySnackbarEffect(:final message):
+      case CloseGatewaySheetAndShowSnackbarEffect(:final message):
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              duration: const Duration(seconds: 8),
+              content: Text(message),
+            ),
+          );
+      case SelectGatewayProfileAndOpenChatEffect():
+        break;
+    }
   }
 }
 

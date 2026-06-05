@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../../shared/navivox_gateway_auth.dart';
 import '../../shared/navivox_gateway_http.dart';
 import '../navivox_gateway_socket_contract.dart';
 
@@ -24,6 +25,7 @@ Future<String> _request({
   final client = HttpClient();
   try {
     final request = await client.openUrl(method, uri);
+    request.followRedirects = false;
     headers.forEach(request.headers.set);
     final payload = body;
     if (payload != null) {
@@ -48,8 +50,36 @@ Future<NavivoxGatewaySocketConnection> defaultConnectWebSocket(
   Uri uri,
   Map<String, String> headers,
 ) async {
-  final socket = await WebSocket.connect(uri.toString(), headers: headers);
-  return NavivoxGatewaySocket(socket);
+  final webSocketHeaders = <String, String>{...headers}
+    ..removeWhere(
+      (name, _) =>
+          name.toLowerCase() == navivoxGatewayAuthorizationHeader.toLowerCase(),
+    );
+  try {
+    final socket = await WebSocket.connect(
+      uri.toString(),
+      headers: webSocketHeaders,
+      protocols: navivoxGatewayWebSocketProtocols(headers),
+    );
+    return NavivoxGatewaySocket(socket);
+  } on WebSocketException catch (error) {
+    final statusCode = _navivoxWebSocketHandshakeStatusCode(error);
+    if (statusCode != null) {
+      throw HttpException(
+        navivoxGatewayHttpStatusMessage(statusCode),
+        uri: uri,
+      );
+    }
+    rethrow;
+  }
+}
+
+int? _navivoxWebSocketHandshakeStatusCode(WebSocketException error) {
+  final match = RegExp(
+    r'HTTP status code:\s*(\d{3})',
+  ).firstMatch(error.toString());
+  if (match == null) return null;
+  return int.tryParse(match.group(1)!);
 }
 
 /// Dart VM socket wrapper matching the gateway socket contract.

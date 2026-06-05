@@ -16,5 +16,17 @@ void main() {
         ],
       );
     });
+
+    test('rejects ambiguous case-variant auth header maps', () {
+      final headers = {
+        'Authorization': 'Bearer good-token',
+        'authorization': 'Bearer other-token',
+      };
+
+      expect(navivoxGatewayBearerToken(headers), isNull);
+      expect(navivoxGatewayWebSocketProtocols(headers), [
+        navivoxWebSocketProtocol,
+      ]);
+    });
   });
 }

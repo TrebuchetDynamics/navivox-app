@@ -8,12 +8,15 @@ import '../../contracts/navivox_profile_scope.dart';
 /// Keeping fallback contacts and status derivation together ensures capability
 /// failures, empty profile snapshots, and live contact updates use the same
 /// server/profile defaults.
-NavivoxProfileContact navivoxClosedCapabilityProfileContact(String status) {
+NavivoxProfileContact navivoxClosedCapabilityProfileContact(
+  String status, {
+  String? serverLabel,
+}) {
   return NavivoxProfileContact(
     serverId: navivoxDefaultGatewayServerId,
     profileId: navivoxDefaultProfileId,
     displayName: 'Default profile',
-    serverLabel: navivoxDefaultGatewayServerLabel,
+    serverLabel: _fallbackGatewayLabel(serverLabel),
     health: NavivoxProfileHealth.warning,
     latestPreview: status,
     latestPreviewKind: 'status',
@@ -27,12 +30,12 @@ NavivoxProfileContact navivoxClosedCapabilityProfileContact(String status) {
   );
 }
 
-NavivoxProfileContact navivoxFallbackProfileContact() {
-  return const NavivoxProfileContact(
+NavivoxProfileContact navivoxFallbackProfileContact({String? serverLabel}) {
+  return NavivoxProfileContact(
     serverId: navivoxDefaultGatewayServerId,
     profileId: navivoxDefaultProfileId,
     displayName: 'Default profile',
-    serverLabel: navivoxDefaultGatewayServerLabel,
+    serverLabel: _fallbackGatewayLabel(serverLabel),
     health: NavivoxProfileHealth.online,
     latestPreview: 'Gateway online',
     latestPreviewKind: 'status',
@@ -40,6 +43,12 @@ NavivoxProfileContact navivoxFallbackProfileContact() {
     workspaceRootsOk: true,
     micAvailable: true,
   );
+}
+
+String _fallbackGatewayLabel(String? value) {
+  final label = value?.trim();
+  if (label == null || label.isEmpty) return navivoxDefaultGatewayServerLabel;
+  return label;
 }
 
 List<NavivoxProfileContact> navivoxProfileContactsFromGatewayPayloads(

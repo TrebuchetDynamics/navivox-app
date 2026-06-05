@@ -1,20 +1,12 @@
 import '../../../../core/channel/navivox_channel.dart';
-import '../../../../shared/presentation/profile_health_labels.dart';
 import '../../../../shared/presentation/voice_unavailable_presentation.dart';
 import '../../../../shared/voice/voice_settings.dart';
+import 'voice_readiness_model.dart';
+import 'voice_readiness_policy.dart';
 
-enum VoiceReadinessStatus { ready, checking, blocked }
+export 'voice_readiness_model.dart';
 
-enum VoiceReadinessBlockerKind {
-  disabledInSettings,
-  selectProfileContact,
-  trustGateway,
-  deviceSpeechUnavailable,
-  microphonePermissionDenied,
-  gatewayProfileSttUnavailable,
-  profileContactNotOnline,
-  profileMicUnavailable,
-}
+const _voiceReadinessPolicy = VoiceReadinessPolicy();
 
 class VoiceReadinessPresentation {
   const VoiceReadinessPresentation._({
@@ -36,102 +28,23 @@ class VoiceReadinessPresentation {
     bool? localMicrophonePermissionGranted,
     String? runtimeVoiceDisabledReason,
   }) {
-    if (!settings.continuousVoiceEnabled) {
-      return _blocked(
-        VoiceReadinessBlockerKind.disabledInSettings,
-        'disabled in Settings',
-        localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      );
-    }
-    if (activeProfile == null) {
-      return _blocked(
-        VoiceReadinessBlockerKind.selectProfileContact,
-        selectProfileContactVoiceUnavailableReason,
-        localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      );
-    }
-    if (!settings.isTrusted(activeProfile.serverId)) {
-      return _blocked(
-        VoiceReadinessBlockerKind.trustGateway,
-        'trust ${activeProfile.serverLabel}',
-        localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-        canTrustServer: true,
-      );
-    }
-    if (localVoiceCaptureChecking) {
-      return VoiceReadinessPresentation._(
-        status: VoiceReadinessStatus.checking,
-        blockerKind: null,
-        disabledReason: null,
-        recoveryAction: null,
-        localVoiceCaptureAvailable: false,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-        canTrustServer: false,
-      );
-    }
-
-    final runtimeReason = _runtimeReadinessBlockerReason(
-      runtimeVoiceDisabledReason,
-    );
-    final localReason = _localCaptureReadinessBlockerReason(
-      localVoiceCaptureUnavailableReason,
-    );
-    final localBlockerReason = runtimeReason ?? localReason;
-    if (!localVoiceCaptureAvailable || localBlockerReason != null) {
-      final reason = localBlockerReason ?? deviceSttUnavailableReason;
-      return _blocked(
-        _deviceBlockerKind(reason),
-        reason,
-        localVoiceCaptureAvailable: false,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-        recoveryAction: _deviceRecoveryAction(activeProfile, reason),
-      );
-    }
-
-    final profileVoiceReason = canonicalVoiceUnavailableReason(
-      activeProfile.voiceCapability.captureUnavailableReason,
-      emptyAsNull: true,
-    );
-    if (profileVoiceReason != null) {
-      return _blocked(
-        VoiceReadinessBlockerKind.gatewayProfileSttUnavailable,
-        profileVoiceReason,
-        localVoiceCaptureAvailable: true,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-        recoveryAction: _profileRecoveryAction(
-          activeProfile,
-          profileVoiceReason,
-        ),
-      );
-    }
-    if (activeProfile.health != NavivoxProfileHealth.online) {
-      return _blocked(
-        VoiceReadinessBlockerKind.profileContactNotOnline,
-        profileHealthLabel(activeProfile.health),
-        localVoiceCaptureAvailable: true,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      );
-    }
-    if (!activeProfile.micAvailable) {
-      return _blocked(
-        VoiceReadinessBlockerKind.profileMicUnavailable,
-        'mic unavailable',
-        localVoiceCaptureAvailable: true,
-        localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      );
-    }
-
-    return VoiceReadinessPresentation._(
-      status: VoiceReadinessStatus.ready,
-      blockerKind: null,
-      disabledReason: null,
-      recoveryAction: null,
-      localVoiceCaptureAvailable: true,
+    final state = _voiceReadinessPolicy.evaluate(
+      settings: settings,
+      activeProfile: activeProfile,
+      localVoiceCaptureAvailable: localVoiceCaptureAvailable,
+      localVoiceCaptureChecking: localVoiceCaptureChecking,
+      localVoiceCaptureUnavailableReason: localVoiceCaptureUnavailableReason,
       localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      canTrustServer: false,
+      runtimeVoiceDisabledReason: runtimeVoiceDisabledReason,
+    );
+    return VoiceReadinessPresentation._(
+      status: state.status,
+      blockerKind: state.blockerKind,
+      disabledReason: state.disabledReason,
+      recoveryAction: state.recoveryAction,
+      localVoiceCaptureAvailable: state.localVoiceCaptureAvailable,
+      localMicrophonePermissionGranted: state.localMicrophonePermissionGranted,
+      canTrustServer: state.canTrustServer,
     );
   }
 
@@ -188,66 +101,5 @@ class VoiceReadinessPresentation {
       return 'Gateway profile STT is not checked because Android speech recognition is unavailable.';
     }
     return 'Gateway profile STT is not the current blocker.';
-  }
-
-  static VoiceReadinessPresentation _blocked(
-    VoiceReadinessBlockerKind blockerKind,
-    String disabledReason, {
-    required bool localVoiceCaptureAvailable,
-    bool? localMicrophonePermissionGranted,
-    String? recoveryAction,
-    bool canTrustServer = false,
-  }) {
-    return VoiceReadinessPresentation._(
-      status: VoiceReadinessStatus.blocked,
-      blockerKind: blockerKind,
-      disabledReason: disabledReason,
-      recoveryAction: recoveryAction,
-      localVoiceCaptureAvailable: localVoiceCaptureAvailable,
-      localMicrophonePermissionGranted: localMicrophonePermissionGranted,
-      canTrustServer: canTrustServer,
-    );
-  }
-
-  static String? _runtimeReadinessBlockerReason(String? reason) {
-    final canonical = canonicalVoiceUnavailableReason(
-      reason,
-      emptyAsNull: true,
-    );
-    return switch (canonical) {
-      deviceSttUnavailableReason ||
-      microphonePermissionDeniedReason => canonical,
-      _ => null,
-    };
-  }
-
-  static String? _localCaptureReadinessBlockerReason(String? reason) {
-    return canonicalVoiceUnavailableReason(reason, emptyAsNull: true);
-  }
-
-  static VoiceReadinessBlockerKind _deviceBlockerKind(String reason) {
-    return reason == microphonePermissionDeniedReason
-        ? VoiceReadinessBlockerKind.microphonePermissionDenied
-        : VoiceReadinessBlockerKind.deviceSpeechUnavailable;
-  }
-
-  static String? _deviceRecoveryAction(
-    NavivoxProfileContact profile,
-    String reason,
-  ) {
-    final recoveryAction = profile.voiceCapability.recoveryAction.trim();
-    if (reason == deviceSttUnavailableReason && recoveryAction.isNotEmpty) {
-      return recoveryAction;
-    }
-    return defaultVoiceUnavailableRecoveryAction(reason);
-  }
-
-  static String? _profileRecoveryAction(
-    NavivoxProfileContact profile,
-    String reason,
-  ) {
-    final recoveryAction = profile.voiceCapability.recoveryAction.trim();
-    if (recoveryAction.isNotEmpty) return recoveryAction;
-    return defaultVoiceUnavailableRecoveryAction(reason);
   }
 }

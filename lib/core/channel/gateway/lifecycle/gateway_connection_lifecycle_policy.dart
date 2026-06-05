@@ -12,8 +12,12 @@ NavivoxChannelState navivoxClosedCapabilityGatewayState({
   required NavivoxChannelState state,
   required NavivoxGatewayConfig config,
   required String status,
+  String? gatewayLabel,
 }) {
-  final contact = navivoxClosedCapabilityProfileContact(status);
+  final contact = navivoxClosedCapabilityProfileContact(
+    status,
+    serverLabel: gatewayLabel,
+  );
   return state.copyWith(
     servers: [
       NavivoxServer(

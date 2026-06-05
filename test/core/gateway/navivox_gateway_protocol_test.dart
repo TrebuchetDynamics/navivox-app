@@ -122,9 +122,9 @@ void main() {
     expect(bodies, isEmpty);
   });
 
-  test('builds endpoint URIs from base origin without stale query state', () {
+  test('builds endpoint URIs from base origin without stale credentials', () {
     final config = NavivoxGatewayConfig.fromBaseUrl(
-      'https://gateway.example:9443/setup?token=stale#pairing',
+      'https://user:stale-token@gateway.example:9443/setup?token=stale#pairing',
       token: 'nvbx_test_token',
     );
 
@@ -171,6 +171,10 @@ void main() {
     expect(
       navivoxGatewayHttpStatusMessage(503),
       'Navivox gateway returned HTTP 503',
+    );
+    expect(
+      navivoxGatewayHttpStatusMessage(413),
+      'Navivox gateway rejected the request as too large',
     );
   });
 
@@ -246,6 +250,26 @@ void main() {
     expect(config.baseUri.toString(), 'http://127.0.0.1:8765');
     expect(config.streamUri.toString(), descriptor.webSocketUri.toString());
     expect(config.headers, {'Authorization': 'Bearer setup-secret-token'});
+  });
+
+  test('rejects weak public pairing tokens', () {
+    for (final token in [
+      'nvbx_test_token',
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    ]) {
+      expect(
+        () => NavivoxPairingDescriptor.parse(
+          'navivox://connect?'
+          'base_url=https%3A%2F%2Fgateway.example&'
+          'websocket_url=wss%3A%2F%2Fgateway.example%2Fv1%2Fnavivox%2Fstream&'
+          'auth_mode=pairing_token&'
+          'exposure_mode=public&'
+          'token_required=true&'
+          'rest_token=$token',
+        ),
+        throwsFormatException,
+      );
+    }
   });
 
   test('accepts normalized pairing descriptor query field aliases', () {
@@ -349,6 +373,21 @@ void main() {
       expect(descriptor.channelIds, ['telegram', 'navivox', 'discord']);
     },
   );
+
+  test('strips credentials from explicit gateway websocket URL', () {
+    final config = NavivoxGatewayConfig(
+      baseUri: Uri.parse('https://gateway.example:8765'),
+      token: 'setup-secret-token',
+      webSocketUri: Uri.parse(
+        'wss://user:secret@stream.example:9443/custom/navivox/stream?token=leaked#frag',
+      ),
+    );
+
+    expect(
+      config.streamUri.toString(),
+      'wss://stream.example:9443/custom/navivox/stream',
+    );
+  });
 
   test('preserves explicit pairing websocket URL in gateway config', () {
     final descriptor = NavivoxPairingDescriptor.parse(
@@ -470,6 +509,14 @@ void main() {
           'capabilities': ['profile_contacts', 'stream_turns', 'turn_control'],
           'capabilities_url': '/v1/navivox/capabilities',
           'gateway_id': 'gw_123',
+          'gateway_label': ' Gormes gateway ',
+          'transport_security': {
+            'effective_security': 'private_network',
+            'exposure_mode': 'tailscale',
+            'tls': false,
+            'private_network': true,
+            'durable_credentials_allowed': false,
+          },
           'sessions': 2,
           'ws_connections': 1,
         });
@@ -488,6 +535,12 @@ void main() {
     expect(status.webSocketConnectionCount, 1);
     expect(status.capabilitiesUrl, '/v1/navivox/capabilities');
     expect(status.gatewayId, 'gw_123');
+    expect(status.gatewayLabel, 'Gormes gateway');
+    expect(status.transportSecurity.effectiveSecurity, 'private_network');
+    expect(status.transportSecurity.exposureMode, 'tailscale');
+    expect(status.transportSecurity.tls, isFalse);
+    expect(status.transportSecurity.privateNetwork, isTrue);
+    expect(status.transportSecurity.durableCredentialsAllowed, isFalse);
     expect(status.hasGatewayIdentity, isTrue);
     expect(
       seen.keys.single.toString(),

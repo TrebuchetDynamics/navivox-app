@@ -9,9 +9,20 @@ import 'gateway_client_guard.dart';
 bool navivoxCapabilityDocumentUsable(NavivoxCapabilityDocument capabilities) {
   return capabilities.object == 'gormes.navivox.capabilities' &&
       capabilities.protocolVersion == navivoxWebSocketProtocol &&
-      capabilities.auth.mode.trim().isNotEmpty &&
+      _navivoxAuthModeClientUsable(capabilities.auth.mode) &&
       capabilities.advertisesEndpoint('GET', '/v1/navivox/capabilities') &&
       capabilities.streams.canonicalEndpoint.trim().isNotEmpty;
+}
+
+bool _navivoxAuthModeClientUsable(String mode) {
+  switch (mode.trim().toLowerCase()) {
+    case 'pairing_token':
+    case 'static_token':
+    case 'token_and_tailscale_identity':
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool navivoxCapabilityAllows(

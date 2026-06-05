@@ -6,9 +6,9 @@ import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-import '../../../../core/protocol/voice_unavailable_reason.dart';
 import '../../../../shared/voice/voice_capture_failures.dart';
 import '../../../../shared/voice/voice_capture_service.dart';
+import 'speech_to_text_capture_coordinator.dart';
 import 'speech_to_text_capture_policy.dart';
 
 export '../../../../shared/voice/voice_capture_failures.dart';
@@ -110,15 +110,19 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
     SpeechToTextEngine? engine,
     DateTime Function()? clock,
     SpeechToTextDiagnosticLog? diagnosticLog,
+    SpeechToTextCaptureCoordinator coordinator =
+        const SpeechToTextCaptureCoordinator(),
     this.localeId,
     this.pauseFor = const Duration(seconds: 4),
   }) : _engine = engine ?? PluginSpeechToTextEngine(),
        _clock = clock ?? DateTime.now,
-       _diagnosticLog = diagnosticLog ?? _defaultDiagnosticLog;
+       _diagnosticLog = diagnosticLog ?? _defaultDiagnosticLog,
+       _coordinator = coordinator;
 
   final SpeechToTextEngine _engine;
   final DateTime Function() _clock;
   final SpeechToTextDiagnosticLog _diagnosticLog;
+  final SpeechToTextCaptureCoordinator _coordinator;
   final String? localeId;
   final Duration pauseFor;
 
@@ -138,9 +142,9 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
     }
 
     void completeWithError(Object error) {
-      log(_formatErrorDiagnostic(error));
+      log(_coordinator.errorDiagnostic(error));
       if (!completion.isCompleted) {
-        completion.completeError(_normalizeError(error));
+        completion.completeError(_coordinator.normalizeError(error));
       }
     }
 
@@ -152,24 +156,26 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
         onError: completeWithError,
         onStatus: (status) {
           log('status=$status');
-          if (isTerminalSpeechToTextStatus(status) && !completion.isCompleted) {
-            final snapshot = latestTranscript;
-            if (snapshot != null) {
+          if (completion.isCompleted) return;
+          switch (_coordinator.terminalStatusPlan(
+            status: status,
+            latestTranscript: latestTranscript,
+          )) {
+            case IgnoreSpeechToTextTerminalStatusPlan():
+              break;
+            case CompleteSpeechToTextTerminalStatusPlan(:final snapshot):
               completion.complete(snapshot);
-              return;
-            }
-            completion.completeError(
-              const SpeechToTextCaptureFailure('no transcript'),
-            );
+            case FailSpeechToTextTerminalStatusPlan(:final error):
+              completion.completeError(error);
           }
         },
       );
       log('initialize=$available');
       if (!available) {
         throw DeviceSpeechUnavailable(
-          permissionBeforeInitialize == false
-              ? microphonePermissionDeniedReason
-              : deviceSttUnavailableReason,
+          _coordinator.unavailableReasonForInitialize(
+            permissionBeforeInitialize: permissionBeforeInitialize,
+          ),
         );
       }
 
@@ -188,13 +194,13 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
             'result recognizedWords="${snapshot.words}" '
             'confidence=${snapshot.confidence} finalResult=${snapshot.finalResult}',
           );
-          latestTranscript = latestUsableSpeechToTextTranscript(
+          latestTranscript = _coordinator.latestUsableTranscript(
             current: latestTranscript,
             candidate: snapshot,
           );
           if (snapshot.finalResult && !completion.isCompleted) {
             completion.complete(
-              completionSpeechToTextTranscript(
+              _coordinator.completionTranscript(
                 terminalSnapshot: snapshot,
                 latestUsableSnapshot: latestTranscript,
               ),
@@ -234,7 +240,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
           error is SpeechToTextCaptureFailure) {
         rethrow;
       }
-      final normalized = _normalizeError(error);
+      final normalized = _coordinator.normalizeError(error);
       if (normalized is DeviceSpeechUnavailable) throw normalized;
       if (normalized is SpeechToTextCaptureFailure) throw normalized;
       throw SpeechToTextCaptureFailure(error);
@@ -266,34 +272,6 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       return null;
     }
   }
-
-  Object _normalizeError(Object error) {
-    if (error is SpeechRecognitionError) {
-      if (isNoTranscriptVoiceCaptureReason(error.errorMsg)) {
-        return const SpeechToTextCaptureFailure('no transcript');
-      }
-      if (error.permanent) {
-        return DeviceSpeechUnavailable(
-          speechToTextDeviceUnavailableReasonFromMessage(error.errorMsg),
-        );
-      }
-    }
-    if (error is stt.ListenFailedException) {
-      return DeviceSpeechUnavailable(
-        speechToTextDeviceUnavailableReasonFromMessage(
-          '${error.message ?? ''} ${error.details ?? ''}',
-        ),
-      );
-    }
-    return SpeechToTextCaptureFailure(error);
-  }
-}
-
-String _formatErrorDiagnostic(Object error) {
-  if (error is SpeechRecognitionError) {
-    return 'error errorMsg=${error.errorMsg} permanent=${error.permanent}';
-  }
-  return 'error=$error';
 }
 
 void _defaultDiagnosticLog(String message) {

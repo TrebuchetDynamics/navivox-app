@@ -17,12 +17,15 @@ class TranscriptTextMessageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final presentation = TranscriptTextMessagePresentation.fromMessage(message);
-    final linkPreview = _TranscriptLinkPreview.maybeFrom(presentation.text);
+    final content = TranscriptTextContentPresentation.fromText(
+      presentation.text,
+    );
+    final linkPreview = content.linkPreview;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _TelegramFormattedText(text: presentation.text, textColor: textColor),
+        _TelegramFormattedText(content: content, textColor: textColor),
         if (linkPreview != null) ...[
           const SizedBox(height: 8),
           _TelegramLinkPreview(linkPreview: linkPreview, textColor: textColor),
@@ -33,16 +36,16 @@ class TranscriptTextMessageBody extends StatelessWidget {
 }
 
 class _TelegramFormattedText extends StatelessWidget {
-  const _TelegramFormattedText({required this.text, this.textColor});
+  const _TelegramFormattedText({required this.content, this.textColor});
 
-  final String text;
+  final TranscriptTextContentPresentation content;
   final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
-    final segments = _TelegramTextSegment.parse(text);
-    if (segments.length == 1 && segments.single.isPlainText) {
-      return _TelegramExpandableText(text: text, textColor: textColor);
+    final segments = content.segments;
+    if (content.isSinglePlainTextSegment) {
+      return _TelegramExpandableText(text: content.text, textColor: textColor);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,161 +69,10 @@ class _TelegramFormattedText extends StatelessWidget {
   }
 }
 
-class _TelegramTextSegment {
-  const _TelegramTextSegment.text(this.text)
-    : language = null,
-      quote = false,
-      bulletItems = null,
-      numberedItems = null,
-      startNumber = 1;
-  const _TelegramTextSegment.quote(this.text)
-    : language = null,
-      quote = true,
-      bulletItems = null,
-      numberedItems = null,
-      startNumber = 1;
-  const _TelegramTextSegment.bullets(this.bulletItems)
-    : text = '',
-      language = null,
-      quote = false,
-      numberedItems = null,
-      startNumber = 1;
-  const _TelegramTextSegment.numbered(this.numberedItems, this.startNumber)
-    : text = '',
-      language = null,
-      quote = false,
-      bulletItems = null;
-  const _TelegramTextSegment.code({required this.text, this.language})
-    : quote = false,
-      bulletItems = null,
-      numberedItems = null,
-      startNumber = 1;
-
-  static final _codeFencePattern = RegExp(
-    r'```([A-Za-z0-9_+.-]*)\n([\s\S]*?)```',
-    multiLine: true,
-  );
-
-  final String text;
-  final String? language;
-  final bool quote;
-  final List<String>? bulletItems;
-  final List<String>? numberedItems;
-  final int startNumber;
-
-  bool get isCode => language != null;
-  bool get isQuote => quote;
-  bool get isBulletList => bulletItems != null;
-  bool get isNumberedList => numberedItems != null;
-  bool get isPlainText =>
-      !isCode && !isQuote && !isBulletList && !isNumberedList;
-
-  static List<_TelegramTextSegment> parse(String text) {
-    final segments = <_TelegramTextSegment>[];
-    var cursor = 0;
-    for (final match in _codeFencePattern.allMatches(text)) {
-      _addTextSegments(segments, text.substring(cursor, match.start));
-      final language = match.group(1)?.trim();
-      final code = match.group(2)?.trimRight() ?? '';
-      segments.add(
-        _TelegramTextSegment.code(
-          text: code,
-          language: language == null || language.isEmpty ? 'code' : language,
-        ),
-      );
-      cursor = match.end;
-    }
-    _addTextSegments(segments, text.substring(cursor));
-    return segments.isEmpty ? [_TelegramTextSegment.text(text)] : segments;
-  }
-
-  static void _addTextSegments(
-    List<_TelegramTextSegment> segments,
-    String source,
-  ) {
-    final lines = source.trim().split('\n');
-    final prose = <String>[];
-    final quote = <String>[];
-    final bullets = <String>[];
-    final numberedItems = <String>[];
-    int? numberedStart;
-
-    void flushProse() {
-      final text = prose.join('\n').trim();
-      if (text.isNotEmpty) segments.add(_TelegramTextSegment.text(text));
-      prose.clear();
-    }
-
-    void flushQuote() {
-      final text = quote.join('\n').trim();
-      if (text.isNotEmpty) segments.add(_TelegramTextSegment.quote(text));
-      quote.clear();
-    }
-
-    void flushBullets() {
-      if (bullets.isNotEmpty) {
-        segments.add(_TelegramTextSegment.bullets(List.unmodifiable(bullets)));
-      }
-      bullets.clear();
-    }
-
-    void flushNumbered() {
-      if (numberedItems.isNotEmpty) {
-        segments.add(
-          _TelegramTextSegment.numbered(
-            List.unmodifiable(numberedItems),
-            numberedStart ?? 1,
-          ),
-        );
-      }
-      numberedItems.clear();
-      numberedStart = null;
-    }
-
-    for (final line in lines) {
-      final trimmed = line.trimRight();
-      final numberedMatch = RegExp(
-        r'^(\d+)\.\s+(.+)$',
-      ).firstMatch(trimmed.trimLeft());
-      if (trimmed.trim().isEmpty) {
-        flushProse();
-        flushQuote();
-        flushBullets();
-        flushNumbered();
-      } else if (trimmed.trimLeft().startsWith('>')) {
-        flushProse();
-        flushBullets();
-        flushNumbered();
-        quote.add(trimmed.trimLeft().replaceFirst(RegExp(r'^>\s?'), ''));
-      } else if (RegExp(r'^[-*]\s+').hasMatch(trimmed.trimLeft())) {
-        flushProse();
-        flushQuote();
-        flushNumbered();
-        bullets.add(trimmed.trimLeft().replaceFirst(RegExp(r'^[-*]\s+'), ''));
-      } else if (numberedMatch != null) {
-        flushProse();
-        flushQuote();
-        flushBullets();
-        numberedStart ??= int.tryParse(numberedMatch.group(1)!) ?? 1;
-        numberedItems.add(numberedMatch.group(2)!);
-      } else {
-        flushQuote();
-        flushBullets();
-        flushNumbered();
-        prose.add(trimmed);
-      }
-    }
-    flushProse();
-    flushQuote();
-    flushBullets();
-    flushNumbered();
-  }
-}
-
 class _TelegramBlockquote extends StatelessWidget {
   const _TelegramBlockquote({required this.segment, this.textColor});
 
-  final _TelegramTextSegment segment;
+  final TranscriptTextSegment segment;
   final Color? textColor;
 
   @override
@@ -251,7 +103,7 @@ class _TelegramBlockquote extends StatelessWidget {
 class _TelegramBulletList extends StatelessWidget {
   const _TelegramBulletList({required this.segment, this.textColor});
 
-  final _TelegramTextSegment segment;
+  final TranscriptTextSegment segment;
   final Color? textColor;
 
   @override
@@ -297,7 +149,7 @@ class _TelegramBulletList extends StatelessWidget {
 class _TelegramNumberedList extends StatelessWidget {
   const _TelegramNumberedList({required this.segment, this.textColor});
 
-  final _TelegramTextSegment segment;
+  final TranscriptTextSegment segment;
   final Color? textColor;
 
   @override
@@ -348,7 +200,7 @@ class _TelegramNumberedList extends StatelessWidget {
 class _TelegramCodeBlock extends StatelessWidget {
   const _TelegramCodeBlock({required this.segment, this.textColor});
 
-  final _TelegramTextSegment segment;
+  final TranscriptTextSegment segment;
   final Color? textColor;
 
   @override
@@ -432,10 +284,6 @@ class _TelegramInlineText extends StatelessWidget {
     this.overflow,
   });
 
-  static final _inlinePattern = RegExp(
-    r'(\[(@[^:]+):([^\]]+)\]|`[^`]+`|https?:\/\/[^\s<>()]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+?[0-9][0-9 .()-]{6,}[0-9]|\*[^*]+\*|_[^_]+_|~[^~]+~|(?<!\w)[@#][A-Za-z0-9_]+)',
-  );
-
   final String text;
   final Color? textColor;
   final int? maxLines;
@@ -463,27 +311,13 @@ class _TelegramInlineText extends StatelessWidget {
   }
 
   List<InlineSpan>? _inlineSpans(BuildContext context) {
-    final matches = _inlinePattern.allMatches(text).toList();
-    if (matches.isEmpty) return null;
-    final spans = <InlineSpan>[];
-    var cursor = 0;
-    for (final match in matches) {
-      if (match.start > cursor) {
-        spans.add(TextSpan(text: text.substring(cursor, match.start)));
-      }
-      final raw = _trimTrailingPunctuation(match.group(0)!);
-      spans.add(_formattedSpan(raw, Theme.of(context).colorScheme.primary));
-      cursor = match.start + raw.length;
+    final tokens = TranscriptInlineToken.parse(text);
+    if (tokens.length == 1 &&
+        tokens.single.kind == TranscriptInlineTokenKind.plain) {
+      return null;
     }
-    if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor)));
-    return spans;
-  }
-
-  String _trimTrailingPunctuation(String raw) {
-    if (raw.startsWith('http') || raw.contains('@')) {
-      return raw.replaceFirst(RegExp(r'[,.;:!?]+$'), '');
-    }
-    return raw;
+    final accent = Theme.of(context).colorScheme.primary;
+    return [for (final token in tokens) _formattedSpan(token, accent)];
   }
 
   TextSpan _accentSpan(String text, Color accent) => TextSpan(
@@ -491,61 +325,43 @@ class _TelegramInlineText extends StatelessWidget {
     style: TextStyle(color: accent, fontSize: 15, fontWeight: FontWeight.w700),
   );
 
-  bool _isDetectionPattern(String raw) =>
-      raw.startsWith('http://') ||
-      raw.startsWith('https://') ||
-      raw.contains('@') ||
-      RegExp(r'^\+?[0-9][0-9 .()-]{6,}[0-9]$').hasMatch(raw);
-
-  TextSpan _formattedSpan(String raw, Color accent) {
-    final mentionWithId = RegExp(r'^\[(@[^:]+):([^\]]+)\]$').firstMatch(raw);
-    if (mentionWithId != null) {
-      return _accentSpan(mentionWithId.group(1)!, accent);
-    }
-    if (_isDetectionPattern(raw)) return _accentSpan(raw, accent);
-    final marker = raw.characters.first;
-    final inner = marker == '@' || marker == '#'
-        ? raw
-        : raw.substring(1, raw.length - 1);
+  TextSpan _formattedSpan(TranscriptInlineToken token, Color accent) {
     final baseStyle = TextStyle(color: textColor, fontSize: 15);
-    return switch (marker) {
-      '*' => TextSpan(
-        text: inner,
+    return switch (token.kind) {
+      TranscriptInlineTokenKind.plain => TextSpan(
+        text: token.text,
+        style: baseStyle,
+      ),
+      TranscriptInlineTokenKind.bold => TextSpan(
+        text: token.text,
         style: baseStyle.copyWith(fontWeight: FontWeight.w700),
       ),
-      '_' => TextSpan(
-        text: inner,
+      TranscriptInlineTokenKind.italic => TextSpan(
+        text: token.text,
         style: baseStyle.copyWith(fontStyle: FontStyle.italic),
       ),
-      '`' => TextSpan(
-        text: inner,
+      TranscriptInlineTokenKind.code => TextSpan(
+        text: token.text,
         style: baseStyle.copyWith(
           fontFamily: 'monospace',
           backgroundColor: (textColor ?? Colors.black).withValues(alpha: 0.10),
         ),
       ),
-      '~' => TextSpan(
-        text: inner,
+      TranscriptInlineTokenKind.strike => TextSpan(
+        text: token.text,
         style: baseStyle.copyWith(
           decoration: TextDecoration.lineThrough,
           decorationColor: textColor,
         ),
       ),
-      '@' || '#' => TextSpan(
-        text: inner,
-        style: baseStyle.copyWith(color: accent, fontWeight: FontWeight.w700),
-      ),
-      _ => TextSpan(text: raw, style: baseStyle),
+      TranscriptInlineTokenKind.accent ||
+      TranscriptInlineTokenKind.detected => _accentSpan(token.text, accent),
     };
   }
 }
 
 class _TelegramExpandableText extends StatefulWidget {
   const _TelegramExpandableText({required this.text, this.textColor});
-
-  static const collapsedMaxLines = 8;
-  static const collapseCharacterThreshold = 520;
-  static const collapseLineThreshold = 8;
 
   final String text;
   final Color? textColor;
@@ -559,9 +375,7 @@ class _TelegramExpandableTextState extends State<_TelegramExpandableText> {
   bool _expanded = false;
 
   bool get _shouldCollapse =>
-      widget.text.length > _TelegramExpandableText.collapseCharacterThreshold ||
-      '\n'.allMatches(widget.text).length >=
-          _TelegramExpandableText.collapseLineThreshold;
+      TranscriptTextCollapsePolicy.shouldCollapse(widget.text);
 
   @override
   void didUpdateWidget(covariant _TelegramExpandableText oldWidget) {
@@ -581,7 +395,7 @@ class _TelegramExpandableTextState extends State<_TelegramExpandableText> {
           text: widget.text,
           textColor: widget.textColor,
           maxLines: shouldClamp
-              ? _TelegramExpandableText.collapsedMaxLines
+              ? TranscriptTextCollapsePolicy.collapsedMaxLines
               : null,
           overflow: shouldClamp ? TextOverflow.fade : null,
         ),
@@ -608,44 +422,10 @@ class _TelegramExpandableTextState extends State<_TelegramExpandableText> {
   }
 }
 
-class _TranscriptLinkPreview {
-  const _TranscriptLinkPreview({
-    required this.url,
-    required this.host,
-    required this.summary,
-  });
-
-  static final _urlPattern = RegExp(
-    r'https?:\/\/[^\s<>()]+',
-    caseSensitive: false,
-  );
-
-  final String url;
-  final String host;
-  final String summary;
-
-  static _TranscriptLinkPreview? maybeFrom(String text) {
-    final match = _urlPattern.firstMatch(text);
-    if (match == null) return null;
-    final url = match.group(0)!.replaceFirst(RegExp(r'[\],.!?;:]+$'), '');
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
-    final pathAndQuery = [
-      if (uri.path.isNotEmpty) uri.path,
-      if (uri.query.isNotEmpty) '?${uri.query}',
-    ].join();
-    return _TranscriptLinkPreview(
-      url: url,
-      host: uri.host,
-      summary: pathAndQuery.isEmpty ? url : pathAndQuery,
-    );
-  }
-}
-
 class _TelegramLinkPreview extends StatelessWidget {
   const _TelegramLinkPreview({required this.linkPreview, this.textColor});
 
-  final _TranscriptLinkPreview linkPreview;
+  final TranscriptLinkPreviewPresentation linkPreview;
   final Color? textColor;
 
   @override

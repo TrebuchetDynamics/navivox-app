@@ -34,16 +34,15 @@ class NavivoxGatewayBearerAuth {
 
 /// Extracts a bearer token from gateway headers using case-insensitive names.
 String? navivoxGatewayBearerToken(Map<String, String> headers) {
-  final auth = headers.entries
+  final authHeaders = headers.entries
       .where(
         (entry) =>
             entry.key.toLowerCase() ==
             navivoxGatewayAuthorizationHeader.toLowerCase(),
       )
-      .map((entry) => NavivoxGatewayBearerAuth.tryParse(entry.value))
-      .whereType<NavivoxGatewayBearerAuth>()
-      .firstOrNull;
-  return auth?.token;
+      .toList(growable: false);
+  if (authHeaders.length != 1) return null;
+  return NavivoxGatewayBearerAuth.tryParse(authHeaders.single.value)?.token;
 }
 
 /// Builds WebSocket subprotocols accepted by the gateway.

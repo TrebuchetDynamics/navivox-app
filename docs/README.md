@@ -5,6 +5,7 @@ Start with `../CONTEXT.md` for stable product language, then use this index to f
 ## Product
 
 - [PRD](product/prd.md)
+- [Hermes Desktop reference direction](product/hermes-desktop-reference.md)
 - [Routes](product/routes.md)
 - [Testing plan](product/testing-plan.md)
 - [UI design](product/ui-design.md)

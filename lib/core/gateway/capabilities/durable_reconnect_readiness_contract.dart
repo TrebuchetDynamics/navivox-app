@@ -1,6 +1,7 @@
 import '../shared/navivox_gateway_json.dart';
 
 const _safeEffectiveSecurityValues = {
+  'tls',
   'https',
   'loopback',
   'private_network',

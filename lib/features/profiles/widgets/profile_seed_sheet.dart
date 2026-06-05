@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
-import '../../../core/protocol/navivox_json.dart';
 import '../actions/profile_seed_coordinator.dart';
+import '../presentation/profile_seed_presentation.dart';
 
 const _profileSeedCoordinator = ProfileSeedCoordinator();
+const _profileSeedPresentation = ProfileSeedPresentation();
 
 class ProfileSeedSheet extends StatefulWidget {
   const ProfileSeedSheet({super.key, required this.channel});
@@ -78,20 +79,18 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Create from seed',
+              _profileSeedPresentation.title,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Gormes drafts profile config from your text. Navivox never writes TOML or grants workspace roots directly.',
-            ),
+            Text(_profileSeedPresentation.instructions),
             const SizedBox(height: 16),
             TextField(
               key: const ValueKey('profile-seed-input'),
               controller: _seedController,
-              decoration: const InputDecoration(
-                labelText: 'Profile seed',
-                hintText: 'work on mineru repo',
+              decoration: InputDecoration(
+                labelText: _profileSeedPresentation.seedFieldLabel,
+                hintText: _profileSeedPresentation.seedFieldHint,
                 border: OutlineInputBorder(),
               ),
               minLines: 1,
@@ -109,7 +108,7 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.auto_awesome),
-                label: const Text('Generate draft'),
+                label: Text(_profileSeedPresentation.generateDraftLabel),
               ),
             ),
             if (_error != null) ...[
@@ -125,24 +124,24 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _profileIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Profile ID',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.profileIdFieldLabel,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _displayNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Display name',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.displayNameFieldLabel,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _instructionsController,
-                decoration: const InputDecoration(
-                  labelText: 'Instructions',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.instructionsFieldLabel,
                   border: OutlineInputBorder(),
                 ),
                 minLines: 3,
@@ -154,8 +153,8 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
                   Expanded(
                     child: TextField(
                       controller: _providerController,
-                      decoration: const InputDecoration(
-                        labelText: 'Provider',
+                      decoration: InputDecoration(
+                        labelText: _profileSeedPresentation.providerFieldLabel,
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -164,8 +163,8 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
                   Expanded(
                     child: TextField(
                       controller: _modelController,
-                      decoration: const InputDecoration(
-                        labelText: 'Model',
+                      decoration: InputDecoration(
+                        labelText: _profileSeedPresentation.modelFieldLabel,
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -175,8 +174,8 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _toolPolicyController,
-                decoration: const InputDecoration(
-                  labelText: 'Tool policy',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.toolPolicyFieldLabel,
                   border: OutlineInputBorder(),
                 ),
                 minLines: 2,
@@ -185,8 +184,8 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _voiceMetadataController,
-                decoration: const InputDecoration(
-                  labelText: 'Voice metadata',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.voiceMetadataFieldLabel,
                   border: OutlineInputBorder(),
                 ),
                 minLines: 2,
@@ -194,7 +193,7 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Workspace suggestions',
+                _profileSeedPresentation.workspaceSuggestionsTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -203,12 +202,11 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
               TextField(
                 key: const ValueKey('profile-seed-workspace-path'),
                 controller: _workspacePathController,
-                decoration: const InputDecoration(
-                  labelText: 'Workspace root path',
-                  hintText: '/absolute/path/to/workspace',
+                decoration: InputDecoration(
+                  labelText: _profileSeedPresentation.workspaceRootFieldLabel,
+                  hintText: _profileSeedPresentation.workspaceRootFieldHint,
                   border: OutlineInputBorder(),
-                  helperText:
-                      'Only paths you type here are sent to Gormes on apply.',
+                  helperText: _profileSeedPresentation.workspaceRootFieldHelper,
                 ),
               ),
               CheckboxListTile(
@@ -218,9 +216,11 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
                   _confirmNoWorkspace = value ?? false;
                 }),
                 controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('Continue without workspace roots'),
-                subtitle: const Text(
-                  'I understand suggested workspaces are not granted unless I type a path.',
+                title: Text(
+                  _profileSeedPresentation.noWorkspaceConfirmationTitle,
+                ),
+                subtitle: Text(
+                  _profileSeedPresentation.noWorkspaceConfirmationSubtitle,
                 ),
               ),
               const SizedBox(height: 12),
@@ -228,7 +228,7 @@ class _ProfileSeedSheetState extends State<ProfileSeedSheet> {
                 key: const ValueKey('profile-seed-apply-button'),
                 onPressed: canApply ? _applyDraft : null,
                 icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Apply through Gormes'),
+                label: Text(_profileSeedPresentation.applyLabel),
               ),
             ],
           ],
@@ -341,26 +341,17 @@ class _DraftSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final providerState = navivoxMapFieldFromJson(
-      draft,
-      'provider_model_state',
-    );
-    final generationSource = navivoxStringFieldFromJson(
-      draft,
-      'generation_source',
-    );
-    final evidence = navivoxStringListFieldFromJson(draft, 'evidence');
+    final presentation = _profileSeedPresentation.draftSummary(draft);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('generation_source=$generationSource'),
-            Text(
-              'Provider status: ${navivoxStringFieldFromJson(providerState, 'status')}',
-            ),
-            if (evidence.isNotEmpty) Text('Evidence: ${evidence.join(', ')}'),
+            Text(presentation.generationSourceLine),
+            Text(presentation.providerStatusLine),
+            if (presentation.evidenceLine != null)
+              Text(presentation.evidenceLine!),
           ],
         ),
       ),
@@ -375,13 +366,9 @@ class _WorkspaceSuggestions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final suggestions =
-        navivoxListFieldFromJson(draft, 'workspace_root_suggestions')
-            .whereType<Map>()
-            .map((item) => Map<String, Object?>.from(item))
-            .toList(growable: false);
+    final suggestions = _profileSeedPresentation.workspaceSuggestions(draft);
     if (suggestions.isEmpty) {
-      return const Text('No workspace suggestions returned by Gormes.');
+      return Text(_profileSeedPresentation.emptyWorkspaceSuggestions);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,16 +377,10 @@ class _WorkspaceSuggestions extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.folder_open),
-            title: Text(navivoxStringFieldFromJson(suggestion, 'label')),
-            subtitle: Text(
-              '${navivoxStringFieldFromJson(suggestion, 'purpose')} (${_boolField(suggestion, 'requires_confirmation') ? 'requires confirmation' : 'informational'})',
-            ),
+            title: Text(suggestion.label),
+            subtitle: Text(suggestion.subtitle),
           ),
       ],
     );
   }
-}
-
-bool _boolField(Map<String, Object?> json, String key) {
-  return navivoxStrictBoolFromJson(json[key]);
 }

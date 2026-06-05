@@ -108,8 +108,18 @@ Map<String, Object?> gatewayRoutingCapabilityDocument() {
 }
 
 bool isAuthorizedGatewayRequest(HttpRequest request) {
-  return request.headers.value(HttpHeaders.authorizationHeader) ==
-      'Bearer $gatewayTestToken';
+  if (request.headers.value(HttpHeaders.authorizationHeader) ==
+      'Bearer $gatewayTestToken') {
+    return true;
+  }
+  final encodedToken = base64Url
+      .encode(utf8.encode(gatewayTestToken))
+      .replaceAll('=', '');
+  return request.headers['sec-websocket-protocol']
+          ?.expand((value) => value.split(','))
+          .map((value) => value.trim())
+          .contains('gormes.navivox.token.$encodedToken') ??
+      false;
 }
 
 void writeGatewayJson(HttpResponse response, Map<String, Object?> body) {

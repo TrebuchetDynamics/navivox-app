@@ -35,11 +35,20 @@ class NavivoxPairingDescriptor {
       explicitBaseUrl: fields.optional('base_url'),
       descriptor: value,
     );
+    final authMode = fields.optional('auth_mode') ?? '';
+    final exposureMode = fields.optional('exposure_mode') ?? '';
+    if (_navivoxPairingRequiresStrongToken(exposureMode, authMode) &&
+        !_navivoxExposedPairingTokenLooksStrong(token)) {
+      throw FormatException(
+        'Pairing descriptor token is too weak for exposed Navivox gateway',
+        value,
+      );
+    }
     return NavivoxPairingDescriptor(
       baseUri: endpoints.baseUri,
       webSocketUri: endpoints.webSocketUri,
-      authMode: fields.optional('auth_mode') ?? '',
-      exposureMode: fields.optional('exposure_mode') ?? '',
+      authMode: authMode,
+      exposureMode: exposureMode,
       tokenRequired: tokenRequired,
       token: token,
       serverId: fields.optional('server_id'),
@@ -68,5 +77,35 @@ class NavivoxPairingDescriptor {
       token: token,
       webSocketUri: webSocketUri,
     );
+  }
+}
+
+const _navivoxMinExposedTokenLength = 32;
+const _navivoxMinExposedTokenDistinctChars = 16;
+
+bool _navivoxExposedPairingTokenLooksStrong(String? token) {
+  if (token == null || token.length < _navivoxMinExposedTokenLength) {
+    return false;
+  }
+  return token.runes.toSet().length >= _navivoxMinExposedTokenDistinctChars;
+}
+
+bool _navivoxPairingRequiresStrongToken(String exposureMode, String authMode) {
+  switch (exposureMode.trim().toLowerCase()) {
+    case 'tailscale':
+    case 'wireguard':
+    case 'vpn':
+    case 'public':
+      break;
+    default:
+      return false;
+  }
+  switch (authMode.trim().toLowerCase()) {
+    case 'pairing_token':
+    case 'static_token':
+    case 'token_and_tailscale_identity':
+      return true;
+    default:
+      return false;
   }
 }

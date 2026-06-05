@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../actions/transcript_composer_share_coordinator.dart';
 import '../../presentation/transcript_composer_presentation.dart';
 import '../shared/transcript_bottom_sheet_list.dart';
+
+const _shareCoordinator = TranscriptComposerShareCoordinator();
 
 class TranscriptComposer extends StatefulWidget {
   const TranscriptComposer({
@@ -109,42 +112,36 @@ class _TranscriptComposerState extends State<TranscriptComposer> {
     required TranscriptComposerShareOptionKind kind,
   }) {
     Navigator.of(sheetContext).pop();
-    switch (kind) {
-      case TranscriptComposerShareOptionKind.uploadFile:
-        final callback = widget.onUploadFile;
-        if (callback != null) {
-          callback();
-          return;
-        }
+    _applyShareEffect(
+      parentContext,
+      _shareCoordinator.handleOption(
+        kind: kind,
+        hasUploadFileCallback: widget.onUploadFile != null,
+        hasPickPhotoOrVideoCallback: widget.onPickPhotoOrVideo != null,
+        hasOpenWorkspaceCallback: widget.onOpenWorkspace != null,
+      ),
+    );
+  }
+
+  void _applyShareEffect(
+    BuildContext parentContext,
+    TranscriptComposerShareEffect effect,
+  ) {
+    switch (effect) {
+      case InvokeTranscriptComposerUploadFileEffect():
+        widget.onUploadFile?.call();
+      case InvokeTranscriptComposerPickPhotoOrVideoEffect():
+        widget.onPickPhotoOrVideo?.call();
+      case InvokeTranscriptComposerOpenWorkspaceEffect():
+        widget.onOpenWorkspace?.call();
+      case ShowTranscriptComposerShareUnavailableEffect(
+        :final title,
+        :final message,
+      ):
         _showDeferredShareUnavailable(
           parentContext,
-          title: 'File upload unavailable',
-          message:
-              'Gormes has not advertised a Navivox upload endpoint yet. Use text or workspace references for now.',
-        );
-      case TranscriptComposerShareOptionKind.photoOrVideo:
-        final callback = widget.onPickPhotoOrVideo;
-        if (callback != null) {
-          callback();
-          return;
-        }
-        _showDeferredShareUnavailable(
-          parentContext,
-          title: 'Photo upload unavailable',
-          message:
-              'Photo and video picking is ready to plug into the upload endpoint once Gormes enables uploads.',
-        );
-      case TranscriptComposerShareOptionKind.workspaceFile:
-        final callback = widget.onOpenWorkspace;
-        if (callback != null) {
-          callback();
-          return;
-        }
-        _showDeferredShareUnavailable(
-          parentContext,
-          title: 'Workspace browser unavailable',
-          message:
-              'Select a profile contact with workspace roots before browsing workspace files.',
+          title: title,
+          message: message,
         );
     }
   }

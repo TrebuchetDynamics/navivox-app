@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'audio_recorder.dart';
+import 'record_voice_capture_policy.dart';
 import '../speech/speech_recognizer.dart';
 import '../../../../shared/voice/voice_capture_service.dart';
 
@@ -21,15 +22,24 @@ class VoiceCaptureSession {
     required SpeechRecognizer recognizer,
     required DateTime startedAt,
     required DateTime Function() clock,
+    required Future<void> recorderStarted,
+    required Future<void> recognizerStarted,
+    required RecordVoiceCapturePolicy policy,
   }) : _recorder = recorder,
        _recognizer = recognizer,
        _startedAt = startedAt,
-       _clock = clock;
+       _clock = clock,
+       _recorderStarted = recorderStarted,
+       _recognizerStarted = recognizerStarted,
+       _policy = policy;
 
   final AudioRecorder _recorder;
   final SpeechRecognizer _recognizer;
   final DateTime _startedAt;
   final DateTime Function() _clock;
+  final Future<void> _recorderStarted;
+  final Future<void> _recognizerStarted;
+  final RecordVoiceCapturePolicy _policy;
   bool _active = true;
 
   bool get isActive => _active;
@@ -46,6 +56,16 @@ class VoiceCaptureSession {
     SpeechResult speech = const SpeechResult(transcript: '', confidence: 0);
 
     try {
+      await _recorderStarted;
+    } catch (e) {
+      failure ??= e;
+    }
+    try {
+      await _recognizerStarted;
+    } catch (e) {
+      failure ??= e;
+    }
+    try {
       audio = await _recorder.stop();
     } catch (e) {
       failure ??= e;
@@ -56,10 +76,13 @@ class VoiceCaptureSession {
       failure ??= e;
     }
     if (failure != null) throw VoiceCaptureFailure(failure);
+    if (!_policy.hasUsableTranscript(speech)) {
+      throw VoiceCaptureFailure(_policy.emptyTranscriptFailure);
+    }
 
     return VoiceCapture(
       audio: audio,
-      transcript: speech.transcript,
+      transcript: speech.transcript.trim(),
       duration: _clock().difference(_startedAt),
       confidence: speech.confidence,
     );
@@ -68,6 +91,16 @@ class VoiceCaptureSession {
   Future<void> cancel() async {
     if (!_active) return;
     _active = false;
+    try {
+      await _recorderStarted;
+    } catch (_) {
+      /* swallow */
+    }
+    try {
+      await _recognizerStarted;
+    } catch (_) {
+      /* swallow */
+    }
     try {
       await _recorder.cancel();
     } catch (_) {
@@ -86,26 +119,42 @@ class RecordVoiceCaptureService implements VoiceCaptureService {
     required AudioRecorder recorder,
     required SpeechRecognizer recognizer,
     DateTime Function()? clock,
+    RecordVoiceCapturePolicy policy = const RecordVoiceCapturePolicy(),
   }) : _recorder = recorder,
        _recognizer = recognizer,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _policy = policy;
 
   final AudioRecorder _recorder;
   final SpeechRecognizer _recognizer;
   final DateTime Function() _clock;
+  final RecordVoiceCapturePolicy _policy;
 
   /// Starts a push-to-talk session. Caller owns stop/cancel.
   VoiceCaptureSession start() {
     final startedAt = _clock();
     // Kick off both engines; we don't await here because the UI wants the
-    // session handle immediately and the platform plugins resolve quickly.
-    unawaited(_recorder.start());
-    unawaited(_recognizer.start());
+    // session handle immediately. The session records startup futures so stop
+    // and cancel observe failures instead of leaking unhandled async errors.
+    final recorderStarted = _observeStartup(_recorder.start());
+    final recognizerStarted = _observeStartup(_recognizer.start());
     return VoiceCaptureSession._(
       recorder: _recorder,
       recognizer: _recognizer,
       startedAt: startedAt,
       clock: _clock,
+      recorderStarted: recorderStarted,
+      recognizerStarted: recognizerStarted,
+      policy: _policy,
+    );
+  }
+
+  Future<void> _observeStartup(Future<void> startup) {
+    return startup.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace _) {
+        throw error;
+      },
     );
   }
 

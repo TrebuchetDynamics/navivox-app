@@ -45,6 +45,82 @@ void main() {
       },
     );
 
+    test(
+      'surfaces recorder startup failure and still releases both engines',
+      () async {
+        final recorder = _FakeRecorder()
+          ..startError = StateError('recorder unavailable')
+          ..stopResult = Uint8List(0);
+        final recognizer = _FakeRecognizer()
+          ..stopResult = const SpeechResult(transcript: 'hello', confidence: 1);
+        final service = RecordVoiceCaptureService(
+          recorder: recorder,
+          recognizer: recognizer,
+          clock: () => DateTime.utc(2026, 5, 7, 12),
+        );
+
+        final controller = service.start();
+        await expectLater(
+          () => controller.stop(),
+          throwsA(isA<VoiceCaptureFailure>()),
+        );
+
+        expect(recorder.stopCalls, 1);
+        expect(recognizer.stopCalls, 1);
+      },
+    );
+
+    test(
+      'surfaces recognizer startup failure and still releases both engines',
+      () async {
+        final recorder = _FakeRecorder()..stopResult = Uint8List(0);
+        final recognizer = _FakeRecognizer()
+          ..startError = StateError('recognizer unavailable')
+          ..stopResult = const SpeechResult(transcript: 'hello', confidence: 1);
+        final service = RecordVoiceCaptureService(
+          recorder: recorder,
+          recognizer: recognizer,
+          clock: () => DateTime.utc(2026, 5, 7, 12),
+        );
+
+        final controller = service.start();
+        await expectLater(
+          () => controller.stop(),
+          throwsA(isA<VoiceCaptureFailure>()),
+        );
+
+        expect(recorder.stopCalls, 1);
+        expect(recognizer.stopCalls, 1);
+      },
+    );
+
+    test(
+      'rejects audio-only capture while binary audio transport is deferred',
+      () async {
+        final recorder = _FakeRecorder()
+          ..stopResult = Uint8List.fromList([1, 2, 3]);
+        final recognizer = _FakeRecognizer()
+          ..stopResult = const SpeechResult(transcript: '  ', confidence: 0);
+        final service = RecordVoiceCaptureService(
+          recorder: recorder,
+          recognizer: recognizer,
+          clock: () => DateTime.utc(2026, 5, 7, 12),
+        );
+
+        final controller = service.start();
+        await expectLater(
+          () => controller.stop(),
+          throwsA(
+            isA<VoiceCaptureFailure>().having(
+              (failure) => failure.cause,
+              'cause',
+              'empty transcript',
+            ),
+          ),
+        );
+      },
+    );
+
     test('stops both even when recognizer fails', () async {
       final recorder = _FakeRecorder()..stopResult = Uint8List(0);
       final recognizer = _FakeRecognizer()..stopError = StateError('boom');
@@ -79,6 +155,7 @@ void main() {
       );
 
       final controller = service.start();
+      await controller.cancel();
       await controller.cancel();
 
       expect(recorder.stopCalls, 1);
@@ -149,10 +226,13 @@ class _FakeRecorder implements AudioRecorder {
   int stopCalls = 0;
   Uint8List stopResult = Uint8List(0);
   Object? stopError;
+  Object? startError;
 
   @override
   Future<void> start() async {
     startCalls++;
+    final err = startError;
+    if (err != null) throw err;
   }
 
   @override
@@ -174,6 +254,7 @@ class _FakeRecognizer implements SpeechRecognizer {
   int stopCalls = 0;
   SpeechResult stopResult = const SpeechResult(transcript: '', confidence: 0);
   Object? stopError;
+  Object? startError;
   StreamController<String>? _interim;
   Completer<void>? _finalSignal;
 
@@ -190,6 +271,8 @@ class _FakeRecognizer implements SpeechRecognizer {
   @override
   Future<void> start() async {
     startCalls++;
+    final err = startError;
+    if (err != null) throw err;
   }
 
   @override

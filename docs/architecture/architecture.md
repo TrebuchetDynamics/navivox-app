@@ -789,6 +789,9 @@ Server voice events are future work. Planned event names are:
 These names are not active protocol until Gormes emits at least one of them.
 Binary audio transport remains deferred until Voice run lifecycle,
 retention/redaction policy, and a server STT/TTS event contract exist.
+`RecordVoiceCaptureService` is a local/future-facing recorder path only unless
+wired through that approved audio transport contract; the production voice
+submission path remains transcript-first.
 
 ## 11. Router Architecture
 

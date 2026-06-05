@@ -4,14 +4,27 @@
 ///
 /// `Uri.replace(query: null)` keeps the previous query/fragment, so endpoint
 /// builders use this explicit constructor to avoid leaking pairing/setup query
-/// state into every gateway request.
+/// state or userinfo credentials into every gateway request.
 Uri navivoxGatewayEndpointUri(Uri baseUri, String path) {
   return Uri(
     scheme: baseUri.scheme,
-    userInfo: baseUri.userInfo,
     host: baseUri.host,
     port: baseUri.hasPort ? baseUri.port : null,
     path: path,
+  );
+}
+
+/// Scrubs an explicit WebSocket endpoint down to scheme/host/port/path.
+///
+/// Explicit WebSocket URLs can arrive from setup handoff or manual entry. The
+/// gateway never accepts URL credentials, so clients strip userinfo, query, and
+/// fragments before opening a stream.
+Uri navivoxGatewayWebSocketEndpointUri(Uri uri) {
+  return Uri(
+    scheme: uri.scheme,
+    host: uri.host,
+    port: uri.hasPort ? uri.port : null,
+    path: uri.path.isEmpty ? '/v1/navivox/stream' : uri.path,
   );
 }
 

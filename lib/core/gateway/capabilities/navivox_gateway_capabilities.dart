@@ -16,6 +16,8 @@ class NavivoxGatewayStatus {
     required this.capabilities,
     required this.sessionCount,
     required this.webSocketConnectionCount,
+    required this.gatewayLabel,
+    required this.transportSecurity,
     this.capabilitiesUrl,
     this.gatewayId,
   });
@@ -33,6 +35,13 @@ class NavivoxGatewayStatus {
       capabilities: navivoxStringListFromJson(json['capabilities']),
       sessionCount: navivoxIntFromJson(json['sessions']),
       webSocketConnectionCount: navivoxIntFromJson(json['ws_connections']),
+      gatewayLabel: navivoxStringFromJson(
+        json['gateway_label'],
+        fallback: 'Gormes Gateway',
+      ),
+      transportSecurity: NavivoxTransportSecurityStatus.fromJson(
+        navivoxMapFieldFromJson(json, 'transport_security'),
+      ),
       capabilitiesUrl: navivoxOptionalStringFromJson(json['capabilities_url']),
       gatewayId: navivoxOptionalStringFromJson(json['gateway_id']),
     );
@@ -44,6 +53,8 @@ class NavivoxGatewayStatus {
   final List<String> capabilities;
   final int sessionCount;
   final int webSocketConnectionCount;
+  final String gatewayLabel;
+  final NavivoxTransportSecurityStatus transportSecurity;
   final String? capabilitiesUrl;
   final String? gatewayId;
 
@@ -52,6 +63,38 @@ class NavivoxGatewayStatus {
   bool supports(String capability) {
     return navivoxGatewaySupportsCapability(capabilities, capability);
   }
+}
+
+class NavivoxTransportSecurityStatus {
+  const NavivoxTransportSecurityStatus({
+    required this.effectiveSecurity,
+    required this.exposureMode,
+    required this.tls,
+    required this.privateNetwork,
+    required this.durableCredentialsAllowed,
+  });
+
+  factory NavivoxTransportSecurityStatus.fromJson(Map<String, Object?> json) {
+    return NavivoxTransportSecurityStatus(
+      effectiveSecurity: navivoxStringFromJson(
+        json['effective_security'],
+        fallback: 'unknown',
+      ),
+      exposureMode: navivoxStringFromJson(json['exposure_mode'], fallback: ''),
+      tls: navivoxGatewayBoolField(json, 'tls'),
+      privateNetwork: navivoxGatewayBoolField(json, 'private_network'),
+      durableCredentialsAllowed: navivoxGatewayBoolField(
+        json,
+        'durable_credentials_allowed',
+      ),
+    );
+  }
+
+  final String effectiveSecurity;
+  final String exposureMode;
+  final bool tls;
+  final bool privateNetwork;
+  final bool durableCredentialsAllowed;
 }
 
 /// Parsed capability document from the gateway.

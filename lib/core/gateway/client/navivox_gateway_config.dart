@@ -99,7 +99,7 @@ class NavivoxGatewayConfig {
 
   Uri get streamUri {
     final explicit = webSocketUri;
-    if (explicit != null) return explicit;
+    if (explicit != null) return navivoxGatewayWebSocketEndpointUri(explicit);
     final scheme = switch (baseUri.scheme) {
       'https' => 'wss',
       'http' => 'ws',

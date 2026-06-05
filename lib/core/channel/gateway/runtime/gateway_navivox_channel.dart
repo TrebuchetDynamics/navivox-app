@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -88,19 +89,27 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       _client = client;
       if (!status.enabled) {
         _capabilities = null;
-        _enterClosedCapabilityMode(config, status: 'Gateway disabled');
+        _enterClosedCapabilityMode(
+          config,
+          status: 'Gateway disabled',
+          gatewayLabel: status.gatewayLabel,
+        );
         return;
       }
       final capabilities = await _loadCapabilities(client);
       _capabilities = capabilities;
       if (capabilities == null) {
-        _enterClosedCapabilityMode(config, status: 'Capabilities unavailable');
+        _enterClosedCapabilityMode(
+          config,
+          status: 'Capabilities unavailable',
+          gatewayLabel: status.gatewayLabel,
+        );
         return;
       }
 
       final contacts = navivoxProfileContactsAvailable(capabilities)
           ? await _loadProfileContacts(client)
-          : [navivoxFallbackProfileContact()];
+          : [navivoxFallbackProfileContact(serverLabel: status.gatewayLabel)];
       final profileRouting = navivoxProfileRoutingAvailable(capabilities)
           ? await client.profileRouting()
           : const NavivoxProfileRoutingReport();
@@ -182,6 +191,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     return Uri.parse(trimmed);
   }
 
+  bool _frameExceedsGatewayMaxRequestBytes(String frame) {
+    final maxRequestBytes = _capabilities?.attachments.maxRequestBytes ?? 0;
+    if (maxRequestBytes <= 0) return false;
+    return utf8.encode(frame).length > maxRequestBytes;
+  }
+
   Future<NavivoxCapabilityDocument?> _loadCapabilities(
     NavivoxGatewayClient client,
   ) async {
@@ -205,11 +220,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   void _enterClosedCapabilityMode(
     NavivoxGatewayConfig config, {
     required String status,
+    String? gatewayLabel,
   }) {
     _state = navivoxClosedCapabilityGatewayState(
       state: _state,
       config: config,
       status: status,
+      gatewayLabel: gatewayLabel,
     );
     notifyListeners();
   }
@@ -234,6 +251,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       profile: _state.activeProfileContact,
       routing: _state.activeProfileRoutingSelection,
     );
+    if (_frameExceedsGatewayMaxRequestBytes(submission.frame)) {
+      _appendSystemMessage('Message is too large for this gateway.');
+      return;
+    }
     _putMessage(submission.message);
     socket.add(submission.frame);
   }
@@ -331,7 +352,6 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       requestId: requestId,
       sessionId: _activeSessionId,
     );
-    _putVoiceRun(submitted, active: true);
     final submission = navivoxGatewayUserTurnSubmission(
       requestId: requestId,
       sessionId: _activeSessionId,
@@ -345,6 +365,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         transcript: trimmed,
       ),
     );
+    if (_frameExceedsGatewayMaxRequestBytes(submission.frame)) {
+      failVoiceRun(
+        voiceRunId,
+        reason: 'Message is too large for this gateway.',
+      );
+      return;
+    }
+    _putVoiceRun(submitted, active: true);
     _putMessage(submission.message);
     socket.add(submission.frame);
   }

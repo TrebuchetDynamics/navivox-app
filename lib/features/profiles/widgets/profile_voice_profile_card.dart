@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
-import '../../../core/protocol/navivox_json.dart';
+import '../actions/profile_voice_profile_coordinator.dart';
+import '../presentation/profile_voice_profile_presentation.dart';
+
+const _profileVoiceCoordinator = ProfileVoiceProfileCoordinator();
+const _profileVoicePresentation = ProfileVoiceProfilePresentation();
 
 class ProfileVoiceProfileCard extends StatefulWidget {
   const ProfileVoiceProfileCard({super.key, required this.channel});
@@ -70,16 +74,14 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Voice profile',
+              _profileVoicePresentation.title,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Text chat remains available when voice providers are unavailable.',
-            ),
+            Text(_profileVoicePresentation.textFallbackNotice),
             if (active == null) ...[
               const SizedBox(height: 8),
-              const Text('Select a profile to inspect voice settings.'),
+              Text(_profileVoicePresentation.selectProfileMessage),
             ] else if (_loading) ...[
               const SizedBox(height: 12),
               const LinearProgressIndicator(),
@@ -104,19 +106,22 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
     NavivoxProfileContact active,
   ) {
     final response = _profiles;
-    final view = _activeVoiceProfile(active);
+    final view = _profileVoiceCoordinator.activeVoiceProfile(
+      profiles: response,
+      activeProfile: active,
+    );
     if (response == null || view == null) {
-      return const Text('No voice profile reported by Gormes.');
+      return Text(_profileVoicePresentation.noProfileMessage);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Profile: ${view.displayName}'),
+        Text(_profileVoicePresentation.profileLine(view)),
         Text(
-          'Available STT: ${_listLabel(response.providerMatrix.sttProviders)}',
+          _profileVoicePresentation.availableSttLine(response.providerMatrix),
         ),
         Text(
-          'Available TTS: ${_listLabel(response.providerMatrix.ttsProviders)}',
+          _profileVoicePresentation.availableTtsLine(response.providerMatrix),
         ),
         const SizedBox(height: 8),
         if (_editing)
@@ -133,29 +138,24 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
             onCancel: () => setState(() => _editing = false),
           )
         else ...[
-          Text('STT provider: ${_valueOrUnset(view.voiceProfile.sttProvider)}'),
-          Text('TTS provider: ${_valueOrUnset(view.voiceProfile.ttsProvider)}'),
-          Text('Voice ID: ${_valueOrUnset(view.voiceProfile.voiceId)}'),
-          Text(
-            'Language policy: ${_valueOrUnset(view.voiceProfile.languagePolicy)}',
-          ),
-          Text(
-            'Fallback voice: ${_valueOrUnset(view.voiceProfile.fallbackVoice)}',
-          ),
+          Text(_profileVoicePresentation.sttProviderLine(view.voiceProfile)),
+          Text(_profileVoicePresentation.ttsProviderLine(view.voiceProfile)),
+          Text(_profileVoicePresentation.voiceIdLine(view.voiceProfile)),
+          Text(_profileVoicePresentation.languagePolicyLine(view.voiceProfile)),
+          Text(_profileVoicePresentation.fallbackVoiceLine(view.voiceProfile)),
           const SizedBox(height: 8),
           Text(
-            _credentialLabel(
-              'STT credential',
+            _profileVoicePresentation.sttCredentialLine(
               view.credentialStatusRefs['stt'],
             ),
           ),
           Text(
-            _credentialLabel(
-              'TTS credential',
+            _profileVoicePresentation.ttsCredentialLine(
               view.credentialStatusRefs['tts'],
             ),
           ),
-          for (final error in view.errors) Text(_errorLabel(error)),
+          for (final error in view.errors)
+            Text(_profileVoicePresentation.validationErrorLine(error)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -165,13 +165,13 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
                 key: const ValueKey('voice-profile-edit'),
                 onPressed: () => _beginEditing(view),
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit voice profile'),
+                label: Text(_profileVoicePresentation.editActionLabel),
               ),
               OutlinedButton.icon(
                 key: const ValueKey('voice-profile-load-evidence'),
                 onPressed: _loadRunRecordEvidence,
                 icon: const Icon(Icons.history),
-                label: const Text('Load voice fallback evidence'),
+                label: Text(_profileVoicePresentation.loadEvidenceActionLabel),
               ),
             ],
           ),
@@ -211,29 +211,21 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Gormes voice profiles are unavailable.';
+        _error = _profileVoicePresentation.unavailableMessage;
         _loading = false;
       });
     }
   }
 
-  NavivoxVoiceProfileView? _activeVoiceProfile(NavivoxProfileContact active) {
-    final profiles = _profiles?.profiles ?? const [];
-    for (final profile in profiles) {
-      if (profile.profileId == active.profileId) return profile;
-    }
-    return null;
-  }
-
   void _beginEditing(NavivoxVoiceProfileView view) {
-    final voice = view.voiceProfile;
-    _sttProviderController.text = voice.sttProvider;
-    _ttsProviderController.text = voice.ttsProvider;
-    _voiceIdController.text = voice.voiceId;
-    _languagePolicyController.text = voice.languagePolicy;
-    _fallbackVoiceController.text = voice.fallbackVoice;
-    _sttCredentialController.clear();
-    _ttsCredentialController.clear();
+    final fields = _profileVoiceCoordinator.beginEditing(view);
+    _sttProviderController.text = fields.sttProvider;
+    _ttsProviderController.text = fields.ttsProvider;
+    _voiceIdController.text = fields.voiceId;
+    _languagePolicyController.text = fields.languagePolicy;
+    _fallbackVoiceController.text = fields.fallbackVoice;
+    _sttCredentialController.text = fields.sttCredential;
+    _ttsCredentialController.text = fields.ttsCredential;
     setState(() {
       _editing = true;
       _validation = null;
@@ -242,67 +234,75 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
   }
 
   Future<void> _validateAndApply(NavivoxVoiceProfileView view) async {
-    final profileId = view.profileId;
-    final voiceProfile = NavivoxProfileVoiceProfile(
+    final request = _profileVoiceCoordinator.applyRequest(
+      profileId: view.profileId,
       sttProvider: _sttProviderController.text,
       ttsProvider: _ttsProviderController.text,
       voiceId: _voiceIdController.text,
       languagePolicy: _languagePolicyController.text,
       fallbackVoice: _fallbackVoiceController.text,
+      sttCredential: _sttCredentialController.text,
+      ttsCredential: _ttsCredentialController.text,
     );
     final validation = await widget.channel.validateVoiceProfile(
-      profileId: profileId,
-      voiceProfile: voiceProfile,
+      profileId: request.profileId,
+      voiceProfile: request.voiceProfile,
     );
     if (!mounted) return;
-    setState(() => _validation = validation);
-    if (!validation.valid) return;
+    switch (_profileVoiceCoordinator.afterValidation(validation)) {
+      case ShowProfileVoiceValidationEffect(:final validation):
+        setState(() => _validation = validation);
+        return;
+      case ContinueProfileVoiceApplyEffect():
+        setState(() => _validation = validation);
+      case ProfileVoiceAppliedEffect():
+        break;
+    }
 
-    for (final field in _voiceProfileFields(voiceProfile)) {
-      widget.channel.sendConfigSet(
-        field: 'profiles.$profileId.voice_profile.${field.name}',
-        value: field.value,
-      );
+    for (final field in request.configSets) {
+      widget.channel.sendConfigSet(field: field.field, value: field.value);
     }
-    final sttCredential = _sttCredentialController.text.trim();
-    if (sttCredential.isNotEmpty) {
+    for (final secret in request.secretSets) {
       widget.channel.sendConfigSecretSet(
-        name: 'profiles.$profileId.voice_profile.stt_credential',
-        secret: sttCredential,
+        name: secret.name,
+        secret: secret.secret,
       );
     }
-    final ttsCredential = _ttsCredentialController.text.trim();
-    if (ttsCredential.isNotEmpty) {
-      widget.channel.sendConfigSecretSet(
-        name: 'profiles.$profileId.voice_profile.tts_credential',
-        secret: ttsCredential,
-      );
-    }
-    _sttCredentialController.clear();
-    _ttsCredentialController.clear();
-    setState(() {
-      _editing = false;
-      _statusMessage = 'Voice profile sent to Gormes config admin.';
-    });
+    _applyProfileVoiceEffect(_profileVoiceCoordinator.applySucceeded());
   }
 
   Future<void> _loadRunRecordEvidence() async {
-    final activeRun = widget.channel.state.activeVoiceRun;
-    final id = activeRun?.requestId?.trim().isNotEmpty == true
-        ? activeRun!.requestId!
-        : activeRun?.id;
-    if (id == null || id.trim().isEmpty) {
-      setState(() {
-        _statusMessage = 'No voice run evidence yet.';
-      });
-      return;
+    final plan = _profileVoiceCoordinator.evidencePlan(
+      widget.channel.state.activeVoiceRun,
+    );
+    switch (plan) {
+      case ShowProfileVoiceEvidenceStatusPlan(:final message):
+        setState(() => _statusMessage = message);
+        return;
+      case RequestProfileVoiceEvidencePlan(:final id):
+        final record = await widget.channel.runRecord(id);
+        if (!mounted) return;
+        setState(() {
+          _runRecord = record;
+          _statusMessage = null;
+        });
     }
-    final record = await widget.channel.runRecord(id);
-    if (!mounted) return;
-    setState(() {
-      _runRecord = record;
-      _statusMessage = null;
-    });
+  }
+
+  void _applyProfileVoiceEffect(ProfileVoiceEffect effect) {
+    switch (effect) {
+      case ProfileVoiceAppliedEffect(:final message):
+        _sttCredentialController.clear();
+        _ttsCredentialController.clear();
+        setState(() {
+          _editing = false;
+          _statusMessage = message;
+        });
+      case ShowProfileVoiceValidationEffect(:final validation):
+        setState(() => _validation = validation);
+      case ContinueProfileVoiceApplyEffect():
+        break;
+    }
   }
 }
 
@@ -357,7 +357,7 @@ class _VoiceProfileEditor extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              _errorLabel(error),
+              _profileVoicePresentation.validationErrorLine(error),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
@@ -368,9 +368,12 @@ class _VoiceProfileEditor extends StatelessWidget {
             FilledButton(
               key: const ValueKey('voice-profile-validate-apply'),
               onPressed: onApply,
-              child: const Text('Validate and apply through Gormes'),
+              child: Text(_profileVoicePresentation.applyActionLabel),
             ),
-            TextButton(onPressed: onCancel, child: const Text('Cancel')),
+            TextButton(
+              onPressed: onCancel,
+              child: Text(_profileVoicePresentation.cancelActionLabel),
+            ),
           ],
         ),
       ],
@@ -405,53 +408,10 @@ class _VoiceRunEvidence extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final voice = navivoxMapFieldFromJson(record.raw, 'voice');
-    final serverStt = navivoxMapFieldFromJson(voice, 'server_stt');
-    final tts = navivoxMapFieldFromJson(voice, 'tts');
+    final presentation = _profileVoicePresentation.evidenceFor(record);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Server STT: ${_providerStatus(serverStt)}'),
-        Text('TTS: ${_providerStatus(tts)}'),
-      ],
+      children: [Text(presentation.serverSttLine), Text(presentation.ttsLine)],
     );
   }
-}
-
-typedef _VoiceField = ({String name, String value});
-
-List<_VoiceField> _voiceProfileFields(NavivoxProfileVoiceProfile voice) {
-  return [
-    (name: 'stt_provider', value: voice.sttProvider.trim()),
-    (name: 'tts_provider', value: voice.ttsProvider.trim()),
-    (name: 'voice_id', value: voice.voiceId.trim()),
-    (name: 'language_policy', value: voice.languagePolicy.trim()),
-    (name: 'fallback_voice', value: voice.fallbackVoice.trim()),
-  ];
-}
-
-String _providerStatus(Map<String, Object?> value) {
-  final provider = navivoxStringFieldFromJson(value, 'provider');
-  final status = navivoxStringFieldFromJson(value, 'status');
-  return [provider, status].where((part) => part.isNotEmpty).join(' ');
-}
-
-String _credentialLabel(String label, NavivoxVoiceCredentialStatus? status) {
-  if (status == null) return '$label: not reported';
-  final suffix = status.source.trim().isEmpty ? '' : ' (${status.source})';
-  return '$label: ${status.status}$suffix';
-}
-
-String _errorLabel(NavivoxVoiceProfileFieldError error) {
-  return '${error.field}: ${error.message}';
-}
-
-String _listLabel(List<String> values) {
-  if (values.isEmpty) return 'not reported';
-  return values.join(', ');
-}
-
-String _valueOrUnset(String value) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? 'unset' : trimmed;
 }

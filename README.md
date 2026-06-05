@@ -2,20 +2,24 @@
 
 **Private voice/chat for your own Gormes agents.**
 
-Navivox is an Android-first Flutter app for talking to trusted local or self-hosted Gormes profiles. It gives each profile a Telegram-style contact surface while keeping the agent control plane in Gormes instead of a third-party chat platform.
+Navivox remains an Android-first Flutter app for talking to trusted local or self-hosted Gormes profiles. It gives each profile a Telegram-style contact surface while keeping the agent control plane in Gormes instead of a third-party chat platform.
 
-It is the mobile operator console for a Gormes gateway: connect to a trusted host, chat with profile contacts, send text or device-transcribed voice turns, and watch assistant responses, tool activity, approvals, and recovery states stream back in a phone-friendly UI.
+Navivox can learn product and UI patterns from `fathah/hermes-desktop`: chat first, profile/session/model/provider/memory/tool/gateway surfaces close at hand, and streaming assistant work rendered as product UI instead of terminal output. Hermes Desktop is a reference app, not the near-term Navivox runtime target.
 
-Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, talk to an agent, and inspect its memory.
+Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, talk to an agent, and inspect its memory and operator evidence.
 
-## Relationship To Gormes
+## Relationship To Gormes And Reference Apps
 
 - **Gormes** is the Go-native agent runtime and gateway.
-- **Navivox** is the Flutter app that presents the operator experience on Android and other Flutter targets.
+- **Navivox** is the Flutter app that presents the Gormes operator experience on Android and other Flutter targets.
+- **Hermes Desktop** is a product reference for app shape and UI ideas; it is not a wire-protocol target for the main Navivox plan.
 
 Gormes owns agents, sessions, tools, provider calls, secrets, config, Goncho memory, and server-side policy. Navivox owns setup, chat, voice capture, streaming UI, tool cards, memory visualization, safe config presentation, and local recovery flows.
 
-Gormes repository: <https://github.com/TrebuchetDynamics/gormes-agent>
+References:
+
+- Gormes repository: <https://github.com/TrebuchetDynamics/gormes-agent>
+- Hermes Desktop reference: <https://github.com/fathah/hermes-desktop>
 
 ## Status
 
@@ -25,7 +29,8 @@ Current focus:
 
 1. Connect to a trusted Gormes Navivox gateway.
 2. Send text or device-transcribed voice turns.
-3. Render assistant, tool, approval, connection, and memory-state UI clearly.
+3. Render assistant, tool, approval, connection, run-record, and memory-state UI clearly.
+4. Borrow proven app-shape ideas from Hermes Desktop without changing the Gormes runtime boundary.
 
 ## Screenshots
 
@@ -192,6 +197,7 @@ Important boundaries:
 Start with:
 
 - `CONTEXT.md`
+- `docs/product/hermes-desktop-reference.md`
 - `docs/README.md`
 - `docs/runbooks/termux/gormes-bootstrap.md`
 - [Gormes Navivox CLI docs](https://docs.gormes.ai/cli/navivox/)
