@@ -52,6 +52,53 @@ class SetupScreenPresentation {
 
   String get connectButtonSemanticHint => 'Connect to Gormes and open chat.';
 
+  SetupPairingReadinessPresentation pairingReadiness({
+    required bool connecting,
+    required bool connectedSession,
+    required PairingHandoffSource source,
+    required bool hasError,
+  }) {
+    if (connecting) {
+      return const SetupPairingReadinessPresentation(
+        status: SetupPairingReadinessStatus.connecting,
+        statusLabel: 'Connecting to Gormes',
+        message:
+            'Navivox is checking the gateway with the current pairing details.',
+      );
+    }
+    if (hasError) {
+      return const SetupPairingReadinessPresentation(
+        status: SetupPairingReadinessStatus.failedRetry,
+        statusLabel: 'Pairing needs attention',
+        message:
+            'Pairing did not complete. Review the message below, keep Gormes pairing open, then retry.',
+      );
+    }
+    if (source != PairingHandoffSource.manual) {
+      final sourceLabel = _safePairingHandoffSourceLabel(source);
+      return SetupPairingReadinessPresentation(
+        status: SetupPairingReadinessStatus.importedNeedsReview,
+        statusLabel: 'Review imported handoff',
+        message:
+            'Connection details were imported from $sourceLabel. Review the gateway address below before connecting.',
+      );
+    }
+    if (connectedSession) {
+      return const SetupPairingReadinessPresentation(
+        status: SetupPairingReadinessStatus.connectedSessionOnly,
+        statusLabel: 'Connected for this app session',
+        message:
+            'Pairing succeeded for this app session. Durable reconnect is separate and not saved by this step.',
+      );
+    }
+    return const SetupPairingReadinessPresentation(
+      status: SetupPairingReadinessStatus.manual,
+      statusLabel: 'Ready for pairing details',
+      message:
+          'Use a Gormes pairing link when possible, or enter gateway address and pairing token below.',
+    );
+  }
+
   SetupScreenNotice qrImportNotice(SetupQrImageImport? result) {
     if (result == null || !result.hasValues) {
       return const SetupScreenNotice.info('No QR image selected.');
@@ -121,6 +168,37 @@ class SetupScreenPresentation {
       'or QR code. Scan the QR with Navivox to pair, or copy the connection '
       'URL shown in your terminal. Pairing starts this app session; durable '
       'reconnect will require a future secure credential.';
+}
+
+enum SetupPairingReadinessStatus {
+  manual,
+  importedNeedsReview,
+  connecting,
+  connectedSessionOnly,
+  failedRetry,
+}
+
+class SetupPairingReadinessPresentation {
+  const SetupPairingReadinessPresentation({
+    required this.status,
+    required this.statusLabel,
+    required this.message,
+  });
+
+  final SetupPairingReadinessStatus status;
+  final String statusLabel;
+  final String message;
+
+  String get title => 'Pairing readiness';
+}
+
+String _safePairingHandoffSourceLabel(PairingHandoffSource source) {
+  return switch (source) {
+    PairingHandoffSource.directAppOpen => 'a pairing link',
+    PairingHandoffSource.qrImage => 'a QR image',
+    PairingHandoffSource.sharedText => 'shared text',
+    PairingHandoffSource.manual => 'manual entry',
+  };
 }
 
 String _hostForAuthority(String host) {

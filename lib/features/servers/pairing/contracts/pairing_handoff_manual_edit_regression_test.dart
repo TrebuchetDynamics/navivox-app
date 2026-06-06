@@ -7,9 +7,7 @@ void main() {
 
 void manualPortEditClearsImportedHandoffTarget() {
   _expect(
-    pairingHandoffManualEditClearsImportedTarget(
-      PairingHandoffManualEdit.port,
-    ),
+    pairingHandoffManualEditClearsImportedTarget(PairingHandoffManualEdit.port),
     'manual port edits change the connection endpoint and must clear imported handoff targets',
   );
 }

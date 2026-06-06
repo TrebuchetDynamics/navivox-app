@@ -31,6 +31,68 @@ void main() {
     expect(presentation.fixInstructionsButtonLabel, 'Copy fix instructions');
     expect(presentation.connectButtonLabel, 'Connect and talk');
     expect(presentation.connectButtonSemanticHint, contains('open chat'));
+    expect(
+      presentation
+          .pairingReadiness(
+            connecting: false,
+            connectedSession: false,
+            source: PairingHandoffSource.manual,
+            hasError: false,
+          )
+          .title,
+      'Pairing readiness',
+    );
+  });
+
+  test('summarizes setup Pairing readiness states', () {
+    final manual = presentation.pairingReadiness(
+      connecting: false,
+      connectedSession: false,
+      source: PairingHandoffSource.manual,
+      hasError: false,
+    );
+    expect(manual.status, SetupPairingReadinessStatus.manual);
+    expect(manual.statusLabel, 'Ready for pairing details');
+    expect(manual.message, contains('enter gateway address'));
+
+    final imported = presentation.pairingReadiness(
+      connecting: false,
+      connectedSession: false,
+      source: PairingHandoffSource.qrImage,
+      hasError: false,
+    );
+    expect(imported.status, SetupPairingReadinessStatus.importedNeedsReview);
+    expect(imported.statusLabel, 'Review imported handoff');
+    expect(imported.message, contains('QR image'));
+
+    final connecting = presentation.pairingReadiness(
+      connecting: true,
+      connectedSession: false,
+      source: PairingHandoffSource.directAppOpen,
+      hasError: false,
+    );
+    expect(connecting.status, SetupPairingReadinessStatus.connecting);
+    expect(connecting.statusLabel, 'Connecting to Gormes');
+
+    final connected = presentation.pairingReadiness(
+      connecting: false,
+      connectedSession: true,
+      source: PairingHandoffSource.manual,
+      hasError: false,
+    );
+    expect(connected.status, SetupPairingReadinessStatus.connectedSessionOnly);
+    expect(connected.statusLabel, 'Connected for this app session');
+    expect(connected.message, contains('Durable reconnect is separate'));
+
+    final failed = presentation.pairingReadiness(
+      connecting: false,
+      connectedSession: false,
+      source: PairingHandoffSource.directAppOpen,
+      hasError: true,
+    );
+    expect(failed.status, SetupPairingReadinessStatus.failedRetry);
+    expect(failed.statusLabel, 'Pairing needs attention');
+    expect(failed.message, contains('retry'));
   });
 
   test('centralizes active-gateway handoff confirmation copy', () {

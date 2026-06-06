@@ -152,7 +152,7 @@ void main() {
     await tester.tap(find.text('Manage gateways'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Gateways'), findsOneWidget);
+    expect(find.text('Gateways'), findsWidgets);
   });
 
   testWidgets('add profile menu rows are plugged into actions', (tester) async {
@@ -175,7 +175,7 @@ void main() {
     await tester.tap(find.text('Add server'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Gateways'), findsOneWidget);
+    expect(find.text('Gateways'), findsWidgets);
   });
 
   testWidgets('search highlights matching contact title text like Telegram', (

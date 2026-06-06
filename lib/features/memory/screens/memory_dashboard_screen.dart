@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_memory.dart';
+import '../../../router/app_routes.dart';
+import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../actions/memory_dashboard_action_coordinator.dart';
 import '../presentation/memory_dashboard_presentation.dart';
 
@@ -26,18 +30,34 @@ class MemoryDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final channel = ref.watch(navivoxChannelProvider);
-    final activeProfile = channel.state.activeProfileContact;
+    final state = channel.state;
+    final activeProfile = state.activeProfileContact;
+    final scope = ProfileContactScopePresentation(
+      activeServer: state.activeServer,
+      activeServerId: state.activeServerId,
+      activeProfile: activeProfile,
+    );
     final overview = ref.watch(memoryOverviewProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(_memoryPresentation.title)),
       body: overview.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _MemoryError(
-          presentation: _memoryPresentation.errorFor(
-            activeProfile,
+        loading: () => _MemoryReadinessOnlyBody(
+          scope: scope,
+          readiness: _memoryPresentation.checkingReadiness(),
+          onRefresh: () => ref.invalidate(memoryOverviewProvider),
+          onOpenGateway: () => _openGateway(context),
+          onOpenActiveChat: () => _openActiveChat(context, activeProfile),
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, stackTrace) => _MemoryReadinessOnlyBody(
+          scope: scope,
+          readiness: _memoryPresentation.unavailableReadiness(
             message: 'Gormes memory API is unavailable.',
           ),
+          onRefresh: () => ref.invalidate(memoryOverviewProvider),
+          onOpenGateway: () => _openGateway(context),
+          onOpenActiveChat: () => _openActiveChat(context, activeProfile),
         ),
         data: (overview) => _MemoryOverviewBody(
           overview: overview,
@@ -45,6 +65,130 @@ class MemoryDashboardScreen extends ConsumerWidget {
             overview,
             activeProfile: activeProfile,
           ),
+          scope: scope,
+          readiness: _memoryPresentation.readinessFor(overview),
+          onRefresh: () => ref.invalidate(memoryOverviewProvider),
+          onOpenGateway: () => _openGateway(context),
+          onOpenActiveChat: () => _openActiveChat(context, activeProfile),
+        ),
+      ),
+    );
+  }
+
+  void _openGateway(BuildContext context) {
+    GoRouter.maybeOf(context)?.go(AppRoutes.servers);
+  }
+
+  void _openActiveChat(
+    BuildContext context,
+    NavivoxProfileContact? activeProfile,
+  ) {
+    final contact = activeProfile;
+    final location = contact == null
+        ? AppRoutes.chats
+        : AppRoutes.chatLocation(
+            serverId: contact.serverId,
+            profileId: contact.profileId,
+          );
+    GoRouter.maybeOf(context)?.go(location);
+  }
+}
+
+class _MemoryReadinessOnlyBody extends StatelessWidget {
+  const _MemoryReadinessOnlyBody({
+    required this.scope,
+    required this.readiness,
+    required this.onRefresh,
+    required this.onOpenGateway,
+    required this.onOpenActiveChat,
+    this.child,
+  });
+
+  final ProfileContactScopePresentation scope;
+  final MemoryReadinessPresentation readiness;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenGateway;
+  final VoidCallback onOpenActiveChat;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _MemoryReadinessCard(
+          scope: scope,
+          readiness: readiness,
+          onRefresh: onRefresh,
+          onOpenGateway: onOpenGateway,
+          onOpenActiveChat: onOpenActiveChat,
+        ),
+        if (child != null) ...[const SizedBox(height: 24), child!],
+      ],
+    );
+  }
+}
+
+class _MemoryReadinessCard extends StatelessWidget {
+  const _MemoryReadinessCard({
+    required this.scope,
+    required this.readiness,
+    required this.onRefresh,
+    required this.onOpenGateway,
+    required this.onOpenActiveChat,
+  });
+
+  final ProfileContactScopePresentation scope;
+  final MemoryReadinessPresentation readiness;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenGateway;
+  final VoidCallback onOpenActiveChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        OutlinedButton.icon(
+          onPressed: onRefresh,
+          icon: const Icon(Icons.refresh),
+          label: Text(readiness.refreshLabel),
+        ),
+        TextButton.icon(
+          onPressed: onOpenGateway,
+          icon: const Icon(Icons.dns_outlined),
+          label: Text(readiness.openGatewayLabel),
+        ),
+        TextButton.icon(
+          onPressed: onOpenActiveChat,
+          icon: const Icon(Icons.chat_bubble_outline),
+          label: Text(readiness.openActiveChatLabel),
+        ),
+      ],
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(readiness.title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 2),
+            Text(readiness.statusLabel),
+            const SizedBox(height: 8),
+            Align(alignment: Alignment.centerRight, child: actions),
+            const SizedBox(height: 6),
+            Text(readiness.message),
+            const SizedBox(height: 8),
+            Text('Memory scope', style: theme.textTheme.titleSmall),
+            Text('Active server: ${scope.serverLabel}'),
+            Text('Active profile: ${scope.profileLabel}'),
+            if (scope.profileId != null)
+              Text('Active profile ID: ${scope.profileId}'),
+          ],
         ),
       ),
     );
@@ -55,10 +199,20 @@ class _MemoryOverviewBody extends StatelessWidget {
   const _MemoryOverviewBody({
     required this.overview,
     required this.presentation,
+    required this.scope,
+    required this.readiness,
+    required this.onRefresh,
+    required this.onOpenGateway,
+    required this.onOpenActiveChat,
   });
 
   final NavivoxMemoryOverview overview;
   final MemoryOverviewPresentation presentation;
+  final ProfileContactScopePresentation scope;
+  final MemoryReadinessPresentation readiness;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenGateway;
+  final VoidCallback onOpenActiveChat;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +220,14 @@ class _MemoryOverviewBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _MemoryReadinessCard(
+          scope: scope,
+          readiness: readiness,
+          onRefresh: onRefresh,
+          onOpenGateway: onOpenGateway,
+          onOpenActiveChat: onOpenActiveChat,
+        ),
+        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -543,36 +705,6 @@ class _MemoryCountCard extends StatelessWidget {
               Text(label),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MemoryError extends StatelessWidget {
-  const _MemoryError({required this.presentation});
-
-  final MemoryErrorPresentation presentation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.warning_amber_outlined, size: 40),
-            const SizedBox(height: 12),
-            Text(
-              presentation.title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(presentation.profileLine),
-            const SizedBox(height: 8),
-            Text(presentation.message, textAlign: TextAlign.center),
-          ],
         ),
       ),
     );

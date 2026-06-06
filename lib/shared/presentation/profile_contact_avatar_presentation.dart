@@ -21,5 +21,6 @@ class ProfileContactAvatarPresentation {
 
   String get semanticLabel => '$_label profile avatar';
 
-  String get _label => profileContactIdentityLabel(contact, fallback: 'profile');
+  String get _label =>
+      profileContactIdentityLabel(contact, fallback: 'profile');
 }

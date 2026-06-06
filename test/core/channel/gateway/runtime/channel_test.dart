@@ -79,6 +79,35 @@ void main() {
     },
   );
 
+  test(
+    'config admin refresh recovers after initial schema load failure',
+    () async {
+      final server = await _FakeGatewayServer.start(
+        configAdminAvailable: true,
+        failFirstConfigAdminSchemaLoad: true,
+      );
+      addTearDown(server.close);
+
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
+
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+
+      expect(channel.configAdminSupported, isTrue);
+      expect(channel.configAdminAvailable, isFalse);
+      expect(channel.configAdminLoadFailed, isTrue);
+      expect(server.configAdminSchemaRequests, 1);
+
+      await channel.refreshConfigAdmin();
+
+      expect(channel.configAdminAvailable, isTrue);
+      expect(channel.configAdminLoadFailed, isFalse);
+      expect(server.configAdminSchemaRequests, 2);
+      expect(channel.state.configSchema?['fields'], isA<List<Object?>>());
+      expect(channel.state.configValues['providers.default'], 'openai');
+    },
+  );
+
   test('run records are unavailable when not advertised', () async {
     final server = await _FakeGatewayServer.start(runRecordsAvailable: false);
     addTearDown(server.close);
@@ -821,6 +850,8 @@ class _FakeGatewayServer {
     this._capabilities,
     this._capabilitiesUnavailable,
     this._runRecordsAvailable,
+    this._configAdminAvailable,
+    this._failFirstConfigAdminSchemaLoad,
   );
 
   final HttpServer _server;
@@ -831,10 +862,13 @@ class _FakeGatewayServer {
   final Map<String, Object?>? _capabilities;
   final bool _capabilitiesUnavailable;
   final bool _runRecordsAvailable;
+  final bool _configAdminAvailable;
+  final bool _failFirstConfigAdminSchemaLoad;
   final Completer<Map<String, Object?>> _nextClientMessage = Completer();
   final List<WebSocket> _sockets = [];
   var profileContactsRequests = 0;
   var streamRequests = 0;
+  var configAdminSchemaRequests = 0;
 
   String get baseUrl => 'http://127.0.0.1:$port';
   Future<Map<String, Object?>> get nextClientMessage =>
@@ -847,6 +881,8 @@ class _FakeGatewayServer {
     Map<String, Object?>? capabilities,
     bool capabilitiesUnavailable = false,
     bool runRecordsAvailable = true,
+    bool configAdminAvailable = false,
+    bool failFirstConfigAdminSchemaLoad = false,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final fake = _FakeGatewayServer._(
@@ -858,6 +894,8 @@ class _FakeGatewayServer {
       capabilities,
       capabilitiesUnavailable,
       runRecordsAvailable,
+      configAdminAvailable,
+      failFirstConfigAdminSchemaLoad,
     );
     server.listen(fake._handle);
     return fake;
@@ -908,6 +946,30 @@ class _FakeGatewayServer {
       writeGatewayJson(request.response, {'profiles': <Object?>[]});
       return;
     }
+    if (request.uri.path == '/v1/navivox/config-admin/schema') {
+      configAdminSchemaRequests++;
+      if (_failFirstConfigAdminSchemaLoad && configAdminSchemaRequests == 1) {
+        request.response.statusCode = HttpStatus.serviceUnavailable;
+        await request.response.close();
+        return;
+      }
+      writeGatewayJson(request.response, {
+        'action': 'config.schema',
+        'fields': [
+          {'path': 'providers.default', 'label': 'Default provider'},
+        ],
+      });
+      return;
+    }
+    if (request.uri.path == '/v1/navivox/config-admin') {
+      writeGatewayJson(request.response, {
+        'action': 'config.get',
+        'values': [
+          {'key': 'providers.default', 'type': 'string', 'value': 'openai'},
+        ],
+      });
+      return;
+    }
     if (request.uri.path == '/v1/navivox/stream') {
       streamRequests++;
       final socket = await WebSocketTransformer.upgrade(request);
@@ -935,6 +997,7 @@ class _FakeGatewayServer {
       'profile_routing',
       'stream_turns',
       'turn_control',
+      if (_configAdminAvailable) 'config_admin',
     ];
     document['endpoints'] = [
       {
@@ -945,6 +1008,43 @@ class _FakeGatewayServer {
         'description': 'Runtime status',
       },
       ...List<Map<String, Object?>>.from(document['endpoints'] as List),
+      if (_configAdminAvailable) ...[
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/config-admin',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Config admin values',
+        },
+        {
+          'method': 'GET',
+          'path': '/v1/navivox/config-admin/schema',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Config admin schema',
+        },
+        {
+          'method': 'POST',
+          'path': '/v1/navivox/config-admin/diff',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Config admin diff',
+        },
+        {
+          'method': 'POST',
+          'path': '/v1/navivox/config-admin/validate',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Config admin validate',
+        },
+        {
+          'method': 'POST',
+          'path': '/v1/navivox/config-admin/apply',
+          'auth': 'navivox',
+          'stability': 'stable',
+          'description': 'Config admin apply',
+        },
+      ],
     ];
     document['voice'] = {
       ...Map<String, Object?>.from(document['voice'] as Map),

@@ -73,7 +73,7 @@ void main() {
       await tester.tap(find.text('Manage gateways'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Gateways'), findsOneWidget);
+      expect(find.text('Gateways'), findsWidgets);
       expect(find.byKey(const ValueKey('server-card-local')), findsOneWidget);
       expect(find.byKey(const ValueKey('server-card-office')), findsOneWidget);
 
@@ -82,6 +82,14 @@ void main() {
 
       expect(find.text('Manage gateway'), findsOneWidget);
       expect(find.text('Office'), findsWidgets);
+      expect(find.text('Gateway status'), findsWidgets);
+      expect(find.text('Connection metadata pending'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Profiles on this gateway'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Support Triage'), findsOneWidget);
       expect(find.text('Profiles on this gateway'), findsOneWidget);
     },

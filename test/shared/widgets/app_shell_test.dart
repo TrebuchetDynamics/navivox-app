@@ -20,7 +20,7 @@ void main() {
       expect(find.text('Thread body'), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.text('Chats'), findsNothing);
-      expect(find.text('Servers'), findsNothing);
+      expect(find.text('Gateways'), findsNothing);
     });
   });
 
@@ -38,11 +38,11 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byTooltip('Open navigation menu'), findsNothing);
       expect(find.text('Chats'), findsOneWidget);
-      expect(find.text('Agents'), findsOneWidget);
+      expect(find.text('Profiles'), findsOneWidget);
       expect(find.text('Memory'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('More'), findsOneWidget);
-      expect(find.text('Servers'), findsNothing);
+      expect(find.text('Gateways'), findsNothing);
     });
   });
 
@@ -81,7 +81,7 @@ void main() {
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Servers'), findsOneWidget);
+      expect(find.text('Gateways'), findsOneWidget);
       expect(find.text('Config'), findsOneWidget);
       expect(find.byType(Drawer), findsNothing);
     });

@@ -31,7 +31,12 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   final List<List<NavivoxConfigAdminChange>> configAdminValidateCalls = [];
   final List<List<NavivoxConfigAdminChange>> configAdminDiffCalls = [];
   final List<List<NavivoxConfigAdminChange>> configAdminApplyCalls = [];
+  int refreshConfigAdminCalls = 0;
   bool _configAdminAvailable = false;
+  bool _configAdminSupported = false;
+  bool _configAdminLoadFailed = false;
+  Map<String, Object?>? _configAdminRefreshSchema;
+  Map<String, Object?>? _configAdminRefreshValues;
   NavivoxConfigAdminResponse? _configAdminValidate;
   NavivoxConfigAdminResponse? _configAdminDiff;
   NavivoxConfigAdminResponse? _configAdminApply;
@@ -46,6 +51,7 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   NavivoxRunRecordSnapshot? _runRecord;
   NavivoxMemorySearchResult? _memorySearch;
   NavivoxMemoryDetail? _memoryDetail;
+  final List<({String? serverId, String? profileId})> memoryOverviewCalls = [];
   NavivoxMemoryActionResult? _memoryActionResult;
   final List<
     ({
@@ -174,12 +180,28 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _runRecord = record;
   }
 
+  void seedConfigAdminLoadFailed() {
+    _configAdminAvailable = false;
+    _configAdminSupported = true;
+    _configAdminLoadFailed = true;
+  }
+
+  void seedConfigAdminRefreshResult({
+    required Map<String, Object?> schema,
+    required Map<String, Object?> values,
+  }) {
+    _configAdminRefreshSchema = schema;
+    _configAdminRefreshValues = values;
+  }
+
   void seedConfigAdminResponses({
     required NavivoxConfigAdminResponse validate,
     required NavivoxConfigAdminResponse diff,
     required NavivoxConfigAdminResponse apply,
   }) {
     _configAdminAvailable = true;
+    _configAdminSupported = true;
+    _configAdminLoadFailed = false;
     _configAdminValidate = validate;
     _configAdminDiff = diff;
     _configAdminApply = apply;
@@ -423,6 +445,10 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     String? profileId,
   }) async {
     final active = _state.activeProfileContact;
+    memoryOverviewCalls.add((
+      serverId: serverId ?? active?.serverId,
+      profileId: profileId ?? active?.profileId,
+    ));
     return _memoryOverview ??
         NavivoxMemoryOverview.degraded(
           profileId: profileId ?? active?.profileId ?? 'default',
@@ -536,7 +562,26 @@ class TestNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   bool get configAdminAvailable => _configAdminAvailable;
 
   @override
-  Future<void> refreshConfigAdmin() async {}
+  bool get configAdminSupported => _configAdminSupported;
+
+  @override
+  bool get configAdminLoadFailed => _configAdminLoadFailed;
+
+  @override
+  Future<void> refreshConfigAdmin() async {
+    refreshConfigAdminCalls += 1;
+    final schema = _configAdminRefreshSchema;
+    final values = _configAdminRefreshValues;
+    if (schema == null || values == null) return;
+    _configAdminAvailable = true;
+    _configAdminSupported = true;
+    _configAdminLoadFailed = false;
+    state = _state.copyWith(
+      configSchema: schema,
+      configValues: values,
+      clearConfigDiff: true,
+    );
+  }
 
   @override
   Future<NavivoxConfigAdminResponse> validateConfigAdmin(

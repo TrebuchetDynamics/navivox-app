@@ -12,7 +12,7 @@ const { browser, page } = await openDebugPage({
 // 1. DEEP NAV RAIL PROBE: check for ANY elements with nav-related text at left
 console.log('=== 1. NAV RAIL INVESTIGATION ===');
 const navCandidates = await page.evaluate(() => {
-  const searchWords = ['Chats', 'Servers', 'Agents', 'Memory', 'Config', 'Settings', 'chat_bubble', 'dns', 'smart_toy', 'psychology', 'keyboard_voice'];
+  const searchWords = ['Chats', 'Gateways', 'Profiles', 'Memory', 'Config', 'Settings', 'chat_bubble', 'dns', 'people_alt', 'psychology', 'keyboard_voice'];
   const all = document.querySelectorAll('*');
   const found = [];
   for (const el of all) {

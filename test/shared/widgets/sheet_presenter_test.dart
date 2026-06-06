@@ -13,12 +13,19 @@ void main() {
             builder: (context) => ElevatedButton(
               onPressed: () => showSheet(
                 context,
-                ActionSheet('Test title', rows: [
-                  SheetActionRow(Icons.star, 'Action 1', onTap: (_) {
-                    tapped = true;
-                  }),
-                  SheetActionRow(Icons.favorite, 'Action 2', onTap: (_) {}),
-                ]),
+                ActionSheet(
+                  'Test title',
+                  rows: [
+                    SheetActionRow(
+                      Icons.star,
+                      'Action 1',
+                      onTap: (_) {
+                        tapped = true;
+                      },
+                    ),
+                    SheetActionRow(Icons.favorite, 'Action 2', onTap: (_) {}),
+                  ],
+                ),
               ),
               child: const Text('Show sheet'),
             ),
@@ -50,16 +57,19 @@ void main() {
             builder: (context) => ElevatedButton(
               onPressed: () => showSheet(
                 context,
-                ActionSheet('Test', rows: [
-                  SheetActionRow(
-                    Icons.check,
-                    'Pop me',
-                    onTap: (sheetContext) {
-                      capturedContext = sheetContext;
-                      Navigator.of(sheetContext).pop();
-                    },
-                  ),
-                ]),
+                ActionSheet(
+                  'Test',
+                  rows: [
+                    SheetActionRow(
+                      Icons.check,
+                      'Pop me',
+                      onTap: (sheetContext) {
+                        capturedContext = sheetContext;
+                        Navigator.of(sheetContext).pop();
+                      },
+                    ),
+                  ],
+                ),
               ),
               child: const Text('Show sheet'),
             ),
@@ -90,14 +100,22 @@ void main() {
             builder: (context) => ElevatedButton(
               onPressed: () => showSheet(
                 context,
-                InfoActionSheet('Info title', infoRows: [
-                  SheetInfoRow(Icons.person, 'Name', 'Alice'),
-                  SheetInfoRow(Icons.tag, 'ID', 'abc123'),
-                ], actions: [
-                  SheetActionRow(Icons.settings, 'Settings', onTap: (_) {
-                    actionTapped = true;
-                  }),
-                ]),
+                InfoActionSheet(
+                  'Info title',
+                  infoRows: [
+                    SheetInfoRow(Icons.person, 'Name', 'Alice'),
+                    SheetInfoRow(Icons.tag, 'ID', 'abc123'),
+                  ],
+                  actions: [
+                    SheetActionRow(
+                      Icons.settings,
+                      'Settings',
+                      onTap: (_) {
+                        actionTapped = true;
+                      },
+                    ),
+                  ],
+                ),
               ),
               child: const Text('Show sheet'),
             ),
@@ -131,10 +149,13 @@ void main() {
             builder: (context) => ElevatedButton(
               onPressed: () => showSheet(
                 context,
-                ActionSheet('Many actions', rows: [
-                  for (var i = 0; i < 8; i++)
-                    SheetActionRow(Icons.star, 'Action $i', onTap: (_) {}),
-                ]),
+                ActionSheet(
+                  'Many actions',
+                  rows: [
+                    for (var i = 0; i < 8; i++)
+                      SheetActionRow(Icons.star, 'Action $i', onTap: (_) {}),
+                  ],
+                ),
               ),
               child: const Text('Show sheet'),
             ),

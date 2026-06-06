@@ -171,8 +171,9 @@ test.describe('5. Screen Content', () => {
   });
   test('5e Settings overview', async ({page}) => {
     await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await expect(page.getByText('Voice settings').first()).toBeVisible();
-    await expect(page.getByText('Global app settings').first()).toBeVisible();
+    await expect(page.getByText('Settings').first()).toBeVisible();
+    await expect(page.getByText('Local settings').first()).toBeVisible();
+    await expect(page.getByText('Local voice preferences').first()).toBeVisible();
     await expect(page.getByText('navi').first()).toBeVisible();
     await expect(page.getByText('2 Gormes gateways').first()).toBeVisible();
     await expect(page.getByText('3 profile contacts').first()).toBeVisible();

@@ -333,6 +333,12 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   bool get configAdminAvailable => false;
 
   @override
+  bool get configAdminSupported => false;
+
+  @override
+  bool get configAdminLoadFailed => false;
+
+  @override
   Future<void> refreshConfigAdmin() async {}
 
   @override

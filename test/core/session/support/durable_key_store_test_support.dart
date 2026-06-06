@@ -11,7 +11,9 @@ void clearDurableKeysMockHandler() {
       .setMockMethodCallHandler(durableKeysTestChannel, null);
 }
 
-void setDurableKeysMockHandler(Future<Object?>? Function(MethodCall call) handler) {
+void setDurableKeysMockHandler(
+  Future<Object?>? Function(MethodCall call) handler,
+) {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(durableKeysTestChannel, handler);
 }

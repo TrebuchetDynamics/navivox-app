@@ -56,6 +56,12 @@ class ServerGatewayPresentation {
   String get statusSubtitle =>
       '${active ? 'Active session gateway' : 'Registered gateway'} · ${server.status}';
 
+  GatewayStatusPresentation get gatewayStatus => GatewayStatusPresentation(
+    rawStatus: server.status,
+    active: active,
+    countLabels: countLabels,
+  );
+
   String? get activeProfileLabel {
     final profile = activeProfileContact;
     if (profile == null) return null;
@@ -106,10 +112,74 @@ class ServerGatewayPresentation {
   }
 }
 
+class GatewayStatusPresentation {
+  const GatewayStatusPresentation({
+    required this.rawStatus,
+    required this.active,
+    required this.countLabels,
+  });
+
+  final String rawStatus;
+  final bool active;
+  final List<String> countLabels;
+
+  String get title => 'Gateway status';
+
+  String get headline {
+    final status = _normalizedGatewayStatus(rawStatus);
+    return switch (status) {
+      'online' || 'ready' =>
+        active ? 'Active session connected' : 'Registered gateway online',
+      'offline' =>
+        active
+            ? 'Active session gateway offline'
+            : 'Registered gateway offline',
+      '' =>
+        active
+            ? 'Active session status unknown'
+            : 'Registered gateway status unknown',
+      _ =>
+        active
+            ? 'Active session: ${_formattedGatewayStatus(rawStatus)}'
+            : 'Registered gateway: ${_formattedGatewayStatus(rawStatus)}',
+    };
+  }
+
+  String get sessionLine =>
+      active ? 'Session: active in this app' : 'Session: not active';
+
+  String get reportedStatusLine =>
+      'Reported status: ${_formattedGatewayStatus(rawStatus)}';
+
+  String get summaryLine => '$sessionLine · $reportedStatusLine';
+
+  String get profileContactsLine => countLabels.isEmpty
+      ? 'Profile contacts: none reported yet'
+      : 'Profile contacts: ${countLabels.join(' · ')}';
+
+  String get deferredMetadataTitle => 'Connection metadata pending';
+
+  String get deferredMetadataMessage =>
+      'Base URL, auth, exposure, stream health, credentials, and local trust are not reported by the current app state yet.';
+}
+
 class GatewayProfileContactPresentation {
   const GatewayProfileContactPresentation(this.contact);
 
   final NavivoxProfileContact contact;
 
   String get compactHealthLabel => compactProfileHealthLabel(contact.health);
+}
+
+String _normalizedGatewayStatus(String status) => status.trim().toLowerCase();
+
+String _formattedGatewayStatus(String status) {
+  final words = status
+      .trim()
+      .split(RegExp(r'[\s_-]+'))
+      .where((word) => word.isNotEmpty)
+      .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
+      .toList(growable: false);
+  if (words.isEmpty) return 'Unknown';
+  return words.join(' ');
 }

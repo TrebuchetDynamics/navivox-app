@@ -22,6 +22,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
+    expect(find.text('Pairing readiness'), findsOneWidget);
+    expect(find.text('Ready for pairing details'), findsOneWidget);
     expect(setupConnectAction(), findsOneWidget);
     expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
     expect(find.textContaining('Android emulator'), findsOneWidget);
@@ -174,6 +176,14 @@ void main() {
     await tester.ensureVisible(importButton);
     await tester.tap(importButton);
     await tester.pumpAndSettle();
+    expect(find.text('Review imported handoff'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('setup-pairing-readiness-card')),
+        matching: find.textContaining('QR image'),
+      ),
+      findsOneWidget,
+    );
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
@@ -386,6 +396,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Pairing needs attention'), findsOneWidget);
     expect(
       find.text('Could not connect from the pairing link.'),
       findsOneWidget,
@@ -548,6 +559,7 @@ void main() {
       await tester.tap(setupConnectAction());
       await tester.pumpAndSettle();
 
+      expect(find.text('Pairing needs attention'), findsOneWidget);
       expect(find.text('Could not connect to Gormes gateway.'), findsOneWidget);
       expect(find.textContaining('gormes navivox status'), findsWidgets);
       expect(find.textContaining('gormes navivox pair'), findsWidgets);

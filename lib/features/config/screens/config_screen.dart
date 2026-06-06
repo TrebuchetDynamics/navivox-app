@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
+import '../../../router/app_routes.dart';
 import '../../../shared/presentation/profile_contact_scope_presentation.dart';
 import '../../profiles/widgets/profile_voice_profile_card.dart';
 import '../actions/config_admin_apply_coordinator.dart';
@@ -33,6 +35,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   final TextEditingController _controller = TextEditingController();
   NavivoxConfigAdminResponse? _lastConfigAdminApply;
   String? _configAdminError;
+  bool _refreshingConfigAdmin = false;
 
   void _onChannelChanged() {
     if (mounted) setState(() {});
@@ -150,6 +153,28 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     }
   }
 
+  Future<void> _refreshConfigAdmin(NavivoxChannel channel) async {
+    if (_refreshingConfigAdmin) return;
+    setState(() {
+      _refreshingConfigAdmin = true;
+      _configAdminError = null;
+    });
+    try {
+      await channel.refreshConfigAdmin();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _configAdminError = 'Config admin could not be refreshed.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _refreshingConfigAdmin = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final channel = ref.watch(navivoxChannelProvider);
@@ -163,23 +188,28 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       state: channel.state,
       sectionId: widget.sectionId,
       draftSession: _draftSession,
+      configAdminAvailable: channel.configAdminAvailable,
+      configAdminSupported: channel.configAdminSupported,
+      configAdminLoadFailed: channel.configAdminLoadFailed,
+      configAdminChecking: _refreshingConfigAdmin,
     );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Config')),
       body: ListView(
         children: [
-          _ConfigScopeCard(scope: screen.scope),
+          _ConfigReadinessCard(
+            scope: screen.scope,
+            readiness: screen.configReadiness,
+            onRefresh: () => _refreshConfigAdmin(channel),
+            onOpenGateway: () =>
+                GoRouter.maybeOf(context)?.go(AppRoutes.servers),
+          ),
           if (channel.state.activeProfileContact != null)
             ProfileVoiceProfileCard(channel: channel),
-          if (screen.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(child: Text(screen.emptyMessage)),
-            )
-          else if (screen.isMissingSection)
+          if (screen.isMissingSection)
             _MissingConfigSectionCard(message: screen.missingSectionMessage)
-          else
+          else if (!screen.isEmpty)
             for (final section in screen.sections)
               _ConfigSectionCard(
                 section: section,
@@ -210,33 +240,79 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   }
 }
 
-class _ConfigScopeCard extends StatelessWidget {
-  const _ConfigScopeCard({required this.scope});
+class _ConfigReadinessCard extends StatelessWidget {
+  const _ConfigReadinessCard({
+    required this.scope,
+    required this.readiness,
+    required this.onRefresh,
+    required this.onOpenGateway,
+  });
 
   final ProfileContactScopePresentation scope;
+  final ConfigReadinessPresentation readiness;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenGateway;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Profile config scope',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text('Server: ${scope.serverLabel}'),
-            Text('Profile: ${scope.profileLabel}'),
-            if (scope.profileId != null) Text('Profile ID: ${scope.profileId}'),
-            const SizedBox(height: 8),
-            const Text(
-              'Config values shown here belong to the selected Gormes profile when the gateway provides profile-scoped config.',
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final actions = Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: readiness.canRefresh ? onRefresh : null,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(readiness.refreshLabel),
+                ),
+                TextButton.icon(
+                  onPressed: onOpenGateway,
+                  icon: const Icon(Icons.dns_outlined),
+                  label: Text(readiness.openGatewayLabel),
+                ),
+              ],
+            );
+            final heading = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(readiness.title, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 2),
+                Text(readiness.statusLabel),
+              ],
+            );
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (constraints.maxWidth >= 560)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: heading),
+                      actions,
+                    ],
+                  )
+                else ...[
+                  heading,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+                const SizedBox(height: 6),
+                Text(readiness.message),
+                const SizedBox(height: 8),
+                Text('Profile config scope', style: theme.textTheme.titleSmall),
+                Text('Server: ${scope.serverLabel}'),
+                Text('Profile: ${scope.profileLabel}'),
+                if (scope.profileId != null)
+                  Text('Profile ID: ${scope.profileId}'),
+              ],
+            );
+          },
         ),
       ),
     );

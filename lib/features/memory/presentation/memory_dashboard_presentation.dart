@@ -30,6 +30,55 @@ class MemoryDashboardPresentation {
 
   String get saveCorrectionLabel => 'Save correction';
 
+  MemoryReadinessPresentation checkingReadiness() {
+    return const MemoryReadinessPresentation(
+      status: MemoryReadinessStatus.checking,
+      message:
+          'Checking whether Gormes can provide Goncho memory for this profile.',
+    );
+  }
+
+  MemoryReadinessPresentation unavailableReadiness({required String message}) {
+    return MemoryReadinessPresentation(
+      status: MemoryReadinessStatus.unavailable,
+      message: message,
+    );
+  }
+
+  MemoryReadinessPresentation readinessFor(NavivoxMemoryOverview overview) {
+    if (overview.health == NavivoxMemoryHealth.unavailable) {
+      final reason = overview.degradedReason.isEmpty
+          ? 'Gormes memory API is unavailable.'
+          : overview.degradedReason;
+      return MemoryReadinessPresentation(
+        status: MemoryReadinessStatus.unavailable,
+        message: 'Memory is unavailable: $reason',
+      );
+    }
+    if (overview.health == NavivoxMemoryHealth.degraded ||
+        overview.degradedReason.isNotEmpty) {
+      final reason = overview.degradedReason.isEmpty
+          ? 'Gormes memory is degraded for this profile.'
+          : overview.degradedReason;
+      return MemoryReadinessPresentation(
+        status: MemoryReadinessStatus.degraded,
+        message: 'Memory is degraded: $reason',
+      );
+    }
+    if (_overviewCountsAreEmpty(overview)) {
+      return const MemoryReadinessPresentation(
+        status: MemoryReadinessStatus.empty,
+        message:
+            'Gormes memory loaded, but this profile has no memory evidence yet.',
+      );
+    }
+    return const MemoryReadinessPresentation(
+      status: MemoryReadinessStatus.ready,
+      message:
+          'Goncho memory is loaded for this scope. Navivox shows redacted profile-scoped evidence from Gormes.',
+    );
+  }
+
   MemoryOverviewPresentation overviewFor(
     NavivoxMemoryOverview overview, {
     required NavivoxProfileContact? activeProfile,
@@ -45,7 +94,7 @@ class MemoryDashboardPresentation {
     final workspace = overview.workspaceId.trim();
     final lastUpdated = overview.lastUpdatedAt;
     return MemoryOverviewPresentation(
-      healthLabel: overview.healthLabel,
+      healthLabel: _healthLabelFor(overview.health),
       serverLabel: server,
       profileLabel: profile,
       workspaceLabel: workspace.isEmpty ? null : workspace,
@@ -134,13 +183,31 @@ class MemoryDashboardPresentation {
     required String message,
   }) {
     return MemoryErrorPresentation(
-      title: 'Goncho degraded',
+      title: 'Memory degraded',
       profileLabel: profileContactDisplayLabel(
         activeProfile,
         fallback: 'default',
       ),
       message: message,
     );
+  }
+
+  String _healthLabelFor(NavivoxMemoryHealth health) {
+    return switch (health) {
+      NavivoxMemoryHealth.active => 'Goncho active',
+      NavivoxMemoryHealth.degraded => 'Memory degraded',
+      NavivoxMemoryHealth.unavailable => 'Memory unavailable',
+    };
+  }
+
+  bool _overviewCountsAreEmpty(NavivoxMemoryOverview overview) {
+    return overview.totalTurns == 0 &&
+        overview.activeMemoryItems == 0 &&
+        overview.observations == 0 &&
+        overview.conclusions == 0 &&
+        overview.sessionSummaries == 0 &&
+        overview.entities == 0 &&
+        overview.relationships == 0;
   }
 
   String actionMessageFor(
@@ -153,6 +220,34 @@ class MemoryDashboardPresentation {
     }
     return result.message;
   }
+}
+
+enum MemoryReadinessStatus { checking, ready, degraded, unavailable, empty }
+
+class MemoryReadinessPresentation {
+  const MemoryReadinessPresentation({
+    required this.status,
+    required this.message,
+  });
+
+  final MemoryReadinessStatus status;
+  final String message;
+
+  String get title => 'Memory readiness';
+
+  String get statusLabel => switch (status) {
+    MemoryReadinessStatus.checking => 'Checking memory',
+    MemoryReadinessStatus.ready => 'Memory ready',
+    MemoryReadinessStatus.degraded => 'Memory degraded',
+    MemoryReadinessStatus.unavailable => 'Memory unavailable',
+    MemoryReadinessStatus.empty => 'Memory empty',
+  };
+
+  String get refreshLabel => 'Refresh memory';
+
+  String get openGatewayLabel => 'Open gateway';
+
+  String get openActiveChatLabel => 'Open active chat';
 }
 
 class MemoryOverviewPresentation {

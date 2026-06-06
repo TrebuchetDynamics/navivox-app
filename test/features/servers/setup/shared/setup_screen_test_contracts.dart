@@ -14,7 +14,8 @@ Finder setupPortField() => find.widgetWithText(TextField, setupPortLabel);
 Finder setupTokenField() => find.widgetWithText(TextField, setupTokenLabel);
 Finder setupConnectAction() => find.text(setupConnectLabel);
 Finder setupImportQrAction() => find.bySemanticsLabel(setupImportQrLabel);
-Finder setupTokenVisibilityButton() => find.byKey(setupTokenVisibilityButtonKey);
+Finder setupTokenVisibilityButton() =>
+    find.byKey(setupTokenVisibilityButtonKey);
 
 Future<void> enterSetupAddress(WidgetTester tester, String address) async {
   await tester.enterText(setupAddressField(), address);

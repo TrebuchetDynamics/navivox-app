@@ -899,7 +899,8 @@ void main() {
     await tester.tap(find.text('Open voice settings'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Voice settings'), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Local voice preferences'), findsOneWidget);
     expect(find.text('Continuous voice'), findsOneWidget);
     expect(channel.sentTexts, isEmpty);
   });
@@ -938,7 +939,8 @@ void main() {
     await tester.tap(find.text('Open voice settings'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Voice settings'), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Local voice preferences'), findsOneWidget);
     expect(find.text('Continuous voice'), findsOneWidget);
     expect(channel.sentTexts, isEmpty);
   });
@@ -1450,7 +1452,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
-    expect(find.text('Voice settings'), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.text('Local voice preferences'), findsOneWidget);
     expect(find.text('Command word'), findsOneWidget);
     expect(channel.sentTexts, isEmpty);
   });

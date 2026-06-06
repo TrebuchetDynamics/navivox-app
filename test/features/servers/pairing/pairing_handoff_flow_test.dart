@@ -7,7 +7,6 @@ import 'package:navivox/router/navigation_intent.dart';
 import '../../shared/fixtures/test_constants.dart';
 
 void main() {
-
   test('carries imported Profile contact target through connect success', () {
     final flow = PairingHandoffFlow.fromImport(
       const SetupQrImageImport(

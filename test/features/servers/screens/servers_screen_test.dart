@@ -62,6 +62,25 @@ void main() {
       expect(find.text('1 profile'), findsOneWidget);
       expect(find.text('1 warning'), findsOneWidget);
       expect(find.text('1 auth'), findsOneWidget);
+      final officeStatusCard = find.byKey(
+        const ValueKey('server-status-office'),
+      );
+      expect(officeStatusCard, findsOneWidget);
+      expect(
+        find.descendant(
+          of: officeStatusCard,
+          matching: find.text('Registered gateway offline'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: officeStatusCard,
+          matching: find.text('Session: not active · Reported status: Offline'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Details'), findsWidgets);
       expect(find.byTooltip('Register gateway'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('server-manage-office')));
@@ -69,8 +88,26 @@ void main() {
 
       expect(find.text('Manage gateway'), findsOneWidget);
       expect(find.text('Office Gateway'), findsWidgets);
+      expect(find.text('Gateway status'), findsWidgets);
+      expect(find.text('Connection metadata pending'), findsOneWidget);
+      expect(
+        find.textContaining('Base URL, auth, exposure, stream health'),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Server ID'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Server ID'), findsOneWidget);
       expect(find.text('office'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Profiles on this gateway'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Profiles on this gateway'), findsOneWidget);
       expect(find.text('Support Triage'), findsOneWidget);
       expect(
@@ -98,8 +135,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Active session gateway · online'), findsOneWidget);
-    expect(find.text('Registered gateway · offline'), findsOneWidget);
+    expect(find.text('Active session connected'), findsOneWidget);
+    expect(find.text('Registered gateway offline'), findsOneWidget);
+    expect(
+      find.text('Session: active in this app · Reported status: Online'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Session: not active · Reported status: Offline'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('register gateway action explains connect-info import boundary', (
@@ -177,6 +222,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('server-manage-local')));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('server-disconnect-current')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('server-disconnect-current')),
       findsOneWidget,
@@ -211,6 +262,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('server-manage-local')));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('server-active-profile-local')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('server-active-profile-local')),
       findsOneWidget,

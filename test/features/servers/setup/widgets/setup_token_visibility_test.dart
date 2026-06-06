@@ -12,9 +12,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(900, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      const TestProviderMaterialApp(home: SetupScreen()),
-    );
+    await tester.pumpWidget(const TestProviderMaterialApp(home: SetupScreen()));
 
     final tokenFieldFinder = setupTokenField();
     TextField tokenField() => setupTokenTextField(tester);

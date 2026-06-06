@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
+import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/protocol/navivox_memory.dart';
 import 'package:navivox/features/memory/screens/memory_dashboard_screen.dart';
 
@@ -9,6 +12,146 @@ import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
 import '../../shared/fixtures/profile_contact_fixtures.dart';
 
 void main() {
+  testWidgets(
+    'memory dashboard leads with readiness and safe recovery actions',
+    (tester) async {
+      final channel =
+          localGormesMineruChannel(
+            contact: mineruBuilderProfile(
+              health: NavivoxProfileHealth.warning,
+              latestPreview: 'Memory API unavailable',
+            ),
+          )..seedMemoryOverview(
+            const NavivoxMemoryOverview.degraded(
+              profileId: 'mineru',
+              reason: 'Gormes memory API is unavailable.',
+            ),
+          );
+
+      await tester.pumpWidget(
+        TestNavivoxMaterialApp(
+          channel: channel,
+          home: const MemoryDashboardScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Memory readiness'), findsOneWidget);
+      expect(find.text('Memory degraded'), findsWidgets);
+      expect(
+        find.textContaining('Gormes memory API is unavailable.'),
+        findsWidgets,
+      );
+      expect(find.text('Active profile: Mineru Builder'), findsOneWidget);
+      expect(find.text('Refresh memory'), findsOneWidget);
+      expect(find.text('Open gateway'), findsOneWidget);
+      expect(find.text('Open active chat'), findsOneWidget);
+    },
+  );
+
+  testWidgets('memory readiness opens gateway and active chat routes', (
+    tester,
+  ) async {
+    final channel = localGormesMineruChannel()
+      ..seedMemoryOverview(
+        const NavivoxMemoryOverview(
+          profileId: 'mineru',
+          workspaceId: 'gormes',
+          databaseLabel: '~/.gormes/profiles/mineru/memory.db',
+          health: NavivoxMemoryHealth.active,
+          totalTurns: 1,
+          activeMemoryItems: 1,
+          observations: 0,
+          conclusions: 0,
+          sessionSummaries: 0,
+          entities: 0,
+          relationships: 0,
+        ),
+      );
+    final router = GoRouter(
+      initialLocation: '/memory',
+      routes: [
+        GoRoute(
+          path: '/memory',
+          builder: (context, state) => const MemoryDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/servers',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Gateway route')),
+        ),
+        GoRoute(
+          path: '/chats',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Chats route')),
+        ),
+        GoRoute(
+          path: '/chats/:serverId/:profileId',
+          builder: (context, state) => Scaffold(
+            body: Text(
+              'Chat route ${state.pathParameters['serverId']} ${state.pathParameters['profileId']}',
+            ),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open gateway'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gateway route'), findsOneWidget);
+
+    router.go('/memory');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open active chat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chat route local mineru'), findsOneWidget);
+  });
+
+  testWidgets('memory readiness refresh retries the profile memory overview', (
+    tester,
+  ) async {
+    final channel = localGormesMineruChannel()
+      ..seedMemoryOverview(
+        const NavivoxMemoryOverview(
+          profileId: 'mineru',
+          workspaceId: 'gormes',
+          databaseLabel: '~/.gormes/profiles/mineru/memory.db',
+          health: NavivoxMemoryHealth.active,
+          totalTurns: 1,
+          activeMemoryItems: 1,
+          observations: 0,
+          conclusions: 0,
+          sessionSummaries: 0,
+          entities: 0,
+          relationships: 0,
+        ),
+      );
+
+    await tester.pumpWidget(
+      TestNavivoxMaterialApp(
+        channel: channel,
+        home: const MemoryDashboardScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(channel.memoryOverviewCalls, hasLength(1));
+
+    await tester.tap(find.text('Refresh memory'));
+    await tester.pumpAndSettle();
+
+    expect(channel.memoryOverviewCalls, hasLength(2));
+    expect(channel.memoryOverviewCalls.last.profileId, 'mineru');
+  });
+
   testWidgets(
     'memory dashboard shows profile-scoped Goncho counts with a safe database label',
     (tester) async {
@@ -42,6 +185,11 @@ void main() {
       expect(find.text('Goncho active'), findsOneWidget);
       expect(find.text('Server: local'), findsOneWidget);
       expect(find.text('Profile: Mineru Builder'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('120'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('120'), findsOneWidget);
       expect(find.text('Turns'), findsWidgets);
       expect(find.text('12'), findsOneWidget);
@@ -104,6 +252,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Search & Browse'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.text('Search & Browse'), findsOneWidget);
     final searchField = find.byType(TextField);
@@ -330,7 +483,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Goncho degraded'), findsOneWidget);
+    expect(find.text('Memory degraded'), findsWidgets);
+    expect(find.text('Goncho degraded'), findsNothing);
     expect(find.text('Gormes memory API is unavailable.'), findsOneWidget);
     expect(find.text('Profile: Mineru Builder'), findsOneWidget);
   });

@@ -10,7 +10,7 @@ const { browser, page } = await openProbePage();
 const screens = [
   { route: '/', label: 'Profile Contacts' },
   { route: '/servers', label: 'Gateways' },
-  { route: '/agents', label: 'Agents' },
+  { route: '/agents', label: 'Profiles' },
   { route: '/memory', label: 'Memory' },
   { route: '/config', label: 'Config' },
   { route: '/settings', label: 'Settings' },

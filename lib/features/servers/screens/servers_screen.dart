@@ -56,6 +56,7 @@ class ServersScreen extends ConsumerWidget {
     ServerGatewayPresentation gateway,
   ) {
     final server = gateway.server;
+    final gatewayStatus = gateway.gatewayStatus;
     final parentContext = context;
     showModalBottomSheet<void>(
       context: context,
@@ -74,7 +75,24 @@ class ServersScreen extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.dns),
               title: Text(server.name),
-              subtitle: Text(server.status),
+              subtitle: Text(gateway.statusSubtitle),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.health_and_safety_outlined),
+              title: Text(gatewayStatus.title),
+              subtitle: Text(
+                '${gatewayStatus.headline}\n'
+                '${gatewayStatus.summaryLine}\n'
+                '${gatewayStatus.profileContactsLine}',
+              ),
+              isThreeLine: true,
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.info_outline),
+              title: Text(gatewayStatus.deferredMetadataTitle),
+              subtitle: Text(gatewayStatus.deferredMetadataMessage),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -398,6 +416,7 @@ class _ServerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final server = gateway.server;
+    final gatewayStatus = gateway.gatewayStatus;
     return Card(
       key: ValueKey('server-card-${server.id}'),
       child: Padding(
@@ -424,13 +443,45 @@ class _ServerCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  key: ValueKey('server-manage-${server.id}'),
-                  tooltip: 'Manage ${server.name}',
-                  onPressed: onManage,
-                  icon: const Icon(Icons.tune),
+                Tooltip(
+                  message: 'Details for ${server.name}',
+                  child: TextButton(
+                    key: ValueKey('server-manage-${server.id}'),
+                    onPressed: onManage,
+                    child: const Text('Details'),
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            DecoratedBox(
+              key: ValueKey('server-status-${server.id}'),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      gatewayStatus.title,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      gatewayStatus.headline,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      gatewayStatus.summaryLine,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(

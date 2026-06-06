@@ -24,6 +24,10 @@ _Avoid_: QR flow, connect-info flow, login
 How Navivox received a **Pairing handoff**, such as direct app open from Gormes, shared text, QR/image import, or manual entry. The source affects how much operator confirmation is required before Navivox probes or switches a **Gormes gateway**.
 _Avoid_: QR type, intent action, trust level
 
+**Pairing readiness**:
+The operator-visible state describing whether Navivox is waiting for **Pairing handoff** details, reviewing an imported handoff, connecting to the **Gormes gateway**, connected for the current app session, or blocked with a retryable pairing problem. It is separate from **Reconnect readiness**, **Gateway status**, and durable credential storage.
+_Avoid_: login status, setup error, saved session status, durable reconnect status
+
 **Profile contact**:
 A flat chat-list identity made from one `server_id` plus one `profile_id`.
 _Avoid_: agent, user account, thread
@@ -36,9 +40,17 @@ _Avoid_: profile template, automatic workspace grant, TOML editor
 A stable opaque-public identity for recognizing the same **Gormes gateway** across changed connection details.
 _Avoid_: Profile contact server_id, base URL, bearer token, display name
 
+**Gateway status**:
+The operator-visible status summary for a **Gormes gateway** using safe currently reported facts: active app-session state, gateway-reported status, **Profile contact** counts/attention, and an explicit note when base URL, auth, exposure, stream health, credentials, or local trust metadata is not available. It must not expose tokens or fabricate unavailable connection metadata.
+_Avoid_: raw server status, healthz dump, credential detail, inferred exposure
+
 **App install identity**:
 A non-secret random identity for one Navivox installation. It is distinct from a device fingerprint, user account, **Gateway identity**, or credential ID.
 _Avoid_: device ID, hardware ID, Android account, credential ID
+
+**Local settings**:
+Operator preferences scoped to one Navivox install, such as command word, local voice capture defaults, and local voice trust. They may reference the active **Gormes gateway** or **Profile contact**, but they do not mutate Gormes-owned config, **Voice profile**, gateway auth, or durable reconnect credentials.
+_Avoid_: Gormes settings, profile config, server config, saved session
 
 **Known gateway metadata**:
 Non-secret saved connection metadata that helps Navivox recognize or prefill a previously connected **Gormes gateway**. It is not a saved session and cannot silently reconnect without a **Durable reconnect credential**.
@@ -51,6 +63,14 @@ _Avoid_: saved token, persisted pairing token, remember-me password
 **Reconnect readiness**:
 The operator-visible state describing whether Navivox can save or use durable reconnect for a **Gormes gateway**. It is separate from active session connectivity and from **Voice readiness**.
 _Avoid_: login status, saved session, remember-me state
+
+**Config readiness**:
+The operator-visible state describing whether Navivox can load and safely present Gormes config-admin for the active **Gormes gateway** and **Profile contact**, and the blocking reason or recovery action when it cannot. It is separate from **Voice profile** availability, local app settings, and **Voice readiness**.
+_Avoid_: no config available, settings status, voice profile status, empty config
+
+**Memory readiness**:
+The operator-visible state describing whether Navivox can load and safely present Gormes-owned Goncho memory for the active **Gormes gateway** and **Profile contact**, and the blocking reason or recovery action when it cannot. It is separate from **Config readiness**, **Voice readiness**, and raw memory database health.
+_Avoid_: Goncho degraded, memory API unavailable, empty memory, database status
 
 **Profile contact conversation**:
 The scoped communication state for one **Profile contact**, including visible transcript items, pending voice state, Gormes turn metadata, and stream attribution for that contact.
@@ -103,15 +123,22 @@ _Avoid_: message id, row id, guessed run id
 ## Relationships
 
 - **Navivox** connects to one or more **Gormes gateways**.
+- Operator-facing gateway management surfaces should label these endpoints as gateways, not servers.
+- **Gateway status** keeps active app-session state, gateway-reported status, and **Profile contact** counts visible, but must not invent base URL, auth, exposure, stream health, credential, or local trust facts until gateway metadata exists.
 - A **Hermes Desktop reference** may inform Navivox app shape, but does not change the **Gormes gateway** runtime boundary.
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
+- **Pairing readiness** belongs to the setup and pairing surfaces; a ready or connected **Pairing readiness** state does not imply durable reconnect is available.
 - A **Gormes gateway** has one **Gateway identity**.
 - An **App install identity** scopes one Navivox installation without identifying the physical device or operator account.
+- **Local settings** belong to one Navivox install; they can influence **Voice readiness** and local navigation behavior but do not update Gormes config, **Voice profile**, **Gateway status**, or **Reconnect readiness**.
 - **Known gateway metadata** may identify a previously connected **Gormes gateway**, but only a **Durable reconnect credential** can authorize silent reconnect.
 - A **Durable reconnect credential** is scoped to one authenticated **Gateway identity** and one **App install identity**, and is not the **Pairing handoff** token.
 - **Reconnect readiness** may be unavailable even when a **Pairing handoff** succeeds and chat works for the current app session.
+- **Config readiness** belongs to the active **Gormes gateway** and selected **Profile contact** scope; unavailable **Config readiness** does not imply chat, **Voice readiness**, or **Voice profile** is unavailable.
+- **Memory readiness** belongs to the active **Gormes gateway** and selected **Profile contact** scope; unavailable **Memory readiness** does not imply chat, **Config readiness**, or **Voice readiness** is unavailable.
 - A **Gormes gateway** reports zero or more **Profile contacts**.
+- Operator-facing profile selection and management surfaces should label this identity as profiles or **Profile contacts**, not agents.
 - A **Profile seed** may ask the **Gormes gateway** to draft a **Profile contact**, but Navivox does not grant suggested workspace roots without operator confirmation.
 - A **Profile contact** is the target for chat turns and voice turns.
 - A **Profile contact conversation** belongs to one **Profile contact**; Navivox must not show another Profile contact's scoped transcript items in the active **Transcript surface**.
@@ -173,7 +200,12 @@ _Avoid_: message id, row id, guessed run id
 - "message id" can mean a display row identity rather than gateway evidence identity. Resolved: **Run record** inspection requires a Gormes-supplied **Run record reference**, not arbitrary transcript row ids.
 - "run id", "session id", and "request id" can describe storage details behind evidence lookup. Resolved: use **Run record reference** at the Navivox product boundary.
 - "login", "QR flow", and "connect-info flow" can imply separate setup products. Resolved: use **Pairing handoff** for the first-run transfer of Gormes gateway connection details, with direct Android link as the preferred path and QR/shared text/manual entry as fallbacks. Receiving fields is not completion; successful connection is completion.
+- "setup status" can hide whether Navivox is waiting for details, reviewing an imported handoff, connecting, connected session-only, or failed retryably. Resolved: use **Pairing readiness** for the operator-visible setup state.
 - "submit callback", "connect handler", and "retry button" can hide setup safety decisions. Resolved: use **Pairing intent** for operator setup actions that submit, import, retry, confirm, or reject Pairing handoffs.
 - "server" can mean the **Gormes gateway** or the `server_id` half of a **Profile contact**. Resolved: use **Gateway identity** for recognizing a Gormes gateway; keep Profile contact `server_id` scoped to profile/contact routing.
+- "server status" can imply raw transport health, auth, exposure, or durable identity. Resolved: use **Gateway status** for the operator-visible safe summary, and clearly mark unreported connection metadata instead of guessing it.
 - "profile template" and "seed prompt" can imply local Navivox config generation. Resolved: use **Profile seed** for a natural-language request that the Gormes gateway drafts, with operator-confirmed workspace roots.
+- "settings" can imply local Navivox preferences, Gormes config, profile config, gateway auth, or durable reconnect. Resolved: use **Local settings** for Navivox-install-scoped preferences, and route Gormes-owned changes to config/profile/gateway surfaces.
 - "saved session" can imply stored authentication. Resolved: use **Known gateway metadata** for non-secret saved base URL/WebSocket/Gateway identity details, and reserve **Durable reconnect credential** for silent reconnect authorization.
+- "No config available" can mean unsupported config-admin, failed schema loading, missing active scope, or genuinely empty config. Resolved: use **Config readiness** for the operator-visible availability/blocker state, and keep **Voice profile** availability separate.
+- "Goncho degraded" can hide whether memory is unsupported, temporarily unavailable, empty, or scoped to the wrong **Profile contact**. Resolved: use **Memory readiness** for the operator-visible availability/blocker state, and reserve raw database health for gateway-owned evidence.

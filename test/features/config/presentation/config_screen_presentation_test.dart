@@ -64,6 +64,8 @@ void main() {
 
       expect(presentation.scope.serverLabel, 'Local Gormes');
       expect(presentation.scope.profileLabel, 'Mineru Builder');
+      expect(presentation.configReadiness.status, ConfigReadinessStatus.ready);
+      expect(presentation.configReadiness.statusLabel, 'Config admin ready');
       expect(presentation.isEmpty, isFalse);
       expect(presentation.isMissingSection, isFalse);
       expect(presentation.sections, hasLength(1));
@@ -127,7 +129,7 @@ void main() {
     },
   );
 
-  test('returns empty-state copy when no config schema is loaded', () {
+  test('returns unsupported readiness when no config schema is loaded', () {
     final presentation = ConfigScreenPresentation.fromState(
       state: const NavivoxChannelState(),
       sectionId: 'missing',
@@ -135,9 +137,45 @@ void main() {
     );
 
     expect(presentation.isEmpty, isTrue);
-    expect(presentation.emptyMessage, 'No config available');
+    expect(
+      presentation.configReadiness.status,
+      ConfigReadinessStatus.unsupported,
+    );
+    expect(
+      presentation.configReadiness.statusLabel,
+      'Config admin unsupported',
+    );
     expect(presentation.isMissingSection, isFalse);
     expect(presentation.sections, isEmpty);
     expect(presentation.showPendingChanges, isFalse);
+  });
+
+  test('classifies config readiness states from channel evidence', () {
+    final loading = ConfigScreenPresentation.fromState(
+      state: const NavivoxChannelState(),
+      draftSession: ConfigDraftSession(),
+      configAdminChecking: true,
+      configAdminSupported: true,
+    );
+    expect(loading.configReadiness.status, ConfigReadinessStatus.checking);
+
+    final loadFailed = ConfigScreenPresentation.fromState(
+      state: const NavivoxChannelState(),
+      draftSession: ConfigDraftSession(),
+      configAdminSupported: true,
+      configAdminLoadFailed: true,
+    );
+    expect(loadFailed.configReadiness.status, ConfigReadinessStatus.loadFailed);
+
+    final emptySchema = ConfigScreenPresentation.fromState(
+      state: const NavivoxChannelState(configSchema: {}, configValues: {}),
+      draftSession: ConfigDraftSession(),
+      configAdminSupported: true,
+      configAdminAvailable: true,
+    );
+    expect(
+      emptySchema.configReadiness.status,
+      ConfigReadinessStatus.emptySchema,
+    );
   });
 }

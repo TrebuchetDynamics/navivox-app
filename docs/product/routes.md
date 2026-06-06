@@ -73,8 +73,8 @@ The shell route wraps the primary authenticated surfaces with app navigation.
 | Tab | Path | Screen | Guard |
 |-----|------|--------|-------|
 | Chats | `/chats` | `ChatScreen` | Connected gateway |
-| Servers | `/servers` | `ServersScreen` | Connected gateway |
-| Agents | `/agents` | `AgentsScreen` | Connected gateway |
+| Gateways | `/servers` | `ServersScreen` | Connected gateway |
+| Profiles | `/agents` | `AgentsScreen` | Connected gateway |
 | Memory | `/memory` | `MemoryDashboardScreen` | Connected gateway |
 | Config | `/config`, `/config/:section` | `ConfigScreen` | Connected gateway; mutation controls require server role evidence |
 

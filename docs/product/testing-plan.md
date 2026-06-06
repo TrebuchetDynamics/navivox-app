@@ -112,7 +112,7 @@ setup.
 | Voice transcript | Transcript is sent through text turn path. |
 | Connection loss | Messages stay visible and reconnect state appears. |
 
-### 4.3 Agents Screen
+### 4.3 Profiles Screen
 
 | Test | Expected |
 |------|----------|

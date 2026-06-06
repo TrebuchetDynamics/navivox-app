@@ -18,7 +18,8 @@ void main() {
       TestNavivoxMaterialApp(channel: channel, home: const SettingsScreen()),
     );
 
-    expect(find.text('Voice settings'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Local voice preferences'), findsOneWidget);
     expect(find.text('Continuous voice'), findsOneWidget);
     expect(find.text('Command word'), findsOneWidget);
     expect(find.text('navi'), findsOneWidget);
@@ -32,6 +33,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final trustSwitch = find.byKey(const ValueKey('voice-trust-local'));
+    await tester.scrollUntilVisible(trustSwitch, 200);
+    await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(trustSwitch).value, isFalse);
 
     await tester.tap(trustSwitch);
@@ -40,7 +43,7 @@ void main() {
     expect(tester.widget<SwitchListTile>(trustSwitch).value, isTrue);
   });
 
-  testWidgets('settings explain global scope and link to management tabs', (
+  testWidgets('settings explain local scope and link to management tabs', (
     tester,
   ) async {
     final channel = TestNavivoxChannel()
@@ -50,10 +53,16 @@ void main() {
       TestNavivoxMaterialApp(channel: channel, home: const SettingsScreen()),
     );
 
-    expect(find.text('Global app settings'), findsOneWidget);
+    expect(find.text('Local settings'), findsOneWidget);
     expect(
       find.text(
-        'Voice controls stay local to this app. Gateway and profile settings live in their own screens.',
+        'Preferences on this Navivox install. Gormes config, profile contacts, and gateway auth live in their own surfaces.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Command word, local capture, and voice trust stay in Navivox.',
       ),
       findsOneWidget,
     );

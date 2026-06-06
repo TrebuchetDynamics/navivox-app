@@ -3,26 +3,29 @@ import 'package:flutter_test/flutter_test.dart';
 import '../shared/runbook_contract_helpers.dart';
 
 void main() {
-  test('Android pairing handoff smoke keeps intent commands and token safety', () {
-    final text = readRunbookContractWithSharedPolicy(
-      'docs/runbooks/android/pairing-handoff-smoke.md',
-    );
+  test(
+    'Android pairing handoff smoke keeps intent commands and token safety',
+    () {
+      final text = readRunbookContractWithSharedPolicy(
+        'docs/runbooks/android/pairing-handoff-smoke.md',
+      );
 
-    expectRunbookContainsAll(text, [
-      '# Android Pairing Handoff Smoke',
-      'Manual smoke for the Android platform seam',
-      'android.intent.action.VIEW',
-      'android.intent.action.SEND',
-      'android.intent.extra.TEXT',
-      'navivox://connect?base_url=',
-      'direct app-open source',
-      'shared-text source',
-      'shared text must not auto-connect',
-      'UI and diagnostics must not display the token value',
-      'Do not paste tokens',
-    ]);
-    expectRunbookHasNoSecretPlaceholders(text);
-  });
+      expectRunbookContainsAll(text, [
+        '# Android Pairing Handoff Smoke',
+        'Manual smoke for the Android platform seam',
+        'android.intent.action.VIEW',
+        'android.intent.action.SEND',
+        'android.intent.extra.TEXT',
+        'navivox://connect?base_url=',
+        'direct app-open source',
+        'shared-text source',
+        'shared text must not auto-connect',
+        'UI and diagnostics must not display the token value',
+        'Do not paste tokens',
+      ]);
+      expectRunbookHasNoSecretPlaceholders(text);
+    },
+  );
 
   test('Android pairing instrumentation points to canonical manual smoke', () {
     final text = readRunbookContractWithSharedPolicy(

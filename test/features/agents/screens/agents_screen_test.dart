@@ -20,7 +20,7 @@ final _seedProfiles = [
 
 void main() {
   testWidgets(
-    'shows empty-state and Refresh button when no agents are known yet',
+    'shows Profiles empty-state and Refresh button when no profiles are known yet',
     (tester) async {
       final channel = TestNavivoxChannel();
 
@@ -28,6 +28,7 @@ void main() {
         TestNavivoxMaterialApp(channel: channel, home: const AgentsScreen()),
       );
 
+      expect(find.text('Profiles'), findsOneWidget);
       expect(find.text('No profiles found on this server'), findsOneWidget);
       expect(find.text('Refresh profiles'), findsOneWidget);
 
@@ -56,7 +57,8 @@ void main() {
         TestNavivoxMaterialApp(channel: channel, home: const AgentsScreen()),
       );
 
-      expect(find.text('No agents loaded'), findsNothing);
+      expect(find.text('Agents'), findsNothing);
+      expect(find.text('Profiles'), findsOneWidget);
       expect(find.text('Profiles on Local Gormes'), findsOneWidget);
       expect(find.text('Mineru Builder'), findsOneWidget);
       expect(find.text('mineru'), findsOneWidget);

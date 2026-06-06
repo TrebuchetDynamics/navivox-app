@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/gateway/navivox_gateway_protocol.dart';
+import 'package:navivox/features/config/screens/config_screen.dart';
+
 import '../../../support/test_navivox_channel.dart';
 import '../../shared/app/test_material_app.dart';
 import '../../shared/fixtures/profile_contact_channel_fixtures.dart';
-import 'package:navivox/features/config/screens/config_screen.dart';
 
 void main() {
-  testWidgets('shows empty-state message when no schema is loaded', (
+  testWidgets('leads with config readiness when config admin is unsupported', (
     tester,
   ) async {
     final channel = TestNavivoxChannel();
@@ -16,8 +20,73 @@ void main() {
       TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
-    expect(find.text('No config available'), findsOneWidget);
+    expect(find.text('Config readiness'), findsOneWidget);
+    expect(find.text('Config admin unsupported'), findsOneWidget);
+    expect(find.text('Open gateway'), findsOneWidget);
+    expect(find.text('No config available'), findsNothing);
   });
+
+  testWidgets('open gateway routes to the live gateways overview', (
+    tester,
+  ) async {
+    final channel = TestNavivoxChannel();
+    final router = GoRouter(
+      initialLocation: '/config',
+      routes: [
+        GoRoute(
+          path: '/config',
+          builder: (context, state) => const ConfigScreen(),
+        ),
+        GoRoute(
+          path: '/servers',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Gateways overview')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [navivoxChannelProvider.overrideWithValue(channel)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    await tester.tap(find.text('Open gateway'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateways overview'), findsOneWidget);
+  });
+
+  testWidgets(
+    'refresh config recovers after initial config admin load failure',
+    (tester) async {
+      final channel = TestNavivoxChannel()
+        ..seedConfigAdminLoadFailed()
+        ..seedConfigAdminRefreshResult(
+          schema: const {
+            'fields': [
+              {'path': 'providers.default', 'label': 'Default provider'},
+            ],
+          },
+          values: const {'providers.default': 'openai'},
+        );
+
+      await tester.pumpWidget(
+        TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
+      );
+
+      expect(find.text('Config admin load failed'), findsOneWidget);
+
+      await tester.tap(find.text('Refresh config'));
+      await tester.pumpAndSettle();
+
+      expect(channel.refreshConfigAdminCalls, 1);
+      expect(find.text('Config admin ready'), findsOneWidget);
+      expect(find.text('Default provider'), findsOneWidget);
+      expect(find.text('openai'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows active server and profile scope above config fields', (
     tester,
@@ -247,7 +316,7 @@ void main() {
       );
       expect(find.textContaining('new-secret'), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await _tapApplyPending(tester);
       await tester.pump();
 
       expect(channel.configSetCalls, isEmpty);
@@ -350,7 +419,7 @@ void main() {
       expect(find.text('Exposure mode: local -> public'), findsOneWidget);
       expect(find.text('Restart required'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await _tapApplyPending(tester);
       await tester.pumpAndSettle();
 
       expect(find.text('Confirm high-risk config changes'), findsOneWidget);
@@ -401,7 +470,7 @@ void main() {
     expect(find.text('Pending config changes'), findsOneWidget);
     expect(find.text('temperature: 0.4 -> 0.7'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+    await _tapApplyPending(tester);
     await tester.pump();
 
     expect(channel.configSetCalls, [(field: 'temperature', value: 0.7)]);
@@ -506,7 +575,7 @@ void main() {
       await tester.pump();
       await tester.drag(find.byType(Scrollable), const Offset(0, -500));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+      await _tapApplyPending(tester);
       await tester.pumpAndSettle();
 
       expect(channel.configSetCalls, isEmpty);
@@ -582,7 +651,7 @@ void main() {
       find.byKey(const ValueKey('config-save-navivox.exposure_mode')),
     );
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('config-apply-pending')));
+    await _tapApplyPending(tester);
     await tester.pumpAndSettle();
 
     expect(
@@ -594,4 +663,15 @@ void main() {
     expect(channel.configAdminApplyCalls, isEmpty);
     expect(channel.configSetCalls, isEmpty);
   });
+}
+
+Future<void> _tapApplyPending(WidgetTester tester) async {
+  final applyButton = find.byKey(const ValueKey('config-apply-pending'));
+  await tester.scrollUntilVisible(
+    applyButton,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(applyButton);
 }

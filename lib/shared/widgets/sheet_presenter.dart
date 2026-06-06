@@ -28,7 +28,11 @@ class InfoActionSheet extends SheetContent {
   final List<SheetInfoRow> infoRows;
   final List<SheetActionRow> actions;
 
-  const InfoActionSheet(this.title, {required this.infoRows, required this.actions}) : super._();
+  const InfoActionSheet(
+    this.title, {
+    required this.infoRows,
+    required this.actions,
+  }) : super._();
 }
 
 /// A single tappable row in an [ActionSheet] or [InfoActionSheet].
@@ -38,7 +42,12 @@ class SheetActionRow {
   final String? subtitle;
   final void Function(BuildContext sheetContext) onTap;
 
-  const SheetActionRow(this.icon, this.label, {this.subtitle, required this.onTap});
+  const SheetActionRow(
+    this.icon,
+    this.label, {
+    this.subtitle,
+    required this.onTap,
+  });
 }
 
 /// A read-only info row in an [InfoActionSheet].
@@ -134,7 +143,10 @@ void _showInfoActionSheet(
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(row.icon),
-                title: Text(row.label, style: Theme.of(context).textTheme.labelLarge),
+                title: Text(
+                  row.label,
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
                 subtitle: Text(row.value),
               ),
             const SizedBox(height: 8),

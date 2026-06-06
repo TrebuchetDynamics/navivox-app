@@ -21,22 +21,23 @@ void main() {
       ]);
       expect(destinations.map((destination) => destination.label), [
         'Chats',
-        'Servers',
-        'Agents',
+        'Gateways',
+        'Profiles',
         'Memory',
         'Config',
         'Settings',
       ]);
       expect(destinations.first.icon, Icons.chat_bubble_outlined);
+      expect(destinations[2].icon, Icons.people_alt_outlined);
       expect(destinations.last.icon, Icons.keyboard_voice_outlined);
       expect(presentation.mobileNavigationDestinations.map((d) => d.label), [
         'Chats',
-        'Agents',
+        'Profiles',
         'Memory',
         'Settings',
       ]);
       expect(presentation.mobileOverflowDestinations.map((d) => d.label), [
-        'Servers',
+        'Gateways',
         'Config',
       ]);
     },

@@ -23,7 +23,7 @@ test.describe('12. Back', () => {
     await screenshot(page, 'playwright/screenshots/12a-chat-back.png');
   });
 
-  test('12b server back navigates to server list', async ({ page }) => {
+  test('12b gateway back navigates to gateway list', async ({ page }) => {
     await open(page, '#/servers', 'Gateways');
     await expect(page.getByText('Local Gormes').first()).toBeVisible();
     await screenshot(page, 'playwright/screenshots/12b-server-back.png');
@@ -48,18 +48,18 @@ test.describe('12. Back', () => {
 
   test('12f settings back navigates to settings screen', async ({ page }) => {
     await open(page, '#/settings', 'Settings');
-    await expect(page.getByText('Voice settings').first()).toBeVisible();
+    await expect(page.getByText('Local settings').first()).toBeVisible();
     await screenshot(page, 'playwright/screenshots/12f-settings-back.png');
   });
 
-  test('12g gateway detail back navigates to server list', async ({ page }) => {
+  test('12g gateway detail back navigates to gateway list', async ({ page }) => {
     await open(page, '#/servers', 'Gateways');
     await expect(page.getByText('Office Gormes').first()).toBeVisible();
     await screenshot(page, 'playwright/screenshots/12g-gateway-detail-back.png');
   });
 
   test('12h profile gateways back navigates to gateway admin', async ({ page }) => {
-    await open(page, '#/agents', 'Agents');
+    await open(page, '#/agents', 'Profiles');
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
     await screenshot(page, 'playwright/screenshots/12h-profile-gateways-back.png');
   });
@@ -128,7 +128,7 @@ test.describe('11. Mobile transcript selection', () => {
 });
 
 test.describe('12. Additional coverage', () => {
-  test('12l gateway server list nav bar', async ({ page }) => {
+  test('12l gateway list nav bar', async ({ page }) => {
     await open(page, '#/servers', 'Gateways');
     await screenshot(page, 'playwright/screenshots/12l-gateway-list-nav.png');
   });

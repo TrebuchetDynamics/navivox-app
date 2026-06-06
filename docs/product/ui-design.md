@@ -59,7 +59,7 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
 | P  Personal                               Tue |
 |    Gateway unavailable · offline          !   |
 +------------------------------------------------+
-| Chats        Agents        Memory       More  |
+| Chats        Profiles      Memory       More  |
 +------------------------------------------------+
 ```
 
@@ -167,7 +167,7 @@ Key UI elements:
   through composer callbacks, not inert rows.
 - Chat info exposes action rows for profile contacts, workspace/memory, profile
   config, Navivox settings, and gateway details.
-- Agents empty state uses the same plugged profile creation routes: Create from
+- Profiles empty state uses the same plugged profile creation routes: Create from
   seed opens the profile seed flow, and Add gateway opens gateway registration.
 - Gateway management sheets make profile rows actionable: selecting a profile
   scopes the channel and opens its chat.
@@ -257,11 +257,11 @@ Sheet rules:
 - Desktop gets a visible drag handle or side panel equivalent.
 - Tokens and secret values never appear in sheet titles or route URLs.
 
-### 2.7 Servers Screen
+### 2.7 Gateways Screen
 
 ```text
 +------------------------------------------------+
-| Servers                                  [+]   |
+| Gateways                                 [+]   |
 +------------------------------------------------+
 | local-gormes                                    |
 | http://127.0.0.1:8765                           |
@@ -506,7 +506,7 @@ ProfileDraftEditor
 WorkspaceRootsEditor
 VoiceProfilePicker
 
-// Servers
+// Gateways
 ServerCard
 GatewayStatusPanel
 ReachabilityBadge
@@ -541,8 +541,8 @@ secret-shaped values.
 
 Mobile:
 
-- Telegram-style bottom navigation for Chats, Agents, Memory, and Settings.
-- `More` overflow sheet for Servers and Config on narrow screens.
+- Telegram-style bottom navigation for Chats, Profiles, Memory, and Settings.
+- `More` overflow sheet for Gateways and Config on narrow screens.
 - Single-column chat.
 - Sheets for server/profile switching, chat info, composer share actions, and
   overflow destinations.

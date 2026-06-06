@@ -50,6 +50,61 @@ void main() {
     ]);
   });
 
+  test(
+    'classifies memory readiness states from overview health and counts',
+    () {
+      expect(presentation.checkingReadiness().statusLabel, 'Checking memory');
+      expect(
+        presentation
+            .unavailableReadiness(message: 'Gormes memory API is unavailable.')
+            .statusLabel,
+        'Memory unavailable',
+      );
+
+      final ready = presentation.readinessFor(
+        const NavivoxMemoryOverview(
+          profileId: 'mineru',
+          workspaceId: 'gormes',
+          databaseLabel: '~/.gormes/profiles/mineru/memory.db',
+          health: NavivoxMemoryHealth.active,
+          totalTurns: 1,
+          activeMemoryItems: 0,
+          observations: 0,
+          conclusions: 0,
+          sessionSummaries: 0,
+          entities: 0,
+          relationships: 0,
+        ),
+      );
+      final degraded = presentation.readinessFor(
+        const NavivoxMemoryOverview.degraded(
+          profileId: 'mineru',
+          reason: 'Gormes memory API is unavailable.',
+        ),
+      );
+      final empty = presentation.readinessFor(
+        const NavivoxMemoryOverview(
+          profileId: 'mineru',
+          workspaceId: 'gormes',
+          databaseLabel: '~/.gormes/profiles/mineru/memory.db',
+          health: NavivoxMemoryHealth.active,
+          totalTurns: 0,
+          activeMemoryItems: 0,
+          observations: 0,
+          conclusions: 0,
+          sessionSummaries: 0,
+          entities: 0,
+          relationships: 0,
+        ),
+      );
+
+      expect(ready.status, MemoryReadinessStatus.ready);
+      expect(degraded.status, MemoryReadinessStatus.degraded);
+      expect(degraded.message, contains('Gormes memory API is unavailable.'));
+      expect(empty.status, MemoryReadinessStatus.empty);
+    },
+  );
+
   test('builds search copy and memory item metadata presentation', () {
     expect(presentation.searchTitle, 'Search & Browse');
     expect(presentation.searchFieldLabel, 'Search memories');
@@ -145,7 +200,7 @@ void main() {
       message: 'Gormes memory API is unavailable.',
     );
 
-    expect(error.title, 'Goncho degraded');
+    expect(error.title, 'Memory degraded');
     expect(error.profileLine, 'Profile: Mineru Builder');
     expect(error.message, 'Gormes memory API is unavailable.');
     expect(

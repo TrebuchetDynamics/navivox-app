@@ -154,7 +154,7 @@ segments.
 
 `AppShellPresentation` owns app shell navigation presentation:
 
-- Ordered destination routes, labels, and icons for Chats, Servers, Agents,
+- Ordered destination routes, labels, and icons for Chats, Gateways, Profiles,
   Memory, Config, and Settings.
 - Drawer header title/subtitle and the mobile navigation menu tooltip.
 - Per-location shell state, including selected destination fallback and whether
@@ -412,12 +412,12 @@ Approval prompt presentation:
 - This keeps safety/risk wording local to a pure Module Interface while keeping
   channel resolution side effects in the Adapter.
 
-Agents screen presentation:
+Profiles route presentation:
 
 - `AgentsScreenPresentation` owns the screen-level presentation choice between
   the legacy agent list, the Profile contact fallback list, and the empty
   Profile contact state.
-- It owns Agents screen chrome, refresh copy, Profile contact fallback heading
+- It owns Profiles screen chrome, refresh copy, Profile contact fallback heading
   copy, empty-state copy, and create/import unavailable sheet copy.
 - It reuses `ProfileContactListPresentation` for active Gormes gateway
   filtering and sorted fallback Profile contacts instead of reimplementing list
@@ -429,7 +429,7 @@ Agents screen presentation:
 Profile contact avatar:
 
 - `ProfileContactAvatar` owns shared Profile contact identity avatar rendering
-  for the chat list, Agents fallback, and gateway management sheet.
+  for the chat list, Profiles fallback, and gateway management sheet.
 - `ProfileContactPresentation` supplies the safe avatar initial, stable color
   index, and screen-reader label so widget Adapters do not repeat
   `displayName.characters.first` or diverge on seeded color rules.
@@ -440,7 +440,7 @@ Profile contact presentation:
 
 - `ProfileContactPresentation` owns shared Profile contact copy for list rows,
   search terms, detail-sheet diagnostics, identity/channel/memory/config/log
-  sections, scoped detail actions, and Agents fallback summary lines.
+  sections, scoped detail actions, and Profiles fallback summary lines.
 - `ProfileContactsScreenPresentation` owns the Profile contacts screen chrome,
   search hints/tooltips, empty-state copy, server-filter all label, and
   add-profile sheet row copy.
@@ -485,7 +485,7 @@ Settings screen presentation:
 - `SettingsScreen` keeps Riverpod voice-settings state, switch callbacks,
   `GoRouter` navigation, icon choices, and Material rendering side effects.
 
-Servers screen presentation:
+Gateways route presentation:
 
 - `ServersScreenPresentation` owns Gormes gateway row assembly for the Gateways
   tab.

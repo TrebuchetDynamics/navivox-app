@@ -47,6 +47,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   StreamSubscription<NavivoxGatewayEvent>? _events;
   NavivoxChannelState _state = const NavivoxChannelState();
   bool _configAdminAvailable = false;
+  bool _configAdminSupported = false;
+  bool _configAdminLoadFailed = false;
   String? _activeSessionId;
 
   @override
@@ -113,10 +115,20 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       final profileRouting = navivoxProfileRoutingAvailable(capabilities)
           ? await client.profileRouting()
           : const NavivoxProfileRoutingReport();
-      final configAdminState = await navivoxLoadGatewayConfigAdminState(
-        client: client,
-        capabilities: capabilities,
-      );
+      final configAdminSupported = navivoxConfigAdminSupported(capabilities);
+      ({Map<String, Object?> schema, Map<String, Object?> values})?
+      configAdminState;
+      _configAdminSupported = configAdminSupported;
+      _configAdminLoadFailed = false;
+      if (configAdminSupported) {
+        try {
+          configAdminState = await navivoxRefreshGatewayConfigAdminState(
+            client: client,
+          );
+        } catch (_) {
+          _configAdminLoadFailed = true;
+        }
+      }
       _configAdminAvailable = configAdminState != null;
       final streamAvailable = navivoxStreamAvailable(capabilities);
       if (streamAvailable) {
@@ -180,6 +192,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _capabilities = null;
     _activeSessionId = null;
     _configAdminAvailable = false;
+    _configAdminSupported = false;
+    _configAdminLoadFailed = false;
     if (clearSavedSession) {
       unawaited(_sessionService.clearSession());
     }
@@ -640,16 +654,37 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   bool get configAdminAvailable => _configAdminAvailable;
 
   @override
+  bool get configAdminSupported => _configAdminSupported;
+
+  @override
+  bool get configAdminLoadFailed => _configAdminLoadFailed;
+
+  @override
   Future<void> refreshConfigAdmin() async {
-    final client = _requireConfigAdminClient('refresh config admin');
-    final configAdminState = await navivoxRefreshGatewayConfigAdminState(
-      client: client,
-    );
-    _state = _state.copyWith(
-      configSchema: configAdminState.schema,
-      configValues: configAdminState.values,
-    );
-    notifyListeners();
+    final client = _requireConfigAdminRefreshClient('refresh config admin');
+    try {
+      final configAdminState = await navivoxRefreshGatewayConfigAdminState(
+        client: client,
+      );
+      _configAdminAvailable = true;
+      _configAdminLoadFailed = false;
+      _state = _state.copyWith(
+        configSchema: configAdminState.schema,
+        configValues: configAdminState.values,
+        clearConfigDiff: true,
+      );
+      notifyListeners();
+    } catch (_) {
+      _configAdminAvailable = false;
+      _configAdminLoadFailed = true;
+      _state = _state.copyWith(
+        clearConfigSchema: true,
+        configValues: const {},
+        clearConfigDiff: true,
+      );
+      notifyListeners();
+      rethrow;
+    }
   }
 
   @override
@@ -703,6 +738,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     return navivoxRequireGatewayConfigAdminClient(
       client: _client,
       available: _configAdminAvailable,
+      action: action,
+    );
+  }
+
+  NavivoxGatewayClient _requireConfigAdminRefreshClient(String action) {
+    return navivoxRequireGatewayConfigAdminClient(
+      client: _client,
+      available: _configAdminSupported,
       action: action,
     );
   }

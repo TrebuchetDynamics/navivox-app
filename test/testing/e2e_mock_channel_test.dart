@@ -17,40 +17,43 @@ void main() {
     expect(channel.state.selectedProfileContactKey, isNull);
   });
 
-  test('E2E mock voice runs use unique ids and create transcript messages', () async {
-    final channel = E2EMockChannel();
-    await channel.connect(baseUrl: 'http://127.0.0.1:8765');
+  test(
+    'E2E mock voice runs use unique ids and create transcript messages',
+    () async {
+      final channel = E2EMockChannel();
+      await channel.connect(baseUrl: 'http://127.0.0.1:8765');
 
-    final first = channel.startVoiceRun();
-    final second = channel.startVoiceRun();
+      final first = channel.startVoiceRun();
+      final second = channel.startVoiceRun();
 
-    expect(first, isNot(second));
-    expect(channel.state.voiceRuns, contains(first));
-    expect(channel.state.voiceRuns, contains(second));
+      expect(first, isNot(second));
+      expect(channel.state.voiceRuns, contains(first));
+      expect(channel.state.voiceRuns, contains(second));
 
-    channel.stageVoiceRunTranscript(
-      voiceRunId: second,
-      transcript: 'hello by voice',
-      duration: const Duration(seconds: 1),
-      confidence: 0.9,
-    );
-    expect(
-      channel.state.voiceRuns[second]?.status,
-      NavivoxVoiceRunStatus.pendingSend,
-    );
+      channel.stageVoiceRunTranscript(
+        voiceRunId: second,
+        transcript: 'hello by voice',
+        duration: const Duration(seconds: 1),
+        confidence: 0.9,
+      );
+      expect(
+        channel.state.voiceRuns[second]?.status,
+        NavivoxVoiceRunStatus.pendingSend,
+      );
 
-    channel.submitVoiceRun(second);
+      channel.submitVoiceRun(second);
 
-    expect(
-      channel.state.voiceRuns[second]?.status,
-      NavivoxVoiceRunStatus.submitted,
-    );
-    expect(
-      channel.state.messagesList.where(
-        (message) => message.voice?.voiceRunId == second,
-      ),
-      hasLength(1),
-    );
-    expect(channel.state.messagesList.last.text, 'Echo: hello by voice');
-  });
+      expect(
+        channel.state.voiceRuns[second]?.status,
+        NavivoxVoiceRunStatus.submitted,
+      );
+      expect(
+        channel.state.messagesList.where(
+          (message) => message.voice?.voiceRunId == second,
+        ),
+        hasLength(1),
+      );
+      expect(channel.state.messagesList.last.text, 'Echo: hello by voice');
+    },
+  );
 }

@@ -73,7 +73,7 @@ runtime so obsolete transport assumptions do not come back.
 Flutter Navivox app
   - SetupScreen
   - GatewayNavivoxChannel
-  - Chat / Agents / Config / Voice UI
+  - Chat / Profiles / Config / Voice UI
         |
         | HTTP JSON + WebSocket JSON
         v

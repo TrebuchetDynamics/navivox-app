@@ -6,16 +6,16 @@ void main() {
 }
 
 void syntheticMetadataArtifactRedactsAuthorizationLikeKeys() {
-  final artifacts = navivoxToolArtifactsFromGatewayMetadata(
-    {
-      'Authorization': 'Bearer secret-token',
-      'credential': 'session-secret',
-      'safe_label': 'visible',
-    },
-    toolCallId: 'tool-1',
-  );
+  final artifacts = navivoxToolArtifactsFromGatewayMetadata({
+    'Authorization': 'Bearer secret-token',
+    'credential': 'session-secret',
+    'safe_label': 'visible',
+  }, toolCallId: 'tool-1');
 
-  _expect(artifacts.length == 1, 'metadata should produce one synthetic artifact');
+  _expect(
+    artifacts.length == 1,
+    'metadata should produce one synthetic artifact',
+  );
   final summary = artifacts.single.summary ?? '';
   _expect(
     !summary.contains('Bearer secret-token'),
@@ -28,10 +28,9 @@ void syntheticMetadataArtifactRedactsAuthorizationLikeKeys() {
 }
 
 void syntheticMetadataArtifactKeepsNonSensitiveMetadata() {
-  final artifacts = navivoxToolArtifactsFromGatewayMetadata(
-    {'safe_label': 'visible'},
-    toolCallId: 'tool-1',
-  );
+  final artifacts = navivoxToolArtifactsFromGatewayMetadata({
+    'safe_label': 'visible',
+  }, toolCallId: 'tool-1');
 
   _expect(
     artifacts.single.summary == 'safe_label: visible',

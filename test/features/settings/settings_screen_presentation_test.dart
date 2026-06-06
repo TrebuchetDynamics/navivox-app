@@ -9,11 +9,16 @@ void main() {
   const presentation = SettingsScreenPresentation();
 
   test('centralizes static settings screen copy and management rows', () {
-    expect(presentation.title, 'Voice settings');
-    expect(presentation.globalTitle, 'Global app settings');
+    expect(presentation.title, 'Settings');
+    expect(presentation.localSettingsTitle, 'Local settings');
     expect(
-      presentation.globalSubtitle,
-      'Voice controls stay local to this app. Gateway and profile settings live in their own screens.',
+      presentation.localSettingsSubtitle,
+      'Preferences on this Navivox install. Gormes config, profile contacts, and gateway auth live in their own surfaces.',
+    );
+    expect(presentation.localVoiceSectionTitle, 'Local voice preferences');
+    expect(
+      presentation.localVoiceSectionSubtitle,
+      'Command word, local capture, and voice trust stay in Navivox.',
     );
 
     expect(
@@ -22,7 +27,7 @@ void main() {
       ),
       [
         'settings-manage-gateways:Manage gateways:Add, test, edit, and remove Gormes gateway connections.:${AppRoutes.servers}',
-        'settings-manage-profiles:Manage profile contacts:Create, refresh, edit, or select profiles from the Agents tab.:${AppRoutes.agents}',
+        'settings-manage-profiles:Manage profile contacts:Create, refresh, edit, or select Profile contacts from the Profiles tab.:${AppRoutes.agents}',
       ],
     );
 

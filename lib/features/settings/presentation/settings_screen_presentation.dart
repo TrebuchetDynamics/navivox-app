@@ -8,12 +8,17 @@ import '../../../shared/voice/voice_settings.dart';
 class SettingsScreenPresentation {
   const SettingsScreenPresentation();
 
-  String get title => 'Voice settings';
+  String get title => 'Settings';
 
-  String get globalTitle => 'Global app settings';
+  String get localSettingsTitle => 'Local settings';
 
-  String get globalSubtitle =>
-      'Voice controls stay local to this app. Gateway and profile settings live in their own screens.';
+  String get localSettingsSubtitle =>
+      'Preferences on this Navivox install. Gormes config, profile contacts, and gateway auth live in their own surfaces.';
+
+  String get localVoiceSectionTitle => 'Local voice preferences';
+
+  String get localVoiceSectionSubtitle =>
+      'Command word, local capture, and voice trust stay in Navivox.';
 
   List<SettingsManagementRoutePresentation> get managementRows => const [
     SettingsManagementRoutePresentation(
@@ -26,7 +31,7 @@ class SettingsScreenPresentation {
       keyValue: 'settings-manage-profiles',
       title: 'Manage profile contacts',
       subtitle:
-          'Create, refresh, edit, or select profiles from the Agents tab.',
+          'Create, refresh, edit, or select Profile contacts from the Profiles tab.',
       route: AppRoutes.agents,
     ),
   ];

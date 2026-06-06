@@ -33,7 +33,7 @@ class AgentsScreenPresentation {
   final String? selectedProfileContactKey;
   final String profileServerLabel;
 
-  String get screenTitle => 'Agents';
+  String get screenTitle => 'Profiles';
 
   String get refreshProfilesTooltip => 'Refresh profiles';
 
@@ -45,7 +45,7 @@ class AgentsScreenPresentation {
   String get emptyProfilesTitle => 'No profiles found on this server';
 
   String get emptyProfilesSubtitle =>
-      'Connect to a Gormes server, refresh profiles, or draft a new profile from a seed.';
+      'Connect to a Gormes gateway, refresh profiles, or draft a new profile from a seed.';
 
   String get refreshProfilesLabel => 'Refresh profiles';
 

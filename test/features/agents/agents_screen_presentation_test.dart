@@ -13,7 +13,7 @@ final _profiles = [
 ];
 
 void main() {
-  test('prefers the legacy agent list when agents are present', () {
+  test('keeps legacy agent rows behind the Profiles surface', () {
     final presentation = AgentsScreenPresentation.fromState(
       NavivoxChannelState(
         agents: defaultSeedAgents,
@@ -25,7 +25,7 @@ void main() {
       ),
     );
 
-    expect(presentation.screenTitle, 'Agents');
+    expect(presentation.screenTitle, 'Profiles');
     expect(presentation.refreshProfilesTooltip, 'Refresh profiles');
     expect(presentation.showAgentList, isTrue);
     expect(presentation.showProfileFallback, isFalse);
@@ -94,7 +94,7 @@ void main() {
       );
       expect(
         presentation.emptyProfilesSubtitle,
-        'Connect to a Gormes server, refresh profiles, or draft a new profile from a seed.',
+        'Connect to a Gormes gateway, refresh profiles, or draft a new profile from a seed.',
       );
       expect(presentation.refreshProfilesLabel, 'Refresh profiles');
       expect(presentation.createImportProfileLabel, 'Add profile');

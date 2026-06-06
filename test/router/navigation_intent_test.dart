@@ -42,9 +42,7 @@ void main() {
         contains('/chats/'),
       );
       // Verify both IDs appear in the result
-      final result = resolver.resolve(
-        const OpenChatThread('a/b', 'c/d'),
-      );
+      final result = resolver.resolve(const OpenChatThread('a/b', 'c/d'));
       expect(result, startsWith('/chats/'));
       expect(result, contains('a%2Fb'));
       expect(result, contains('c%2Fd'));

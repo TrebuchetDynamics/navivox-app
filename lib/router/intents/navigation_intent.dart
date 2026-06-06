@@ -23,8 +23,7 @@ sealed class NavigationIntent {
     GoRouter.maybeOf(context)?.go(_resolver.resolve(intent));
   }
 
-  static final NavigationIntentResolver _resolver =
-      NavigationIntentResolver();
+  static final NavigationIntentResolver _resolver = NavigationIntentResolver();
 }
 
 class OpenAgents extends NavigationIntent {

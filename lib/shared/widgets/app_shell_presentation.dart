@@ -91,12 +91,12 @@ const _chatsDestination = AppShellDestination(
 const _serversDestination = AppShellDestination(
   path: AppRoutes.servers,
   icon: Icons.dns_outlined,
-  label: 'Servers',
+  label: 'Gateways',
 );
 const _agentsDestination = AppShellDestination(
   path: AppRoutes.agents,
-  icon: Icons.smart_toy_outlined,
-  label: 'Agents',
+  icon: Icons.people_alt_outlined,
+  label: 'Profiles',
 );
 const _memoryDestination = AppShellDestination(
   path: AppRoutes.memory,

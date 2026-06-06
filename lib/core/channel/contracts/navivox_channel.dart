@@ -396,6 +396,8 @@ abstract interface class NavivoxChannel implements Listenable {
     String? channel,
   });
   bool get configAdminAvailable;
+  bool get configAdminSupported;
+  bool get configAdminLoadFailed;
   Future<void> refreshConfigAdmin();
   Future<NavivoxConfigAdminResponse> diffConfigAdmin(
     List<NavivoxConfigAdminChange> changes,

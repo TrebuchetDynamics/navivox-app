@@ -47,6 +47,18 @@ void main() {
     final active = presentation.gateways.first;
     expect(active.active, isTrue);
     expect(active.statusSubtitle, 'Active session gateway · online');
+    expect(active.gatewayStatus.title, 'Gateway status');
+    expect(active.gatewayStatus.headline, 'Active session connected');
+    expect(active.gatewayStatus.sessionLine, 'Session: active in this app');
+    expect(active.gatewayStatus.reportedStatusLine, 'Reported status: Online');
+    expect(
+      active.gatewayStatus.profileContactsLine,
+      'Profile contacts: 2 profiles · 1 warning · 1 active turn',
+    );
+    expect(
+      active.gatewayStatus.deferredMetadataMessage,
+      contains('Base URL, auth, exposure, stream health, credentials'),
+    );
     expect(active.profileContacts.map((profile) => profile.contact.profileId), [
       'mineru',
       'personal',
@@ -60,6 +72,16 @@ void main() {
     final registered = presentation.gateways.last;
     expect(registered.active, isFalse);
     expect(registered.statusSubtitle, 'Registered gateway · offline');
+    expect(registered.gatewayStatus.headline, 'Registered gateway offline');
+    expect(registered.gatewayStatus.sessionLine, 'Session: not active');
+    expect(
+      registered.gatewayStatus.reportedStatusLine,
+      'Reported status: Offline',
+    );
+    expect(
+      registered.gatewayStatus.profileContactsLine,
+      'Profile contacts: 1 profile · 1 auth',
+    );
     expect(registered.activeProfileContact, isNull);
     expect(registered.activeProfileLabel, isNull);
     expect(registered.countLabels, ['1 profile', '1 auth']);

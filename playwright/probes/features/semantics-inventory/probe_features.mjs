@@ -35,9 +35,9 @@ for (const i of all) {
   }
 }
 
-// 2. Check for nav rail labels (Chats, Servers, Agents, Memory, Config, Settings)
+// 2. Check for nav rail labels (Chats, Gateways, Profiles, Memory, Config, Settings)
 console.log('\n=== NAV RAIL SEARCH ===');
-const navLabels = ['Chats','Servers','Agents','Memory','Config','Settings'];
+const navLabels = ['Chats','Gateways','Profiles','Memory','Config','Settings'];
 for (const l of navLabels) {
   const found = all.filter(i => i.text.includes(l) || i.label.includes(l));
   if (found.length > 0) {

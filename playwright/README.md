@@ -48,11 +48,11 @@ Current count comes from `npm run web:e2e -- --list`.
 | **Profile Contacts** | 4 | 3 seeded profiles visible, UI elements (FAB, search, menu), health previews, attention badge on needs-auth profile |
 | **Chat Navigation** | 3 | Clicking each profile navigates to correct `/chats/:server/:profile` URL, chat composer present |
 | **Menu Navigation** | 5 | Menu → Gateways (`/servers`), Manage profiles (`/agents`), Memory (`/memory`), Config (`/config`), Settings (`/settings`) |
-| **Gateways Screen** | 1 | Server list with Local Gormes + Office Gormes + Register gateway button |
-| **Agents Screen** | 2 | Profiles listed with Status/Channels/Memory/Latest details, Active profile indicator, Refresh button |
+| **Gateways Screen** | 1 | Gateway list with Local Gormes + Office Gormes + Register gateway button |
+| **Profiles Screen** | 2 | Profiles listed with Status/Channels/Memory/Latest details, Active profile indicator, Refresh button |
 | **Memory Screen** | 1 | Degraded state with "Gormes memory API is unavailable" message |
 | **Config Screen** | 1 | Profile scope, server info, profile ID, "No config available" state |
-| **Settings Screen** | 1 | Voice settings, Global app settings, command word "navi", gateway/profile overview |
+| **Settings Screen** | 1 | Settings, Local settings, Local voice preferences, command word "navi", gateway/profile overview |
 | **Screenshots** | 7 | All 7 screens captured as PNG |
 | **Setup Screen*** | 14 | Form fields, token toggle, error states, retry guidance |
 | **Additional Regression Coverage** | 4 | Office-scoped profile chat routing, accessible switch state, config fallback boundaries, gateway chip semantics |

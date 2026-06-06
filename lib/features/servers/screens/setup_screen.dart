@@ -148,6 +148,125 @@ class _SetupInfoCard extends StatelessWidget {
   }
 }
 
+class _PairingReadinessCard extends StatelessWidget {
+  const _PairingReadinessCard({required this.readiness});
+
+  final SetupPairingReadinessPresentation readiness;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final colors = _readinessColors(colorScheme, readiness.status);
+
+    return Semantics(
+      key: const ValueKey('setup-pairing-readiness-card'),
+      liveRegion:
+          readiness.status == SetupPairingReadinessStatus.connecting ||
+          readiness.status == SetupPairingReadinessStatus.failedRetry,
+      child: Card(
+        elevation: 0,
+        color: colors.background,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.iconBackground,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  _readinessIcon(readiness.status),
+                  color: colors.foreground,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      readiness.title,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colors.foreground,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      readiness.statusLabel,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: colors.foreground,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      readiness.message,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.foreground,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+({Color background, Color iconBackground, Color foreground}) _readinessColors(
+  ColorScheme colorScheme,
+  SetupPairingReadinessStatus status,
+) {
+  return switch (status) {
+    SetupPairingReadinessStatus.failedRetry => (
+      background: colorScheme.errorContainer,
+      iconBackground: colorScheme.errorContainer,
+      foreground: colorScheme.onErrorContainer,
+    ),
+    SetupPairingReadinessStatus.connectedSessionOnly => (
+      background: colorScheme.tertiaryContainer,
+      iconBackground: colorScheme.tertiaryContainer,
+      foreground: colorScheme.onTertiaryContainer,
+    ),
+    SetupPairingReadinessStatus.importedNeedsReview => (
+      background: colorScheme.secondaryContainer,
+      iconBackground: colorScheme.secondaryContainer,
+      foreground: colorScheme.onSecondaryContainer,
+    ),
+    SetupPairingReadinessStatus.connecting => (
+      background: colorScheme.primaryContainer,
+      iconBackground: colorScheme.primaryContainer,
+      foreground: colorScheme.onPrimaryContainer,
+    ),
+    SetupPairingReadinessStatus.manual => (
+      background: colorScheme.surfaceContainerHighest,
+      iconBackground: colorScheme.secondaryContainer,
+      foreground: colorScheme.onSurfaceVariant,
+    ),
+  };
+}
+
+IconData _readinessIcon(SetupPairingReadinessStatus status) {
+  return switch (status) {
+    SetupPairingReadinessStatus.failedRetry => Icons.error_outline,
+    SetupPairingReadinessStatus.connectedSessionOnly =>
+      Icons.check_circle_outline,
+    SetupPairingReadinessStatus.importedNeedsReview =>
+      Icons.fact_check_outlined,
+    SetupPairingReadinessStatus.connecting => Icons.sync,
+    SetupPairingReadinessStatus.manual => Icons.link_outlined,
+  };
+}
+
 class _SetupNoticeBanner extends StatelessWidget {
   const _SetupNoticeBanner({required this.notice});
 
@@ -290,6 +409,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final channel = ref.watch(navivoxChannelProvider);
+    final readiness = _setupScreenPresentation.pairingReadiness(
+      connecting: _connecting,
+      connectedSession: channel.state.hasServers,
+      source: _handoffFlow.source,
+      hasError: _notice?.isError ?? false,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Navivox')),
@@ -330,6 +456,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               _setupScreenPresentation.pairingInstructions,
                         ),
                         const SizedBox(height: 20),
+                        _PairingReadinessCard(readiness: readiness),
+                        const SizedBox(height: 16),
                         _SetupInfoCard(
                           icon: Icons.security,
                           child: Text(

@@ -41,9 +41,10 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           ListTile(
+            key: const ValueKey('settings-local-scope'),
             leading: const Icon(Icons.settings_applications),
-            title: Text(_settingsPresentation.globalTitle),
-            subtitle: Text(_settingsPresentation.globalSubtitle),
+            title: Text(_settingsPresentation.localSettingsTitle),
+            subtitle: Text(_settingsPresentation.localSettingsSubtitle),
           ),
           for (final row in _settingsPresentation.managementRows)
             ListTile(
@@ -55,6 +56,12 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.go(row.route),
             ),
           const Divider(),
+          ListTile(
+            key: const ValueKey('settings-local-voice-section'),
+            leading: const Icon(Icons.keyboard_voice_outlined),
+            title: Text(_settingsPresentation.localVoiceSectionTitle),
+            subtitle: Text(_settingsPresentation.localVoiceSectionSubtitle),
+          ),
           SwitchListTile(
             key: const ValueKey('voice-continuous-enabled'),
             title: Text(_settingsPresentation.continuousVoiceTitle),

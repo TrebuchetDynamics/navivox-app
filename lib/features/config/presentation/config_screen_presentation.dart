@@ -9,6 +9,7 @@ import 'config_section_presentation.dart';
 class ConfigScreenPresentation {
   const ConfigScreenPresentation._({
     required this.scope,
+    required this.configReadiness,
     required this.sections,
     required this.applyFlow,
     required this.applyPresentation,
@@ -20,12 +21,19 @@ class ConfigScreenPresentation {
     required NavivoxChannelState state,
     required ConfigDraftSession draftSession,
     String? sectionId,
+    bool? configAdminAvailable,
+    bool? configAdminSupported,
+    bool configAdminLoadFailed = false,
+    bool configAdminChecking = false,
   }) {
     final form = ConfigFormModel.fromSchema(
       schema: state.configSchema,
       values: state.configValues,
     );
     final isEmpty = form.rows.isEmpty;
+    final effectiveConfigAdminAvailable = configAdminAvailable ?? !isEmpty;
+    final effectiveConfigAdminSupported =
+        configAdminSupported ?? effectiveConfigAdminAvailable;
     final sectionSelection = form.selectSection(sectionId);
     final applyFlow = ConfigApplyFlowModel.fromDraft(
       form: form,
@@ -41,6 +49,13 @@ class ConfigScreenPresentation {
         activeServer: state.activeServer,
         activeServerId: state.activeServerId,
         activeProfile: state.activeProfileContact,
+      ),
+      configReadiness: ConfigReadinessPresentation.fromState(
+        checking: configAdminChecking,
+        supported: effectiveConfigAdminSupported,
+        available: effectiveConfigAdminAvailable,
+        loadFailed: configAdminLoadFailed,
+        hasSchemaRows: !isEmpty,
       ),
       sections: selectedSections
           .map(
@@ -59,13 +74,12 @@ class ConfigScreenPresentation {
   }
 
   final ProfileContactScopePresentation scope;
+  final ConfigReadinessPresentation configReadiness;
   final List<ConfigSectionPresentation> sections;
   final ConfigApplyFlowModel applyFlow;
   final ConfigApplyPresentation applyPresentation;
   final bool isEmpty;
   final String? missingSectionId;
-
-  String get emptyMessage => 'No config available';
 
   bool get isMissingSection => missingSectionId != null;
 
@@ -73,4 +87,79 @@ class ConfigScreenPresentation {
       'Config section not found: $missingSectionId';
 
   bool get showPendingChanges => applyPresentation.hasChanges;
+}
+
+enum ConfigReadinessStatus {
+  checking,
+  ready,
+  unsupported,
+  loadFailed,
+  emptySchema,
+}
+
+class ConfigReadinessPresentation {
+  const ConfigReadinessPresentation._({required this.status});
+
+  factory ConfigReadinessPresentation.fromState({
+    required bool checking,
+    required bool supported,
+    required bool available,
+    required bool loadFailed,
+    required bool hasSchemaRows,
+  }) {
+    if (checking) {
+      return const ConfigReadinessPresentation._(
+        status: ConfigReadinessStatus.checking,
+      );
+    }
+    if (!supported) {
+      return const ConfigReadinessPresentation._(
+        status: ConfigReadinessStatus.unsupported,
+      );
+    }
+    if (loadFailed || !available) {
+      return const ConfigReadinessPresentation._(
+        status: ConfigReadinessStatus.loadFailed,
+      );
+    }
+    if (!hasSchemaRows) {
+      return const ConfigReadinessPresentation._(
+        status: ConfigReadinessStatus.emptySchema,
+      );
+    }
+    return const ConfigReadinessPresentation._(
+      status: ConfigReadinessStatus.ready,
+    );
+  }
+
+  final ConfigReadinessStatus status;
+
+  String get title => 'Config readiness';
+
+  String get statusLabel => switch (status) {
+    ConfigReadinessStatus.checking => 'Checking config admin',
+    ConfigReadinessStatus.ready => 'Config admin ready',
+    ConfigReadinessStatus.unsupported => 'Config admin unsupported',
+    ConfigReadinessStatus.loadFailed => 'Config admin load failed',
+    ConfigReadinessStatus.emptySchema => 'Config schema empty',
+  };
+
+  String get message => switch (status) {
+    ConfigReadinessStatus.checking =>
+      'Checking whether Gormes can provide config-admin for this gateway.',
+    ConfigReadinessStatus.ready =>
+      'Gormes config-admin is loaded for this scope. Secrets stay redacted and changes require validation.',
+    ConfigReadinessStatus.unsupported =>
+      'This gateway does not advertise Gormes config-admin. Chat and voice may still work.',
+    ConfigReadinessStatus.loadFailed =>
+      'Gormes advertised config-admin, but Navivox could not load the schema and current values.',
+    ConfigReadinessStatus.emptySchema =>
+      'Gormes config-admin loaded, but it did not return editable config fields for this scope.',
+  };
+
+  String get refreshLabel => 'Refresh config';
+
+  String get openGatewayLabel => 'Open gateway';
+
+  bool get canRefresh => status != ConfigReadinessStatus.checking;
 }
