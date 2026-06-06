@@ -22,13 +22,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
-    expect(find.text('Pairing readiness'), findsOneWidget);
-    expect(find.text('Ready for pairing details'), findsOneWidget);
+    expect(find.text('Pairing readiness'), findsNothing);
+    expect(find.text('Ready for pairing details'), findsNothing);
     expect(setupConnectAction(), findsOneWidget);
     expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
-    expect(find.textContaining('Android emulator'), findsOneWidget);
-    expect(find.textContaining('10.0.2.2'), findsOneWidget);
-    expect(find.textContaining('physical Android device'), findsOneWidget);
+    expect(find.text('Need setup help?'), findsOneWidget);
+    expect(find.textContaining('Termux bootstrap'), findsOneWidget);
     expect(caseInsensitiveText('telephony'), findsNothing);
     expect(caseInsensitiveText('fake'), findsNothing);
 
@@ -435,6 +434,10 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Need setup help?'));
+    await tester.tap(find.text('Need setup help?'));
+    await tester.pumpAndSettle();
+
     expect(find.textContaining('Same-device setup'), findsOneWidget);
     expect(find.textContaining('Termux'), findsWidgets);
     expect(find.textContaining('paste the bootstrap command'), findsOneWidget);
@@ -460,6 +463,10 @@ void main() {
     addTearDown(channel.dispose);
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Need setup help?'));
+    await tester.tap(find.text('Need setup help?'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Copy one-paste bootstrap'));

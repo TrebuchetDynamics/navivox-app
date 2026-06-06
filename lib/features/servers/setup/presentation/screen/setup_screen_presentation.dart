@@ -10,10 +10,8 @@ class SetupScreenPresentation {
   String get title => 'Connect to Gormes';
 
   String get pairingInstructions =>
-      'Run `gormes navivox pair`. On Android, Gormes can open Navivox '
-      'directly; QR/import and `gormes navivox connect-info` are fallbacks. '
-      'Pairing signs in for this app session. Durable reconnect is not saved '
-      'yet; pair again if Navivox cannot reconnect after restart.';
+      'Run `gormes navivox pair`, then open the link or import the QR image. '
+      'Use `gormes navivox connect-info` for fallback URLs.';
 
   String get networkHint =>
       'Android emulator: use http://10.0.2.2:<port> for a host gateway. '

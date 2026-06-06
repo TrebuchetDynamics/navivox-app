@@ -12,11 +12,8 @@ void main() {
       presentation.pairingInstructions,
       contains('gormes navivox connect-info'),
     );
-    expect(presentation.pairingInstructions, contains('this app session'));
-    expect(
-      presentation.pairingInstructions,
-      contains('Durable reconnect is not saved'),
-    );
+    expect(presentation.pairingInstructions, contains('open the link'));
+    expect(presentation.pairingInstructions, contains('fallback URLs'));
     expect(presentation.networkHint, contains('10.0.2.2'));
     expect(presentation.addressFieldLabel, 'Gateway address');
     expect(presentation.addressFieldSemanticLabel, 'Gateway address field');

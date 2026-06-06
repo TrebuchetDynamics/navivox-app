@@ -68,26 +68,22 @@ class _SetupHero extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 72,
-          height: 72,
+          width: 64,
+          height: 64,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: colorScheme.primary.withAlpha(48),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
+                color: colorScheme.primary.withAlpha(40),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: Icon(
-            Icons.graphic_eq,
-            color: colorScheme.onPrimaryContainer,
-            size: 36,
-          ),
+          child: Image.asset('navivox-app-icon.png', fit: BoxFit.cover),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
           title,
           textAlign: TextAlign.center,
@@ -96,9 +92,9 @@ class _SetupHero extends StatelessWidget {
             letterSpacing: -0.4,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Text(
             instructions,
             textAlign: TextAlign.center,
@@ -113,36 +109,57 @@ class _SetupHero extends StatelessWidget {
   }
 }
 
-class _SetupInfoCard extends StatelessWidget {
-  const _SetupInfoCard({required this.icon, required this.child});
+class _SetupHelpCard extends StatelessWidget {
+  const _SetupHelpCard({
+    required this.networkHint,
+    required this.introCopy,
+    required this.entries,
+    required this.onCopyEntry,
+  });
 
-  final IconData icon;
-  final Widget child;
+  final String networkHint;
+  final String introCopy;
+  final List<SetupGuideEntry> entries;
+  final ValueChanged<SetupGuideEntry> onCopyEntry;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Card(
       elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: colorScheme.onSecondaryContainer),
+      child: ExpansionTile(
+        leading: const Icon(Icons.help_outline),
+        title: const Text('Need setup help?'),
+        subtitle: const Text('Termux bootstrap, host URL tips, and fixes'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          Text(
+            networkHint,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.45,
             ),
-            const SizedBox(width: 12),
-            Expanded(child: child),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            introCopy,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final entry in entries) ...[
+            OutlinedButton.icon(
+              onPressed: () => onCopyEntry(entry),
+              icon: Icon(_setupGuideIcon(entry.id)),
+              label: Text(entry.label),
+            ),
+            if (entry != entries.last) const SizedBox(height: 8),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -423,6 +440,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
+            final showReadiness =
+                readiness.status != SetupPairingReadinessStatus.manual;
 
             return DecoratedBox(
               decoration: BoxDecoration(
@@ -455,20 +474,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                           instructions:
                               _setupScreenPresentation.pairingInstructions,
                         ),
-                        const SizedBox(height: 20),
-                        _PairingReadinessCard(readiness: readiness),
-                        const SizedBox(height: 16),
-                        _SetupInfoCard(
-                          icon: Icons.security,
-                          child: Text(
-                            _setupScreenPresentation.networkHint,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              height: 1.45,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: compact ? 16 : 20),
+                        if (showReadiness) ...[
+                          _PairingReadinessCard(readiness: readiness),
+                          const SizedBox(height: 12),
+                        ],
                         Card(
                           elevation: 0,
                           child: Padding(
@@ -477,9 +487,17 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  'Connection details',
+                                  'Pair with Gormes',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Import the QR image, or paste the gateway details manually.',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    height: 1.35,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -505,7 +523,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                   spacing: 8,
                                   runSpacing: 4,
                                   children: [
-                                    TextButton.icon(
+                                    FilledButton.tonalIcon(
                                       key: const ValueKey(
                                         'setup-import-qr-button',
                                       ),
@@ -610,33 +628,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _SetupInfoCard(
-                          icon: Icons.terminal,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                _setupGuidePresentation.introCopy,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.45,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              for (final entry
-                                  in _setupGuidePresentation
-                                      .visibleEntries) ...[
-                                if (entry.id != SetupGuideEntryId.bootstrap)
-                                  const SizedBox(height: 8),
-                                OutlinedButton.icon(
-                                  onPressed: () => _copySetupGuideEntry(entry),
-                                  icon: Icon(_setupGuideIcon(entry.id)),
-                                  label: Text(entry.label),
-                                ),
-                              ],
-                            ],
-                          ),
+                        const SizedBox(height: 12),
+                        _SetupHelpCard(
+                          networkHint: _setupScreenPresentation.networkHint,
+                          introCopy: _setupGuidePresentation.introCopy,
+                          entries: _setupGuidePresentation.visibleEntries,
+                          onCopyEntry: _copySetupGuideEntry,
                         ),
                       ],
                     ),
