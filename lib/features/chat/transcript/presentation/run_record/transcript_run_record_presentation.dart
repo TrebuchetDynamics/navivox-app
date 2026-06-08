@@ -243,34 +243,39 @@ String _artifactRef(Map<String, Object?> metadata) {
 }
 
 String _usageLabel(Map<String, Object?> value) {
-  if (value.isEmpty) return 'unknown';
-  final status = navivoxOptionalStringFromJson(value['status']);
-  if (status != null && status != 'available') return status;
-  final total = navivoxOptionalStringFromJson(value['total_tokens']);
-  if (total != null) return '$total tokens';
-  final input = navivoxOptionalStringFromJson(
-    value['input_tokens'] ?? value['prompt_tokens'],
-  );
-  final output = navivoxOptionalStringFromJson(
-    value['output_tokens'] ?? value['completion_tokens'],
-  );
-  final parts = <String>[];
-  if (input != null) parts.add('input $input');
-  if (output != null) parts.add('output $output');
-  final usage = transcriptJoinOptionalInfoParts(parts);
-  if (usage != null) return usage;
-  return status ?? 'unknown';
+  return _availableMetricLabel(value, () {
+    final total = navivoxOptionalStringFromJson(value['total_tokens']);
+    if (total != null) return '$total tokens';
+    final input = navivoxOptionalStringFromJson(
+      value['input_tokens'] ?? value['prompt_tokens'],
+    );
+    final output = navivoxOptionalStringFromJson(
+      value['output_tokens'] ?? value['completion_tokens'],
+    );
+    final parts = <String>[];
+    if (input != null) parts.add('input $input');
+    if (output != null) parts.add('output $output');
+    return transcriptJoinOptionalInfoParts(parts);
+  });
 }
 
 String _costLabel(Map<String, Object?> value) {
+  return _availableMetricLabel(value, () {
+    final total = navivoxOptionalStringFromJson(
+      value['total_usd'] ?? value['cost_usd'] ?? value['total_cost_usd'],
+    );
+    return total == null ? null : '$total USD';
+  });
+}
+
+String _availableMetricLabel(
+  Map<String, Object?> value,
+  String? Function() availableLabel,
+) {
   if (value.isEmpty) return 'unknown';
   final status = navivoxOptionalStringFromJson(value['status']);
   if (status != null && status != 'available') return status;
-  final total = navivoxOptionalStringFromJson(
-    value['total_usd'] ?? value['cost_usd'] ?? value['total_cost_usd'],
-  );
-  if (total != null) return '$total USD';
-  return status ?? 'unknown';
+  return availableLabel() ?? status ?? 'unknown';
 }
 
 String _dateLabel(DateTime? date) {

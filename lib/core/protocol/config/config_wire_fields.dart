@@ -81,12 +81,12 @@ Iterable<Object?> configWireAliasCandidates(
   }
 
   final normalizedAliases = {
-    for (final alias in exactAliases) _configNormalizeWireFieldName(alias),
+    for (final alias in exactAliases) navivoxCanonicalWireFieldName(alias),
   };
   for (final entry in raw.entries) {
     if (yieldedKeys.contains(entry.key)) continue;
     if (normalizedAliases.contains(
-      _configNormalizeWireFieldName('${entry.key}'),
+      navivoxCanonicalWireFieldName('${entry.key}'),
     )) {
       yield entry.value;
     }
@@ -100,6 +100,3 @@ bool _configWireValueIsPopulated(Object? value) {
   if (value is Map) return value.isNotEmpty;
   return true;
 }
-
-String _configNormalizeWireFieldName(String value) =>
-    value.toLowerCase().replaceAll('_', '');
