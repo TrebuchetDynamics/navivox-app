@@ -15,6 +15,7 @@ class PairingHandoffFlow {
       landing: PairingHandoffLanding(
         serverId: import.serverId,
         profileId: import.profileId,
+        setupIntent: import.setupIntent,
       ),
       source: import.source,
     );

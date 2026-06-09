@@ -1,14 +1,11 @@
-import '../../../gateway/messages/navivox_gateway_event.dart';
-import '../../../protocol/navivox_event.dart';
-import '../../../protocol/navivox_json.dart';
-import '../../contracts/navivox_message_scope.dart';
+part of '../events/gateway_event_reducer.dart';
 
 /// Resolves the server/profile scope for gateway transcript events.
 ///
 /// Gateway events may carry scope directly in metadata, or indirectly through
 /// the request/tool-call message they update. Keeping the lookup policy here
 /// keeps assistant, tool, safety, and approval event handling aligned.
-NavivoxMessageScope navivoxGatewayMessageScopeFromEvent({
+NavivoxMessageScope _navivoxGatewayMessageScopeFromEvent({
   required NavivoxGatewayEvent event,
   required Map<String, NavivoxChatMessage> messages,
 }) {

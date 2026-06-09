@@ -13,6 +13,7 @@ coverage/
 .pi/**
 **/.pi/candidates-folder-refactor/
 .understand-anything/**
+graphify-out/
 
 # Node / Playwright
 node_modules/

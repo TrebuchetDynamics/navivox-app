@@ -15,6 +15,8 @@ class NavivoxPairingDescriptor {
     this.profileId,
     this.workspaceId,
     this.providerId,
+    this.setupEntryScreen,
+    this.setupSections = const [],
     this.channelIds = const [],
   });
 
@@ -55,6 +57,8 @@ class NavivoxPairingDescriptor {
       profileId: fields.optional('profile_id'),
       workspaceId: fields.optional('workspace_id'),
       providerId: fields.optional('provider_id'),
+      setupEntryScreen: fields.optional('setup_entry_screen'),
+      setupSections: fields.csv('setup_sections'),
       channelIds: fields.csv('channel_ids'),
     );
   }
@@ -69,6 +73,8 @@ class NavivoxPairingDescriptor {
   final String? profileId;
   final String? workspaceId;
   final String? providerId;
+  final String? setupEntryScreen;
+  final List<String> setupSections;
   final List<String> channelIds;
 
   NavivoxGatewayConfig toGatewayConfig() {

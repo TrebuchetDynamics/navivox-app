@@ -1,15 +1,11 @@
-import '../../../gateway/navivox_gateway_protocol.dart';
-import '../../../protocol/navivox_event.dart';
-import '../../contracts/navivox_message_scope.dart';
-import '../approvals/gateway_approval_notice.dart';
-import '../codecs/gateway_tool_artifact_codec.dart';
+part of '../events/gateway_event_reducer.dart';
 
 /// Builds durable tool-call cards from gateway events.
 ///
 /// Progress updates and approval-required events both mutate the same tool-call
 /// card. Centralizing that merge contract keeps status, approval, artifacts,
 /// run-record references, and profile scope aligned.
-NavivoxChatMessage navivoxGatewayToolCallMessage({
+NavivoxChatMessage _navivoxGatewayToolCallMessage({
   required String id,
   required NavivoxGatewayEvent event,
   required String status,
@@ -35,7 +31,7 @@ NavivoxChatMessage navivoxGatewayToolCallMessage({
         event.message ?? event.text ?? prior?.summary ?? '',
       ),
       approval: prior?.approval,
-      artifacts: navivoxGatewayToolArtifacts(
+      artifacts: _navivoxGatewayToolArtifacts(
         metadata: event.metadata,
         toolCallId: id,
         prior: prior?.artifacts ?? const [],
@@ -48,7 +44,7 @@ NavivoxChatMessage navivoxGatewayToolCallMessage({
   );
 }
 
-NavivoxChatMessage? navivoxGatewayToolApprovalMessage({
+NavivoxChatMessage? _navivoxGatewayToolApprovalMessage({
   required String id,
   required NavivoxGatewayEvent event,
   required NavivoxChatMessage? priorMessage,
@@ -78,7 +74,7 @@ NavivoxChatMessage? navivoxGatewayToolApprovalMessage({
   );
 }
 
-List<NavivoxToolArtifact> navivoxGatewayToolArtifacts({
+List<NavivoxToolArtifact> _navivoxGatewayToolArtifacts({
   required Map<String, Object?> metadata,
   required String toolCallId,
   required List<NavivoxToolArtifact> prior,

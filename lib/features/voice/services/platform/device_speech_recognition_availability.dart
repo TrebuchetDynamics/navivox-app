@@ -97,9 +97,7 @@ Future<VoiceCaptureReadiness> checkDefaultVoiceCaptureReadiness({
       );
     }
     return VoiceCaptureReadiness.available(diagnostics: diagnostics);
-  } on MissingPluginException {
-    return const VoiceCaptureReadiness.unavailable(deviceSttUnavailableReason);
-  } on PlatformException {
+  } catch (_) {
     return const VoiceCaptureReadiness.unavailable(deviceSttUnavailableReason);
   }
 }

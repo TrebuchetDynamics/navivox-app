@@ -66,6 +66,27 @@ class DurableKeySignatureEncodingTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeP256Coordinates() {
+        DurableKeySignatureEncoding.p256CoordinateToBase64Url(BigInteger.valueOf(-1))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsNegativeDerIntegers() {
+        DurableKeySignatureEncoding.derToJose(
+            byteArrayOf(
+                0x30,
+                0x06,
+                0x02,
+                0x01,
+                0x80.toByte(),
+                0x02,
+                0x01,
+                0x01,
+            ),
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
     fun rejectsMalformedDer() {
         DurableKeySignatureEncoding.derToJose(byteArrayOf(0x01, 0x02, 0x03))
     }

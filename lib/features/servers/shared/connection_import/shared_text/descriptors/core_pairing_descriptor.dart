@@ -31,6 +31,10 @@ _ConnectionImportCandidate? _connectionImportCandidateFromCoreDescriptor(
       webSocketUrl: descriptor.webSocketUri.toString(),
       serverId: descriptor.serverId,
       profileId: descriptor.profileId,
+      setupIntent: PairingHandoffSetupIntent(
+        entryScreen: descriptor.setupEntryScreen,
+        sections: descriptor.setupSections,
+      ),
     );
   } on FormatException {
     return null;

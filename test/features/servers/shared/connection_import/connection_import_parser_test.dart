@@ -24,6 +24,57 @@ void main() {
     },
   );
 
+  test('carries setup intent from core pairing descriptor', () {
+    final result = parseNavivoxConnectionImportPayload(
+      'navivox://connect?'
+      'websocket_url=wss%3A%2F%2Fgateway.example%2Fv1%2Fnavivox%2Fstream&'
+      'rest_token=setup-secret-token&'
+      'setup_entry_screen=setup.provider&'
+      'setup_sections=provider%2Cmodel%2Cworkspace',
+    );
+
+    expect(result, isNotNull);
+    expect(result!.setupIntent.entryScreen, 'setup.provider');
+    expect(result.setupIntent.sections, ['provider', 'model', 'workspace']);
+  });
+
+  test('carries setup intent from JSON imports', () {
+    final result = parseNavivoxConnectionImportPayload('''
+      {
+        "base_url": "https://gateway.example",
+        "token": "nvbx_json",
+        "setupEntryScreen": "setup.workspace",
+        "setupSections": ["workspace", "channels"]
+      }
+    ''');
+
+    expect(result, isNotNull);
+    expect(result!.setupIntent.entryScreen, 'setup.workspace');
+    expect(result.setupIntent.sections, ['workspace', 'channels']);
+  });
+
+  test('carries list setup sections from JSON entries', () {
+    final result = parseNavivoxConnectionImportPayload('''
+      {
+        "base_url": "https://gateway.example",
+        "token": "nvbx_default",
+        "setupSections": ["provider"],
+        "entries": [
+          {
+            "token": "nvbx_entry",
+            "setupEntryScreen": "setup.channels",
+            "setupSections": ["workspace", "channels"]
+          }
+        ]
+      }
+    ''');
+
+    expect(result, isNotNull);
+    expect(result!.token, 'nvbx_entry');
+    expect(result.setupIntent.entryScreen, 'setup.channels');
+    expect(result.setupIntent.sections, ['workspace', 'channels']);
+  });
+
   test('does not let an earlier docs token outrank a later connection URL', () {
     final result = parseNavivoxConnectionImportPayload(
       'Read https://docs.example/reset?token=nvbx_docs first. Then open '

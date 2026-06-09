@@ -1,16 +1,30 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:navivox/core/channel/contracts/navivox_message_scope.dart';
-import 'package:navivox/core/channel/gateway/approvals/gateway_approval_notice.dart';
-import 'package:navivox/core/channel/gateway/messages/gateway_assistant_message_policy.dart';
-import 'package:navivox/core/channel/gateway/messages/gateway_message_scope_policy.dart';
-import 'package:navivox/core/channel/gateway/messages/gateway_safety_notice_policy.dart';
-import 'package:navivox/core/channel/gateway/messages/gateway_tool_call_policy.dart';
+import 'package:navivox/core/channel/gateway/events/gateway_event_reducer.dart';
+import 'package:navivox/core/channel/navivox_channel.dart';
 import 'package:navivox/core/gateway/messages/navivox_gateway_event.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 
 void main() {
-  group('gateway message policies', () {
+  final clockTime = DateTime.utc(2026, 1, 2, 3, 4, 5);
+  var id = 0;
+  String nextId() => 'id-${++id}';
+
+  GatewayEventReduction reduce(
+    NavivoxGatewayEvent event, {
+    NavivoxChannelState state = const NavivoxChannelState(),
+  }) {
+    return navivoxReduceGatewayEvent(
+      event: event,
+      state: state,
+      fallbackId: nextId,
+      clock: () => clockTime,
+    );
+  }
+
+  setUp(() => id = 0);
+
+  group('gateway stream projection', () {
     test(
       'resolves scope from metadata before existing transcript messages',
       () {
@@ -23,20 +37,22 @@ void main() {
           profileId: 'request-profile',
         );
 
-        final scope = navivoxGatewayMessageScopeFromEvent(
-          event: const NavivoxGatewayEvent(
+        final reduction = reduce(
+          const NavivoxGatewayEvent(
             type: 'assistant_delta',
             requestId: 'request-1',
+            text: 'Hello',
             metadata: {
               'server_id': 'metadata-server',
               'profile_id': 'metadata-profile',
             },
           ),
-          messages: {'request-1': requestMessage},
+          state: NavivoxChannelState(messages: {'request-1': requestMessage}),
         );
 
-        expect(scope.serverId, 'metadata-server');
-        expect(scope.profileId, 'metadata-profile');
+        final message = (reduction as PutGatewayEventMessage).message;
+        expect(message.serverId, 'metadata-server');
+        expect(message.profileId, 'metadata-profile');
       },
     );
 
@@ -53,22 +69,21 @@ void main() {
         profileId: 'prior-profile',
       );
 
-      final message = navivoxGatewayAssistantTextMessage(
-        id: prior.id,
-        event: const NavivoxGatewayEvent(
+      final reduction = reduce(
+        const NavivoxGatewayEvent(
           type: 'assistant_delta',
+          requestId: 'request-1',
           text: 'lo',
           runRecordReference: 'run-next',
+          metadata: {
+            'server_id': 'event-server',
+            'profile_id': 'event-profile',
+          },
         ),
-        existing: prior,
-        createdAt: DateTime.utc(2026, 1, 2),
-        scope: navivoxMessageScope(
-          serverId: 'event-server',
-          profileId: 'event-profile',
-        ),
-        appendText: true,
+        state: NavivoxChannelState(messages: {prior.id: prior}),
       );
 
+      final message = (reduction as PutGatewayEventMessage).message;
       expect(message.text, 'Hello');
       expect(message.createdAt, createdAt);
       expect(message.runRecordReference, 'run-next');
@@ -92,34 +107,28 @@ void main() {
           serverId: 'prior-server',
           profileId: 'prior-profile',
         );
-        final notice = navivoxGatewayApprovalNotice(
-          event: const NavivoxGatewayEvent(
+
+        final reduction = reduce(
+          const NavivoxGatewayEvent(
             type: 'approval_required',
             approvalId: 'approval-1',
             toolCallId: 'tool-1',
             message: 'Allow browser open?',
             risk: 'medium',
-          ),
-          fallbackApprovalId: () => 'fallback-approval',
-        );
-
-        final message = navivoxGatewayToolApprovalMessage(
-          id: 'tool-1',
-          event: const NavivoxGatewayEvent(
-            type: 'approval_required',
             runRecordReference: 'run-approval',
+            metadata: {
+              'server_id': 'event-server',
+              'profile_id': 'event-profile',
+            },
           ),
-          priorMessage: prior,
-          notice: notice,
-          createdAt: DateTime.utc(2026, 1, 2),
-          scope: navivoxMessageScope(
-            serverId: 'event-server',
-            profileId: 'event-profile',
-          ),
+          state: NavivoxChannelState(messages: {prior.id: prior}),
         );
 
-        expect(message, isNotNull);
-        expect(message!.toolCall!.name, 'browser.open');
+        final approval = reduction as PutGatewayApprovalEvent;
+        final message = approval.messages.firstWhere(
+          (message) => message.kind == NavivoxMessageKind.toolCall,
+        );
+        expect(message.toolCall!.name, 'browser.open');
         expect(message.toolCall!.approval!.id, 'approval-1');
         expect(message.runRecordReference, 'run-approval');
         expect(message.serverId, 'prior-server');
@@ -128,22 +137,19 @@ void main() {
     );
 
     test('safety warnings keep event severity and scoped notice payload', () {
-      final message = navivoxGatewaySafetyWarningMessage(
-        id: 'safety-1',
-        event: const NavivoxGatewayEvent(
+      final reduction = reduce(
+        const NavivoxGatewayEvent(
           type: 'safety_warning',
+          safetyId: 'safety-1',
           severity: 'blocker',
           message: 'Stop',
           risk: 'high',
           runRecordReference: 'run-safety',
-        ),
-        createdAt: DateTime.utc(2026, 1, 1),
-        scope: navivoxMessageScope(
-          serverId: 'server-1',
-          profileId: 'profile-1',
+          metadata: {'server_id': 'server-1', 'profile_id': 'profile-1'},
         ),
       );
 
+      final message = (reduction as PutGatewayEventMessage).message;
       expect(message.kind, NavivoxMessageKind.safetyWarning);
       expect(message.safetyNotice!.severity, 'blocker');
       expect(message.safetyNotice!.message, 'Stop');

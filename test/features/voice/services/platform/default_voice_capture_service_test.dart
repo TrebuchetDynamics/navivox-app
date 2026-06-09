@@ -64,6 +64,21 @@ void main() {
   });
 
   test(
+    'readiness degrades safely when diagnostics payload parsing fails',
+    () async {
+      final readiness = await checkDefaultVoiceCaptureReadiness(
+        platform: const VoiceCapturePlatform(isAndroid: true),
+        diagnosticsProbe: _ThrowingSpeechDiagnosticsProbe(
+          const FormatException('unexpected diagnostics shape'),
+        ),
+      );
+
+      expect(readiness.available, isFalse);
+      expect(readiness.unavailableReason, 'device STT unavailable');
+    },
+  );
+
+  test(
     'readiness allows Android recognizer before first microphone grant',
     () async {
       final readiness = await checkDefaultVoiceCaptureReadiness(

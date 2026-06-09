@@ -1,14 +1,11 @@
-import '../../../gateway/navivox_gateway_protocol.dart';
-import '../../../protocol/navivox_event.dart';
-import '../../contracts/navivox_message_scope.dart';
-import '../approvals/gateway_approval_notice.dart';
+part of '../events/gateway_event_reducer.dart';
 
 /// Builds safety and approval messages from gateway events.
 ///
 /// Warning events and approval events share the same scoped safety-notice
 /// payload contract. Keeping that mapping together prevents those event types
 /// from drifting into plain text messages or losing run/profile scope.
-NavivoxChatMessage navivoxGatewaySafetyWarningMessage({
+NavivoxChatMessage _navivoxGatewaySafetyWarningMessage({
   required NavivoxGatewayEvent event,
   required String id,
   required DateTime createdAt,
@@ -31,7 +28,7 @@ NavivoxChatMessage navivoxGatewaySafetyWarningMessage({
   );
 }
 
-NavivoxChatMessage navivoxGatewayApprovalRequestMessage({
+NavivoxChatMessage _navivoxGatewayApprovalRequestMessage({
   required NavivoxGatewayEvent event,
   required NavivoxGatewayApprovalNotice notice,
   required DateTime createdAt,

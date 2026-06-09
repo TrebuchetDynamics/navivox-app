@@ -1,13 +1,11 @@
-import '../../../gateway/navivox_gateway_protocol.dart';
-import '../../../protocol/navivox_event.dart';
-import '../../contracts/navivox_message_scope.dart';
+part of '../events/gateway_event_reducer.dart';
 
 /// Builds assistant transcript messages from gateway events.
 ///
 /// Assistant delta and final-message events share the same message id, scope,
 /// and run-record merge contract. Keeping this mapping here prevents the two
 /// event paths from drifting as the transcript payload evolves.
-String navivoxGatewayAssistantMessageId({
+String _navivoxGatewayAssistantMessageId({
   required NavivoxGatewayEvent event,
   required String Function() fallbackRequestId,
 }) {
@@ -15,7 +13,7 @@ String navivoxGatewayAssistantMessageId({
   return 'assistant-$requestId';
 }
 
-NavivoxChatMessage navivoxGatewayAssistantTextMessage({
+NavivoxChatMessage _navivoxGatewayAssistantTextMessage({
   required String id,
   required NavivoxGatewayEvent event,
   required NavivoxChatMessage? existing,

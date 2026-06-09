@@ -77,6 +77,56 @@ void main() {
     expect(direct.safeSourceLabel(), 'pairing link');
   });
 
+  test('routes setup intent to config only when config is available', () {
+    final flow = PairingHandoffFlow.fromImport(
+      const SetupQrImageImport(
+        baseUrl: 'http://127.0.0.1:8765',
+        token: 'nvbx_secret',
+        setupIntent: PairingHandoffSetupIntent(
+          entryScreen: 'setup.provider',
+          sections: ['provider', 'model'],
+        ),
+      ),
+    );
+
+    expect(
+      flow
+          .afterConnect(
+            const NavivoxChannelState(configSchema: {'fields': <Object?>[]}),
+          )
+          .navigationIntent,
+      isA<OpenConfig>(),
+    );
+    expect(
+      flow.afterConnect(const NavivoxChannelState()).navigationIntent,
+      isA<OpenChatsList>(),
+    );
+  });
+
+  test('profile target takes precedence over setup intent', () {
+    final flow = PairingHandoffFlow.fromImport(
+      const SetupQrImageImport(
+        baseUrl: 'http://127.0.0.1:8765',
+        token: 'nvbx_secret',
+        serverId: 'local',
+        profileId: 'mineru',
+        setupIntent: PairingHandoffSetupIntent(entryScreen: 'setup.provider'),
+      ),
+    );
+
+    expect(
+      flow
+          .afterConnect(
+            const NavivoxChannelState(
+              profileContacts: [mineru],
+              configSchema: {'fields': <Object?>[]},
+            ),
+          )
+          .navigationIntent,
+      isA<OpenChatThread>(),
+    );
+  });
+
   test('resets imported landing target after manual connection edit', () {
     final flow = PairingHandoffFlow.fromImport(
       const SetupQrImageImport(

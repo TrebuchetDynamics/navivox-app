@@ -7,6 +7,7 @@ class _ConnectionImportCandidate {
     this.webSocketUrl,
     this.serverId,
     this.profileId,
+    this.setupIntent = const PairingHandoffSetupIntent(),
     this.hasExplicitConnectionFields = true,
   }) : assert(baseUrl == null || baseUrl.length > 0),
        assert(token == null || token.length > 0),
@@ -19,6 +20,7 @@ class _ConnectionImportCandidate {
   final String? webSocketUrl;
   final String? serverId;
   final String? profileId;
+  final PairingHandoffSetupIntent setupIntent;
   final bool hasExplicitConnectionFields;
 
   _ConnectionImportValuePresence get _valuePresence =>
@@ -54,6 +56,7 @@ class _ConnectionImportCandidate {
       webSocketUrl: webSocketUrl,
       serverId: serverId,
       profileId: profileId,
+      setupIntent: setupIntent,
     );
   }
 }

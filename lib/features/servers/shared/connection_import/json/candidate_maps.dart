@@ -63,7 +63,10 @@ Map<dynamic, dynamic> _entryFieldsWithJsonDefaults(
   for (final entryField in entry.entries) {
     if (_isBlankJsonValue(entryField.value)) continue;
     if (_isJsonConnectionImportFieldName('${entryField.key}') &&
-        !_isNonBlankJsonString(entryField.value)) {
+        !_isUsableJsonConnectionImportFieldValue(
+          entryField.key,
+          entryField.value,
+        )) {
       continue;
     }
     fields[entryField.key] = entryField.value;
@@ -165,13 +168,17 @@ class _JsonConnectionImportAliasGroup {
 
   bool hasNonBlankOverrideIn(Map<dynamic, dynamic> entry) {
     return entry.entries.any(
-      (entry) => _isNonBlankJsonString(entry.value) && matchesKey(entry.key),
+      (entry) =>
+          matchesKey(entry.key) &&
+          _isUsableJsonConnectionImportFieldValue(entry.key, entry.value),
     );
   }
 
   bool hasUnusableOverrideIn(Map<dynamic, dynamic> entry) {
     return entry.entries.any(
-      (entry) => !_isNonBlankJsonString(entry.value) && matchesKey(entry.key),
+      (entry) =>
+          matchesKey(entry.key) &&
+          !_isUsableJsonConnectionImportFieldValue(entry.key, entry.value),
     );
   }
 
@@ -196,6 +203,16 @@ bool _isBlankJsonValue(Object? value) {
   if (value == null) return true;
   if (value is String && value.trim().isEmpty) return true;
   return false;
+}
+
+bool _isUsableJsonConnectionImportFieldValue(Object? key, Object? value) {
+  if (_JsonConnectionImportAliasGroup(
+    _setupSectionsFieldNames,
+  ).matchesKey(key)) {
+    return navivoxStringListFromJson(value).isNotEmpty ||
+        _isNonBlankJsonString(value);
+  }
+  return _isNonBlankJsonString(value);
 }
 
 bool _isNonBlankJsonString(Object? value) =>

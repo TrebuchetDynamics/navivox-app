@@ -1,12 +1,16 @@
 import '../../../gateway/messages/navivox_gateway_event.dart';
 import '../../../protocol/navivox_event.dart';
+import '../../../protocol/navivox_json.dart';
 import '../../contracts/navivox_channel.dart';
+import '../../contracts/navivox_message_scope.dart';
 import '../../contracts/navivox_profile_contact_codec.dart';
 import '../approvals/gateway_approval_notice.dart';
-import '../messages/gateway_assistant_message_policy.dart';
-import '../messages/gateway_message_scope_policy.dart';
-import '../messages/gateway_safety_notice_policy.dart';
-import '../messages/gateway_tool_call_policy.dart';
+import '../codecs/gateway_tool_artifact_codec.dart';
+
+part '../messages/gateway_assistant_message_policy.dart';
+part '../messages/gateway_message_scope_policy.dart';
+part '../messages/gateway_safety_notice_policy.dart';
+part '../messages/gateway_tool_call_policy.dart';
 
 /// Reduces gateway stream events into explicit channel runtime effects.
 ///
@@ -68,11 +72,11 @@ GatewayEventReduction navivoxReduceGatewayEvent({
       );
     case 'safety_warning':
       return GatewayEventReduction.putMessage(
-        navivoxGatewaySafetyWarningMessage(
+        _navivoxGatewaySafetyWarningMessage(
           event: event,
           id: event.safetyId ?? 'safety-${fallbackId()}',
           createdAt: clock(),
-          scope: navivoxGatewayMessageScopeFromEvent(
+          scope: _navivoxGatewayMessageScopeFromEvent(
             event: event,
             messages: state.messages,
           ),
@@ -83,12 +87,12 @@ GatewayEventReduction navivoxReduceGatewayEvent({
         event: event,
         fallbackApprovalId: () => 'approval-${fallbackId()}',
       );
-      final scope = navivoxGatewayMessageScopeFromEvent(
+      final scope = _navivoxGatewayMessageScopeFromEvent(
         event: event,
         messages: state.messages,
       );
       final messages = <NavivoxChatMessage>[];
-      final toolApprovalMessage = navivoxGatewayToolApprovalMessage(
+      final toolApprovalMessage = _navivoxGatewayToolApprovalMessage(
         id: notice.toolCallId,
         event: event,
         priorMessage: state.messages[notice.toolCallId],
@@ -98,7 +102,7 @@ GatewayEventReduction navivoxReduceGatewayEvent({
       );
       if (toolApprovalMessage != null) messages.add(toolApprovalMessage);
       messages.add(
-        navivoxGatewayApprovalRequestMessage(
+        _navivoxGatewayApprovalRequestMessage(
           event: event,
           notice: notice,
           createdAt: clock(),
@@ -128,17 +132,17 @@ GatewayEventReduction _assistantReduction({
   required DateTime Function() clock,
   required bool appendText,
 }) {
-  final messageId = navivoxGatewayAssistantMessageId(
+  final messageId = _navivoxGatewayAssistantMessageId(
     event: event,
     fallbackRequestId: fallbackId,
   );
   return GatewayEventReduction.putMessage(
-    navivoxGatewayAssistantTextMessage(
+    _navivoxGatewayAssistantTextMessage(
       id: messageId,
       event: event,
       existing: state.messages[messageId],
       createdAt: clock(),
-      scope: navivoxGatewayMessageScopeFromEvent(
+      scope: _navivoxGatewayMessageScopeFromEvent(
         event: event,
         messages: state.messages,
       ),
@@ -156,13 +160,13 @@ GatewayEventReduction _toolCallReduction({
 }) {
   final toolCallId = event.toolCallId ?? 'tool-${fallbackId()}';
   return GatewayEventReduction.putMessage(
-    navivoxGatewayToolCallMessage(
+    _navivoxGatewayToolCallMessage(
       id: toolCallId,
       event: event,
       status: status,
       priorMessage: state.messages[toolCallId],
       createdAt: clock(),
-      scope: navivoxGatewayMessageScopeFromEvent(
+      scope: _navivoxGatewayMessageScopeFromEvent(
         event: event,
         messages: state.messages,
       ),

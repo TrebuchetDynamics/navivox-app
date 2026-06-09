@@ -32,12 +32,12 @@
   validation: `test/features/servers/pairing/pairing_handoff_flow_test.dart` and `test/features/servers/setup/flows/navivox_connect_and_talk_test.dart` cover no-active-gateway auto-connect, shared-text manual connect, and token-safe failure behavior.
   owner: Navivox app owner / Gormes gateway owner
 
-[PLANNED] Pairing handoff setup-intent routing — 2026-05-25
-  problem: accepted Pairing handoff semantics allow Gormes to suggest a high-level setup landing target, but Navivox currently parses connection fields plus optional Profile contact routing and does not route post-connect based on setup intent fields.
-  evidence: no live app parser references currently exist for `setup_handoff`, `setup_sections`, or `setup_entry_screen`; config-admin itself is now wired, but descriptor-provided setup intent is still not carried through Pairing handoff as a suggestion.
-  acceptance: carry setup intent through Pairing handoff as a suggestion only; after successful connection, capability-gate any setup/config destination against the Gormes capability document; if unsupported, land on normal Profile contacts/config entry; never enable config mutation from descriptor fields alone.
+[RESOLVED] Pairing handoff setup-intent routing — 2026-05-25
+  resolved: 2026-06-07
+  result: Pairing handoff imports now carry setup intent fields as suggestions and route to Config only after a successful connection with loaded config schema; Profile contact targets still take precedence, and unsupported config lands on the normal chat list.
+  evidence: `SetupQrImageImport.setupIntent` carries `setup_entry_screen` / `setup_sections`; connection import parser preserves setup intent from core descriptors and JSON imports; `PairingHandoffLanding.navigationIntentAfterConnect()` maps config setup intent to `OpenConfig` only when `NavivoxChannelState.configSchema` is available.
+  validation: `test/features/servers/shared/connection_import/connection_import_parser_test.dart` covers descriptor/JSON setup intent parsing; `test/features/servers/pairing/pairing_handoff_flow_test.dart` covers config capability gating and Profile contact precedence.
   owner: Navivox app owner / Gormes gateway owner
-  next check: Pairing handoff setup-intent routing slice.
 
 [RESOLVED] Optional Pairing handoff and reconnect Profile contact routing — 2026-05-25
   resolved: 2026-06-07

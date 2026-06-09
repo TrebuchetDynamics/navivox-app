@@ -1,7 +1,6 @@
 package com.trebuchetdynamics.navivox.durablekeys
 
 import java.math.BigInteger
-import java.util.Base64
 
 object DurableKeySignatureEncoding {
     fun derToJose(der: ByteArray): ByteArray {
@@ -33,8 +32,12 @@ object DurableKeySignatureEncoding {
         if (valueEnd > der.size || length.length <= 0) {
             throw IllegalArgumentException("Invalid DER ECDSA integer length")
         }
+        val value = der.copyOfRange(valueStart, valueEnd)
+        if (value[0].toInt() and 0x80 != 0) {
+            throw IllegalArgumentException("Invalid negative DER ECDSA integer")
+        }
         return IntegerResult(
-            value = der.copyOfRange(valueStart, valueEnd),
+            value = value,
             nextOffset = valueEnd,
         )
     }
@@ -55,7 +58,7 @@ object DurableKeySignatureEncoding {
     }
 
     fun p256CoordinateToBase64Url(value: BigInteger): String {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.toFixedWidth())
+        return base64UrlNoPadding(value.toFixedWidth())
     }
 
     private fun toFixedWidth(value: ByteArray): ByteArray {
@@ -63,12 +66,37 @@ object DurableKeySignatureEncoding {
     }
 
     private fun BigInteger.toFixedWidth(): ByteArray {
+        if (signum() < 0) {
+            throw IllegalArgumentException("P-256 integer must be non-negative")
+        }
         val unsigned = toByteArray().dropWhile { it == 0.toByte() }.toByteArray()
         if (unsigned.size > 32) {
             throw IllegalArgumentException("P-256 integer is too large")
         }
         return ByteArray(32 - unsigned.size) + unsigned
     }
+
+    private fun base64UrlNoPadding(bytes: ByteArray): String {
+        val output = StringBuilder((bytes.size * 4 + 2) / 3)
+        var index = 0
+        while (index < bytes.size) {
+            val first = bytes[index].toInt() and 0xff
+            val hasSecond = index + 1 < bytes.size
+            val hasThird = index + 2 < bytes.size
+            val second = if (hasSecond) bytes[index + 1].toInt() and 0xff else 0
+            val third = if (hasThird) bytes[index + 2].toInt() and 0xff else 0
+            val chunk = (first shl 16) or (second shl 8) or third
+            output.append(BASE64_URL_ALPHABET[(chunk ushr 18) and 0x3f])
+            output.append(BASE64_URL_ALPHABET[(chunk ushr 12) and 0x3f])
+            if (hasSecond) output.append(BASE64_URL_ALPHABET[(chunk ushr 6) and 0x3f])
+            if (hasThird) output.append(BASE64_URL_ALPHABET[chunk and 0x3f])
+            index += 3
+        }
+        return output.toString()
+    }
+
+    private const val BASE64_URL_ALPHABET =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
     private data class LengthResult(val length: Int, val bytesRead: Int)
     private data class IntegerResult(val value: ByteArray, val nextOffset: Int)
