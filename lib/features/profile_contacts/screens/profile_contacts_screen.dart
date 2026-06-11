@@ -13,6 +13,31 @@ import '../actions/profile_contacts_action_coordinator.dart';
 
 const _profileContactsPresentation = ProfileContactsScreenPresentation();
 
+Future<void> _showProfileAdaptiveSheet({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isScrollControlled = false,
+}) {
+  if (MediaQuery.sizeOf(context).width >= 720) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 720),
+          child: builder(dialogContext),
+        ),
+      ),
+    );
+  }
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: isScrollControlled,
+    builder: builder,
+  );
+}
+
 class ProfileContactsScreen extends ConsumerStatefulWidget {
   const ProfileContactsScreen({super.key});
 
@@ -219,9 +244,8 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
   }
 
   void _showAddProfileSheet(BuildContext context) {
-    showModalBottomSheet<void>(
+    _showProfileAdaptiveSheet(
       context: context,
-      showDragHandle: true,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -235,7 +259,7 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
               ),
               onTap: () {
                 Navigator.of(context).pop();
-                _showProfileSeedSheet(context);
+                _showProfileSeedSheet(this.context);
               },
             ),
             for (final row in _profileContactsPresentation.addProfileRows)
@@ -256,10 +280,9 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
 
   void _showProfileSeedSheet(BuildContext context) {
     final channel = ref.read(navivoxChannelProvider);
-    showModalBottomSheet<void>(
+    _showProfileAdaptiveSheet(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
       builder: (context) => ProfileSeedSheet(channel: channel),
     );
   }
@@ -270,9 +293,8 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
   ) {
     final channel = ref.read(navivoxChannelProvider);
     final summary = ProfileContactPresentation(contact);
-    showModalBottomSheet<void>(
+    _showProfileAdaptiveSheet(
       context: context,
-      showDragHandle: true,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -331,13 +353,15 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
     _applyProfileContactsEffects(
       channel,
       _actionCoordinator.detailAction(contact, kind),
+      modalContext: context,
     );
   }
 
   void _applyProfileContactsEffects(
     NavivoxChannel channel,
-    Iterable<ProfileContactsEffect> effects,
-  ) {
+    Iterable<ProfileContactsEffect> effects, {
+    BuildContext? modalContext,
+  }) {
     for (final effect in effects) {
       switch (effect) {
         case SelectProfileContactEffect(:final contact):
@@ -350,7 +374,8 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
         case ShowProfileSeedSheetEffect():
           _showProfileSeedSheet(context);
         case DismissProfileContactsModalEffect():
-          Navigator.of(context).pop();
+          final navigator = Navigator.of(modalContext ?? context);
+          if (navigator.canPop()) navigator.pop();
       }
     }
   }
@@ -401,11 +426,13 @@ class _ServerFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           ChoiceChip(
             key: const ValueKey('server-filter-all'),
@@ -413,20 +440,21 @@ class _ServerFilterBar extends StatelessWidget {
             selected: selectedServerId == null,
             onSelected: (_) => onSelected(null),
           ),
-          const SizedBox(width: 8),
-          for (final server in servers) ...[
+          for (final server in servers)
             ChoiceChip(
               key: ValueKey('server-filter-${server.id}'),
               label: Text(server.name),
               selected: selectedServerId == server.id,
               onSelected: (_) => onSelected(server.id),
             ),
-            const SizedBox(width: 8),
-          ],
-          Center(
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 2),
             child: Text(
               visibleCountLabel,
-              style: Theme.of(context).textTheme.labelMedium,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -696,51 +724,54 @@ class _ProfileContactTrailing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 52,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerRight,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (summary.latestTimeLabel.isNotEmpty)
-              Text(
-                summary.latestTimeLabel,
-                textAlign: TextAlign.right,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 12.5,
-                ),
+    final indicators = <Widget>[
+      if (contact.micAvailable)
+        Tooltip(
+          message: 'Voice available',
+          child: Semantics(
+            label: 'Voice available',
+            child: Icon(
+              Icons.mic,
+              key: ValueKey(
+                'profile-contact-voice-${contact.serverId}-${contact.profileId}',
               ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (contact.micAvailable)
-                  Icon(
-                    Icons.mic,
-                    key: ValueKey(
-                      'profile-contact-voice-${contact.serverId}-${contact.profileId}',
-                    ),
-                    size: 14,
-                    color: theme.colorScheme.primary,
-                  ),
-                if (summary.attentionCount > 0) ...[
-                  if (contact.micAvailable) const SizedBox(width: 5),
-                  _AttentionCountBadge(
-                    key: ValueKey(
-                      'profile-attention-${contact.serverId}-${contact.profileId}',
-                    ),
-                    count: summary.attentionCount,
-                  ),
-                ],
-              ],
+              size: 18,
+              color: theme.colorScheme.primary,
             ),
-          ],
+          ),
         ),
+      if (summary.attentionCount > 0)
+        Tooltip(
+          message: '${summary.attentionCount} attention item',
+          child: _AttentionCountBadge(
+            key: ValueKey(
+              'profile-attention-${contact.serverId}-${contact.profileId}',
+            ),
+            count: summary.attentionCount,
+          ),
+        ),
+    ];
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 56, minHeight: 44),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (summary.latestTimeLabel.isNotEmpty)
+            Text(
+              summary.latestTimeLabel,
+              textAlign: TextAlign.right,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 12.5,
+              ),
+            ),
+          if (indicators.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Wrap(spacing: 8, children: indicators),
+          ],
+        ],
       ),
     );
   }

@@ -6,11 +6,30 @@ import {
   clickSemantic,
 } from '../../support/flutter_semantics.mjs';
 
+function semanticLabelLocator(page, text) {
+  const escaped = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return page.locator(`flt-semantics[aria-label*="${escaped}"]`).first();
+}
+
+async function expectSemanticVisible(page, text, options) {
+  const byText = page.getByText(text).first();
+  if (await byText.isVisible().catch(() => false)) {
+    await expect(byText).toBeVisible(options);
+    return;
+  }
+  await expect(semanticLabelLocator(page, text)).toBeVisible(options);
+}
+
 async function open(page, route, text) {
-  await page.goto(APP + route, { timeout: 15000 });
-  await page.waitForTimeout(1000);
-  await a11y(page, { delay: 500 });
-  await expect(page.getByText(text).first()).toBeVisible();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.goto(APP + route, { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    await a11y(page, { delay: 1000 });
+    const byText = page.getByText(text).first();
+    if (await byText.isVisible().catch(() => false)) return;
+    if (await semanticLabelLocator(page, text).isVisible().catch(() => false)) return;
+  }
+  await expectSemanticVisible(page, text, { timeout: 15000 });
 }
 
 async function screenshot(page, path) {
@@ -25,7 +44,7 @@ test.describe('12. Back', () => {
 
   test('12b gateway back navigates to gateway list', async ({ page }) => {
     await open(page, '#/servers', 'Gateways');
-    await expect(page.getByText('Local Gormes').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Local Gormes');
     await screenshot(page, 'playwright/screenshots/12b-server-back.png');
   });
 
@@ -36,13 +55,13 @@ test.describe('12. Back', () => {
 
   test('12d memory back navigates to memory dashboard', async ({ page }) => {
     await open(page, '#/memory', 'Memory');
-    await expect(page.getByText('Gormes memory API is unavailable.').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Gormes memory API is unavailable.');
     await screenshot(page, 'playwright/screenshots/12d-memory-back.png');
   });
 
   test('12e config back navigates to config screen', async ({ page }) => {
     await open(page, '#/config', 'Config');
-    await expect(page.getByText('No config available').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Config admin unsupported');
     await screenshot(page, 'playwright/screenshots/12e-config-back.png');
   });
 
@@ -54,7 +73,7 @@ test.describe('12. Back', () => {
 
   test('12g gateway detail back navigates to gateway list', async ({ page }) => {
     await open(page, '#/servers', 'Gateways');
-    await expect(page.getByText('Office Gormes').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Office Gormes');
     await screenshot(page, 'playwright/screenshots/12g-gateway-detail-back.png');
   });
 
@@ -70,7 +89,7 @@ test.describe('12. Back', () => {
   });
 
   test('12j scrollable memory sheet back navigates', async ({ page }) => {
-    await open(page, '#/memory', 'Goncho degraded');
+    await open(page, '#/memory', 'Memory unavailable');
     await screenshot(page, 'playwright/screenshots/12j-memory-sheet-back.png');
   });
 

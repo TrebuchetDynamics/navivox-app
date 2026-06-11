@@ -12,6 +12,31 @@ import '../registration/presentation/register_gateway_presentation.dart';
 
 const _gatewayManagementActions = GatewayManagementActionCoordinator();
 
+Future<void> _showAdaptiveSheet({
+  required BuildContext context,
+  required WidgetBuilder child,
+  bool isScrollControlled = false,
+}) {
+  if (MediaQuery.sizeOf(context).width >= 720) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 720),
+          child: child(dialogContext),
+        ),
+      ),
+    );
+  }
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: isScrollControlled,
+    builder: child,
+  );
+}
+
 class ServersScreen extends ConsumerWidget {
   const ServersScreen({super.key});
 
@@ -58,13 +83,12 @@ class ServersScreen extends ConsumerWidget {
     final server = gateway.server;
     final gatewayStatus = gateway.gatewayStatus;
     final parentContext = context;
-    showModalBottomSheet<void>(
+    _showAdaptiveSheet(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
+      child: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           children: [
             Text(
               gateway.manageTitle,
@@ -243,11 +267,10 @@ class ServersScreen extends ConsumerWidget {
   }
 
   void _showRegisterGateway(BuildContext context, NavivoxChannel channel) {
-    showModalBottomSheet<void>(
+    _showAdaptiveSheet(
       context: context,
-      showDragHandle: true,
       isScrollControlled: true,
-      builder: (context) => _RegisterGatewaySheet(channel: channel),
+      child: (context) => _RegisterGatewaySheet(channel: channel),
     );
   }
 }
@@ -415,6 +438,7 @@ class _ServerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final server = gateway.server;
     final gatewayStatus = gateway.gatewayStatus;
     return Card(
@@ -426,7 +450,10 @@ class _ServerCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(gateway.active ? Icons.hub : Icons.dns),
+                Icon(
+                  gateway.active ? Icons.hub : Icons.dns,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -445,10 +472,11 @@ class _ServerCard extends StatelessWidget {
                 ),
                 Tooltip(
                   message: 'Details for ${server.name}',
-                  child: TextButton(
+                  child: OutlinedButton.icon(
                     key: ValueKey('server-manage-${server.id}'),
                     onPressed: onManage,
-                    child: const Text('Details'),
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: const Text('Details'),
                   ),
                 ),
               ],
@@ -457,27 +485,34 @@ class _ServerCard extends StatelessWidget {
             DecoratedBox(
               key: ValueKey('server-status-${server.id}'),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.44 : 0.52,
+                ),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(
-                      gatewayStatus.title,
-                      style: Theme.of(context).textTheme.labelLarge,
+                    _StatusPill(
+                      icon: Icons.monitor_heart_outlined,
+                      label: gatewayStatus.title,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      gatewayStatus.headline,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                    _StatusPill(
+                      icon: gateway.active
+                          ? Icons.check_circle_outline
+                          : Icons.radio_button_checked,
+                      label: gatewayStatus.headline,
                     ),
-                    const SizedBox(height: 4),
                     Text(
                       gatewayStatus.summaryLine,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -494,6 +529,39 @@ class _ServerCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.44),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

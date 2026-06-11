@@ -39,92 +39,152 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(_settingsPresentation.title)),
       body: ListView(
+        cacheExtent: 1600,
+        padding: const EdgeInsets.all(16),
         children: [
-          ListTile(
-            key: const ValueKey('settings-local-scope'),
-            leading: const Icon(Icons.settings_applications),
-            title: Text(_settingsPresentation.localSettingsTitle),
-            subtitle: Text(_settingsPresentation.localSettingsSubtitle),
-          ),
-          for (final row in _settingsPresentation.managementRows)
-            ListTile(
-              key: ValueKey(row.keyValue),
-              leading: Icon(_managementRouteIcon(row)),
-              title: Text(row.title),
-              subtitle: Text(row.subtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go(row.route),
-            ),
-          const Divider(),
-          ListTile(
-            key: const ValueKey('settings-local-voice-section'),
-            leading: const Icon(Icons.keyboard_voice_outlined),
-            title: Text(_settingsPresentation.localVoiceSectionTitle),
-            subtitle: Text(_settingsPresentation.localVoiceSectionSubtitle),
-          ),
-          SwitchListTile(
-            key: const ValueKey('voice-continuous-enabled'),
-            title: Text(_settingsPresentation.continuousVoiceTitle),
-            subtitle: Text(_settingsPresentation.continuousVoiceSubtitle),
-            value: settings.continuousVoiceEnabled,
-            onChanged: controller.setContinuousVoiceEnabled,
-          ),
-          ListTile(
-            key: const ValueKey('settings-command-word'),
-            title: Text(_settingsPresentation.commandWordTitle),
-            subtitle: Text(settings.commandWord),
-            trailing: const Icon(Icons.keyboard_voice),
-            onTap: () => _showCommandWordSheet(context, settings.commandWord),
-          ),
-          SwitchListTile(
-            key: const ValueKey('voice-profile-switching-enabled'),
-            title: Text(_settingsPresentation.profileSwitchingTitle),
-            subtitle: Text(_settingsPresentation.profileSwitchingSubtitle),
-            value: settings.profileSwitchingEnabled,
-            onChanged: controller.setProfileSwitchingEnabled,
-          ),
-          if (activeServer != null && activeServerTrust != null)
-            SwitchListTile(
-              key: ValueKey(activeServerTrust.keyValue),
-              title: Text(activeServerTrust.title),
-              subtitle: Text(activeServerTrust.subtitle),
-              value: activeServerTrust.trusted,
-              onChanged: (trusted) =>
-                  controller.setServerTrusted(activeServer.id, trusted),
-            ),
-          ListTile(
-            key: ValueKey(managementOverview.keyValue),
-            leading: const Icon(Icons.inventory_2_outlined),
-            title: Text(managementOverview.title),
-            subtitle: Text(managementOverview.subtitle),
-          ),
-          if (currentScope != null) ...[
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.route_outlined),
-              title: Text(currentScope.title),
-              subtitle: Text(currentScope.subtitle),
-            ),
-            if (currentScope.gateway != null)
+          _SettingsSectionCard(
+            children: [
               ListTile(
-                key: ValueKey(currentScope.gateway!.keyValue),
-                leading: const Icon(Icons.dns_outlined),
-                title: Text(currentScope.gateway!.title),
-                subtitle: Text(currentScope.gateway!.subtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => NavigationIntent.go(context, const OpenGateways()),
+                key: const ValueKey('settings-local-scope'),
+                leading: const Icon(Icons.settings_applications),
+                title: Text(_settingsPresentation.localSettingsTitle),
+                subtitle: Text(_settingsPresentation.localSettingsSubtitle),
               ),
-            if (currentScope.profile != null)
+            ],
+          ),
+          _SettingsSectionCard(
+            children: [
               ListTile(
-                key: ValueKey(currentScope.profile!.keyValue),
-                leading: const Icon(Icons.badge_outlined),
-                title: Text(currentScope.profile!.title),
-                subtitle: Text(currentScope.profile!.subtitle),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => NavigationIntent.go(context, const OpenAgents()),
+                key: const ValueKey('settings-local-voice-section'),
+                leading: const Icon(Icons.keyboard_voice_outlined),
+                title: Text(_settingsPresentation.localVoiceSectionTitle),
+                subtitle: Text(_settingsPresentation.localVoiceSectionSubtitle),
               ),
-          ],
+              _ConstrainedSettingsTile(
+                child: SwitchListTile(
+                  key: const ValueKey('voice-continuous-enabled'),
+                  title: Text(_settingsPresentation.continuousVoiceTitle),
+                  subtitle: Text(_settingsPresentation.continuousVoiceSubtitle),
+                  value: settings.continuousVoiceEnabled,
+                  onChanged: controller.setContinuousVoiceEnabled,
+                ),
+              ),
+              ListTile(
+                key: const ValueKey('settings-command-word'),
+                title: Text(_settingsPresentation.commandWordTitle),
+                subtitle: Text(settings.commandWord),
+                trailing: const Icon(Icons.keyboard_voice),
+                onTap: () =>
+                    _showCommandWordSheet(context, settings.commandWord),
+              ),
+              _ConstrainedSettingsTile(
+                child: SwitchListTile(
+                  key: const ValueKey('voice-profile-switching-enabled'),
+                  title: Text(_settingsPresentation.profileSwitchingTitle),
+                  subtitle: Text(
+                    _settingsPresentation.profileSwitchingSubtitle,
+                  ),
+                  value: settings.profileSwitchingEnabled,
+                  onChanged: controller.setProfileSwitchingEnabled,
+                ),
+              ),
+              if (activeServer != null && activeServerTrust != null)
+                _ConstrainedSettingsTile(
+                  child: SwitchListTile(
+                    key: ValueKey(activeServerTrust.keyValue),
+                    title: Text(activeServerTrust.title),
+                    subtitle: Text(activeServerTrust.subtitle),
+                    value: activeServerTrust.trusted,
+                    onChanged: (trusted) =>
+                        controller.setServerTrusted(activeServer.id, trusted),
+                  ),
+                ),
+            ],
+          ),
+          _SettingsSectionCard(
+            children: [
+              for (final row in _settingsPresentation.managementRows)
+                ListTile(
+                  key: ValueKey(row.keyValue),
+                  leading: Icon(_managementRouteIcon(row)),
+                  title: Text(row.title),
+                  subtitle: Text(row.subtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.go(row.route),
+                ),
+              ListTile(
+                key: ValueKey(managementOverview.keyValue),
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: Text(managementOverview.title),
+                subtitle: Text(managementOverview.subtitle),
+              ),
+            ],
+          ),
+          if (currentScope != null)
+            _SettingsSectionCard(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.route_outlined),
+                  title: Text(currentScope.title),
+                  subtitle: Text(currentScope.subtitle),
+                ),
+                if (currentScope.gateway != null)
+                  ListTile(
+                    key: ValueKey(currentScope.gateway!.keyValue),
+                    leading: const Icon(Icons.dns_outlined),
+                    title: Text(currentScope.gateway!.title),
+                    subtitle: Text(currentScope.gateway!.subtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        NavigationIntent.go(context, const OpenGateways()),
+                  ),
+                if (currentScope.profile != null)
+                  ListTile(
+                    key: ValueKey(currentScope.profile!.keyValue),
+                    leading: const Icon(Icons.badge_outlined),
+                    title: Text(currentScope.profile!.title),
+                    subtitle: Text(currentScope.profile!.subtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        NavigationIntent.go(context, const OpenAgents()),
+                  ),
+              ],
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _ConstrainedSettingsTile extends StatelessWidget {
+  const _ConstrainedSettingsTile({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _SettingsSectionCard extends StatelessWidget {
+  const _SettingsSectionCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(children: children),
       ),
     );
   }

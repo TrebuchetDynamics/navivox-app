@@ -114,6 +114,7 @@ class _MemoryReadinessOnlyBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      cacheExtent: 2400,
       padding: const EdgeInsets.all(16),
       children: [
         _MemoryReadinessCard(
@@ -169,25 +170,95 @@ class _MemoryReadinessCard extends StatelessWidget {
       ],
     );
 
+    if (readiness.status == MemoryReadinessStatus.ready) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(readiness.title, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 2),
+              Text(readiness.statusLabel),
+              const SizedBox(height: 8),
+              Align(alignment: Alignment.centerRight, child: actions),
+            ],
+          ),
+        ),
+      );
+    }
+    final unavailable = readiness.status == MemoryReadinessStatus.unavailable;
+    final statusColor = unavailable
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(readiness.title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 2),
-            Text(readiness.statusLabel),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    unavailable
+                        ? Icons.cloud_off_outlined
+                        : Icons.psychology_alt_outlined,
+                    color: statusColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(readiness.title, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(
+                        readiness.statusLabel,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Align(alignment: Alignment.centerRight, child: actions),
-            const SizedBox(height: 6),
-            Text(readiness.message),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor.withValues(alpha: 0.24)),
+              ),
+              child: Text(readiness.message),
+            ),
+            const SizedBox(height: 12),
             Text('Memory scope', style: theme.textTheme.titleSmall),
-            Text('Active server: ${scope.serverLabel}'),
-            Text('Active profile: ${scope.profileLabel}'),
-            if (scope.profileId != null)
-              Text('Active profile ID: ${scope.profileId}'),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('Active server: ${scope.serverLabel}')),
+                Chip(label: Text('Active profile: ${scope.profileLabel}')),
+                if (scope.profileId != null)
+                  Chip(label: Text('Active profile ID: ${scope.profileId}')),
+              ],
+            ),
           ],
         ),
       ),
@@ -218,6 +289,7 @@ class _MemoryOverviewBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
+      cacheExtent: 2400,
       padding: const EdgeInsets.all(16),
       children: [
         _MemoryReadinessCard(

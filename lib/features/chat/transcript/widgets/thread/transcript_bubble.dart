@@ -60,7 +60,10 @@ class TranscriptBubble extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tailWidth = showTail ? 12.0 : 0.0;
-            final maxBubbleWidth = (constraints.maxWidth - tailWidth) * 0.78;
+            final availableWidth = constraints.maxWidth - tailWidth;
+            final maxBubbleWidth = availableWidth < 720
+                ? availableWidth * 0.78
+                : availableWidth.clamp(0, 720).toDouble() * 0.70;
             return Row(
               mainAxisAlignment: isUser
                   ? MainAxisAlignment.end

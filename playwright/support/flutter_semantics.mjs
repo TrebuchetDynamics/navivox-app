@@ -9,11 +9,16 @@ export const APP_URL = process.env.NAVIVOX_APP_URL ?? 'http://127.0.0.1:8767/';
 export { INTERACTIVE_SEMANTIC_ROLES };
 
 export async function enableFlutterAccessibility(page, { delay = 2000 } = {}) {
+  await page
+    .waitForSelector('flt-semantics-placeholder, text=Enable accessibility', { timeout: 10000 })
+    .catch(() => {});
   await page.evaluate(() => {
     document
       .querySelector('flt-semantics-placeholder')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
+  await page.getByText('Enable accessibility').click({ timeout: 1000 }).catch(() => {});
+  await page.waitForSelector('flt-semantics', { timeout: 10000 }).catch(() => {});
   if (delay > 0) await page.waitForTimeout(delay);
 }
 

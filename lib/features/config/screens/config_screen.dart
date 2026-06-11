@@ -196,45 +196,50 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Config')),
-      body: ListView(
-        children: [
-          _ConfigReadinessCard(
-            scope: screen.scope,
-            readiness: screen.configReadiness,
-            onRefresh: () => _refreshConfigAdmin(channel),
-            onOpenGateway: () =>
-                GoRouter.maybeOf(context)?.go(AppRoutes.servers),
-          ),
-          if (channel.state.activeProfileContact != null)
-            ProfileVoiceProfileCard(channel: channel),
-          if (screen.isMissingSection)
-            _MissingConfigSectionCard(message: screen.missingSectionMessage)
-          else if (!screen.isEmpty)
-            for (final section in screen.sections)
-              _ConfigSectionCard(
-                section: section,
-                controller: _controller,
-                onEdit: (field) {
-                  _controller.text = _draftSession.editInitialValueFor(field);
-                  setState(() {
-                    _draftSession = _draftSession.beginEditing(field);
-                  });
-                },
-                onCancel: () => setState(() {
-                  _draftSession = _draftSession.cancelEditing();
-                }),
-                onSave: _stageDraft,
-              ),
-          if (screen.showPendingChanges)
-            _ConfigPendingChangesCard(
-              presentation: screen.applyPresentation,
-              onApply: () => _applyPendingChanges(screen.applyFlow),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _ConfigReadinessCard(
+              scope: screen.scope,
+              readiness: screen.configReadiness,
+              onRefresh: () => _refreshConfigAdmin(channel),
+              onOpenGateway: () =>
+                  GoRouter.maybeOf(context)?.go(AppRoutes.servers),
             ),
-          if (_configAdminError != null)
-            _ConfigAdminStatusCard(message: _configAdminError!, isError: true),
-          if (_lastConfigAdminApply != null)
-            _ConfigAdminApplyResultCard(result: _lastConfigAdminApply!),
-        ],
+            if (screen.isMissingSection)
+              _MissingConfigSectionCard(message: screen.missingSectionMessage)
+            else if (!screen.isEmpty)
+              for (final section in screen.sections)
+                _ConfigSectionCard(
+                  section: section,
+                  controller: _controller,
+                  onEdit: (field) {
+                    _controller.text = _draftSession.editInitialValueFor(field);
+                    setState(() {
+                      _draftSession = _draftSession.beginEditing(field);
+                    });
+                  },
+                  onCancel: () => setState(() {
+                    _draftSession = _draftSession.cancelEditing();
+                  }),
+                  onSave: _stageDraft,
+                ),
+            if (channel.state.activeProfileContact != null)
+              ProfileVoiceProfileCard(channel: channel),
+            if (screen.showPendingChanges)
+              _ConfigPendingChangesCard(
+                presentation: screen.applyPresentation,
+                onApply: () => _applyPendingChanges(screen.applyFlow),
+              ),
+            if (_configAdminError != null)
+              _ConfigAdminStatusCard(
+                message: _configAdminError!,
+                isError: true,
+              ),
+            if (_lastConfigAdminApply != null)
+              _ConfigAdminApplyResultCard(result: _lastConfigAdminApply!),
+          ],
+        ),
       ),
     );
   }
@@ -278,12 +283,67 @@ class _ConfigReadinessCard extends StatelessWidget {
                 ),
               ],
             );
-            final heading = Column(
+            if (readiness.status == ConfigReadinessStatus.ready) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(readiness.statusLabel),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Profile config scope',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Chip(label: Text('Server: ${scope.serverLabel}')),
+                      Chip(label: Text('Profile: ${scope.profileLabel}')),
+                      if (scope.profileId != null)
+                        Chip(label: Text('Profile ID: ${scope.profileId}')),
+                    ],
+                  ),
+                ],
+              );
+            }
+            final statusColor = readiness.canRefresh
+                ? theme.colorScheme.primary
+                : theme.colorScheme.error;
+            final heading = Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(readiness.title, style: theme.textTheme.titleMedium),
-                const SizedBox(height: 2),
-                Text(readiness.statusLabel),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    readiness.canRefresh
+                        ? Icons.settings_suggest_outlined
+                        : Icons.warning_amber_rounded,
+                    color: statusColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(readiness.title, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(
+                        readiness.statusLabel,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             );
             return Column(
@@ -302,14 +362,32 @@ class _ConfigReadinessCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Align(alignment: Alignment.centerRight, child: actions),
                 ],
-                const SizedBox(height: 6),
-                Text(readiness.message),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Text(readiness.message),
+                ),
+                const SizedBox(height: 12),
                 Text('Profile config scope', style: theme.textTheme.titleSmall),
-                Text('Server: ${scope.serverLabel}'),
-                Text('Profile: ${scope.profileLabel}'),
-                if (scope.profileId != null)
-                  Text('Profile ID: ${scope.profileId}'),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Chip(label: Text('Server: ${scope.serverLabel}')),
+                    Chip(label: Text('Profile: ${scope.profileLabel}')),
+                    if (scope.profileId != null)
+                      Chip(label: Text('Profile ID: ${scope.profileId}')),
+                  ],
+                ),
               ],
             );
           },

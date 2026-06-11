@@ -13,13 +13,27 @@ async function sendE2EText(page, text) {
   await page.waitForTimeout(500);
 }
 
+function semanticLabelLocator(page, text) {
+  const escaped = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return page.locator(`flt-semantics[aria-label*="${escaped}"]`).first();
+}
+
+async function expectSemanticVisible(page, text, options) {
+  const byText = page.getByText(text).first();
+  if (await byText.isVisible().catch(() => false)) {
+    await expect(byText).toBeVisible(options);
+    return;
+  }
+  await expect(semanticLabelLocator(page, text)).toBeVisible(options);
+}
+
 // ─── 1. Profile Contacts ─────────────────────────────────────────────
 test.describe('1. Profile Contacts', () => {
   test.beforeEach(async ({page}) => {
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
   });
   test('1a seeded profiles + count', async ({page}) => {
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
     await expect(page.getByText('Support Triage').first()).toBeVisible();
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
     await expect(page.getByText('3 profiles').first()).toBeVisible();
@@ -46,7 +60,7 @@ test.describe('1. Profile Contacts', () => {
     await expect(page.getByText('Mineru Builder').first()).not.toBeVisible();
     await click(page, 'All'); await page.waitForTimeout(1000);
     await expect(page.getByText('3 profiles').first()).toBeVisible();
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
   });
   test('1e search toggle: type Mineru filters profile list', async ({page}) => {
     // Click search button to activate search mode
@@ -57,7 +71,7 @@ test.describe('1. Profile Contacts', () => {
     await page.locator('input[aria-label="Search Profiles"]').fill('Mineru');
     await page.waitForTimeout(1500);
     // Only Mineru should show (Support and Voice filtered out)
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
     await expect(page.getByText('Support Triage').first()).not.toBeVisible();
     await expect(page.getByText('Voice Agent').first()).not.toBeVisible();
   });
@@ -145,13 +159,13 @@ test.describe('5. Screen Content', () => {
   test('5a Gateways', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Gateways').first()).toBeVisible();
-    await expect(page.getByText('Local Gormes').first()).toBeVisible();
-    await expect(page.getByText('Office Gormes').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Local Gormes');
+    await expectSemanticVisible(page, 'Office Gormes');
     await expect(page.getByText('Register gateway').first()).toBeVisible();
   });
   test('5b Agents details', async ({page}) => {
     await page.goto(APP+'#/agents', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
     await expect(page.getByText('Status: online').first()).toBeVisible();
     await expect(page.getByText('Refresh profiles').first()).toBeVisible();
@@ -160,14 +174,14 @@ test.describe('5. Screen Content', () => {
   test('5c Memory degraded', async ({page}) => {
     await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Memory').first()).toBeVisible();
-    await expect(page.getByText('Gormes memory API is unavailable.').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Gormes memory API is unavailable.');
   });
   test('5d Config unavailable', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Config').first()).toBeVisible();
-    await expect(page.getByText('Local Gormes').first()).toBeVisible();
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
-    await expect(page.getByText('No config available').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Local Gormes');
+    await expectSemanticVisible(page, 'Mineru Builder');
+    await expectSemanticVisible(page, 'Config admin unsupported');
   });
   test('5e Settings overview', async ({page}) => {
     await page.goto(APP+'#/settings', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
@@ -244,7 +258,7 @@ test.describe('8. Profile Selection', () => {
     // Click Mineru
     await click(page, 'Mineru Builder'); await page.waitForTimeout(1000);
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
   });
 });
 
@@ -270,17 +284,17 @@ test.describe('9. FAB', () => {
 test.describe('10. Gateway', () => {
   test('10a manage modal shows details', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await click(page, 'Manage Local Gormes'); await page.waitForTimeout(2000);
-    await expect(page.getByText('Manage gateway').first()).toBeVisible();
+    await click(page, 'Details'); await page.waitForTimeout(2000);
+    await expectSemanticVisible(page, 'Manage gateway');
     await expect(page.getByText('Profiles on this gateway').first()).toBeVisible();
     await expect(page.getByText('Disconnect current session').first()).toBeVisible();
     // Should show the profiles on this gateway
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
     await expect(page.getByText('Voice Agent').first()).toBeVisible();
   });
   test('10b dismiss with Escape', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await click(page, 'Manage Local Gormes'); await page.waitForTimeout(1500);
+    await click(page, 'Details'); await page.waitForTimeout(1500);
     await page.keyboard.press('Escape'); await page.waitForTimeout(1000);
     await expect(page.getByText('Manage gateway').first()).not.toBeVisible();
   });
@@ -348,7 +362,7 @@ test.describe('12. Back', () => {
     expect(page.url()).toContain('/chats/office/support');
     await page.goBack(); await page.waitForTimeout(2000); await a11y(page);
     expect(page.url()).toContain('/chats');
-    await expect(page.getByText('Mineru Builder').first()).toBeVisible();
+    await expectSemanticVisible(page, 'Mineru Builder');
   });
 });
 
@@ -399,7 +413,7 @@ test.describe('13. Screenshots', () => {
   });
   test('13j gateway modal', async ({page}) => {
     await page.goto(APP+'#/servers', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await click(page, 'Manage Local Gormes');
+    await click(page, 'Details');
     await page.screenshot({path:'playwright/screenshots/gateway-modal.png',fullPage:true});
     await page.keyboard.press('Escape');
   });
@@ -485,8 +499,8 @@ test.describe('15. FAB Create from Seed', () => {
 test.describe('16. Config Screen', () => {
   test('16a config scope card shows server and profile', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await expect(page.getByText('Profile config scope').first()).toBeVisible({timeout:5000});
-    await expect(page.getByText('No config available').first()).toBeVisible({timeout:5000});
+    await expectSemanticVisible(page, 'Profile config scope', {timeout:5000});
+    await expectSemanticVisible(page, 'Config admin unsupported', {timeout:5000});
   });
 });
 
@@ -514,12 +528,12 @@ test.describe('17. Additional Regression Coverage', () => {
 
   test('17c config screen shows scoped fallback boundaries', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    await expect(page.getByText('Server: Local Gormes').first()).toBeVisible({timeout:5000});
-    await expect(page.getByText('Profile: Mineru Builder').first()).toBeVisible({timeout:5000});
-    await expect(page.getByText('Profile ID: mineru').first()).toBeVisible({timeout:5000});
-    await expect(page.getByText('Voice profile').first()).toBeVisible({timeout:5000});
+    await expectSemanticVisible(page, 'Server: Local Gormes', {timeout:5000});
+    await expectSemanticVisible(page, 'Profile: Mineru Builder', {timeout:5000});
+    await expectSemanticVisible(page, 'Profile ID: mineru', {timeout:5000});
+    await expectSemanticVisible(page, 'Voice profile', {timeout:5000});
     await expect(page.getByText('Text chat remains available when voice providers are unavailable.').first()).toBeVisible({timeout:5000});
-    await expect(page.getByText('No config available').first()).toBeVisible({timeout:5000});
+    await expectSemanticVisible(page, 'Config admin unsupported', {timeout:5000});
   });
 
   test('17d gateway cards expose profile and auth chips to accessibility tree', async ({page}) => {

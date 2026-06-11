@@ -190,7 +190,13 @@ class _DesktopShell extends StatelessWidget {
           Expanded(
             child: Container(
               color: theme.colorScheme.surfaceContainerLowest,
-              child: child,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1180),
+                  child: child,
+                ),
+              ),
             ),
           ),
         ],
