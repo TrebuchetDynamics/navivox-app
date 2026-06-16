@@ -23,6 +23,12 @@ NavivoxChannelState navivoxStateWithGatewayVoiceRun({
 }) {
   final runs = Map<String, NavivoxVoiceRun>.from(state.voiceRuns);
   runs[run.id] = run;
+  // "Active" means in flight. A terminal run is never active, so clear the
+  // tracked id when the active run finishes rather than trusting callers to
+  // pass active: false on every terminal transition.
+  if (run.isTerminal && state.activeVoiceRunId == run.id) {
+    return state.copyWith(voiceRuns: runs, clearActiveVoiceRunId: true);
+  }
   return state.copyWith(
     voiceRuns: runs,
     activeVoiceRunId: active ? run.id : state.activeVoiceRunId,

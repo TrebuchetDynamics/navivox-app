@@ -42,9 +42,28 @@ class NavivoxChannelState {
 
   List<NavivoxChatMessage> get messagesList => messages.values.toList();
   List<NavivoxVoiceRun> get voiceRunsList => voiceRuns.values.toList();
+  /// The run currently in flight, or null when nothing is being captured,
+  /// staged, submitted, or awaited. A terminal (completed/cancelled/failed)
+  /// run is never "active" — this guards on [NavivoxVoiceRun.isTerminal]
+  /// directly so it stays honest for every channel, even ones that do not
+  /// clear [activeVoiceRunId] on terminal transitions.
   NavivoxVoiceRun? get activeVoiceRun {
-    final explicitId = activeVoiceRunId;
-    if (explicitId != null) return voiceRuns[explicitId];
+    final id = activeVoiceRunId;
+    if (id == null) return null;
+    final run = voiceRuns[id];
+    if (run == null || run.isTerminal) return null;
+    return run;
+  }
+
+  /// The most recent run regardless of status, for history and run-record
+  /// evidence. Prefers the tracked [activeVoiceRunId], else the last-inserted
+  /// run.
+  NavivoxVoiceRun? get latestVoiceRun {
+    final id = activeVoiceRunId;
+    if (id != null) {
+      final run = voiceRuns[id];
+      if (run != null) return run;
+    }
     if (voiceRuns.isEmpty) return null;
     return voiceRuns.values.last;
   }

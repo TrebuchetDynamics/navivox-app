@@ -273,7 +273,7 @@ class _ProfileVoiceProfileCardState extends State<ProfileVoiceProfileCard> {
 
   Future<void> _loadRunRecordEvidence() async {
     final plan = _profileVoiceCoordinator.evidencePlan(
-      widget.channel.state.activeVoiceRun,
+      widget.channel.state.latestVoiceRun,
     );
     switch (plan) {
       case ShowProfileVoiceEvidenceStatusPlan(:final message):

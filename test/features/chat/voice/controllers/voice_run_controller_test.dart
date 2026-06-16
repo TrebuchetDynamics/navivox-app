@@ -62,7 +62,7 @@ void main() {
       controller.runtimeVoiceDisabledReason,
       microphonePermissionDeniedReason,
     );
-    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(channel.state.latestVoiceRun?.status, NavivoxVoiceRunStatus.failed);
   });
 
   test('clearRuntimeVoiceDisabledReason resets session voice blocker', () {
@@ -191,7 +191,7 @@ void main() {
     expect(controller.notice, 'Voice turn cancelled before server commit.');
     expect(channel.sentVoiceTranscripts, isEmpty);
     expect(
-      channel.state.activeVoiceRun?.status,
+      channel.state.latestVoiceRun?.status,
       NavivoxVoiceRunStatus.cancelled,
     );
   });

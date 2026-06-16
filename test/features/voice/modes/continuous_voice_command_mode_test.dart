@@ -1135,7 +1135,7 @@ void main() {
 
     expect(channel.sentVoiceTranscripts, isEmpty);
     expect(
-      channel.state.activeVoiceRun?.status,
+      channel.state.latestVoiceRun?.status,
       NavivoxVoiceRunStatus.cancelled,
     );
     expect(find.textContaining('check status'), findsNothing);
@@ -1159,8 +1159,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.sentVoiceTranscripts, isEmpty);
-    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
-    expect(channel.state.activeVoiceRun?.reason, 'Voice capture timed out.');
+    expect(channel.state.latestVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(channel.state.latestVoiceRun?.reason, 'Voice capture timed out.');
     expect(find.text('Voice capture timed out.'), findsOneWidget);
   });
 
@@ -1332,8 +1332,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.sentVoiceTranscripts, isEmpty);
-    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
-    expect(channel.state.activeVoiceRun?.reason, 'device STT unavailable');
+    expect(channel.state.latestVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(channel.state.latestVoiceRun?.reason, 'device STT unavailable');
     expect(
       find.text('Continuous voice unavailable: device STT unavailable'),
       findsOneWidget,
@@ -1371,9 +1371,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(channel.sentVoiceTranscripts, isEmpty);
-    expect(channel.state.activeVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+    expect(channel.state.latestVoiceRun?.status, NavivoxVoiceRunStatus.failed);
     expect(
-      channel.state.activeVoiceRun?.reason,
+      channel.state.latestVoiceRun?.reason,
       'microphone permission denied',
     );
     expect(

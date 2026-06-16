@@ -24,7 +24,10 @@ void main() {
     );
 
     expect(state.voiceRunsList.map((run) => run.id), ['voice-1', 'voice-2']);
-    expect(state.activeVoiceRun?.id, 'voice-2');
+    // With no tracked active id there is no in-flight run, but the most recent
+    // run is still resolvable for history/evidence.
+    expect(state.activeVoiceRun, isNull);
+    expect(state.latestVoiceRun?.id, 'voice-2');
   });
 
   test('test channel can create stage cancel fail and submit voice runs', () {
@@ -63,6 +66,54 @@ void main() {
     expect(
       channel.state.voiceRuns[id]?.status,
       NavivoxVoiceRunStatus.submitted,
+    );
+  });
+
+  test('active voice run clears when the run is cancelled', () {
+    final channel = TestNavivoxChannel();
+    final id = channel.startVoiceRun();
+    expect(channel.state.activeVoiceRun?.id, id);
+
+    channel.cancelVoiceRun(id);
+
+    expect(
+      channel.state.activeVoiceRun,
+      isNull,
+      reason: 'a terminal run is not in flight',
+    );
+    expect(channel.state.latestVoiceRun?.id, id);
+    expect(
+      channel.state.latestVoiceRun?.status,
+      NavivoxVoiceRunStatus.cancelled,
+    );
+  });
+
+  test('active voice run clears when the run fails', () {
+    final channel = TestNavivoxChannel();
+    final id = channel.startVoiceRun();
+
+    channel.failVoiceRun(id, reason: 'mic unavailable');
+
+    expect(channel.state.activeVoiceRun, isNull);
+    expect(channel.state.latestVoiceRun?.status, NavivoxVoiceRunStatus.failed);
+  });
+
+  test('submitted run remains the active in-flight run', () {
+    final channel = TestNavivoxChannel();
+    final id = channel.startVoiceRun();
+    channel.stageVoiceRunTranscript(
+      voiceRunId: id,
+      transcript: 'still going',
+      duration: const Duration(milliseconds: 500),
+      confidence: 0.8,
+    );
+
+    channel.submitVoiceRun(id);
+
+    expect(
+      channel.state.activeVoiceRun?.status,
+      NavivoxVoiceRunStatus.submitted,
+      reason: 'submitted is awaiting the server, still in flight',
     );
   });
 }
