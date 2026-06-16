@@ -9,7 +9,6 @@ import '../../../protocol/navivox_event.dart';
 import '../../../protocol/navivox_memory.dart';
 import '../../../protocol/navivox_profile_contact_key.dart';
 import '../../../protocol/navivox_voice_run.dart';
-import '../../../session/credentials/durable_credential_store.dart';
 import '../../../session/session_persistence_service.dart';
 import '../../contracts/navivox_channel.dart';
 import '../../contracts/navivox_profile_contact_codec.dart';
@@ -25,18 +24,12 @@ import '../messages/gateway_user_turn_policy.dart';
 import '../turns/gateway_turn_control_policy.dart';
 
 class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
-  GatewayNavivoxChannel({
-    Uuid? uuid,
-    DateTime Function()? clock,
-    DurableCredentialStore durableCredentialStore =
-        const EmptyDurableCredentialStore(),
-  }) : _uuid = uuid ?? const Uuid(),
-       _clock = clock ?? DateTime.now,
-       _durableCredentialStore = durableCredentialStore;
+  GatewayNavivoxChannel({Uuid? uuid, DateTime Function()? clock})
+    : _uuid = uuid ?? const Uuid(),
+      _clock = clock ?? DateTime.now;
 
   final Uuid _uuid;
   final DateTime Function() _clock;
-  final DurableCredentialStore _durableCredentialStore;
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
 
@@ -794,36 +787,20 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   Future<bool> tryReconnect() async {
     final session = await _sessionService.loadSession();
     if (session == null || session.isStale) return false;
-    if (!session.canAttemptReconnect || session.gatewayId == null) {
-      _appendSystemMessage('Known gateway saved. Pair again to reconnect.');
-      return false;
-    }
-    final hasCredential = await _durableCredentialStore.containsCredential(
-      gatewayId: session.gatewayId!,
-    );
-    if (!hasCredential) {
-      _appendSystemMessage('Known gateway saved. Pair again to reconnect.');
-      return false;
-    }
-    try {
-      await connect(
-        baseUrl: session.baseUrl,
-        webSocketUrl: session.webSocketUrl,
-      );
-      return true;
-    } catch (_) {
-      // Durable credential expired or invalid — clear it so the user sees setup.
-      await _sessionService.clearSession();
-      await _durableCredentialStore.deleteCredential(
-        gatewayId: session.gatewayId!,
-      );
-      _state = navivoxFailedSavedSessionReconnectState(state: _state);
-      notifyListeners();
-      _appendSystemMessage(
-        'Reconnect credential expired. Please re-pair with your gateway.',
-      );
-      return false;
-    }
+    // Saved metadata can identify a known gateway, but durable silent reconnect
+    // needs a device-credential challenge flow that is not implemented yet
+    // (blocked on the Gormes durable-credential protocol; see the [PLANNED]
+    // durable-credential item in TODO.md), so `canAttemptReconnect` stays
+    // false. Surface the known gateway and ask the operator to pair again.
+    //
+    // Deliberately do NOT attempt a token-less `connect()` and do NOT delete a
+    // stored credential here. A reconnect path that authenticates with no token
+    // would always fail against an authenticated gateway and then revoke the
+    // very credential it never used. When durable reconnect lands it must mint
+    // a session token through the challenge flow, not reuse this method's
+    // bootstrap `connect(token:)` seam.
+    _appendSystemMessage('Known gateway saved. Pair again to reconnect.');
+    return false;
   }
 
   @override

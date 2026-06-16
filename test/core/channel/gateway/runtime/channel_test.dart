@@ -798,6 +798,10 @@ void main() {
       channel.state.messagesList.map((message) => message.text),
       contains('Known gateway saved. Pair again to reconnect.'),
     );
+    // tryReconnect must never attempt a token-less connect or revoke the saved
+    // session: durable reconnect isn't implemented, so the known gateway must
+    // stay saved for the operator to re-pair against.
+    expect(await sessionService.loadSession(), isNotNull);
   });
 
   test(
