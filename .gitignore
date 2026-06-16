@@ -10,10 +10,9 @@ coverage/
 *.iml
 
 # Pi agent artifacts
-.pi/**
-**/.pi/candidates-folder-refactor/
+.pi/
+**/.pi/
 .understand-anything/**
-graphify-out/
 
 # Node / Playwright
 node_modules/

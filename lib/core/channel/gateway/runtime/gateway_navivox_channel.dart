@@ -138,9 +138,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             .decodeEvents(socket.events)
             .listen(
               _onEvent,
-              onError: (Object error) =>
-                  _appendSystemMessage('Gateway stream error'),
-              onDone: () => _setServerStatus('Gateway disconnected'),
+              onError: (Object error) {
+                _handleStreamClosed();
+                _appendSystemMessage('Gateway stream error');
+              },
+              onDone: () {
+                _handleStreamClosed();
+                _setServerStatus('Gateway disconnected');
+              },
             );
       }
       _state = navivoxConnectedGatewayState(
@@ -872,6 +877,15 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         text: text,
       ),
     );
+  }
+
+  // Drops the live socket once the gateway-closed stream ends so subsequent
+  // sends hit the not-connected guard instead of writing to a dead sink.
+  void _handleStreamClosed() {
+    final socket = _socket;
+    _socket = null;
+    _events = null;
+    unawaited(socket?.close());
   }
 
   void _setServerStatus(String status) {

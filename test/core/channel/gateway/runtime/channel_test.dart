@@ -261,6 +261,38 @@ void main() {
     expect(channel.state.activeServerId, 'local-gormes');
   });
 
+  test('rejects sends after the gateway closes the stream', () async {
+    final server = await _FakeGatewayServer.start();
+
+    final channel = GatewayNavivoxChannel();
+    addTearDown(channel.dispose);
+
+    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+
+    final disconnected = Completer<void>();
+    channel.addListener(() {
+      if ((channel.state.activeServer?.status ?? '').contains(
+            'Gateway disconnected',
+          ) &&
+          !disconnected.isCompleted) {
+        disconnected.complete();
+      }
+    });
+
+    await server.close();
+    await disconnected.future.timeout(const Duration(seconds: 2));
+
+    channel.sendText('hello after close');
+
+    final texts = channel.state.messagesList.map((m) => m.text).toList();
+    expect(
+      texts,
+      isNot(contains('hello after close')),
+      reason: 'user turn must not be enqueued on a dead socket',
+    );
+    expect(texts, contains('Gateway is not connected.'));
+  });
+
   test(
     'loads profile contacts from snapshot and applies gateway updates',
     () async {
