@@ -1,6 +1,7 @@
 import '../../../gateway/messages/navivox_gateway_event.dart';
 import '../../../protocol/navivox_event.dart';
 import '../../../protocol/navivox_json.dart';
+import '../../../protocol/navivox_profile_contact_key.dart';
 import '../../contracts/navivox_channel.dart';
 import '../../contracts/navivox_message_scope.dart';
 import '../../contracts/navivox_profile_contact_codec.dart';
@@ -29,7 +30,17 @@ GatewayEventReduction navivoxReduceGatewayEvent({
     case 'done':
       return const GatewayEventReduction.ignore();
     case 'session_started':
-      return GatewayEventReduction.updateActiveSession(event.sessionId);
+      final scope = _navivoxGatewayMessageScopeFromEvent(
+        event: event,
+        messages: state.messages,
+      );
+      return GatewayEventReduction.updateActiveSession(
+        sessionId: event.sessionId,
+        profileContactKey: navivoxProfileContactKeyFromNullable(
+          serverId: scope.serverId,
+          profileId: scope.profileId,
+        ),
+      );
     case 'assistant_delta':
       return _assistantReduction(
         event: event,
@@ -179,8 +190,10 @@ sealed class GatewayEventReduction {
 
   const factory GatewayEventReduction.ignore() = IgnoreGatewayEvent;
 
-  const factory GatewayEventReduction.updateActiveSession(String? sessionId) =
-      UpdateGatewayActiveSession;
+  const factory GatewayEventReduction.updateActiveSession({
+    required String? sessionId,
+    String? profileContactKey,
+  }) = UpdateGatewayActiveSession;
 
   const factory GatewayEventReduction.putMessage(NavivoxChatMessage message) =
       PutGatewayEventMessage;
@@ -203,9 +216,17 @@ final class IgnoreGatewayEvent extends GatewayEventReduction {
 }
 
 final class UpdateGatewayActiveSession extends GatewayEventReduction {
-  const UpdateGatewayActiveSession(this.sessionId) : super._();
+  const UpdateGatewayActiveSession({
+    required this.sessionId,
+    this.profileContactKey,
+  }) : super._();
 
   final String? sessionId;
+
+  /// The profile contact the session belongs to, resolved from event scope or
+  /// the correlated request. Null when the gateway omitted scope and no prior
+  /// message correlated the session to a profile.
+  final String? profileContactKey;
 }
 
 final class PutGatewayEventMessage extends GatewayEventReduction {

@@ -170,6 +170,206 @@ void main() {
     expect(metadata['client'], 'navivox');
   });
 
+  test(
+    'turn control targets the active profile session with many profiles in flight',
+    () async {
+      Map<String, Object?> contact(String profileId) => {
+        'server_id': 'navivox-gateway',
+        'profile_id': profileId,
+        'display_name': 'Profile $profileId',
+        'server_label': 'Gormes Gateway',
+        'health': 'online',
+        'latest_preview': 'Gateway online',
+        'latest_preview_kind': 'status',
+        'workspace_root_count': 1,
+        'workspace_roots_ok': true,
+        'workspace_roots_warning': 0,
+        'workspace_roots_error': 0,
+        'attention_badges': <String>[],
+        'mic_available': true,
+        'active_turn_state': 'idle',
+      };
+
+      final server = await _FakeGatewayServer.start(
+        contacts: [contact('a'), contact('b')],
+        streamEvents: (requestId) => [
+          {
+            'type': 'session_started',
+            'request_id': requestId,
+            'session_id': 'session-$requestId',
+          },
+          {
+            'type': 'assistant_message',
+            'request_id': requestId,
+            'session_id': 'session-$requestId',
+            'text': 'ack-$requestId',
+          },
+        ],
+      );
+      addTearDown(server.close);
+
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
+
+      final frames = <Map<String, Object?>>[];
+      final framesSub = server.clientMessages.listen(frames.add);
+      addTearDown(framesSub.cancel);
+
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+
+      Future<void> waitForAcks(int count) async {
+        final done = Completer<void>();
+        void check() {
+          final acks = channel.state.messagesList
+              .where((m) => m.text?.startsWith('ack-') ?? false)
+              .length;
+          if (acks >= count && !done.isCompleted) done.complete();
+        }
+
+        channel.addListener(check);
+        check();
+        await done.future.timeout(const Duration(seconds: 2));
+        channel.removeListener(check);
+      }
+
+      // Profile A turn opens session A.
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'a');
+      channel.sendText('to profile A');
+      await waitForAcks(1);
+
+      // Profile B turn opens session B; the gateway's last session_started is B.
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'b');
+      channel.sendText('to profile B');
+      await waitForAcks(2);
+
+      // Operator returns to A and stops A's turn.
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'a');
+      final stopFuture = server.clientMessages.firstWhere(
+        (frame) => frame['type'] == 'stop_turn',
+      );
+      channel.stopActiveTurn();
+      final stopFrame = await stopFuture.timeout(const Duration(seconds: 2));
+
+      final startA = frames.firstWhere(
+        (frame) =>
+            frame['type'] == 'start_turn' &&
+            (Map<String, Object?>.from(frame['metadata'] as Map)['profile_id']) ==
+                'a',
+      );
+      expect(
+        stopFrame['session_id'],
+        'session-${startA['request_id']}',
+        reason: 'stop must target the active profile session, not the last '
+            'session_started from another profile',
+      );
+    },
+  );
+
+  test(
+    'voice run submits to its own profile session after the active profile changes',
+    () async {
+      Map<String, Object?> contact(String profileId) => {
+        'server_id': 'navivox-gateway',
+        'profile_id': profileId,
+        'display_name': 'Profile $profileId',
+        'server_label': 'Gormes Gateway',
+        'health': 'online',
+        'latest_preview': 'Gateway online',
+        'latest_preview_kind': 'status',
+        'workspace_root_count': 1,
+        'workspace_roots_ok': true,
+        'workspace_roots_warning': 0,
+        'workspace_roots_error': 0,
+        'attention_badges': <String>[],
+        'mic_available': true,
+        'active_turn_state': 'idle',
+      };
+
+      final server = await _FakeGatewayServer.start(
+        contacts: [contact('a'), contact('b')],
+        streamEvents: (requestId) => [
+          {
+            'type': 'session_started',
+            'request_id': requestId,
+            'session_id': 'session-$requestId',
+          },
+          {
+            'type': 'assistant_message',
+            'request_id': requestId,
+            'session_id': 'session-$requestId',
+            'text': 'ack-$requestId',
+          },
+        ],
+      );
+      addTearDown(server.close);
+
+      final channel = GatewayNavivoxChannel();
+      addTearDown(channel.dispose);
+
+      final frames = <Map<String, Object?>>[];
+      final framesSub = server.clientMessages.listen(frames.add);
+      addTearDown(framesSub.cancel);
+
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+
+      Future<void> waitForAcks(int count) async {
+        final done = Completer<void>();
+        void check() {
+          final acks = channel.state.messagesList
+              .where((m) => m.text?.startsWith('ack-') ?? false)
+              .length;
+          if (acks >= count && !done.isCompleted) done.complete();
+        }
+
+        channel.addListener(check);
+        check();
+        await done.future.timeout(const Duration(seconds: 2));
+        channel.removeListener(check);
+      }
+
+      // Warm up a gateway session for profile A with a text turn.
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'a');
+      channel.sendText('warm up A');
+      await waitForAcks(1);
+      final startA = frames.firstWhere(
+        (frame) =>
+            frame['type'] == 'start_turn' &&
+            (Map<String, Object?>.from(frame['metadata'] as Map)['profile_id']) ==
+                'a',
+      );
+      final sessionA = 'session-${startA['request_id']}';
+
+      // Capture a voice run under A, then switch the active profile to B before
+      // the staged voice run auto-sends.
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'a');
+      final voiceRunId = channel.startVoiceRun();
+      channel.stageVoiceRunTranscript(
+        voiceRunId: voiceRunId,
+        transcript: 'voice for A',
+        duration: const Duration(milliseconds: 500),
+        confidence: 0.9,
+      );
+      channel.selectProfileContact(serverId: 'navivox-gateway', profileId: 'b');
+
+      final voiceFuture = server.clientMessages.firstWhere(
+        (frame) =>
+            frame['type'] == 'start_turn' && frame['text'] == 'voice for A',
+      );
+      channel.submitVoiceRun(voiceRunId);
+      final voiceFrame = await voiceFuture.timeout(const Duration(seconds: 2));
+
+      final metadata = Map<String, Object?>.from(
+        voiceFrame['metadata'] as Map,
+      );
+      expect(
+        metadata['profile_id'],
+        'a',
+        reason: 'voice turn must target the run profile, not the active one',
+      );
+      expect(voiceFrame['session_id'], sessionA);
+    },
+  );
+
   test('failed reconnect clears stale gateway state', () async {
     final server = await _FakeGatewayServer.start();
     addTearDown(server.close);
@@ -901,6 +1101,8 @@ class _FakeGatewayServer {
   final bool _configAdminAvailable;
   final bool _failFirstConfigAdminSchemaLoad;
   final Completer<Map<String, Object?>> _nextClientMessage = Completer();
+  final StreamController<Map<String, Object?>> _clientMessages =
+      StreamController.broadcast();
   final List<WebSocket> _sockets = [];
   var profileContactsRequests = 0;
   var streamRequests = 0;
@@ -909,6 +1111,11 @@ class _FakeGatewayServer {
   String get baseUrl => 'http://127.0.0.1:$port';
   Future<Map<String, Object?>> get nextClientMessage =>
       _nextClientMessage.future;
+
+  /// Every decoded frame the channel sends, in arrival order. Unlike
+  /// [nextClientMessage] this surfaces turns and turn-control frames sent across
+  /// multiple in-flight profiles.
+  Stream<Map<String, Object?>> get clientMessages => _clientMessages.stream;
 
   static Future<_FakeGatewayServer> start({
     List<Map<String, Object?>> Function(String requestId)? streamEvents,
@@ -941,6 +1148,7 @@ class _FakeGatewayServer {
     for (final socket in _sockets) {
       await socket.close();
     }
+    await _clientMessages.close();
     await _server.close(force: true);
   }
 
@@ -1014,6 +1222,9 @@ class _FakeGatewayServer {
         final decoded = Map<String, Object?>.from(jsonDecode(raw as String));
         if (!_nextClientMessage.isCompleted) {
           _nextClientMessage.complete(decoded);
+        }
+        if (!_clientMessages.isClosed) {
+          _clientMessages.add(decoded);
         }
         final requestId = decoded['request_id']?.toString() ?? 'req-test';
         for (final event in _eventsFor(requestId)) {

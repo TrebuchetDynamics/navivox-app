@@ -42,7 +42,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   bool _configAdminAvailable = false;
   bool _configAdminSupported = false;
   bool _configAdminLoadFailed = false;
-  String? _activeSessionId;
+
+  // Gateway sessions are tracked per profile contact so turn control and turn
+  // submission target the right in-flight session when several profiles are
+  // live at once. `_unscopedSessionId` is the fallback for gateways that report
+  // a session without resolvable profile scope (single-profile behavior).
+  final Map<String, String> _sessionIdsByProfileKey = <String, String>{};
+  String? _unscopedSessionId;
 
   @override
   NavivoxChannelState get state => _state;
@@ -166,7 +172,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       }
     } catch (_) {
       await _closeConnection(clearSavedSession: false);
-      _activeSessionId = null;
+      _clearSessions();
       _state = const NavivoxChannelState();
       notifyListeners();
       rethrow;
@@ -176,7 +182,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   @override
   Future<void> disconnect() async {
     await _closeConnection(clearSavedSession: true);
-    _activeSessionId = null;
+    _clearSessions();
     _state = const NavivoxChannelState();
     notifyListeners();
   }
@@ -188,13 +194,44 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _socket = null;
     _client = null;
     _capabilities = null;
-    _activeSessionId = null;
+    _clearSessions();
     _configAdminAvailable = false;
     _configAdminSupported = false;
     _configAdminLoadFailed = false;
     if (clearSavedSession) {
       unawaited(_sessionService.clearSession());
     }
+  }
+
+  // Records a gateway session under its profile contact, or under the unscoped
+  // fallback when the gateway reported no resolvable profile scope.
+  void _recordSession({
+    required String? sessionId,
+    required String? profileContactKey,
+  }) {
+    if (sessionId == null) return;
+    if (profileContactKey != null) {
+      _sessionIdsByProfileKey[profileContactKey] = sessionId;
+    } else {
+      _unscopedSessionId = sessionId;
+    }
+  }
+
+  String? _sessionIdForActiveProfile() {
+    return _sessionIdForProfileKey(_state.activeProfileContact?.key);
+  }
+
+  String? _sessionIdForProfileKey(String? profileContactKey) {
+    if (profileContactKey != null) {
+      final scoped = _sessionIdsByProfileKey[profileContactKey];
+      if (scoped != null) return scoped;
+    }
+    return _unscopedSessionId;
+  }
+
+  void _clearSessions() {
+    _sessionIdsByProfileKey.clear();
+    _unscopedSessionId = null;
   }
 
   Uri? _optionalUri(String? value) {
@@ -257,7 +294,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     final requestId = _uuid.v4();
     final submission = navivoxGatewayUserTurnSubmission(
       requestId: requestId,
-      sessionId: _activeSessionId,
+      sessionId: _sessionIdForActiveProfile(),
       text: trimmed,
       createdAt: _clock(),
       profile: _state.activeProfileContact,
@@ -358,19 +395,32 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       return;
     }
 
+    // The active profile may have changed during the staged auto-send gap, so a
+    // voice turn is submitted to the run's own profile and session, not whatever
+    // contact happens to be active now.
+    final runProfileKey = navivoxProfileContactKey(
+      serverId: run.serverId,
+      profileId: run.profileId,
+    );
+    final runProfile =
+        _state.profileContacts
+            .where((contact) => contact.key == runProfileKey)
+            .firstOrNull ??
+        _state.activeProfileContact;
     final requestId = _uuid.v4();
+    final sessionId = _sessionIdForProfileKey(runProfileKey);
     final submitted = navivoxGatewaySubmittedVoiceRun(
       run: run,
       requestId: requestId,
-      sessionId: _activeSessionId,
+      sessionId: sessionId,
     );
     final submission = navivoxGatewayUserTurnSubmission(
       requestId: requestId,
-      sessionId: _activeSessionId,
+      sessionId: sessionId,
       text: trimmed,
       createdAt: _clock(),
-      profile: _state.activeProfileContact,
-      routing: _state.activeProfileRoutingSelection,
+      profile: runProfile,
+      routing: _state.profileRoutingSelectionFor(runProfile),
       voice: navivoxGatewaySubmittedVoiceMessage(
         run: submitted,
         voiceRunId: voiceRunId,
@@ -824,8 +874,11 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     switch (reduction) {
       case IgnoreGatewayEvent():
         return;
-      case UpdateGatewayActiveSession(:final sessionId):
-        _activeSessionId = sessionId ?? _activeSessionId;
+      case UpdateGatewayActiveSession(:final sessionId, :final profileContactKey):
+        _recordSession(
+          sessionId: sessionId,
+          profileContactKey: profileContactKey,
+        );
       case PutGatewayEventMessage(:final message):
         _putMessage(message);
       case PutGatewayApprovalEvent(:final messages, :final notice):
@@ -900,7 +953,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
 
   void _sendTurnControl({required bool stop}) {
     final socket = _socket;
-    final sessionId = _activeSessionId;
+    final sessionId = _sessionIdForActiveProfile();
     if (socket == null || sessionId == null || sessionId.trim().isEmpty) {
       _appendSystemMessage(navivoxGatewayNoActiveTurnMessage(stop: stop));
       return;

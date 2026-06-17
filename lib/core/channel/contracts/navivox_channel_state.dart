@@ -82,10 +82,21 @@ class NavivoxChannelState {
         .firstOrNull;
   }
 
-  NavivoxProfileRoutingSelection? get activeProfileRoutingSelection {
-    final contact = activeProfileContact;
-    final route = activeProfileRoute;
-    if (contact == null || route == null) return null;
+  NavivoxProfileRoutingSelection? get activeProfileRoutingSelection =>
+      profileRoutingSelectionFor(activeProfileContact);
+
+  /// Resolves the effective routing selection for any profile contact, not just
+  /// the active one. Voice turns may submit to a profile the operator has since
+  /// switched away from, so they need the run profile's routing rather than the
+  /// active profile's.
+  NavivoxProfileRoutingSelection? profileRoutingSelectionFor(
+    NavivoxProfileContact? contact,
+  ) {
+    if (contact == null) return null;
+    final route = profileRouting.profiles
+        .where((route) => route.profileId == contact.profileId)
+        .firstOrNull;
+    if (route == null) return null;
     final selected = profileRoutingSelections[contact.key];
     return NavivoxProfileRoutingSelection(
       workspace: _routingChoice(route.workspaces, selected?.workspace),
