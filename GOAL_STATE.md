@@ -18,9 +18,9 @@ live-smoke item.
 
 ## Delivered slices (durable reconnect)
 
-1. **Gormes endpoints + capability advertisement** — `gormes-agent` branch
-   `feat/navivox-durable-credentials-slice1` (commit `5e6ef089f`, **pushed,
-   unmerged**). `/v1/navivox/device-credentials` issue/list + `/revoke`
+1. **Gormes endpoints + capability advertisement** — `gormes-agent` commit
+   `5e6ef089f`, **merged to `development`** (`41009dcbe`).
+   `/v1/navivox/device-credentials` issue/list + `/revoke`
    (interim `device_bearer`, transport-gated, secrets hashed/never logged,
    idempotent revoke); `capability.DurableReconnect` advertises support on safe
    transport, fail-closed otherwise.
@@ -74,8 +74,8 @@ dependencies:
 
 ## Loose ends
 
-- Gormes Slice 1 branch (`feat/navivox-durable-credentials-slice1`) is pushed
-  but **not merged** — open/merge its PR.
+- None outstanding for the non-device-gated work: Gormes Slice 1 is merged to
+  `development` (`41009dcbe`) and the Navivox slices are on `main`.
 
 ## Acceptance audit
 
