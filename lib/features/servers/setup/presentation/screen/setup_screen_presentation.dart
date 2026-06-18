@@ -10,26 +10,21 @@ class SetupScreenPresentation {
   String get title => 'Connect to Gormes';
 
   String get pairingInstructions =>
-      'Run `gormes navivox pair`, then open the link or import the QR image. '
-      'Use `gormes navivox connect-info` for fallback URLs.';
+      'Run `gormes navivox pair`, then scan the QR or open the pairing link.';
 
   String get networkHint =>
       'Android emulator: use http://10.0.2.2:<port> for a host gateway. '
       'On a physical Android device, use the host LAN, VPN, or Tailscale '
       'URL from connect-info.';
 
-  String get addressFieldLabel => 'Gateway address';
+  String get urlFieldLabel => 'Gateway URL';
 
-  String get addressFieldSemanticLabel => 'Gateway address field';
+  String get urlFieldSemanticLabel => 'Gateway URL field';
 
-  String get addressFieldSemanticHint =>
-      'Enter the Gormes gateway host or address.';
+  String get urlFieldSemanticHint =>
+      'Enter the Gormes gateway URL, for example http://127.0.0.1:8765.';
 
-  String get portFieldLabel => 'Port';
-
-  String get portFieldSemanticLabel => 'Gateway port field';
-
-  String get portFieldSemanticHint => 'Enter the Gormes gateway port.';
+  String get enterManuallyLabel => 'Enter manually';
 
   String get tokenFieldLabel => 'Pairing token';
 
@@ -39,8 +34,6 @@ class SetupScreenPresentation {
       'Enter the pairing token printed by Gormes.';
 
   String get importQrButtonLabel => 'Import QR image';
-
-  String get fixInstructionsButtonLabel => 'Copy fix instructions';
 
   String tokenVisibilityLabel({required bool showToken}) {
     return showToken ? 'Hide pairing token' : 'Show pairing token';
@@ -93,7 +86,7 @@ class SetupScreenPresentation {
       status: SetupPairingReadinessStatus.manual,
       statusLabel: 'Ready for pairing details',
       message:
-          'Use a Gormes pairing link when possible, or enter gateway address and pairing token below.',
+          'Use a Gormes pairing link, or tap Enter manually below to type the gateway URL and token.',
     );
   }
 
