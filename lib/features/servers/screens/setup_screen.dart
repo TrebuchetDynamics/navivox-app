@@ -350,7 +350,7 @@ class _SetupNoticeBanner extends StatelessWidget {
 class _SetupScreenState extends ConsumerState<SetupScreen> {
   final _urlController = TextEditingController(text: 'http://127.0.0.1:8765');
   final _tokenController = TextEditingController();
-  final _expansionController = ExpansionTileController();
+  final _expansionController = ExpansibleController();
   bool _connecting = false;
   bool _showToken = false;
   bool _importingQr = false;
@@ -375,6 +375,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     _connectIntentSubscription?.cancel();
     _urlController.dispose();
     _tokenController.dispose();
+    _expansionController.dispose();
     super.dispose();
   }
 
