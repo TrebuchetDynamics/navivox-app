@@ -24,14 +24,13 @@ void main() {
     expect(find.text('Connect to Gormes'), findsOneWidget);
     expect(find.text('Pairing readiness'), findsNothing);
     expect(find.text('Ready for pairing details'), findsNothing);
-    expect(setupConnectAction(), findsOneWidget);
-    expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
     expect(find.text('Need setup help?'), findsOneWidget);
     expect(find.textContaining('Termux bootstrap'), findsOneWidget);
     expect(caseInsensitiveText('telephony'), findsNothing);
     expect(caseInsensitiveText('fake'), findsNothing);
 
-    await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
     await tester.enterText(setupTokenField(), 'nvbx_test_token');
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
@@ -70,11 +69,14 @@ void main() {
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
-      expect(find.bySemanticsLabel('Gateway address field'), findsOneWidget);
-      expect(find.bySemanticsLabel('Gateway port field'), findsOneWidget);
-      expect(find.bySemanticsLabel('Pairing token field'), findsOneWidget);
+      // Primary control always visible.
       expect(find.bySemanticsLabel('Import QR image'), findsOneWidget);
-      expect(find.bySemanticsLabel('Copy fix instructions'), findsOneWidget);
+
+      // Expand manual entry to check its accessibility labels.
+      await expandManualEntry(tester);
+
+      expect(find.bySemanticsLabel('Gateway URL field'), findsOneWidget);
+      expect(find.bySemanticsLabel('Pairing token field'), findsOneWidget);
       expect(find.bySemanticsLabel('Show pairing token'), findsOneWidget);
       expect(find.bySemanticsLabel('Connect and talk'), findsOneWidget);
     },
@@ -89,7 +91,8 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
     final tokenField = setupTokenField();
     await tester.enterText(tokenField, 'nvbx_test_token');
     await tester.showKeyboard(tokenField);
@@ -99,15 +102,15 @@ void main() {
     expect(channel.connectedBaseUrl, 'http://127.0.0.1:8765');
   });
 
-  testWidgets('setup uses separate address and port fields', (tester) async {
+  testWidgets('setup uses a single URL field for gateway address and port', (tester) async {
     final channel = ConnectAndTalkChannel();
     addTearDown(channel.dispose);
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(setupAddressField(), '127.0.0.1');
-    await tester.enterText(setupPortField(), '8765');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
@@ -124,8 +127,8 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(setupAddressField(), 'http://127.0.0.1:7319');
-    await tester.enterText(setupPortField(), '8765');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), 'http://127.0.0.1:7319');
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
@@ -142,7 +145,8 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(setupAddressField(), '  http://127.0.0.1:8765  ');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), '  http://127.0.0.1:8765  ');
     await tester.enterText(setupTokenField(), '   ');
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
@@ -415,7 +419,8 @@ void main() {
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
 
-    await tester.enterText(setupAddressField(), 'ftp://example.com');
+    await expandManualEntry(tester);
+    await tester.enterText(setupUrlField(), 'ftp://example.com');
     await tester.ensureVisible(setupConnectAction());
     await tester.tap(setupConnectAction());
     await tester.pumpAndSettle();
@@ -448,7 +453,7 @@ void main() {
     expect(find.textContaining('gateway status'), findsOneWidget);
     expect(find.textContaining('gormes navivox pair'), findsWidgets);
     expect(find.text('Copy one-paste bootstrap'), findsOneWidget);
-    expect(find.text('Copy fix instructions'), findsWidgets);
+    expect(find.text('Copy fix instructions'), findsOneWidget);
     expect(find.text('Advanced Termux commands'), findsNothing);
     expect(find.text('Copy Termux download links'), findsNothing);
     expect(caseInsensitiveText('curl | sh'), findsNothing);
@@ -518,8 +523,11 @@ void main() {
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Copy fix instructions').last);
-      await tester.tap(find.text('Copy fix instructions').last);
+      await tester.ensureVisible(find.text('Need setup help?'));
+      await tester.tap(find.text('Need setup help?'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Copy fix instructions'));
+      await tester.tap(find.text('Copy fix instructions'));
       await tester.pumpAndSettle();
 
       expect(clipboard.copiedTexts, hasLength(1));
@@ -557,7 +565,8 @@ void main() {
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
 
-      await tester.enterText(setupAddressField(), 'http://127.0.0.1:8765');
+      await expandManualEntry(tester);
+      await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
       await tester.enterText(
         setupTokenField(),
         'nvbx_secret_should_not_render',
