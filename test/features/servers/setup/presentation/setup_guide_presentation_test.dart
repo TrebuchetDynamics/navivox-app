@@ -11,7 +11,7 @@ void main() {
 
     expect(
       presentation.visibleEntries.map((entry) => entry.id).toList(),
-      const [SetupGuideEntryId.bootstrap],
+      const [SetupGuideEntryId.bootstrap, SetupGuideEntryId.navivoxPairHandoff],
     );
 
     expect(presentation.entries.map((entry) => entry.id).toList(), const [

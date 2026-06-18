@@ -484,144 +484,90 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  'Pair with Gormes',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                FilledButton.icon(
+                                  key: const ValueKey(
+                                    'setup-import-qr-button',
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(52),
+                                  ),
+                                  onPressed: _connecting || _importingQr
+                                      ? null
+                                      : _importQrImage,
+                                  icon: _importingQr
+                                      ? const SizedBox.square(
+                                          dimension: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.qr_code_scanner),
+                                  label: Text(
+                                    _setupScreenPresentation
+                                        .importQrButtonLabel,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Import the QR image, or paste the gateway details manually.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    height: 1.35,
+                                const SizedBox(height: 4),
+                                ExpansionTile(
+                                  controller: _expansionController,
+                                  tilePadding: EdgeInsets.zero,
+                                  title: Text(
+                                    _setupScreenPresentation.enterManuallyLabel,
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                if (compact) ...[
-                                  _addressField(),
-                                  const SizedBox(height: 12),
-                                  _portField(width: double.infinity),
-                                ] else
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(child: _addressField()),
-                                      const SizedBox(width: 12),
-                                      _portField(width: 124),
-                                    ],
-                                  ),
-                                const SizedBox(height: 12),
-                                _tokenField(),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  alignment: WrapAlignment.end,
-                                  spacing: 8,
-                                  runSpacing: 4,
                                   children: [
-                                    FilledButton.tonalIcon(
-                                      key: const ValueKey(
-                                        'setup-import-qr-button',
-                                      ),
-                                      onPressed: _connecting || _importingQr
+                                    const SizedBox(height: 4),
+                                    _urlField(),
+                                    const SizedBox(height: 12),
+                                    _tokenField(),
+                                    const SizedBox(height: 16),
+                                    Semantics(
+                                      container: true,
+                                      label: _setupScreenPresentation
+                                          .connectButtonLabel,
+                                      hint: _setupScreenPresentation
+                                          .connectButtonSemanticHint,
+                                      button: true,
+                                      enabled: !_connecting,
+                                      onTap: _connecting
                                           ? null
-                                          : _importQrImage,
-                                      icon: _importingQr
-                                          ? const SizedBox.square(
-                                              dimension: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : const Icon(Icons.qr_code_scanner),
-                                      label: Text(
-                                        _setupScreenPresentation
-                                            .importQrButtonLabel,
-                                      ),
-                                    ),
-                                    TextButton.icon(
-                                      key: const ValueKey(
-                                        'setup-copy-fix-instructions-button',
-                                      ),
-                                      onPressed: () => _copySetupGuideEntry(
-                                        _setupGuidePresentation.entry(
-                                          SetupGuideEntryId.navivoxPairHandoff,
+                                          : _submitManualPairingHandoff,
+                                      child: ExcludeSemantics(
+                                        child: FilledButton.icon(
+                                          style: FilledButton.styleFrom(
+                                            minimumSize:
+                                                const Size.fromHeight(52),
+                                            textStyle: theme
+                                                .textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          onPressed: _connecting
+                                              ? null
+                                              : _submitManualPairingHandoff,
+                                          icon: _connecting
+                                              ? const SizedBox.square(
+                                                  dimension: 18,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                )
+                                              : const Icon(Icons.hub),
+                                          label: Text(
+                                            _setupScreenPresentation
+                                                .connectButtonLabel,
+                                          ),
                                         ),
                                       ),
-                                      icon: const Icon(Icons.content_copy),
-                                      label: Text(
-                                        _setupScreenPresentation
-                                            .fixInstructionsButtonLabel,
-                                      ),
                                     ),
-                                    TextButton.icon(
-                                      key: const ValueKey(
-                                        'setup-token-visibility-button',
-                                      ),
-                                      onPressed: () {
-                                        setState(
-                                          () => _showToken = !_showToken,
-                                        );
-                                      },
-                                      icon: Icon(
-                                        _showToken
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                      ),
-                                      label: Text(
-                                        _setupScreenPresentation
-                                            .tokenVisibilityLabel(
-                                              showToken: _showToken,
-                                            ),
-                                      ),
-                                    ),
+                                    const SizedBox(height: 8),
                                   ],
                                 ),
                                 if (_notice != null) ...[
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   _SetupNoticeBanner(notice: _notice!),
                                 ],
-                                const SizedBox(height: 16),
-                                Semantics(
-                                  container: true,
-                                  label: _setupScreenPresentation
-                                      .connectButtonLabel,
-                                  hint: _setupScreenPresentation
-                                      .connectButtonSemanticHint,
-                                  button: true,
-                                  enabled: !_connecting,
-                                  onTap: _connecting
-                                      ? null
-                                      : _submitManualPairingHandoff,
-                                  child: ExcludeSemantics(
-                                    child: FilledButton.icon(
-                                      style: FilledButton.styleFrom(
-                                        minimumSize: const Size.fromHeight(52),
-                                        textStyle: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                      onPressed: _connecting
-                                          ? null
-                                          : _submitManualPairingHandoff,
-                                      icon: _connecting
-                                          ? const SizedBox.square(
-                                              dimension: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : const Icon(Icons.hub),
-                                      label: Text(
-                                        _setupScreenPresentation
-                                            .connectButtonLabel,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -677,15 +623,21 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           border: const OutlineInputBorder(),
           prefixIcon: const Icon(Icons.key_outlined),
           labelText: _setupScreenPresentation.tokenFieldLabel,
-          suffixIcon: IconButton(
-            key: const ValueKey('setup-token-visibility-button'),
-            icon: Icon(
-              _showToken ? Icons.visibility_off : Icons.visibility,
-            ),
-            tooltip: _setupScreenPresentation.tokenVisibilityLabel(
+          suffixIcon: Semantics(
+            label: _setupScreenPresentation.tokenVisibilityLabel(
               showToken: _showToken,
             ),
-            onPressed: () => setState(() => _showToken = !_showToken),
+            button: true,
+            child: IconButton(
+              key: const ValueKey('setup-token-visibility-button'),
+              icon: Icon(
+                _showToken ? Icons.visibility_off : Icons.visibility,
+              ),
+              tooltip: _setupScreenPresentation.tokenVisibilityLabel(
+                showToken: _showToken,
+              ),
+              onPressed: () => setState(() => _showToken = !_showToken),
+            ),
           ),
         ),
         obscureText: !_showToken,

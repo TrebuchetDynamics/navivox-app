@@ -12,9 +12,7 @@ class SetupGuidePresentation {
 
   List<SetupGuideEntry> get entries => _entries;
 
-  List<SetupGuideEntry> get visibleEntries => entries
-      .where((entry) => entry.id == SetupGuideEntryId.bootstrap)
-      .toList();
+  List<SetupGuideEntry> get visibleEntries => entries;
 
   SetupGuideEntry entry(SetupGuideEntryId id) =>
       entries.firstWhere((entry) => entry.id == id);
