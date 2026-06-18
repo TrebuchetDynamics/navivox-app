@@ -7,7 +7,7 @@ import '../shared/setup_screen_test_contracts.dart';
 
 void main() {
   testWidgets(
-    'QR image import fills setup fields without rendering the token',
+    'QR image import fills setup fields and auto-expands manual entry',
     (tester) async {
       await tester.pumpWidget(
         TestProviderMaterialApp(
@@ -25,12 +25,11 @@ void main() {
       await tester.tap(importButton);
       await tester.pumpAndSettle();
 
-      final addressField = setupAddressTextField(tester);
-      final portField = setupPortTextField(tester);
+      // Auto-expand should have opened the manual entry section.
+      final urlField = setupUrlTextField(tester);
       final tokenField = setupTokenTextField(tester);
 
-      expect(addressField.controller?.text, '10.0.2.2');
-      expect(portField.controller?.text, '8765');
+      expect(urlField.controller?.text, 'http://10.0.2.2:8765');
       expect(tokenField.controller?.text, 'nvbx_from_qr_picture');
       expect(tokenField.obscureText, isTrue);
       expect(find.text('Imported QR connection details.'), findsOneWidget);
