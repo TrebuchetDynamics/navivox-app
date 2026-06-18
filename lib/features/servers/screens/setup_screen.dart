@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/channel/navivox_channel_provider.dart';
-import '../../../core/protocol/navivox_endpoint_uri.dart';
 import '../../../core/session/session_persistence_service.dart';
 import '../../../router/navigation_intent.dart';
 import '../models/connection_import.dart';
@@ -349,13 +348,12 @@ class _SetupNoticeBanner extends StatelessWidget {
 }
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
-  final _addressController = TextEditingController(text: '127.0.0.1');
-  final _portController = TextEditingController(text: '8765');
+  final _urlController = TextEditingController(text: 'http://127.0.0.1:8765');
   final _tokenController = TextEditingController();
+  final _expansionController = ExpansionTileController();
   bool _connecting = false;
   bool _showToken = false;
   bool _importingQr = false;
-  String _scheme = 'http';
   String? _webSocketUrl;
   PairingHandoffFlow _handoffFlow = const PairingHandoffFlow();
   SetupScreenNotice? _notice;
@@ -375,8 +373,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   void dispose() {
     _connectIntentSubscription?.cancel();
-    _addressController.dispose();
-    _portController.dispose();
+    _urlController.dispose();
     _tokenController.dispose();
     super.dispose();
   }
@@ -647,46 +644,22 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  Widget _addressField() {
+  Widget _urlField() {
     return Semantics(
-      label: _setupScreenPresentation.addressFieldSemanticLabel,
-      hint: _setupScreenPresentation.addressFieldSemanticHint,
+      label: _setupScreenPresentation.urlFieldSemanticLabel,
+      hint: _setupScreenPresentation.urlFieldSemanticHint,
       textField: true,
       child: TextField(
-        controller: _addressController,
+        controller: _urlController,
         decoration: InputDecoration(
           border: const OutlineInputBorder(),
           prefixIcon: const Icon(Icons.dns_outlined),
-          labelText: _setupScreenPresentation.addressFieldLabel,
+          labelText: _setupScreenPresentation.urlFieldLabel,
         ),
         keyboardType: TextInputType.url,
         textInputAction: TextInputAction.next,
-        onChanged: _handleAddressChanged,
+        onChanged: _handleUrlChanged,
         onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-      ),
-    );
-  }
-
-  Widget _portField({required double width}) {
-    return SizedBox(
-      width: width,
-      child: Semantics(
-        label: _setupScreenPresentation.portFieldSemanticLabel,
-        hint: _setupScreenPresentation.portFieldSemanticHint,
-        textField: true,
-        child: TextField(
-          controller: _portController,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            prefixIcon: width > 160 ? const Icon(Icons.tag) : null,
-            labelText: _setupScreenPresentation.portFieldLabel,
-          ),
-          keyboardType: TextInputType.number,
-          textInputAction: TextInputAction.next,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          onChanged: _handlePortChanged,
-          onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-        ),
       ),
     );
   }
@@ -703,6 +676,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           border: const OutlineInputBorder(),
           prefixIcon: const Icon(Icons.key_outlined),
           labelText: _setupScreenPresentation.tokenFieldLabel,
+          suffixIcon: IconButton(
+            key: const ValueKey('setup-token-visibility-button'),
+            icon: Icon(
+              _showToken ? Icons.visibility_off : Icons.visibility,
+            ),
+            tooltip: _setupScreenPresentation.tokenVisibilityLabel(
+              showToken: _showToken,
+            ),
+            onPressed: () => setState(() => _showToken = !_showToken),
+          ),
         ),
         obscureText: !_showToken,
         textInputAction: TextInputAction.done,
@@ -778,13 +761,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   ) {
     setState(() {
       if (result.baseUrl != null) {
-        const presentation = GatewayConnectionPresentation();
-        final parsed = presentation.splitBaseUrl(result.baseUrl!);
-        if (!parsed.hasError) {
-          _scheme = Uri.tryParse(parsed.baseUrl!)?.scheme ?? 'http';
-          _addressController.text = parsed.address!;
-          _portController.text = parsed.port!;
-        }
+        _urlController.text = result.baseUrl!;
       }
       if (result.token != null) {
         _tokenController.text = result.token!;
@@ -793,25 +770,15 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       _handoffFlow = PairingHandoffFlow.fromImport(result);
       _notice = notice;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _expansionController.expand();
+    });
   }
 
-  void _handleAddressChanged(String value) {
+  void _handleUrlChanged(String _) {
     _webSocketUrl = null;
     _handoffFlow = _handoffFlow.applyManualConnectionEdit(
       PairingHandoffManualEdit.address,
-    );
-    final uri = Uri.tryParse(value.trim());
-    if (uri != null && navivoxIsEndpointScheme(uri.scheme)) {
-      _scheme = navivoxHttpSchemeFromEndpointScheme(uri.scheme);
-    } else {
-      _scheme = 'http';
-    }
-  }
-
-  void _handlePortChanged(String _) {
-    _webSocketUrl = null;
-    _handoffFlow = _handoffFlow.applyManualConnectionEdit(
-      PairingHandoffManualEdit.port,
     );
   }
 
@@ -851,11 +818,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   }
 
   String _safeHandoffHostSummary() {
-    return _setupScreenPresentation.handoffHostSummary(
-      scheme: _scheme,
-      address: _addressController.text,
-      port: _portController.text,
-    );
+    const presentation = GatewayConnectionPresentation();
+    final parsed = presentation.splitBaseUrl(_urlController.text);
+    if (parsed.hasError || parsed.baseUrl == null) return 'the new gateway';
+    return parsed.baseUrl!;
   }
 
   Future<void> _submitManualPairingHandoff() {
@@ -908,11 +874,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   Future<void> _connectGateway(PairingIntent intent) async {
     const presentation = GatewayConnectionPresentation();
-    final validationError = presentation.validateAddressAndPort(
-      address: _addressController.text,
-      port: _portController.text,
-      scheme: _scheme,
-    );
+    final urlText = _urlController.text.trim();
+    final validationError = presentation.validateBaseUrl(urlText);
     if (validationError != null) {
       setState(() {
         _notice = _setupScreenPresentation.validationFailureNotice(
@@ -921,11 +884,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       });
       return;
     }
-    final request = presentation.connectRequestFromParts(
-      address: _addressController.text,
-      port: _portController.text,
+    final request = presentation.connectRequest(
+      baseUrl: urlText,
       token: _tokenController.text,
-      scheme: _scheme,
       webSocketUrl: _webSocketUrl,
     );
 
