@@ -14,6 +14,9 @@ void main() {
 
     await tester.pumpWidget(const TestProviderMaterialApp(home: SetupScreen()));
 
+    // Expand the manual entry section so the token field is visible.
+    await expandManualEntry(tester);
+
     final tokenFieldFinder = setupTokenField();
     TextField tokenField() => setupTokenTextField(tester);
 
@@ -21,23 +24,20 @@ void main() {
     expect(setupTokenVisibilityButton(), findsOneWidget);
 
     await tester.enterText(tokenFieldFinder, 'nvbx_visible_when_requested');
-    _pressTokenVisibilityButton(tester);
+    final button = tester.widget<IconButton>(setupTokenVisibilityButton());
+    button.onPressed!();
     await tester.pump();
 
     expect(tokenField().obscureText, isFalse);
     expect(setupTokenVisibilityButton(), findsOneWidget);
     expect(tokenField().controller?.text, 'nvbx_visible_when_requested');
 
-    _pressTokenVisibilityButton(tester);
+    final button2 = tester.widget<IconButton>(setupTokenVisibilityButton());
+    button2.onPressed!();
     await tester.pump();
 
     expect(tokenField().obscureText, isTrue);
     expect(setupTokenVisibilityButton(), findsOneWidget);
     expect(tokenField().controller?.text, 'nvbx_visible_when_requested');
   });
-}
-
-void _pressTokenVisibilityButton(WidgetTester tester) {
-  final button = tester.widget<TextButton>(setupTokenVisibilityButton());
-  button.onPressed!();
 }
