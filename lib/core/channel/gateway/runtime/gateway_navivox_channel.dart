@@ -1016,8 +1016,13 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
               .then((_) => _tryReconnectStream(capturedClient)),
         );
       } else if (identical(_client, capturedClient)) {
-        _setServerStatus('Gateway disconnected');
-        _appendSystemMessage('Could not reconnect to gateway.');
+        // Stream reconnect exhausted — fall back to a full device-bearer
+        // reconnect so a gormes restart is handled automatically.
+        final reconnected = await tryReconnect();
+        if (!reconnected && identical(_client, capturedClient)) {
+          _setServerStatus('Gateway disconnected');
+          _appendSystemMessage('Could not reconnect to gateway.');
+        }
       }
     }
   }
