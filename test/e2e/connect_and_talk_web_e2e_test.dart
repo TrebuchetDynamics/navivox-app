@@ -5,6 +5,8 @@ import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/router/app_router.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
+import '../features/servers/setup/shared/setup_screen_test_contracts.dart';
+
 void main() {
   testWidgets('web browser e2e failed setup keeps token secret and retryable', (
     tester,
@@ -23,8 +25,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await expandManualEntry(tester);
     await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
+      find.widgetWithText(TextField, 'Gateway URL'),
       'http://127.0.0.1:8765',
     );
     await tester.enterText(
@@ -62,12 +65,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
-    expect(find.text('Connect and talk'), findsOneWidget);
-    expect(find.textContaining('gormes navivox connect-info'), findsWidgets);
+    expect(find.textContaining('gormes navivox pair'), findsWidgets);
     expect(_caseInsensitiveText('telephony'), findsNothing);
 
+    await expandManualEntry(tester);
+    expect(find.text('Connect and talk'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'Gateway address'),
+      find.widgetWithText(TextField, 'Gateway URL'),
       'http://127.0.0.1:8765',
     );
     await tester.enterText(

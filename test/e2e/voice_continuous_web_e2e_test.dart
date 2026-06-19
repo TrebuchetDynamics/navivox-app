@@ -8,6 +8,7 @@ import 'package:navivox/router/app_router.dart';
 import 'package:navivox/shared/voice/text_to_speech_service.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
+import '../features/servers/setup/shared/setup_screen_test_contracts.dart';
 import '../features/shared/fakes/voice_capture_service_fakes.dart';
 
 void main() {
@@ -42,8 +43,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Connect from the setup screen.
+      await expandManualEntry(tester);
       await tester.enterText(
-        find.widgetWithText(TextField, 'Gateway address'),
+        find.widgetWithText(TextField, 'Gateway URL'),
         'http://127.0.0.1:8765',
       );
       await tester.enterText(

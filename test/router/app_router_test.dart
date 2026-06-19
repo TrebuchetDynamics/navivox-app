@@ -9,6 +9,7 @@ import 'package:navivox/router/app_router.dart';
 import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/shared/widgets/app_shell.dart';
 
+import '../features/servers/setup/shared/setup_screen_test_contracts.dart';
 import '../support/test_navivox_channel.dart';
 
 void main() {
@@ -19,6 +20,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
+    await expandManualEntry(tester);
     expect(find.text('Connect and talk'), findsOneWidget);
   });
 
