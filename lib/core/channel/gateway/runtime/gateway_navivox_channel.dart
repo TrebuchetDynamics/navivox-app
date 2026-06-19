@@ -922,6 +922,26 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       clock: _clock,
     );
     _applyGatewayEventReduction(reduction);
+    // When the server rejects a turn because one is already in progress and
+    // provides the active session ID, subscribe immediately so this client
+    // receives the remaining response events without waiting for the next
+    // explicit start_turn.
+    final activeSessionId = event.sessionId;
+    if (event.type == 'error' &&
+        event.code == 'turn_in_progress' &&
+        activeSessionId != null) {
+      final socket = _socket;
+      if (socket != null) {
+        socket.add(
+          jsonEncode(
+            NavivoxGatewayMessage.subscribeSession(
+              requestId: _uuid.v4(),
+              sessionId: activeSessionId,
+            ).body,
+          ),
+        );
+      }
+    }
   }
 
   void _applyGatewayEventReduction(GatewayEventReduction reduction) {
