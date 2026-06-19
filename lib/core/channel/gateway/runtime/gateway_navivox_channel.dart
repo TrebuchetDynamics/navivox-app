@@ -32,8 +32,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     DateTime Function()? clock,
     DurableCredentialStore? credentialStore,
     AppInstallIdentityService? appInstallIdentity,
+    int maxStreamReconnectAttempts = 3,
   }) : _uuid = uuid ?? const Uuid(),
        _clock = clock ?? DateTime.now,
+       _maxStreamReconnectAttempts = maxStreamReconnectAttempts,
        _durableReconnect = DurableReconnectIssuanceCoordinator(
          appInstallIdentity:
              appInstallIdentity ?? AppInstallIdentityService(),
@@ -44,6 +46,8 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
   final Uuid _uuid;
   final DateTime Function() _clock;
   final DurableReconnectIssuanceCoordinator _durableReconnect;
+  final int _maxStreamReconnectAttempts;
+  int _streamReconnectAttempts = 0;
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
 
@@ -152,12 +156,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             .listen(
               _onEvent,
               onError: (Object error) {
-                _handleStreamClosed();
-                _appendSystemMessage('Gateway stream error');
+                if (!_handleStreamClosed()) _appendSystemMessage('Gateway stream error');
               },
               onDone: () {
-                _handleStreamClosed();
-                _setServerStatus('Gateway disconnected');
+                if (!_handleStreamClosed()) _setServerStatus('Gateway disconnected');
               },
             );
       }
@@ -221,6 +223,7 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     _socket = null;
     _client = null;
     _capabilities = null;
+    _streamReconnectAttempts = 0;
     _clearSessions();
     _configAdminAvailable = false;
     _configAdminSupported = false;
@@ -936,13 +939,63 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     );
   }
 
-  // Drops the live socket once the gateway-closed stream ends so subsequent
-  // sends hit the not-connected guard instead of writing to a dead sink.
-  void _handleStreamClosed() {
+  // Cleans up the live socket when the gateway stream closes. Returns true and
+  // schedules a reconnect when the client is still active and retry budget
+  // remains; returns false so callers can show the disconnected status/message.
+  bool _handleStreamClosed() {
+    final alreadyHandled = _socket == null && _events == null;
     final socket = _socket;
     _socket = null;
     _events = null;
-    unawaited(socket?.close());
+    if (socket != null) unawaited(socket.close());
+    if (alreadyHandled) return _streamReconnectAttempts > 0;
+    final capturedClient = _client;
+    if (capturedClient != null &&
+        _streamReconnectAttempts < _maxStreamReconnectAttempts) {
+      _streamReconnectAttempts++;
+      _appendSystemMessage('Connection lost. Reconnecting…');
+      unawaited(
+        Future<void>.delayed(Duration(seconds: _streamReconnectAttempts * 2))
+            .then((_) => _tryReconnectStream(capturedClient)),
+      );
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _tryReconnectStream(NavivoxGatewayClient capturedClient) async {
+    if (!identical(_client, capturedClient) || _socket != null) return;
+    try {
+      final socket = await capturedClient.connectStream();
+      if (!identical(_client, capturedClient)) {
+        unawaited(socket.close());
+        return;
+      }
+      _socket = socket;
+      _events = capturedClient.decodeEvents(socket.events).listen(
+        _onEvent,
+        onError: (Object error) {
+          if (!_handleStreamClosed()) _appendSystemMessage('Gateway stream error');
+        },
+        onDone: () {
+          if (!_handleStreamClosed()) _setServerStatus('Gateway disconnected');
+        },
+      );
+      _streamReconnectAttempts = 0;
+      _appendSystemMessage('Reconnected to gateway.');
+    } catch (_) {
+      if (identical(_client, capturedClient) &&
+          _streamReconnectAttempts < _maxStreamReconnectAttempts) {
+        _streamReconnectAttempts++;
+        unawaited(
+          Future<void>.delayed(Duration(seconds: _streamReconnectAttempts * 2))
+              .then((_) => _tryReconnectStream(capturedClient)),
+        );
+      } else if (identical(_client, capturedClient)) {
+        _setServerStatus('Gateway disconnected');
+        _appendSystemMessage('Could not reconnect to gateway.');
+      }
+    }
   }
 
   void _setServerStatus(String status) {

@@ -434,7 +434,7 @@ void main() {
       ],
     );
 
-    final channel = GatewayNavivoxChannel();
+    final channel = GatewayNavivoxChannel(maxStreamReconnectAttempts: 0);
     addTearDown(channel.dispose);
 
     await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
@@ -467,7 +467,7 @@ void main() {
   test('rejects sends after the gateway closes the stream', () async {
     final server = await _FakeGatewayServer.start();
 
-    final channel = GatewayNavivoxChannel();
+    final channel = GatewayNavivoxChannel(maxStreamReconnectAttempts: 0);
     addTearDown(channel.dispose);
 
     await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
