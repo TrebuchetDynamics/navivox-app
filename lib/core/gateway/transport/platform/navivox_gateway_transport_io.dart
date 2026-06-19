@@ -61,6 +61,7 @@ Future<NavivoxGatewaySocketConnection> defaultConnectWebSocket(
       headers: webSocketHeaders,
       protocols: navivoxGatewayWebSocketProtocols(headers),
     );
+    socket.pingInterval = const Duration(seconds: 30);
     return NavivoxGatewaySocket(socket);
   } on WebSocketException catch (error) {
     final statusCode = _navivoxWebSocketHandshakeStatusCode(error);
