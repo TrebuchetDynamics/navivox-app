@@ -15,11 +15,24 @@ import 'theme/navivox_theme.dart';
 @JS('navivoxE2ESendText')
 external set _navivoxE2ESendText(JSFunction callback);
 
+@JS('navivoxE2ESetConfigAdmin')
+external set _navivoxE2ESetConfigAdmin(JSFunction callback);
+
 void main() {
   final channel = E2EMockChannel();
   channel.connect(baseUrl: 'http://127.0.0.1:8765', token: 'nvbx_e2e_token');
   _navivoxE2ESendText = ((JSString text) {
     channel.sendText(text.toDart);
+  }).toJS;
+  _navivoxE2ESetConfigAdmin = ((JSString mode) {
+    switch (mode.toDart) {
+      case 'available':
+        channel.setConfigAdminMode(E2EConfigAdminMode.available);
+      case 'load_failed':
+        channel.setConfigAdminMode(E2EConfigAdminMode.loadFailed);
+      default:
+        channel.setConfigAdminMode(E2EConfigAdminMode.unsupported);
+    }
   }).toJS;
 
   runApp(

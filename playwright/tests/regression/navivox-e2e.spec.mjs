@@ -543,3 +543,57 @@ test.describe('17. Additional Regression Coverage', () => {
     await expect(page.locator('flt-semantics[role="checkbox"][aria-label="1 auth"]')).toBeVisible({timeout:5000});
   });
 });
+
+// ─── 18. Config Admin States ──────────────────────────────────────
+// These tests exercise all three config admin readiness states by calling
+// navivoxE2ESetConfigAdmin() from JavaScript, which flips mock channel state
+// without a page reload.
+test.describe('18. Config Admin States', () => {
+  test('18a config admin load failed shows failure status and message', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('load_failed'));
+    await page.waitForTimeout(500);
+    await expectSemanticVisible(page, 'Config admin load failed', {timeout:5000});
+    // Config readiness card should offer a refresh action
+    await expectSemanticVisible(page, 'Refresh config', {timeout:5000});
+  });
+
+  test('18b config admin ready shows compact scope view and no full readiness card', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('available'));
+    await page.waitForTimeout(500);
+    await expectSemanticVisible(page, 'Config admin ready', {timeout:5000});
+    // In ready state the card is compact: shows scope heading and server/profile chips
+    await expectSemanticVisible(page, 'Profile config scope', {timeout:5000});
+    await expectSemanticVisible(page, 'Server: Local Gormes', {timeout:5000});
+  });
+
+  test('18c config admin transitions from load-failed to ready', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('load_failed'));
+    await page.waitForTimeout(300);
+    await expectSemanticVisible(page, 'Config admin load failed', {timeout:5000});
+    // Simulate a successful refresh by switching to available state
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('available'));
+    await page.waitForTimeout(500);
+    await expectSemanticVisible(page, 'Config admin ready', {timeout:5000});
+  });
+
+  test('18d config admin resets to unsupported state', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('available'));
+    await page.waitForTimeout(300);
+    await expectSemanticVisible(page, 'Config admin ready', {timeout:5000});
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('unsupported'));
+    await page.waitForTimeout(500);
+    await expectSemanticVisible(page, 'Config admin unsupported', {timeout:5000});
+  });
+
+  test('18e config admin ready shows General config section', async ({page}) => {
+    await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
+    await page.evaluate(() => globalThis.navivoxE2ESetConfigAdmin('available'));
+    await page.waitForTimeout(500);
+    await expectSemanticVisible(page, 'Config admin ready', {timeout:5000});
+    await expectSemanticVisible(page, 'General config', {timeout:5000});
+  });
+});

@@ -8,12 +8,49 @@ import '../core/protocol/navivox_event.dart';
 import '../core/protocol/navivox_memory.dart';
 import '../core/protocol/navivox_voice_run.dart';
 
+enum E2EConfigAdminMode { unsupported, loadFailed, available }
+
+// Mock schema matching gormes configAdminSchema() output.
+const Map<String, Object?> _mockConfigSchema = {
+  'fields': [
+    {'key': 'navivox.enabled', 'path': 'navivox.enabled', 'title': 'Enable Navivox', 'label': 'Enable Navivox', 'type': 'bool', 'reload': 'restart_or_reload'},
+    {'key': 'navivox.bind_host', 'path': 'navivox.bind_host', 'title': 'Bind host', 'label': 'Bind host', 'type': 'string', 'reload': 'restart_or_reload'},
+    {'key': 'navivox.port', 'path': 'navivox.port', 'title': 'Port', 'label': 'Port', 'type': 'int', 'reload': 'restart_or_reload'},
+    {'key': 'navivox.exposure_mode', 'path': 'navivox.exposure_mode', 'title': 'Exposure mode', 'label': 'Exposure mode', 'type': 'enum', 'allowed': ['local', 'tailscale', 'wireguard', 'vpn', 'public'], 'reload': 'restart_or_reload'},
+    {'key': 'navivox.auth_mode', 'path': 'navivox.auth_mode', 'title': 'Auth mode', 'label': 'Auth mode', 'type': 'enum', 'allowed': ['pairing_token', 'static_token', 'tailscale_identity', 'token_and_tailscale_identity'], 'reload': 'restart_or_reload'},
+    {'key': 'navivox.token', 'path': 'navivox.token', 'title': 'Pairing/static token', 'label': 'Pairing/static token', 'type': 'secret', 'secret': true, 'actions': ['set', 'rotate', 'delete', 'test'], 'reload': 'restart_or_reload'},
+  ],
+};
+
+const Map<String, Object?> _mockConfigValues = {
+  'navivox.enabled': true,
+  'navivox.bind_host': '127.0.0.1',
+  'navivox.port': 8765,
+  'navivox.exposure_mode': 'local',
+  'navivox.auth_mode': 'pairing_token',
+  'navivox.token': {'secret_status': 'set', 'source': 'env:GORMES_NAVIVOX_TOKEN'},
+};
+
 class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   NavivoxChannelState _state = const NavivoxChannelState();
   final StreamController<NavivoxApprovalRequest> _approvals =
       StreamController<NavivoxApprovalRequest>.broadcast();
   int _messageCounter = 0;
   int _voiceRunCounter = 0;
+  E2EConfigAdminMode _configAdminMode = E2EConfigAdminMode.unsupported;
+
+  void setConfigAdminMode(E2EConfigAdminMode mode) {
+    _configAdminMode = mode;
+    if (mode == E2EConfigAdminMode.available) {
+      _state = _state.copyWith(
+        configSchema: _mockConfigSchema,
+        configValues: _mockConfigValues,
+      );
+    } else {
+      _state = _state.copyWith(clearConfigSchema: true, configValues: const {});
+    }
+    notifyListeners();
+  }
 
   @override
   NavivoxChannelState get state => _state;
@@ -330,13 +367,13 @@ class E2EMockChannel extends ChangeNotifier implements NavivoxChannel {
   }) {}
 
   @override
-  bool get configAdminAvailable => false;
+  bool get configAdminAvailable => _configAdminMode == E2EConfigAdminMode.available;
 
   @override
-  bool get configAdminSupported => false;
+  bool get configAdminSupported => _configAdminMode != E2EConfigAdminMode.unsupported;
 
   @override
-  bool get configAdminLoadFailed => false;
+  bool get configAdminLoadFailed => _configAdminMode == E2EConfigAdminMode.loadFailed;
 
   @override
   Future<void> refreshConfigAdmin() async {}
