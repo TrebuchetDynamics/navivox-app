@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(_settingsPresentation.title)),
       body: ListView(
-        cacheExtent: 1600,
+        scrollCacheExtent: const ScrollCacheExtent.pixels(1600),
         padding: const EdgeInsets.all(16),
         children: [
           _SettingsSectionCard(

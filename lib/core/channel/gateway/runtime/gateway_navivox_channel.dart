@@ -39,9 +39,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
        _credentialStore =
            credentialStore ?? const EmptyDurableCredentialStore(),
        _durableReconnect = DurableReconnectIssuanceCoordinator(
-         appInstallIdentity:
-             appInstallIdentity ?? AppInstallIdentityService(),
-         credentialStore: credentialStore ?? const EmptyDurableCredentialStore(),
+         appInstallIdentity: appInstallIdentity ?? AppInstallIdentityService(),
+         credentialStore:
+             credentialStore ?? const EmptyDurableCredentialStore(),
          clock: clock ?? DateTime.now,
        );
 
@@ -159,10 +159,14 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
             .listen(
               _onEvent,
               onError: (Object error) {
-                if (!_handleStreamClosed()) _appendSystemMessage('Gateway stream error');
+                if (!_handleStreamClosed()) {
+                  _appendSystemMessage('Gateway stream error');
+                }
               },
               onDone: () {
-                if (!_handleStreamClosed()) _setServerStatus('Gateway disconnected');
+                if (!_handleStreamClosed()) {
+                  _setServerStatus('Gateway disconnected');
+                }
               },
             );
       }
@@ -176,13 +180,12 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         configValues: configAdminState?.values ?? const {},
       );
       notifyListeners();
-      // Persist connection parameters so the app can reconnect automatically.
-      unawaited(
-        _sessionService.saveConnection(
-          baseUrl: baseUrl,
-          webSocketUrl: webSocketUrl,
-          gatewayId: status.gatewayId,
-        ),
+      // Persist connection parameters before returning so app restarts can
+      // reliably discover the gateway metadata needed for durable reconnect.
+      await _sessionService.saveConnection(
+        baseUrl: baseUrl,
+        webSocketUrl: webSocketUrl,
+        gatewayId: status.gatewayId,
       );
       if (!streamAvailable) {
         _appendSystemMessage(
@@ -890,7 +893,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     }
     if (meta.isExpired) {
       await _credentialStore.deleteCredential(gatewayId: gatewayId);
-      _appendSystemMessage('Saved credential expired. Pair again to reconnect.');
+      _appendSystemMessage(
+        'Saved credential expired. Pair again to reconnect.',
+      );
       return false;
     }
     try {
@@ -948,7 +953,10 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
     switch (reduction) {
       case IgnoreGatewayEvent():
         return;
-      case UpdateGatewayActiveSession(:final sessionId, :final profileContactKey):
+      case UpdateGatewayActiveSession(
+        :final sessionId,
+        :final profileContactKey,
+      ):
         _recordSession(
           sessionId: sessionId,
           profileContactKey: profileContactKey,
@@ -999,8 +1007,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
       _streamReconnectAttempts++;
       _appendSystemMessage('Connection lost. Reconnecting…');
       unawaited(
-        Future<void>.delayed(Duration(seconds: _streamReconnectAttempts * 2))
-            .then((_) => _tryReconnectStream(capturedClient)),
+        Future<void>.delayed(
+          Duration(seconds: _streamReconnectAttempts * 2),
+        ).then((_) => _tryReconnectStream(capturedClient)),
       );
       return true;
     }
@@ -1016,15 +1025,21 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
         return;
       }
       _socket = socket;
-      _events = capturedClient.decodeEvents(socket.events).listen(
-        _onEvent,
-        onError: (Object error) {
-          if (!_handleStreamClosed()) _appendSystemMessage('Gateway stream error');
-        },
-        onDone: () {
-          if (!_handleStreamClosed()) _setServerStatus('Gateway disconnected');
-        },
-      );
+      _events = capturedClient
+          .decodeEvents(socket.events)
+          .listen(
+            _onEvent,
+            onError: (Object error) {
+              if (!_handleStreamClosed()) {
+                _appendSystemMessage('Gateway stream error');
+              }
+            },
+            onDone: () {
+              if (!_handleStreamClosed()) {
+                _setServerStatus('Gateway disconnected');
+              }
+            },
+          );
       _streamReconnectAttempts = 0;
       _appendSystemMessage('Reconnected to gateway.');
     } catch (_) {
@@ -1032,8 +1047,9 @@ class GatewayNavivoxChannel extends ChangeNotifier implements NavivoxChannel {
           _streamReconnectAttempts < _maxStreamReconnectAttempts) {
         _streamReconnectAttempts++;
         unawaited(
-          Future<void>.delayed(Duration(seconds: _streamReconnectAttempts * 2))
-              .then((_) => _tryReconnectStream(capturedClient)),
+          Future<void>.delayed(
+            Duration(seconds: _streamReconnectAttempts * 2),
+          ).then((_) => _tryReconnectStream(capturedClient)),
         );
       } else if (identical(_client, capturedClient)) {
         // Stream reconnect exhausted — fall back to a full device-bearer

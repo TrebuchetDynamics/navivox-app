@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/channel/gateway_navivox_channel.dart';
 import 'package:navivox/core/channel/navivox_channel.dart';
+import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/core/protocol/navivox_event.dart';
 import 'package:navivox/core/protocol/navivox_voice_run.dart';
+import 'package:navivox/core/session/credentials/credential_store_provider.dart';
 import 'package:navivox/core/session/credentials/durable_credential_store.dart';
 import 'package:navivox/core/session/identity/app_install_identity_service.dart';
 import 'package:navivox/core/session/readiness/reconnect_readiness.dart';
@@ -256,13 +259,16 @@ void main() {
       final startA = frames.firstWhere(
         (frame) =>
             frame['type'] == 'start_turn' &&
-            (Map<String, Object?>.from(frame['metadata'] as Map)['profile_id']) ==
+            (Map<String, Object?>.from(
+                  frame['metadata'] as Map,
+                )['profile_id']) ==
                 'a',
       );
       expect(
         stopFrame['session_id'],
         'session-${startA['request_id']}',
-        reason: 'stop must target the active profile session, not the last '
+        reason:
+            'stop must target the active profile session, not the last '
             'session_started from another profile',
       );
     },
@@ -337,7 +343,9 @@ void main() {
       final startA = frames.firstWhere(
         (frame) =>
             frame['type'] == 'start_turn' &&
-            (Map<String, Object?>.from(frame['metadata'] as Map)['profile_id']) ==
+            (Map<String, Object?>.from(
+                  frame['metadata'] as Map,
+                )['profile_id']) ==
                 'a',
       );
       final sessionA = 'session-${startA['request_id']}';
@@ -361,9 +369,7 @@ void main() {
       channel.submitVoiceRun(voiceRunId);
       final voiceFrame = await voiceFuture.timeout(const Duration(seconds: 2));
 
-      final metadata = Map<String, Object?>.from(
-        voiceFrame['metadata'] as Map,
-      );
+      final metadata = Map<String, Object?>.from(voiceFrame['metadata'] as Map);
       expect(
         metadata['profile_id'],
         'a',
@@ -496,81 +502,134 @@ void main() {
     expect(texts, contains('Gateway is not connected.'));
   });
 
-  test('falls back to device-bearer reconnect when stream reconnect exhausts',
-      () async {
-    // SharedPreferences must be initialised so saveConnection() writes the
-    // session and loadSession() can read it back inside tryReconnect().
-    resetSessionPreferences();
+  test(
+    'falls back to device-bearer reconnect when stream reconnect exhausts',
+    () async {
+      // SharedPreferences must be initialised so saveConnection() writes the
+      // session and loadSession() can read it back inside tryReconnect().
+      resetSessionPreferences();
 
-    // The fake server issues this credential during the initial connect();
-    // the DurableReconnectIssuanceCoordinator saves it in the store.
-    const bearerToken = 'navivoxcred_test:nvbxdc_test_secret';
+      // The fake server issues this credential during the initial connect();
+      // the DurableReconnectIssuanceCoordinator saves it in the store.
+      const bearerToken = 'navivoxcred_test:nvbxdc_test_secret';
 
-    // Use a real in-memory store so the coordinator can persist the credential.
-    final store = _InMemoryCredentialStore();
+      // Use a real in-memory store so the coordinator can persist the credential.
+      final store = _InMemoryCredentialStore();
 
-    // maxStreamReconnectAttempts: 1 — exactly one stream-reconnect attempt
-    // fires (and fails because the pairing token is rejected after restart),
-    // then the channel falls through to tryReconnect() with the device-bearer.
-    final server = await _FakeGatewayServer.start();
-    addTearDown(server.close);
+      // maxStreamReconnectAttempts: 1 — exactly one stream-reconnect attempt
+      // fires (and fails because the pairing token is rejected after restart),
+      // then the channel falls through to tryReconnect() with the device-bearer.
+      final server = await _FakeGatewayServer.start();
+      addTearDown(server.close);
 
-    final channel = GatewayNavivoxChannel(
-      maxStreamReconnectAttempts: 1,
-      credentialStore: store,
-    );
-    addTearDown(channel.dispose);
+      final channel = GatewayNavivoxChannel(
+        maxStreamReconnectAttempts: 1,
+        credentialStore: store,
+      );
+      addTearDown(channel.dispose);
 
-    // connect() issues the device credential via the coordinator (awaited)
-    // and saves the session to SharedPreferences (unawaited, but completes
-    // within the same microtask queue before the 2-second reconnect delay).
-    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+      // connect() issues the device credential via the coordinator and
+      // persists the saved-session metadata before returning.
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
-    // Simulate gormes restart: reject the single-use pairing token (consumed
-    // in the old instance) and accept the device-bearer that was persisted on
-    // disk by the old instance.
-    server.rejectPairingToken = true;
-    server.extraTokens.add(bearerToken);
+      // Simulate gormes restart: reject the single-use pairing token (consumed
+      // in the old instance) and accept the device-bearer that was persisted on
+      // disk by the old instance.
+      server.rejectPairingToken = true;
+      server.extraTokens.add(bearerToken);
 
-    // Phase-tracking listener — avoids mistaking the pre-close 'Gateway online'
-    // for a post-reconnect one:
-    //   phase 0 → wait for 'Connection lost. Reconnecting…' system message
-    //   phase 1 → wait for 'Gateway online' status again (actual reconnect)
-    var phase = 0;
-    final reconnected = Completer<void>();
-    channel.addListener(() {
-      if (phase == 0) {
-        final hasLostMsg = channel.state.messagesList
-            .any((m) => (m.text ?? '').contains('Connection lost'));
-        if (hasLostMsg) phase = 1;
-      } else if (phase == 1 && !reconnected.isCompleted) {
-        // Wait for the second notifyListeners() (after the coordinator saves
-        // the credential), not just the first, so connect() is fully done
-        // before the test disposes the channel.
-        final status = channel.state.activeServer?.status ?? '';
-        final readiness = channel.state.reconnectReadiness;
-        if (status.contains('Gateway online') &&
-            readiness.kind == ReconnectReadinessKind.saved) {
+      // Phase-tracking listener — avoids mistaking the pre-close 'Gateway online'
+      // for a post-reconnect one:
+      //   phase 0 → wait for 'Connection lost. Reconnecting…' system message
+      //   phase 1 → wait for 'Gateway online' status again (actual reconnect)
+      var phase = 0;
+      final reconnected = Completer<void>();
+      channel.addListener(() {
+        if (phase == 0) {
+          final hasLostMsg = channel.state.messagesList.any(
+            (m) => (m.text ?? '').contains('Connection lost'),
+          );
+          if (hasLostMsg) phase = 1;
+        } else if (phase == 1 && !reconnected.isCompleted) {
+          // Wait for the second notifyListeners() (after the coordinator saves
+          // the credential), not just the first, so connect() is fully done
+          // before the test disposes the channel.
+          final status = channel.state.activeServer?.status ?? '';
+          final readiness = channel.state.reconnectReadiness;
+          if (status.contains('Gateway online') &&
+              readiness.kind == ReconnectReadinessKind.saved) {
+            reconnected.complete();
+          }
+        }
+      });
+
+      // Drop the server-side WebSocket — the HTTP server stays up just as gormes
+      // would after a process restart with the same port re-bound.
+      for (final socket in List.of(server.sockets)) {
+        await socket.close();
+      }
+
+      // The stream-reconnect attempt fires after 2 s (1 attempt × 2 s),
+      // then tryReconnect() runs — allow 8 s total.
+      await reconnected.future.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => fail('channel did not reconnect via device-bearer'),
+      );
+
+      expect(channel.state.activeServer?.status, contains('Gateway online'));
+    },
+  );
+
+  test(
+    'provider reconnects automatically from saved durable gateway',
+    () async {
+      resetSessionPreferences();
+      const bearerToken = 'navivoxcred_test:nvbxdc_test_secret';
+      final server = await _FakeGatewayServer.start();
+      addTearDown(server.close);
+
+      final sessionService = await initializedSessionPersistenceService();
+      await sessionService.saveConnection(
+        baseUrl: server.baseUrl,
+        gatewayId: 'gw_test_gateway',
+      );
+      final store = _InMemoryCredentialStore();
+      await store.saveCredential(
+        metadata: GatewayCredentialMetadata(
+          gatewayId: 'gw_test_gateway',
+          appInstallIdentity: 'install-under-test',
+          credentialLabel: 'navivoxcred_test',
+          createdAt: DateTime.utc(2026, 6, 1),
+        ),
+        secret: 'nvbxdc_test_secret',
+      );
+      server.rejectPairingToken = true;
+      server.extraTokens.add(bearerToken);
+
+      final container = ProviderContainer(
+        overrides: [durableCredentialStoreProvider.overrideWithValue(store)],
+      );
+      addTearDown(container.dispose);
+      final channel = container.read(gatewayNavivoxChannelProvider);
+
+      final reconnected = Completer<void>();
+      channel.addListener(() {
+        if (!reconnected.isCompleted &&
+            channel.state.hasServers &&
+            channel.state.reconnectReadiness.kind ==
+                ReconnectReadinessKind.saved) {
           reconnected.complete();
         }
-      }
-    });
+      });
 
-    // Drop the server-side WebSocket — the HTTP server stays up just as gormes
-    // would after a process restart with the same port re-bound.
-    for (final socket in List.of(server.sockets)) {
-      await socket.close();
-    }
-
-    // The stream-reconnect attempt fires after 2 s (1 attempt × 2 s),
-    // then tryReconnect() runs — allow 8 s total.
-    await reconnected.future.timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => fail('channel did not reconnect via device-bearer'),
-    );
-
-    expect(channel.state.activeServer?.status, contains('Gateway online'));
-  });
+      await reconnected.future.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => fail('provider did not reconnect saved gateway'),
+      );
+      expect(channel.state.activeServer?.status, contains('Gateway online'));
+      expect(server.profileContactsRequests, 1);
+    },
+  );
 
   test(
     'loads profile contacts from snapshot and applies gateway updates',
@@ -1181,29 +1240,32 @@ void main() {
     },
   );
 
-  test('connect stays session-only when the credential store cannot persist', () async {
-    final server = await _FakeGatewayServer.start();
-    addTearDown(server.close);
+  test(
+    'connect stays session-only when the credential store cannot persist',
+    () async {
+      final server = await _FakeGatewayServer.start();
+      addTearDown(server.close);
 
-    // Default no-op store: a credential is issued but never persisted, so
-    // readiness must not falsely claim "saved".
-    final channel = GatewayNavivoxChannel(
-      appInstallIdentity: _FixedInstallIdentity(),
-    );
-    addTearDown(channel.dispose);
+      // Default no-op store: a credential is issued but never persisted, so
+      // readiness must not falsely claim "saved".
+      final channel = GatewayNavivoxChannel(
+        appInstallIdentity: _FixedInstallIdentity(),
+      );
+      addTearDown(channel.dispose);
 
-    await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
+      await channel.connect(baseUrl: server.baseUrl, token: gatewayTestToken);
 
-    expect(server.deviceCredentialIssueRequests, 1);
-    expect(
-      channel.state.reconnectReadiness.kind,
-      ReconnectReadinessKind.available,
-    );
-    expect(
-      channel.state.reconnectReadiness.message,
-      'Connected for this session; reconnect not saved.',
-    );
-  });
+      expect(server.deviceCredentialIssueRequests, 1);
+      expect(
+        channel.state.reconnectReadiness.kind,
+        ReconnectReadinessKind.available,
+      );
+      expect(
+        channel.state.reconnectReadiness.message,
+        'Connected for this session; reconnect not saved.',
+      );
+    },
+  );
 }
 
 class _FixedInstallIdentity extends AppInstallIdentityService {
@@ -1220,8 +1282,9 @@ class _InMemoryCredentialStore implements DurableCredentialStore {
       _saved.containsKey(gatewayId);
 
   @override
-  Future<GatewayCredentialMetadata?> metadata({required String gatewayId}) async =>
-      _saved[gatewayId];
+  Future<GatewayCredentialMetadata?> metadata({
+    required String gatewayId,
+  }) async => _saved[gatewayId];
 
   @override
   Future<void> saveCredential({
@@ -1547,9 +1610,9 @@ class _FakeGatewayServer {
     // Also accept extra tokens sent via the WebSocket protocol sub-protocol
     // header (used by connectStream, which can't set Authorization headers).
     for (final token in extraTokens) {
-      final encoded =
-          base64Url.encode(utf8.encode(token)).replaceAll('=', '');
-      final protocols = request.headers['sec-websocket-protocol']
+      final encoded = base64Url.encode(utf8.encode(token)).replaceAll('=', '');
+      final protocols =
+          request.headers['sec-websocket-protocol']
               ?.expand((v) => v.split(','))
               .map((v) => v.trim()) ??
           const Iterable.empty();

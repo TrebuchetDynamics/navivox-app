@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../session/credentials/credential_store_provider.dart';
@@ -7,6 +9,7 @@ import '../gateway/gateway_navivox_channel.dart';
 final navivoxChannelProvider = Provider<NavivoxChannel>((ref) {
   final credentialStore = ref.watch(durableCredentialStoreProvider);
   final channel = GatewayNavivoxChannel(credentialStore: credentialStore);
+  channel.tryReconnect().ignore();
   ref.onDispose(channel.dispose);
   return channel;
 });

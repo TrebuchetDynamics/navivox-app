@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -114,7 +115,7 @@ class _MemoryReadinessOnlyBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      cacheExtent: 2400,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(2400),
       padding: const EdgeInsets.all(16),
       children: [
         _MemoryReadinessCard(
@@ -289,7 +290,7 @@ class _MemoryOverviewBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
-      cacheExtent: 2400,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(2400),
       padding: const EdgeInsets.all(16),
       children: [
         _MemoryReadinessCard(
