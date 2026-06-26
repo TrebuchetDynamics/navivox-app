@@ -1,6 +1,8 @@
 # Hermes Desktop Reference For Gormes-First Navivox
 
-Status: accepted reference direction
+Status: superseded for runtime direction by [ADR 0006](../adr/0006-hermes-agent-first-runtime.md) and [Hermes Agent interface plan](hermes-agent-interface-plan.md). Still useful as historical UX reference.
+
+Former status: accepted reference direction
 Reference: `fathah/hermes-desktop` cloned at `/tmp/hermes-desktop` during the 2026-06-03 planning session
 
 ## Decision

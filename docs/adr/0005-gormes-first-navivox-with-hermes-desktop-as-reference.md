@@ -1,5 +1,7 @@
 # Keep Navivox Gormes-first and use Hermes Desktop as reference
 
+Status: superseded by [ADR 0006 — Make Navivox Hermes Agent-first](0006-hermes-agent-first-runtime.md)
+
 Navivox remains the Flutter operator app for trusted Gormes gateways, Profile contacts, Pairing handoff, Run records, config-admin, and Goncho memory. We will study `fathah/hermes-desktop` for app shape and UX patterns such as chat-first navigation, profiles, sessions, models/providers, memory, tools, gateway, and settings, but Hermes Agent's `/health` and `/v1/chat/completions` protocol is not the near-term runtime target. This avoids splitting the product around two incompatible gateway contracts while still letting Hermes Desktop inform a better Gormes operator experience.
 
 ## Considered Options
