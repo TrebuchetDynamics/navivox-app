@@ -1,5 +1,13 @@
 # Navivox TODO
 
+[IN PROGRESS] Hermes Agent-first Navivox transition — 2026-06-25
+  problem: `main` must move from the preserved Gormes `/v1/navivox/*` runtime to direct Hermes Agent API server operation without leaking API keys or keeping the wrong Profile contact/Gateway domain model alive.
+  plan: follow `docs/product/hermes-agent-interface-plan.md` and `docs/adr/0006-hermes-agent-first-runtime.md`; first build `lib/core/hermes/` client/config/capability/SSE fixtures, then add `HermesNavivoxChannel`, convert setup to Hermes base URL + API key secure storage, hide unsupported Gormes-era surfaces, rename chat/session UI, and finally remove Gormes-only mainline paths after Hermes tests are green.
+  progress (2026-06-25): added the first Hermes API fixture slice with URL/header normalization, typed health/capabilities/session/message models, `HermesTransportPolicy`, and a pure Dart Hermes SSE decoder that preserves multiline data, handles `[DONE]`/`done`, and skips malformed JSON stream events.
+  validation: `flutter analyze`; `flutter test test/core/hermes/hermes_api_test.dart`; `npm test`; `git diff --check`.
+  owner: Navivox app owner / Hermes Agent API owner
+  next check: implement `HermesNavivoxChannel implements NavivoxChannel` behind the existing provider seam and keep old Gormes branch recoverability intact.
+
 [RESOLVED] Navivox-side Termux-to-Navivox pairing handoff without camera — 2026-05-24
   resolved: 2026-05-24
   result: Android now accepts `navivox://connect?...` VIEW intents and text/plain ACTION_SEND payloads, forwards initial and foreground intents into Flutter, fills the setup form through existing connect-info parsing, preserves explicit `websocket_url`, and keeps tokens out of notices/logging. Gormes still needs the Termux `am start ...` command-side launcher.

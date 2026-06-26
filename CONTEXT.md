@@ -1,20 +1,32 @@
 # Navivox Context
 
-Navivox is the operator-facing Flutter app for talking to trusted local or self-hosted Gormes profiles. This context keeps product language stable while architecture work deepens modules around the connect-and-talk loop.
+Navivox is transitioning on `main` into the operator-facing Flutter companion app for trusted local or self-hosted Hermes Agent sessions. The preserved Gormes-first app state lives on the `gormes` branch; this context keeps new Hermes product language stable while architecture work deepens modules around the connect-and-talk loop.
 
 ## Language
 
 **Navivox**:
-The Flutter operator app that connects to a Gormes gateway and presents profile chat, voice input, tool activity, and safe config flows.
+The Flutter operator app that connects to a Hermes Agent API server and presents session chat, local voice input, tool activity, approvals, and safe connection/config status.
 _Avoid_: generic chat client, server admin panel
 
-**Gormes gateway**:
-The server-side Navivox endpoint that owns agents, sessions, tools, config, secrets, provider execution, and the HTTP/WebSocket event stream.
-_Avoid_: backend, remote shell
+**Hermes endpoint**:
+The trusted local, LAN, VPN, or self-hosted Hermes Agent API server Navivox talks to directly over HTTP/SSE.
+_Avoid_: Gormes gateway, backend, remote shell
+
+**Hermes session**:
+A durable Hermes Agent conversation returned by `/api/sessions` and used as the main chat lane in Navivox.
+_Avoid_: Profile contact, thread, agent account
+
+**Hermes API key**:
+The bearer secret for a Hermes endpoint when `API_SERVER_KEY` is configured. Navivox stores it only in secure storage and never in shared preferences, logs, routes, notices, or transcript state.
+_Avoid_: pairing token, durable reconnect credential, saved token
 
 **Hermes Desktop reference**:
-The upstream Hermes Desktop app used as product and UX inspiration for Navivox surfaces. It is not the current Navivox runtime, gateway protocol, or source of Gormes domain terms.
-_Avoid_: Hermes runtime target, Hermes gateway migration, replacing Gormes
+The upstream Hermes Desktop app used as product and UX inspiration for Navivox surfaces and transport-gating behavior. It is reference material, not the source of mobile product scope; Hermes Agent's API server is the runtime target.
+_Avoid_: copying Electron install/update mechanics, preserving Gormes terms
+
+**Gormes gateway**:
+Legacy preserved-branch runtime term for the old `/v1/navivox/*` gateway. Do not introduce new mainline product work around this boundary unless explicitly maintaining the `gormes` branch.
+_Avoid_: using as a synonym for Hermes endpoint
 
 **Pairing handoff**:
 The first-run transfer of Gormes gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway.
@@ -122,10 +134,11 @@ _Avoid_: message id, row id, guessed run id
 
 ## Relationships
 
-- **Navivox** connects to one or more **Gormes gateways**.
-- Operator-facing gateway management surfaces should label these endpoints as gateways, not servers.
-- **Gateway status** keeps active app-session state, gateway-reported status, and **Profile contact** counts visible, but must not invent base URL, auth, exposure, stream health, credential, or local trust facts until gateway metadata exists.
-- A **Hermes Desktop reference** may inform Navivox app shape, but does not change the **Gormes gateway** runtime boundary.
+- **Navivox** connects to one trusted **Hermes endpoint** for the first Hermes MVP; multi-endpoint management can follow later.
+- Operator-facing connection surfaces should label the target as a Hermes endpoint or Hermes Agent server, not a Gormes gateway.
+- **Hermes sessions** are the main conversation list and replace Profile contacts in new product language.
+- **Hermes API keys** are secret connection credentials and must stay out of shared preferences, logs, routes, notices, transcript state, and screenshots.
+- A **Hermes Desktop reference** may inform Navivox app shape and transport-gating behavior, but Navivox should not copy Electron install/update mechanics or old Gormes domain terms.
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - **Pairing readiness** belongs to the setup and pairing surfaces; a ready or connected **Pairing readiness** state does not imply durable reconnect is available.
