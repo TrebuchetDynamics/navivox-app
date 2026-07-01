@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/router/app_router.dart';
+import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
 import '../features/servers/setup/shared/setup_screen_test_contracts.dart';
@@ -24,6 +26,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(
@@ -63,6 +66,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openLegacySetup(tester);
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
     expect(find.textContaining('gormes navivox pair'), findsWidgets);
@@ -102,6 +106,13 @@ void main() {
     expect(find.text('hello from gateway'), findsOneWidget);
     expect(_caseInsensitiveText('telephony'), findsNothing);
   });
+}
+
+Future<void> _openLegacySetup(WidgetTester tester) async {
+  GoRouter.of(
+    tester.element(find.text('Connect to Hermes Agent')),
+  ).go(AppRoutes.setup);
+  await tester.pumpAndSettle();
 }
 
 Finder _connectAndTalkButton() {

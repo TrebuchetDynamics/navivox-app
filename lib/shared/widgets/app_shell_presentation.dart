@@ -21,7 +21,7 @@ class AppShellPresentation {
 
   String get drawerHeaderTitle => 'Navivox';
 
-  String get drawerHeaderSubtitle => 'Gormes operator console';
+  String get drawerHeaderSubtitle => 'Hermes Agent mobile console';
 
   AppShellNavigationState stateForLocation(String location) {
     final selectedIndex = destinations.indexWhere(
@@ -83,6 +83,11 @@ class AppShellDestination {
   final String label;
 }
 
+const _hermesDestination = AppShellDestination(
+  path: AppRoutes.hermes,
+  icon: Icons.auto_awesome_outlined,
+  label: 'Hermes',
+);
 const _chatsDestination = AppShellDestination(
   path: AppRoutes.chats,
   icon: Icons.chat_bubble_outlined,
@@ -115,6 +120,7 @@ const _settingsDestination = AppShellDestination(
 );
 
 const _destinations = [
+  _hermesDestination,
   _chatsDestination,
   _serversDestination,
   _agentsDestination,
@@ -124,10 +130,14 @@ const _destinations = [
 ];
 
 const _mobileNavigationDestinations = [
+  _hermesDestination,
   _chatsDestination,
   _agentsDestination,
-  _memoryDestination,
   _settingsDestination,
 ];
 
-const _mobileOverflowDestinations = [_serversDestination, _configDestination];
+const _mobileOverflowDestinations = [
+  _serversDestination,
+  _memoryDestination,
+  _configDestination,
+];

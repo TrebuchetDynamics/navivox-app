@@ -10,6 +10,7 @@ import '../presentation/profile_contact_list_presentation.dart';
 import '../presentation/profile_contact_presentation.dart';
 import '../../profiles/widgets/profile_seed_sheet.dart';
 import '../actions/profile_contacts_action_coordinator.dart';
+import '../../../shared/widgets/gormes_legacy_notice.dart';
 
 const _profileContactsPresentation = ProfileContactsScreenPresentation();
 
@@ -130,6 +131,7 @@ class _ProfileContactsScreenState extends ConsumerState<ProfileContactsScreen> {
       ),
       body: Column(
         children: [
+          const GormesLegacyNotice(),
           _ProfileSearchBar(
             controller: _searchController,
             focusNode: _searchFocusNode,

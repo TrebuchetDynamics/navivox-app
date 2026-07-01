@@ -1,7 +1,7 @@
 {
   "name": "navivox-app",
   "version": "1.0.0",
-  "description": "**Private voice/chat for your own Gormes agents.**",
+  "description": "Hermes Agent companion UI with local continuous voice.",
   "main": "index.js",
   "directories": {
     "doc": "docs",

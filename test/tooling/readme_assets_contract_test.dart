@@ -25,37 +25,24 @@ void main() {
     expect(readme, contains('Android emulator'));
     expect(readme, contains('10.0.2.2'));
     expect(readme, contains('physical Android device'));
+    expect(readme, contains('Hermes endpoint URL hints'));
+    expect(readme, contains('http://127.0.0.1:8642'));
+    expect(readme, contains('http://10.0.2.2:8642'));
+    expect(readme, contains('## Connected Hermes Smoke Test'));
+    expect(readme, contains('GET /health'));
+    expect(readme, contains('GET /v1/capabilities'));
+    expect(readme, contains('POST /api/sessions/{session_id}/chat/stream'));
+    expect(readme, contains('docs/runbooks/termux/gormes-bootstrap.md'));
     expect(
       readme,
-      contains('Install Termux, paste one command, then continue in Navivox.'),
-    );
-    expect(readme, contains('Recommended setup path: `gormes navivox pair`'));
-    expect(
-      readme,
-      contains(
-        'start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection',
-      ),
-    );
-    expect(
-      readme,
-      contains('`gormes navivox connect-info` remains the fallback'),
-    );
-    expect(readme, contains('## Connected Smoke Test'));
-    expect(readme, contains('GET /healthz'));
-    expect(readme, contains('GET /v1/navivox/status'));
-    expect(
-      readme,
-      contains('Do not paste tokens into issues, logs, or screenshots.'),
+      contains('Do not expose API keys, pairing tokens, raw tool payloads'),
     );
     expect(readme, contains('## Troubleshooting'));
     expect(readme, contains('flutter doctor'));
     expect(readme, contains('No supported devices found'));
-    expect(readme, contains('Connection refused'));
+    expect(readme, contains('libsecret-1'));
     expect(readme, contains('`401` or `403`'));
-    expect(
-      readme,
-      contains('Do not delete source files while clearing generated state.'),
-    );
+    expect(readme, contains('API key'));
     expect(readme, isNot(contains('cd app')));
     expect(readme, contains('## Screenshots'));
     expect(readme, contains('![Setup screen](docs/screenshots/setup.png)'));

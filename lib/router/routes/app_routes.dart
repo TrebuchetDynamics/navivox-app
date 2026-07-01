@@ -41,6 +41,13 @@ abstract final class AppRoutes {
     );
   }
 
+  static bool isHermesLocation(String location) {
+    return AppRouteLocationPattern.hasPathPrefix(
+      location: location,
+      pathPrefix: hermes,
+    );
+  }
+
   static bool isChatThreadLocation(String location) {
     return AppRouteLocationPattern.hasExactPathSegments(
       location: location,

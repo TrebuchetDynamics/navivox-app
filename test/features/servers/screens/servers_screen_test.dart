@@ -56,6 +56,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Gateways'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('gormes-legacy-notice')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('server-card-local')), findsOneWidget);
       expect(find.byKey(const ValueKey('server-card-office')), findsOneWidget);
       expect(find.text('2 profiles'), findsOneWidget);

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../router/app_routes.dart';
+import '../../../shared/widgets/gormes_legacy_notice.dart';
 import '../../../shared/widgets/profile_contact_avatar.dart';
 import '../actions/gateway_management_action_coordinator.dart';
 import '../overview/servers_screen_presentation.dart';
@@ -46,7 +47,10 @@ class ServersScreen extends ConsumerWidget {
     final presentation = ServersScreenPresentation.fromState(state);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Gateways')),
+      appBar: AppBar(
+        title: const Text('Gateways'),
+        bottom: const GormesLegacyNotice(),
+      ),
       body: !presentation.hasGateways
           ? const Center(child: Text('No gateways registered'))
           : ListView.separated(

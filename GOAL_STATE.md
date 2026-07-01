@@ -25,8 +25,8 @@ input) as the reference. See ADR 0007.
 ## Verified gate (2026-07-01)
 
 - Navivox: `flutter analyze` — no issues; `flutter test --concurrency=1` —
-  **976 tests pass** (up from 927 on 2026-06-17; +49 new Hermes tests across
-  the slices below).
+  **986 tests pass** (up from 927 on 2026-06-17; +59 new Hermes/platform tests
+  across the slices below).
 - A real `flutter run -d web-server` build (not just `flutter analyze`) was
   used to verify the Hermes web transport; see honest caveat below for what
   it did and did not confirm.
@@ -87,45 +87,118 @@ input) as the reference. See ADR 0007.
    `decision` field). `respondToApproval` on both `HermesChannel` and
    `HermesApiChannel` takes the enum instead of a boolean `approved` flag;
    `HermesChatScreen`'s approval banner now offers all four choices.
+9. **Rich tool-progress cards** — `HermesToolCall` (name/status/preview/
+   result) + a `HermesTurnKind` (`text`/`toolCall`) on `HermesChatTurn`.
+   `HermesApiChannel` tracks each tool invocation by a `${runId}:${toolName}`
+   call id (matching hermes-desktop's `chatToolEventFromRunEvent`
+   synthesis — Hermes run events have no guaranteed-stable per-call id) so
+   `tool.started`/`completed`/`failed` update one turn in place instead of
+   duplicating it. `HermesChatScreen` renders these as a status card instead
+   of plain text.
+10. **Hermes nav-bar entry** — per owner decision, `/hermes` is now a
+   first-class `AppShellDestination` in the desktop rail and mobile bottom
+   nav (Memory moved to mobile overflow to keep the primary row compact).
+   Explicit `/hermes` navigation is not redirected away just because no Gormes
+   server is configured.
+11. **Cross-platform endpoint hints** — the Hermes connect form now surfaces
+   platform-specific base URL examples inline: local desktop/Linux/Windows/iOS
+   simulator (`127.0.0.1`), Android emulator (`10.0.2.2`), and physical
+   device LAN/VPN/Tailscale URL.
+12. **Capability status strip** — connected Hermes chats now show a bounded
+   capability summary sourced from `/v1/capabilities`: model, whether full
+   run/tool-progress transport is enabled (or session-chat fallback), and the
+   local-device voice boundary when Hermes realtime voice is not advertised.
+13. **Real browser Hermes route smoke** — added Playwright smoke coverage for
+   the Flutter web e2e bundle that opens `/#/hermes` in Chromium and verifies
+   both the disconnected connect form/cross-platform endpoint hints and a
+   connected Hermes session against the local e2e HTTP/SSE Hermes fake served
+   by `serve_web.mjs`, covering the real web `HermesApiChannel` transport,
+   capability strip, text exchange, approval prompt/response UI, stop control
+   hitting `/v1/runs/{run_id}/stop`, streamed tool progress card,
+   new-session creation, and the device-voice-transcript lifecycle rendering
+   as a Hermes text turn in a real browser accessibility tree.
+14. **Gormes screen deprecation notices** — a reusable `GormesLegacyNotice`
+   banner ("This is a legacy Gormes screen. Navivox is moving to Hermes
+   Agent." + an "Open Hermes" action) is wired into the Gormes-era top-level
+   surfaces: `ProfileContactsScreen` (Chats), `ServersScreen`, `AgentsScreen`,
+   `MemoryDashboardScreen`, and `ConfigScreen`. Purely additive — no Gormes
+   functionality removed.
+15. **Platform scaffolds + smoke runbook/build receipts** — added generated
+   iOS and Windows platform folders (no overwrite of existing Android/web/
+   Linux code) plus iOS microphone/speech-recognition usage descriptions for
+   continuous voice, covered by `test/platform/platform_scaffold_test.dart`.
+   Added `docs/runbooks/hermes-platform-smoke.md`. Current build gates: web
+   e2e build passes; Android debug APK builds; Linux desktop build is blocked
+   in this container by missing `libsecret-1>=0.18.4` for
+   `flutter_secure_storage_linux`; Windows/iOS require host-platform runners.
+16. **Host platform smoke runbook** — documented the unavailable-host gates:
+   Ubuntu analyze/tests/web e2e build/Hermes browser smoke/Android debug APK/
+   Linux release build with `libsecret-1-dev`, plus Windows desktop and iOS
+   simulator builds on their own host runners. A GitHub Actions workflow draft
+   was prepared but not shipped because the current push credential lacks
+   GitHub `workflow` scope; host CI remains an owner follow-up.
+17. **Hermes-first startup and README refresh** — fresh no-Gormes-server
+   startup now lands at `AppRoutes.hermes` instead of the legacy Gormes
+   setup path, using `AppRoutes.isHermesLocation()` so query/deep links do not
+   fall through to legacy setup. Seeded legacy Gormes sessions still start at
+   Chats for transition tests/users, and legacy setup remains available
+   explicitly at `/setup`. `README.md`, `pubspec.yaml`, and `package.json` now
+   describe the Hermes Agent companion app instead of saying Hermes Desktop is
+   not the runtime target.
+18. **`flutter build linux` unblocked without root** — this container has no
+   passwordless `sudo`, so the missing `libsecret-1-dev`/`libgcrypt20-dev`/
+   `libgpg-error-dev` (required by `flutter_secure_storage_linux`) couldn't be
+   `apt-get install`ed system-wide. Worked around with `apt-get download`
+   (no root needed) + `dpkg -x` into a local prefix, a rewritten `.pc` search
+   path, and fixing the dev package's dangling `libsecret-1.so` symlink to
+   point at the already-installed runtime `.so.0`. `ldd` confirms the built
+   binary and plugin `.so` link the real system library at runtime — the
+   local prefix is build-time-only. Full recipe in
+   `docs/runbooks/hermes-platform-smoke.md`.
 
 ## Remaining work
 
-- Rich tool-progress cards (today tool events render as a plain system-text
-  turn, not a dedicated tool-call/artifact model like the Gormes
-  `NavivoxToolCall`).
-- A real browser or Android smoke test of `HermesChatScreen` — every Hermes
-  slice so far has been fixture/widget-tested plus one real (non-headless
-  behavior) `flutter run -d web-server` compile pass, but never actually
-  opened in a browser (Chrome automation has been unavailable in this
-  environment throughout) or run against a live Hermes Agent API server.
+- A live-browser smoke of `HermesChatScreen` against a real Hermes Agent API
+  server — browser rendering of disconnected and connected Hermes UI is now
+  covered, but live connect/stream/tool/approval behavior still uses the local
+  e2e HTTP/SSE fake or unit/widget fixtures.
 - Android live smoke once a responsive Android target is available (same
   standing blocker as before): connect from emulator (`10.0.2.2:8642`) and
   physical device, verify continuous voice end-to-end against a live Hermes
   Agent API server.
-- Nav-bar entry for `/hermes` (or flipping the app's default route to Hermes)
-  is a deliberate later decision, not done here — see ADR 0007 delivery-slice
-  note about setup-flow conversion coming before chat/session UI "rename."
+- Windows and iOS/macOS host-platform builds/smokes still need their own
+  runners (Linux is now unblocked locally, see slice 18). Host CI workflow
+  publishing still needs a credential with GitHub `workflow` scope.
 
 ## Honest caveat
 
-`HermesApiChannel` and `HermesChatScreen` have been exercised against
-fixture-driven fake HTTP/SSE transports and widget tests only, never a real
-Hermes Agent API server. `HermesChatScreen` compiles and serves under a real
-`flutter run -d web-server` build (this caught the JS-interop bug above) but
-was not opened in an actual browser tab to eyeball rendering, since Chrome
-browser automation was unavailable in this session. The concrete
-`SecureHermesEndpointStore` has no dedicated test, matching the existing
-convention for `SecureStorageDurableCredentialStore` (also untested
-directly) — both are thin platform-plugin glue exercised through
-higher-level tests instead.
+`HermesApiChannel` and connected `HermesChatScreen` behavior have been
+exercised against fixture-driven fake HTTP/SSE transports and widget tests
+only, never a real Hermes Agent API server. `HermesChatScreen` compiles and
+serves under a real Flutter web build (the earlier `flutter run -d web-server`
+pass caught the JS-interop bug above), and the disconnected `/hermes` connect
+form and connected Hermes session against the local e2e HTTP/SSE fake
+(including approval prompt/response UI, stop control, streamed tool progress,
+new session creation, and a device voice transcript submitted as a Hermes text
+turn through the real web transport) now have Chromium Playwright smoke
+coverage against the e2e web bundle. The concrete `SecureHermesEndpointStore`
+has no dedicated test, matching the existing convention for
+`SecureStorageDurableCredentialStore` (also untested directly) — both are thin
+platform-plugin glue exercised through higher-level tests instead.
 
 ## Loose ends
 
 None outstanding for these slices: ADR 0007, the streaming client, the
 native channel, the Hermes chat/session UI, setup-flow secure storage,
-`/v1/runs` transport, and the full approval-decision set are all merged and
-green. The next goal should either build rich tool-progress cards or get a
-real browser/Android smoke test in front of `HermesChatScreen`.
+`/v1/runs` transport, the full approval-decision set, rich tool-progress
+cards, the Hermes nav-bar entry, cross-platform endpoint hints, the capability
+status strip, the real-browser Hermes e2e smoke, Gormes deprecation notices,
+the iOS/Windows scaffolds plus platform smoke runbook/build receipts, the
+host-platform smoke runbook, Hermes-first startup, and README/package metadata
+refresh are implemented and green locally where the platform is available.
+The next goal should get a live Hermes Agent/API browser or Android smoke in
+front of `HermesChatScreen`, or continue deeper conversion/hiding of remaining
+Gormes-era internals.
 
 ---
 

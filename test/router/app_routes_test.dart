@@ -33,6 +33,10 @@ void main() {
     expect(AppRoutes.isSetupLocation('/setup/import'), isTrue);
     expect(AppRoutes.isSetupLocation('/setup?invite=abc#qr'), isTrue);
     expect(AppRoutes.isSetupLocation('/settings'), isFalse);
+    expect(AppRoutes.isHermesLocation('/hermes'), isTrue);
+    expect(AppRoutes.isHermesLocation('/hermes?from=shortcut'), isTrue);
+    expect(AppRoutes.isHermesLocation('/hermes/session'), isTrue);
+    expect(AppRoutes.isHermesLocation('/hermesish'), isFalse);
 
     expect(
       AppRoutes.isChatThreadLocation(

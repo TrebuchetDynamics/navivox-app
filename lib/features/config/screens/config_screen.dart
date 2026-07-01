@@ -7,6 +7,7 @@ import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/gateway/navivox_gateway_protocol.dart';
 import '../../../router/app_routes.dart';
 import '../../../shared/presentation/profile_contact_scope_presentation.dart';
+import '../../../shared/widgets/gormes_legacy_notice.dart';
 import '../../profiles/widgets/profile_voice_profile_card.dart';
 import '../actions/config_admin_apply_coordinator.dart';
 import '../apply/config_apply_dispatcher.dart';
@@ -238,6 +239,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
               ),
             if (_lastConfigAdminApply != null)
               _ConfigAdminApplyResultCard(result: _lastConfigAdminApply!),
+            const GormesLegacyNotice(),
           ],
         ),
       ),

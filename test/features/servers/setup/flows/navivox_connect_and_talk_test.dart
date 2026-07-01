@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:navivox/features/servers/setup/navivox_connect_intent_source.dart';
 import 'package:navivox/features/servers/screens/setup_screen.dart';
+import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
 import '../../../shared/app/test_material_app.dart';
@@ -20,6 +22,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     expect(find.text('Connect to Gormes'), findsOneWidget);
     expect(find.text('Pairing readiness'), findsNothing);
@@ -68,6 +71,7 @@ void main() {
 
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
+      await openLegacySetup(tester);
 
       // Primary control always visible.
       expect(find.bySemanticsLabel(setupImportQrLabel), findsOneWidget);
@@ -90,6 +94,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
@@ -110,6 +115,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
@@ -128,6 +134,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(setupUrlField(), 'http://127.0.0.1:7319');
@@ -146,6 +153,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(setupUrlField(), '  http://127.0.0.1:8765  ');
@@ -420,6 +428,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await expandManualEntry(tester);
     await tester.enterText(setupUrlField(), 'ftp://example.com');
@@ -440,6 +449,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await tester.ensureVisible(find.text('Need setup help?'));
     await tester.tap(find.text('Need setup help?'));
@@ -471,6 +481,7 @@ void main() {
 
     await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
     await tester.pumpAndSettle();
+    await openLegacySetup(tester);
 
     await tester.ensureVisible(find.text('Need setup help?'));
     await tester.tap(find.text('Need setup help?'));
@@ -524,6 +535,7 @@ void main() {
 
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
+      await openLegacySetup(tester);
 
       await tester.ensureVisible(find.text('Need setup help?'));
       await tester.tap(find.text('Need setup help?'));
@@ -566,6 +578,7 @@ void main() {
 
       await tester.pumpWidget(TestNavivoxRouterApp(channel: channel));
       await tester.pumpAndSettle();
+      await openLegacySetup(tester);
 
       await expandManualEntry(tester);
       await tester.enterText(setupUrlField(), 'http://127.0.0.1:8765');
@@ -621,4 +634,11 @@ class _FakeConnectIntentSource extends NavivoxConnectIntentSource {
 
   @override
   Stream<SetupQrImageImport> get imports => _imports;
+}
+
+Future<void> openLegacySetup(WidgetTester tester) async {
+  GoRouter.of(
+    tester.element(find.text('Connect to Hermes Agent')),
+  ).go(AppRoutes.setup);
+  await tester.pumpAndSettle();
 }

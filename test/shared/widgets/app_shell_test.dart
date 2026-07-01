@@ -37,12 +37,13 @@ void main() {
       expect(find.text('Contact list'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byTooltip('Open navigation menu'), findsNothing);
+      expect(find.text('Hermes'), findsOneWidget);
       expect(find.text('Chats'), findsOneWidget);
       expect(find.text('Profiles'), findsOneWidget);
-      expect(find.text('Memory'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('More'), findsOneWidget);
       expect(find.text('Gateways'), findsNothing);
+      expect(find.text('Memory'), findsNothing);
     });
   });
 
@@ -63,7 +64,7 @@ void main() {
 
       expect(navigationBar.height, 68);
       expect(navigationBar.elevation, 0);
-      expect(navigationBar.selectedIndex, 0);
+      expect(navigationBar.selectedIndex, 1);
     });
   });
 
@@ -82,6 +83,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Gateways'), findsOneWidget);
+      expect(find.text('Memory'), findsOneWidget);
       expect(find.text('Config'), findsOneWidget);
       expect(find.byType(Drawer), findsNothing);
     });

@@ -12,6 +12,7 @@ void main() {
       final destinations = presentation.destinations;
 
       expect(destinations.map((destination) => destination.path), [
+        AppRoutes.hermes,
         AppRoutes.chats,
         AppRoutes.servers,
         AppRoutes.agents,
@@ -20,6 +21,7 @@ void main() {
         AppRoutes.settings,
       ]);
       expect(destinations.map((destination) => destination.label), [
+        'Hermes',
         'Chats',
         'Gateways',
         'Profiles',
@@ -27,23 +29,24 @@ void main() {
         'Config',
         'Settings',
       ]);
-      expect(destinations.first.icon, Icons.chat_bubble_outlined);
-      expect(destinations[2].icon, Icons.people_alt_outlined);
+      expect(destinations.first.icon, Icons.auto_awesome_outlined);
+      expect(destinations[3].icon, Icons.people_alt_outlined);
       expect(destinations.last.icon, Icons.keyboard_voice_outlined);
       expect(presentation.mobileNavigationDestinations.map((d) => d.label), [
+        'Hermes',
         'Chats',
         'Profiles',
-        'Memory',
         'Settings',
       ]);
       expect(presentation.mobileOverflowDestinations.map((d) => d.label), [
         'Gateways',
+        'Memory',
         'Config',
       ]);
     },
   );
 
-  test('selects destination by location with Chats as safe fallback', () {
+  test('selects destination by location with Hermes as safe fallback', () {
     expect(
       presentation.stateForLocation(AppRoutes.memory).selectedDestination.label,
       'Memory',
@@ -56,8 +59,12 @@ void main() {
       'Config',
     );
     expect(
+      presentation.stateForLocation(AppRoutes.hermes).selectedDestination.label,
+      'Hermes',
+    );
+    expect(
       presentation.stateForLocation('/unknown').selectedDestination.label,
-      'Chats',
+      'Hermes',
     );
   });
 
@@ -97,7 +104,11 @@ void main() {
     );
     expect(
       presentation.stateForLocation(AppRoutes.memory).selectedMobileIndex,
-      2,
+      4,
+    );
+    expect(
+      presentation.stateForLocation(AppRoutes.hermes).selectedMobileIndex,
+      0,
     );
   });
 }

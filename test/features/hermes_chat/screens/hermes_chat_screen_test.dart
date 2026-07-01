@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/hermes/channel/hermes_channel.dart';
+import 'package:navivox/core/hermes/models/hermes_capabilities.dart';
 import 'package:navivox/core/hermes/models/hermes_chat_turn.dart';
 import 'package:navivox/core/hermes/setup/hermes_endpoint_store.dart';
 import 'package:navivox/features/hermes_chat/providers/hermes_channel_provider.dart';
@@ -42,6 +43,14 @@ void main() {
         find.byKey(const ValueKey('hermes-connect-button')),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('Android emulator: http://10.0.2.2:8642'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Physical device: LAN/VPN/Tailscale URL'),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('hermes-transcript')), findsNothing);
 
       await tester.enterText(
@@ -76,6 +85,22 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'shows connected Hermes capability status and local voice boundary',
+    (tester) async {
+      final channel = FakeHermesChannel(capabilities: _capabilitiesFixture);
+      await tester.pumpWidget(_wrap(channel));
+
+      expect(
+        find.byKey(const ValueKey('hermes-capability-strip')),
+        findsOneWidget,
+      );
+      expect(find.text('Hermes Agent hermes-agent'), findsOneWidget);
+      expect(find.text('Runs/tool progress enabled'), findsOneWidget);
+      expect(find.text('Voice uses device speech-to-text'), findsOneWidget);
+    },
+  );
 
   testWidgets('sending composer text appends the turn and clears the field', (
     tester,
@@ -338,3 +363,43 @@ class _FailingConnectHermesChannel extends FakeHermesChannel {
     // Connecting fails; state stays disconnected/error rather than connected.
   }
 }
+
+const _capabilitiesFixture = HermesCapabilityDocument(
+  object: 'hermes.api_server.capabilities',
+  platform: 'hermes-agent',
+  model: 'hermes-agent',
+  auth: HermesAuthCapability(type: 'bearer', required: true),
+  features: {
+    'session_chat_streaming': true,
+    'run_submission': true,
+    'run_status': true,
+    'run_events_sse': true,
+    'run_stop': true,
+    'run_approval_response': true,
+    'tool_progress_events': true,
+    'realtime_voice': false,
+  },
+  endpoints: {
+    'session_chat_stream': HermesEndpointCapability(
+      method: 'POST',
+      path: '/api/sessions/{session_id}/chat/stream',
+    ),
+    'runs': HermesEndpointCapability(method: 'POST', path: '/v1/runs'),
+    'run_status': HermesEndpointCapability(
+      method: 'GET',
+      path: '/v1/runs/{run_id}',
+    ),
+    'run_events': HermesEndpointCapability(
+      method: 'GET',
+      path: '/v1/runs/{run_id}/events',
+    ),
+    'run_approval': HermesEndpointCapability(
+      method: 'POST',
+      path: '/v1/runs/{run_id}/approval',
+    ),
+    'run_stop': HermesEndpointCapability(
+      method: 'POST',
+      path: '/v1/runs/{run_id}/stop',
+    ),
+  },
+);

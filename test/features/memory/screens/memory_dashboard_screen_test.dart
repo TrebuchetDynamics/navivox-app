@@ -36,6 +36,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(
+        find.byKey(const ValueKey('gormes-legacy-notice')),
+        findsOneWidget,
+      );
       expect(find.text('Memory readiness'), findsOneWidget);
       expect(find.text('Memory degraded'), findsWidgets);
       expect(

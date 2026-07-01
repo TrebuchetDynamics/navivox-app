@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:navivox/core/hermes/channel/hermes_channel.dart';
+import 'package:navivox/core/hermes/models/hermes_capabilities.dart';
 import 'package:navivox/core/hermes/models/hermes_chat_turn.dart';
 import 'package:navivox/core/hermes/models/hermes_session.dart';
 import 'package:navivox/core/protocol/voice/models/navivox_voice_run.dart';
@@ -23,9 +24,11 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     HermesConnectionStatus status = HermesConnectionStatus.connected,
     String sessionId = 'sess_1',
     String? errorMessage,
+    HermesCapabilityDocument? capabilities,
   }) : _state = status == HermesConnectionStatus.connected
            ? HermesChannelState(
                status: status,
+               capabilities: capabilities,
                sessions: [HermesSession(id: sessionId, source: 'fake')],
                activeSessionId: sessionId,
                messages: {sessionId: const []},

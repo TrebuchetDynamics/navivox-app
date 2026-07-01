@@ -1,5 +1,5 @@
 name: navivox
-description: Flutter shell for the Navivox local protocol UI.
+description: Flutter Hermes Agent companion UI with local continuous voice.
 publish_to: "none"
 version: 0.1.0+1
 

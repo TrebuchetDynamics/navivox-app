@@ -8,6 +8,7 @@ import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../core/protocol/navivox_memory.dart';
 import '../../../router/app_routes.dart';
 import '../../../shared/presentation/profile_contact_scope_presentation.dart';
+import '../../../shared/widgets/gormes_legacy_notice.dart';
 import '../actions/memory_dashboard_action_coordinator.dart';
 import '../presentation/memory_dashboard_presentation.dart';
 
@@ -41,7 +42,10 @@ class MemoryDashboardScreen extends ConsumerWidget {
     final overview = ref.watch(memoryOverviewProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_memoryPresentation.title)),
+      appBar: AppBar(
+        title: Text(_memoryPresentation.title),
+        bottom: const GormesLegacyNotice(),
+      ),
       body: overview.when(
         loading: () => _MemoryReadinessOnlyBody(
           scope: scope,

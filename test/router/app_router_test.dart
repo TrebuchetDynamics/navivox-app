@@ -13,16 +13,49 @@ import '../features/servers/setup/shared/setup_screen_test_contracts.dart';
 import '../support/test_navivox_channel.dart';
 
 void main() {
-  testWidgets('router starts at setup when no server is configured', (
+  testWidgets('router starts at Hermes when no Gormes server is configured', (
     tester,
   ) async {
     await tester.pumpWidget(const NavivoxApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect to Gormes'), findsOneWidget);
-    await expandManualEntry(tester);
-    expect(find.text('Connect and talk'), findsOneWidget);
+    expect(find.text('Connect to Hermes Agent'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-base-url-field')), findsOneWidget);
+    expect(find.text('Connect to Gormes'), findsNothing);
   });
+
+  testWidgets(
+    'router still allows explicit legacy setup without a Gormes server',
+    (tester) async {
+      await tester.pumpWidget(const NavivoxApp());
+      await tester.pumpAndSettle();
+
+      GoRouter.of(
+        tester.element(find.text('Connect to Hermes Agent')),
+      ).go(AppRoutes.setup);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connect to Gormes'), findsOneWidget);
+      await expandManualEntry(tester);
+      expect(find.text('Connect and talk'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'router preserves Hermes route query links without Gormes setup redirect',
+    (tester) async {
+      await tester.pumpWidget(const NavivoxApp());
+      await tester.pumpAndSettle();
+
+      GoRouter.of(
+        tester.element(find.text('Connect to Hermes Agent')),
+      ).go('${AppRoutes.hermes}?from=shortcut');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connect to Hermes Agent'), findsOneWidget);
+      expect(find.text('Connect to Gormes'), findsNothing);
+    },
+  );
 
   testWidgets('router mounts config section routes through the config screen', (
     tester,

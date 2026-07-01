@@ -19,13 +19,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   final channel = ref.watch(navivoxChannelProvider);
 
   return GoRouter(
-    initialLocation: AppRoutes.chats,
+    initialLocation: channel.state.servers.isEmpty
+        ? AppRoutes.hermes
+        : AppRoutes.chats,
     refreshListenable: channel,
     redirect: (context, state) {
       final hasServers = channel.state.servers.isNotEmpty;
       final isSetup = AppRoutes.isSetupLocation(state.matchedLocation);
+      final isHermes = AppRoutes.isHermesLocation(state.uri.toString());
 
-      if (!hasServers && !isSetup) {
+      if (!hasServers && !isSetup && !isHermes) {
         return AppRoutes.setup;
       }
       if (hasServers && isSetup) {

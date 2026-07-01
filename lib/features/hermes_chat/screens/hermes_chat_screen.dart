@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hermes/channel/hermes_channel.dart';
+import '../../../core/hermes/models/hermes_capabilities.dart';
 import '../../../core/hermes/models/hermes_chat_turn.dart';
+import '../../../core/hermes/policy/hermes_transport_policy.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
 import '../../chat/voice/controllers/transcript_voice_capture_flow.dart';
@@ -22,6 +24,11 @@ final hermesVoiceCaptureServiceProvider = Provider<VoiceCaptureService?>(
 final hermesTextToSpeechServiceProvider = Provider<TextToSpeechService?>(
   (_) => null,
 );
+
+const _hermesBaseUrlHint =
+    'Local desktop/Linux/Windows/iOS simulator: http://127.0.0.1:8642\n'
+    'Android emulator: http://10.0.2.2:8642\n'
+    'Physical device: LAN/VPN/Tailscale URL';
 
 /// Native Hermes Agent chat/session screen: manual connect, session list,
 /// streamed transcript, text composer, and continuous voice. See
@@ -139,8 +146,10 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               TextField(
                 key: const ValueKey('hermes-base-url-field'),
                 controller: _baseUrlController,
+                keyboardType: TextInputType.url,
                 decoration: const InputDecoration(
                   labelText: 'Hermes API base URL',
+                  helperText: _hermesBaseUrlHint,
                 ),
               ),
               const SizedBox(height: 8),
@@ -201,6 +210,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
             request: pendingApproval,
             onDecide: (decision) => _resolveApproval(channel, decision),
           ),
+        if (state.capabilities != null)
+          _HermesCapabilityStrip(capabilities: state.capabilities!),
         if (state.sessions.length > 1)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -389,6 +400,47 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
           unawaited(_captureOnce(channel));
         }
       }),
+    );
+  }
+}
+
+class _HermesCapabilityStrip extends StatelessWidget {
+  const _HermesCapabilityStrip({required this.capabilities});
+
+  final HermesCapabilityDocument capabilities;
+
+  @override
+  Widget build(BuildContext context) {
+    final policy = HermesTransportPolicy(capabilities);
+    final chips = [
+      if (policy.supportsRunsTransport) 'Runs/tool progress enabled',
+      if (!policy.supportsRunsTransport && policy.supportsSessionChatStream)
+        'Session chat streaming enabled',
+      if (policy.supportsRealtimeVoice)
+        'Server realtime voice advertised'
+      else
+        'Voice uses device speech-to-text',
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Card(
+        key: const ValueKey('hermes-capability-strip'),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Hermes Agent ${capabilities.model}'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [for (final chip in chips) Chip(label: Text(chip))],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

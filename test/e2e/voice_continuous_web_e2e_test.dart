@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:navivox/core/channel/navivox_channel_provider.dart';
 import 'package:navivox/features/chat/screens/chat_screen.dart';
 import 'package:navivox/features/voice/services/platform/default_voice_capture_service.dart';
 import 'package:navivox/router/app_router.dart';
+import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/shared/voice/text_to_speech_service.dart';
 import 'package:navivox/testing/connect_and_talk_channel.dart';
 
@@ -42,7 +44,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Connect from the setup screen.
+      // Connect from the legacy setup screen.
+      GoRouter.of(
+        tester.element(find.text('Connect to Hermes Agent')),
+      ).go(AppRoutes.setup);
+      await tester.pumpAndSettle();
       await expandManualEntry(tester);
       await tester.enterText(
         find.widgetWithText(TextField, 'Gateway URL'),

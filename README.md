@@ -1,40 +1,38 @@
 # Navivox App
 
-**Private voice/chat for your own Gormes agents.**
+**Hermes Agent mobile/desktop companion with local continuous voice.**
 
-Navivox remains an Android-first Flutter app for talking to trusted local or self-hosted Gormes profiles. It gives each profile a Telegram-style contact surface while keeping the agent control plane in Gormes instead of a third-party chat platform.
+Navivox is a Flutter app for operating trusted local, LAN, VPN, or self-hosted Hermes Agent API servers. Fresh installs open on the native Hermes screen, connect to a Hermes endpoint, show sessions, stream assistant/tool progress, handle approvals, and can submit device-transcribed voice as normal Hermes text turns.
 
-Navivox can learn product and UI patterns from `fathah/hermes-desktop`: chat first, profile/session/model/provider/memory/tool/gateway surfaces close at hand, and streaming assistant work rendered as product UI instead of terminal output. Hermes Desktop is a reference app, not the near-term Navivox runtime target.
-
-Navivox is intentionally not a generic server administration panel or a telephony suite. The first product loop is simple: connect to Gormes, prove the gateway is ready, talk to an agent, and inspect its memory and operator evidence.
-
-## Relationship To Gormes And Reference Apps
-
-- **Gormes** is the Go-native agent runtime and gateway.
-- **Navivox** is the Flutter app that presents the Gormes operator experience on Android and other Flutter targets.
-- **Hermes Desktop** is a product reference for app shape and UI ideas; it is not a wire-protocol target for the main Navivox plan.
-
-Gormes owns agents, sessions, tools, provider calls, secrets, config, Goncho memory, and server-side policy. Navivox owns setup, chat, voice capture, streaming UI, tool cards, memory visualization, safe config presentation, and local recovery flows.
+The older Gormes `/v1/navivox/*` UI remains in this repo as legacy/preserved surfaces while `main` moves Hermes-first. The preserved Gormes-first app state lives on the `gormes` branch.
 
 References:
 
-- Gormes repository: <https://github.com/TrebuchetDynamics/gormes-agent>
 - Hermes Desktop reference: <https://github.com/fathah/hermes-desktop>
+- Gormes repository (legacy runtime): <https://github.com/TrebuchetDynamics/gormes-agent>
 
 ## Status
 
-Early implementation. The core connect-and-talk loop has Flutter screens, protocol models, widget/unit tests, generated README screenshots, and an active Gormes `gormes navivox pair` handoff. Treat mobile release polish, app-store packaging, and full voice/TTS loops as in progress.
+Current Hermes path:
 
-Current focus:
+1. Connect to a Hermes Agent API server (`/hermes`).
+2. Save the base URL as non-secret metadata and the optional API key in secure storage.
+3. List/create/select Hermes sessions.
+4. Stream chat through capability-gated Hermes transports.
+5. Render assistant deltas, tool progress cards, approval prompts, stop controls, and capability status.
+6. Use local device speech capture/continuous voice to submit transcripts as Hermes text turns.
 
-1. Connect to a trusted Gormes Navivox gateway.
-2. Send text or device-transcribed voice turns.
-3. Render assistant, tool, approval, connection, run-record, and memory-state UI clearly.
-4. Borrow proven app-shape ideas from Hermes Desktop without changing the Gormes runtime boundary.
+Implemented platform coverage includes Flutter web/Android/Linux plus generated iOS and Windows scaffolds. Local validation covers Dart/widget tests, web e2e smoke against a fake Hermes HTTP/SSE server, Android debug APK build, and documented host-runner gates for Linux release, Windows, and iOS in `docs/runbooks/hermes-platform-smoke.md`.
+
+Still blocked without external hosts/devices:
+
+- Live smoke against a real Hermes Agent API server.
+- Android microphone/continuous-voice smoke on a responsive Android device or emulator.
+- Windows/iOS host builds and Linux release build receipts from a runner with native dependencies.
 
 ## Screenshots
 
-The screenshots below are generated from real Flutter widgets and checked by the test suite.
+The screenshots below are generated from real Flutter widgets and checked by the test suite. Some still show legacy Gormes surfaces while the Hermes-first UI is being expanded.
 
 ![Setup screen](docs/screenshots/setup.png)
 
@@ -42,74 +40,51 @@ The screenshots below are generated from real Flutter widgets and checked by the
 
 ## Real-World Usage
 
-Navivox is for mobile agent operation: hands-free chat, project briefings, incident checks, voice task capture, agent switching, and screen-reader-friendly control away from a terminal.
+Navivox is for mobile and desktop operator use: hands-free chat, project briefings, incident checks, voice task capture, approvals, and screen-reader-friendly control away from a terminal.
 
 ## Why It Is Cool
 
-- **Agents become contacts.** Each Gormes profile can feel like a trusted chat contact instead of a terminal session.
-- **Voice first, not telephony first.** Device-transcribed voice can become a normal Gormes turn without phone numbers, campaigns, or call-center setup.
+- **Hermes sessions become a mobile console.** Navivox gives Hermes Agent a touch/voice UI without copying Electron-only install/update mechanics.
+- **Voice stays local-first.** Device STT can become a normal Hermes turn; no realtime/server audio API is promised until Hermes exposes one.
 - **Tool work is visible.** Assistant text, tool cards, approvals, safety notices, and recovery states are UI objects rather than pasted logs.
-- **The control plane stays yours.** Gormes owns sessions, memory, tools, secrets, provider execution, and retention policy; Navivox presents the operator surface.
+- **Secrets stay bounded.** Hermes API keys are stored through secure storage and must not appear in shared preferences, routes, logs, notices, screenshots, or transcripts.
 
-## Privacy And Control
+## Hermes Endpoint Surface
 
-Navivox is designed to be more private than Telegram bot chat for agent operation because the normal path does not route your agent conversations through Telegram's cloud or bot API. A trusted Gormes gateway owns auth, routing, provider calls, tool policy, memory, and retention; Navivox sends typed HTTP/WebSocket actions over a local, VPN, or tailnet connection.
+Navivox targets the Hermes Agent API server, defaulting to port `8642`:
 
-Privacy still depends on deployment choices:
+- `GET /health`
+- `GET /v1/capabilities`
+- `GET /api/sessions`
+- `POST /api/sessions`
+- `GET /api/sessions/{session_id}/messages`
+- `POST /api/sessions/{session_id}/chat/stream`
+- `POST /v1/runs`
+- `GET /v1/runs/{run_id}/events`
+- `POST /v1/runs/{run_id}/approval`
+- `POST /v1/runs/{run_id}/stop`
 
-- Local or self-hosted Gormes plus device/local STT keeps the strongest boundary.
-- Cloud model, STT, or TTS providers may still process submitted text, transcripts, or audio according to their own policies.
-- Public exposure is discouraged and requires explicit server-side confirmation.
-- Pairing tokens, deep links, terminal QRs, and QR PNGs are secret material; never paste them into issues, logs, screenshots, or chat transcripts.
+The app gates run transport, tool progress, approvals, and stop behavior from `/v1/capabilities` and falls back to session chat when needed.
 
-## Goncho Memory Console
+## Legacy Gormes Surfaces
 
-Navivox makes Gormes memory inspectable without becoming a raw database browser. It should show memory health, counts, search results, provenance, and safe management actions such as pin, archive, correction, or mark stale.
-
-The app reads memory through authenticated, profile-scoped Gormes APIs. It must not open SQLite directly.
-
-## Gateway Surface
-
-Navivox expects a Gormes host exposing the Navivox channel:
-
-- `GET /healthz` — basic readiness
-- `GET /v1/navivox/status` — authenticated channel readiness
-- `GET /v1/navivox/capabilities` — versioned feature and endpoint contract for capability-gated UI
-- `GET /v1/navivox/profile-contacts` — profile contact snapshot for the chat list
-- `GET /v1/navivox/profile-routing` — server/profile routing snapshot
-- `POST /v1/navivox/profile-seed` — draft or apply a profile from operator text
-- `GET /v1/navivox/config-admin[/schema]` — safe config admin read/schema
-- `POST /v1/navivox/config-admin/{diff,validate,apply}` — safe config admin mutations
-- `GET /v1/navivox/voice-profiles` — per-profile STT/TTS voice profile state
-- `POST /v1/navivox/voice-profiles/validate` — voice profile validation
-- `GET /v1/navivox/run-records/{run_id_or_session_id}` — run-record lookup
-- `GET /v1/navivox/memory/overview` — authenticated Goncho memory health and safe count summary
-- `GET /v1/navivox/sessions` — session listing
-- `GET /v1/navivox/sessions/{session_id}` — session detail
-- `POST /v1/navivox/turn` — submit a user turn
-- `WS /v1/navivox/stream` — stream session and assistant events
-
-Navivox should enable profile creation/import, attachment, voice, and stream affordances from `/v1/navivox/capabilities` instead of assuming unsupported routes exist.
-
-On the host side, `gormes navivox pair` is the recommended setup path. It starts a network-reachable bridge, generates or reuses a pairing token, writes a QR image, prints a compact terminal QR when the screen is wide enough, opens Navivox directly on Android when requested, and waits for Navivox connection. `gormes navivox connect-info` remains the fallback for older Gormes builds or manual setup.
+Legacy Gormes screens for gateways, profile contacts, config, memory, profile seed, voice profiles, run records, and pairing handoff remain available for transition and tests. They show deprecation notices that link back to Hermes. New mainline work should prefer Hermes endpoint/session language unless explicitly maintaining the legacy Gormes path.
 
 ## Repository Layout
 
 ```text
 .
 ├── lib/                         # Flutter app source
+│   ├── core/hermes/              # Hermes API client, channel, models, SSE parser
+│   └── features/hermes_chat/     # Native Hermes chat/session/voice UI
 ├── test/                        # Widget, unit, and tooling tests
 ├── integration_test/            # Connect-and-talk integration tests
 ├── web/                         # Flutter web shell
 ├── linux/                       # Flutter Linux runner
-├── docs/                        # Product, architecture, research, ADRs, runbooks, screenshots
-│   ├── architecture/            # Architecture, data model, decision notes
-│   ├── product/                 # PRD, route plan, UI design, test strategy
-│   ├── research/                # Research notes and analyst summaries
-│   ├── adr/                     # Architecture decision records
-│   ├── runbooks/                # Android, Termux, release, and QA handoffs
-│   └── screenshots/             # README screenshots generated from widgets
-├── playwright/                  # Web QA tests, probes, debug scripts, and screenshots
+├── ios/                         # Flutter iOS runner scaffold
+├── windows/                     # Flutter Windows runner scaffold
+├── docs/                        # Product, architecture, research, ADRs, runbooks
+├── playwright/                  # Web QA tests, probes, debug scripts, screenshots
 └── CONTEXT.md                   # Shared product language
 ```
 
@@ -118,8 +93,8 @@ On the host side, `gormes navivox pair` is the recommended setup path. It starts
 Prerequisites:
 
 - Flutter SDK on `PATH`
-- Android SDK or another Flutter target for local app runs
-- A trusted Gormes gateway with the Navivox channel enabled for full connect-and-talk testing
+- Android SDK, browser, or another Flutter target for local app runs
+- A trusted Hermes Agent API server for live connect-and-talk testing
 
 Install dependencies from the repository root:
 
@@ -131,7 +106,7 @@ Run the local verification gate:
 
 ```bash
 flutter analyze
-flutter test
+flutter test --concurrency=1
 ```
 
 Find available Flutter targets:
@@ -146,65 +121,60 @@ Run the app from the repository root, replacing `<device-id>` with one of the li
 flutter run -d <device-id>
 ```
 
-Android target notes:
+Hermes endpoint URL hints:
 
-- Android emulator: use `http://10.0.2.2:<port>` when the Gormes gateway is running on the host machine.
-- A physical Android device cannot reach the host through `127.0.0.1`; use the host LAN, VPN, or Tailscale URL printed by `gormes navivox pair` or the `gormes navivox connect-info` fallback.
-- Same Android device with Gormes in Termux: Install Termux, paste one command, then continue in Navivox. Follow `docs/runbooks/termux/gormes-bootstrap.md`.
-- Recommended setup path: `gormes navivox pair`.
-- Keep the pairing token inside Navivox only; never paste it into issue reports, logs, screenshots, or chat transcripts.
+- Desktop/Linux/Windows/iOS simulator on the same host: `http://127.0.0.1:8642`
+- Android emulator reaching the host: `http://10.0.2.2:8642`
+- Physical device: use a trusted LAN, VPN, or Tailscale URL for the Hermes host.
 
-## Connected Smoke Test
+## Connected Hermes Smoke Test
 
-Use this only with a trusted local or self-hosted Gormes host:
+Use this only with a trusted local or self-hosted Hermes Agent API server:
 
-1. Start or select a Gormes host with the Navivox channel enabled.
-2. On the host or in Termux, start the app-first pairing handoff:
+1. Start Hermes Agent with the API server enabled.
+2. Open Navivox and go to `/hermes` (the fresh-install default route).
+3. Enter the Hermes API base URL and optional API key.
+4. Connect, create or select a session, and send a short text turn.
+5. If continuous voice is being validated, enable the voice switch and confirm one spoken phrase appears as a submitted Hermes text turn.
+6. Confirm no API key appears in UI text, logs, screenshots, routes, or transcript state.
 
-   ```bash
-   gormes navivox pair
-   ```
-
-   This should start local bridge, generate a pairing token, show a QR, print localhost URL, and wait for Navivox connection. `gormes navivox connect-info` remains the fallback when pairing is unavailable or manual setup is required.
-
-3. Confirm the gateway answers `GET /healthz` and authenticated `GET /v1/navivox/status`.
-4. Scan/import the QR, or copy the reachable base URL into the Navivox setup screen.
-5. If setup output prints a token, paste it into Navivox only. Do not paste tokens into issues, logs, or screenshots.
-6. Send a short text turn and confirm the app shows an assistant response, tool activity, or a clear connection recovery state.
+For browser fake-server smoke coverage, see `playwright/tests/regression/hermes-smoke.spec.mjs` and `serve_web.mjs`.
 
 ## Troubleshooting
 
-- If Flutter is missing, run `flutter doctor` and fix the reported SDK or platform setup before running Navivox.
-- If `flutter devices` shows `No supported devices found`, start an emulator, connect an Android device, or choose another Flutter target that appears in the device list.
-- If `flutter run -d <device-id>` fails after a layout move, run `flutter clean` and `flutter pub get` from the repository root. Do not delete source files while clearing generated state.
-- If the setup screen shows `Connection refused`, confirm the Gormes host is running, reachable from the device, and listening on the base URL from `gormes navivox pair` or the `gormes navivox connect-info` fallback.
-- If the gateway returns `401` or `403`, refresh setup with `gormes navivox pair` or `gormes navivox connect-info`, then paste the token into Navivox only.
+- If Flutter is missing, run `flutter doctor` and fix reported SDK/platform setup first.
+- If `flutter devices` shows `No supported devices found`, start an emulator, connect a device, or choose another Flutter target.
+- If Linux desktop build fails on `flutter_secure_storage_linux`, install the native `libsecret-1` development package for that host.
+- If a physical Android device cannot reach `127.0.0.1`, use the host LAN, VPN, or Tailscale URL instead.
+- If Hermes returns `401` or `403`, refresh the API key on the Hermes side and enter it only in Navivox.
 
 ## Security And Product Boundaries
 
-Navivox is built for trusted local or self-hosted Gormes deployments.
+Navivox is built for trusted local or self-hosted Hermes deployments.
 
 Important boundaries:
 
-- Navivox is for trusted local or self-hosted Gormes deployments.
-- Public exposure requires explicit server-side confirmation.
-- Tokens, secrets, raw tool output, and full logs must not be primary UI.
-- Config and Goncho memory are managed through authenticated Gormes APIs, not direct file or SQLite edits.
-- Memory management should prefer pin/archive/mark-stale/correction flows over destructive deletion.
+- Do not expose API keys, pairing tokens, raw tool payloads, private logs, or secrets in issues, screenshots, routes, notices, transcripts, or docs.
+- Prefer loopback, trusted LAN, VPN, Tailscale, or TLS for non-local endpoints.
+- Public exposure requires explicit server-side hardening and is not a default Navivox assumption.
+- Hermes config, memory, models, jobs, and gateway administration stay hidden or read-only until Hermes exposes safe mobile APIs for them.
+- Gormes-specific setup/pairing docs are legacy unless working on the preserved Gormes path.
 
 ## Documentation
 
 Start with:
 
 - `CONTEXT.md`
+- `GOAL_STATE.md`
+- `docs/product/hermes-agent-interface-plan.md`
 - `docs/product/hermes-desktop-reference.md`
+- `docs/adr/0006-hermes-agent-first-runtime.md`
+- `docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md`
+- `docs/runbooks/hermes-platform-smoke.md`
+- `docs/runbooks/termux/gormes-bootstrap.md` (legacy Gormes/Termux path)
 - `docs/README.md`
-- `docs/runbooks/termux/gormes-bootstrap.md`
-- [Gormes Navivox CLI docs](https://docs.gormes.ai/cli/navivox/)
-- `docs/product/prd.md`
 - `docs/architecture/architecture.md`
 - `docs/product/testing-plan.md`
-- `docs/product/ui-design.md`
 
 ## License
 

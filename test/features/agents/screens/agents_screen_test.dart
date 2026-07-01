@@ -29,6 +29,10 @@ void main() {
       );
 
       expect(find.text('Profiles'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('gormes-legacy-notice')),
+        findsOneWidget,
+      );
       expect(find.text('No profiles found on this server'), findsOneWidget);
       expect(find.text('Refresh profiles'), findsOneWidget);
 

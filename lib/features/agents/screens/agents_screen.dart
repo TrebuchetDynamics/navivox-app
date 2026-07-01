@@ -6,6 +6,7 @@ import '../../../router/navigation_intent.dart';
 import '../../../core/channel/navivox_channel.dart';
 import '../../../core/channel/navivox_channel_provider.dart';
 import '../../../shared/presentation/profile_contact_labels.dart';
+import '../../../shared/widgets/gormes_legacy_notice.dart';
 import '../../../shared/widgets/profile_contact_avatar.dart';
 import '../../profiles/widgets/profile_seed_sheet.dart';
 import '../presentation/agents_screen_presentation.dart';
@@ -44,6 +45,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(presentation.screenTitle),
+        bottom: const GormesLegacyNotice(),
         actions: [
           IconButton(
             tooltip: presentation.refreshProfilesTooltip,

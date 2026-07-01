@@ -20,6 +20,7 @@ void main() {
       TestNavivoxMaterialApp(channel: channel, home: const ConfigScreen()),
     );
 
+    expect(find.byKey(const ValueKey('gormes-legacy-notice')), findsOneWidget);
     expect(find.text('Config readiness'), findsOneWidget);
     expect(find.text('Config admin unsupported'), findsOneWidget);
     expect(find.text('Open gateway'), findsOneWidget);
