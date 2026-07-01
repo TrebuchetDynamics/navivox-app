@@ -67,6 +67,33 @@ class HermesSseEventDecoder {
     return events;
   }
 
+  /// Same framing as [decode], but consumes chunks as they arrive on a live
+  /// [Stream] instead of requiring the full transcript up front.
+  Stream<HermesSseEvent> decodeStream(Stream<String> chunks) async* {
+    final buffer = StringBuffer();
+    await for (final chunk in chunks) {
+      buffer.write(chunk);
+      final events = <HermesSseEvent>[];
+      _drainEvents(buffer, events);
+      for (final event in events) {
+        yield event;
+      }
+    }
+  }
+
+  /// Same as [decodeJsonEvents], but over a live [Stream] via [decodeStream].
+  Stream<HermesStreamEvent> decodeJsonEventStream(
+    Stream<String> chunks,
+  ) async* {
+    await for (final event in decodeStream(chunks)) {
+      try {
+        yield HermesStreamEvent.fromSse(event);
+      } on FormatException {
+        continue;
+      }
+    }
+  }
+
   void _drainEvents(StringBuffer buffer, List<HermesSseEvent> events) {
     var text = buffer.toString();
     var separator = _eventSeparatorIndex(text);

@@ -1,0 +1,96 @@
+import '../../protocol/voice/models/navivox_voice_run.dart';
+import '../models/hermes_capabilities.dart';
+import '../models/hermes_chat_turn.dart';
+import '../models/hermes_session.dart';
+
+enum HermesConnectionStatus { disconnected, connecting, connected, error }
+
+class HermesChannelState {
+  const HermesChannelState({
+    this.status = HermesConnectionStatus.disconnected,
+    this.errorMessage,
+    this.capabilities,
+    this.sessions = const [],
+    this.activeSessionId,
+    this.messages = const {},
+    this.voiceRuns = const {},
+    this.activeVoiceRunId,
+  });
+
+  final HermesConnectionStatus status;
+  final String? errorMessage;
+  final HermesCapabilityDocument? capabilities;
+  final List<HermesSession> sessions;
+  final String? activeSessionId;
+
+  /// Turns per session id, in arrival order.
+  final Map<String, List<HermesChatTurn>> messages;
+  final Map<String, NavivoxVoiceRun> voiceRuns;
+  final String? activeVoiceRunId;
+
+  bool get isConnected => status == HermesConnectionStatus.connected;
+
+  HermesSession? get activeSession {
+    final id = activeSessionId;
+    if (id == null) return null;
+    for (final session in sessions) {
+      if (session.id == id) return session;
+    }
+    return null;
+  }
+
+  List<HermesChatTurn> get activeMessages =>
+      messages[activeSessionId] ?? const [];
+
+  NavivoxVoiceRun? get activeVoiceRun {
+    final id = activeVoiceRunId;
+    if (id == null) return null;
+    final run = voiceRuns[id];
+    if (run == null || run.isTerminal) return null;
+    return run;
+  }
+
+  /// The most recent voice run regardless of status, for history/recovery
+  /// copy. Prefers the tracked [activeVoiceRunId], else the last-inserted run.
+  NavivoxVoiceRun? get latestVoiceRun {
+    final id = activeVoiceRunId;
+    if (id != null) {
+      final run = voiceRuns[id];
+      if (run != null) return run;
+    }
+    if (voiceRuns.isEmpty) return null;
+    return voiceRuns.values.last;
+  }
+
+  HermesChannelState copyWith({
+    HermesConnectionStatus? status,
+    String? errorMessage,
+    bool clearErrorMessage = false,
+    HermesCapabilityDocument? capabilities,
+    List<HermesSession>? sessions,
+    String? activeSessionId,
+    Map<String, List<HermesChatTurn>>? messages,
+    Map<String, NavivoxVoiceRun>? voiceRuns,
+    String? activeVoiceRunId,
+    bool clearActiveVoiceRunId = false,
+  }) {
+    assert(
+      !clearActiveVoiceRunId || activeVoiceRunId == null,
+      'copyWith cannot set and clear activeVoiceRunId at the same time.',
+    );
+    return HermesChannelState(
+      status: status ?? this.status,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
+      capabilities: capabilities ?? this.capabilities,
+      sessions: sessions ?? this.sessions,
+      activeSessionId: activeSessionId ?? this.activeSessionId,
+      messages: messages ?? this.messages,
+      voiceRuns: voiceRuns ?? this.voiceRuns,
+      activeVoiceRunId: clearActiveVoiceRunId
+          ? null
+          : activeVoiceRunId ?? this.activeVoiceRunId,
+    );
+  }
+}

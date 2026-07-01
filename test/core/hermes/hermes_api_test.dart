@@ -119,6 +119,96 @@ void main() {
     },
   );
 
+  test(
+    'streams session chat turns as decoded Hermes events over POST body chunks',
+    () async {
+      final posts = <String, Map<String, Object?>>{};
+      final client = HermesApiClient(
+        config: HermesApiConfig.fromBaseUrl(
+          'http://127.0.0.1:8642',
+          apiKey: 'api-key',
+        ),
+        postStream: (uri, headers, body) {
+          expect(uri.path, '/api/sessions/sess_1/chat/stream');
+          expect(headers['Authorization'], 'Bearer api-key');
+          expect(headers['Content-Type'], 'application/json');
+          posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+          return Stream.fromIterable([
+            'event: run.started\ndata: {"run_id":"run_1"}\n\n',
+            'event: assistant.delta\ndata: {"delta":"Hi"}\n\ndata: [DONE]\n\n',
+          ]);
+        },
+      );
+
+      final events = await client
+          .streamSessionChat('sess_1', message: 'hello')
+          .toList();
+
+      expect(posts['/api/sessions/sess_1/chat/stream'], {'message': 'hello'});
+      expect(events.map((event) => event.name), [
+        'run.started',
+        'assistant.delta',
+        'done',
+      ]);
+      expect(events[1].delta, 'Hi');
+    },
+  );
+
+  test(
+    'run transport: starts a run, streams run events over GET SSE, responds to approval, and stops',
+    () async {
+      final posts = <String, Map<String, Object?>>{};
+      final getStreamRequests = <String>[];
+      final client = HermesApiClient(
+        config: HermesApiConfig.fromBaseUrl(
+          'http://127.0.0.1:8642',
+          apiKey: 'api-key',
+        ),
+        post: (uri, headers, body) async {
+          posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) {
+          getStreamRequests.add(uri.path);
+          expect(headers['Authorization'], 'Bearer api-key');
+          return Stream.fromIterable([
+            'event: message.delta\ndata: {"delta":"Hi"}\n\n',
+            'event: approval.request\ndata: {"approval_id":"appr_1"}\n\ndata: [DONE]\n\n',
+          ]);
+        },
+      );
+
+      final run = await client.startRun(sessionId: 'sess_1', message: 'hello');
+      expect(run.id, 'run_1');
+      expect(posts['/v1/runs'], {'session_id': 'sess_1', 'message': 'hello'});
+
+      final events = await client.runEvents(run.id).toList();
+      expect(getStreamRequests, ['/v1/runs/run_1/events']);
+      expect(events.map((event) => event.name), [
+        'message.delta',
+        'approval.request',
+        'done',
+      ]);
+
+      await client.respondApproval(
+        runId: run.id,
+        approvalId: 'appr_1',
+        decision: 'once',
+      );
+      expect(posts['/v1/runs/run_1/approval'], {
+        'approval_id': 'appr_1',
+        'decision': 'once',
+      });
+
+      await client.stopRun(run.id);
+      expect(posts['/v1/runs/run_1/stop'], <String, Object?>{});
+    },
+  );
+
   test('decodes server-sent events across chunks and keeps multiline data', () {
     final decoder = HermesSseEventDecoder();
 

@@ -18,6 +18,10 @@ abstract final class AppRoutes {
   static const configSection = '/config/:${RouteParameters.configSection}';
   static const settings = '/settings';
 
+  /// Native Hermes Agent chat/session screen, additive alongside the Gormes
+  /// screens above; see docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
+  static const hermes = '/hermes';
+
   static String chatLocation({
     required String serverId,
     required String profileId,

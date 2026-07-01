@@ -1,0 +1,54 @@
+import 'package:flutter/foundation.dart';
+
+import '../../channel/contracts/navivox_approval_request.dart';
+import '../models/hermes_approval_decision.dart';
+import 'hermes_channel_state.dart';
+
+export '../../channel/contracts/navivox_approval_request.dart';
+export '../models/hermes_approval_decision.dart';
+export 'hermes_channel_state.dart';
+
+/// Native Hermes Agent channel: sessions, streamed chat turns, and the
+/// device-transcript voice-run lifecycle. Deliberately does not implement
+/// `NavivoxChannel` — see docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
+abstract interface class HermesChannel implements Listenable {
+  HermesChannelState get state;
+
+  Future<void> connect({required String baseUrl, String? apiKey});
+  Future<void> disconnect();
+
+  Future<void> selectSession(String sessionId);
+  Future<void> createSession({String? title});
+
+  Future<void> sendText(String text);
+
+  /// Cancels the in-flight streaming turn on the client side only. Prefer
+  /// [stopActiveTurn] when `/v1/runs` transport is active so the server
+  /// actually stops the run.
+  void cancelActiveTurn();
+
+  /// Stops the active turn on the server (`/v1/runs/{run_id}/stop`) when run
+  /// transport is active, and always cancels the local stream subscription.
+  void stopActiveTurn();
+
+  /// Emits approval requests raised by an active run
+  /// (`/v1/runs/{run_id}/events` `approval.request`). Empty when run
+  /// transport isn't in use.
+  Stream<NavivoxApprovalRequest> get approvalRequests;
+
+  void respondToApproval({
+    required String approvalId,
+    required HermesApprovalDecision decision,
+  });
+
+  String startVoiceRun();
+  void stageVoiceRunTranscript({
+    required String voiceRunId,
+    required String transcript,
+    required Duration duration,
+    required double confidence,
+  });
+  void submitVoiceRun(String voiceRunId);
+  void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'});
+  void failVoiceRun(String voiceRunId, {required String reason});
+}

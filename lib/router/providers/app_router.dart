@@ -7,6 +7,7 @@ import '../../features/agents/screens/agents_screen.dart';
 import '../../features/profile_contacts/screens/profile_contacts_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/config/screens/config_screen.dart';
+import '../../features/hermes_chat/screens/hermes_chat_screen.dart';
 import '../../features/memory/screens/memory_dashboard_screen.dart';
 import '../../features/servers/screens/servers_screen.dart';
 import '../../features/servers/screens/setup_screen.dart';
@@ -78,6 +79,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.settings,
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.hermes,
+            builder: (context, state) => const HermesChatScreen(),
           ),
         ],
       ),

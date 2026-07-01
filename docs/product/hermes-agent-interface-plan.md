@@ -2,6 +2,8 @@
 
 Status: planning note for steering Navivox away from Gormes-only runtime toward Hermes Agent-only operation. The current Gormes-first app state is preserved on the `gormes` branch at `b0b4390`; this plan targets future work on `main` or a new Hermes-focused delivery branch.
 
+**Amendment (see [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md)):** the "`HermesNavivoxChannel implements NavivoxChannel`" transition-seam idea below (recommended architecture step 2, delivery slice 3) is superseded. Navivox builds a native `HermesChannel` abstraction sized to Hermes's actual surface instead of implementing the old Gormes-shaped `NavivoxChannel` interface. Old Gormes-only screens (profile contacts, config-admin, memory, profile seed, voice profiles, run-record) are not wired to Hermes; new chat/session/voice screens are built against the native channel. The rest of this document (Hermes surface coverage table, target product model, MVP chat/session/streaming mapping) still holds as the source of truth for *what* Hermes surface to expose and in what order — only the *how* (adapter vs. native) changed.
+
 ## Decision
 
 Interface Navivox directly with Hermes Agent's native API server first, not through the existing Gormes `/v1/navivox/*` protocol and not through ACP.
