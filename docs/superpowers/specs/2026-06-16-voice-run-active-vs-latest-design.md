@@ -1,8 +1,8 @@
 # Voice Run: honest "active" vs "latest" semantics
 
-Status: approved design
+Status: historical approved Gormes design; current Hermes voice readiness lives in the live-mic and readiness runbooks
 Date: 2026-06-16
-Scope: Navivox Flutter app (client-local state model only)
+Scope: Historical Navivox Flutter client-local state model only; current Hermes voice remains local STT → text with realtime/server audio deferred
 Follows: `2026-05-20-voice-run-lifecycle-design.md`
 
 ## Problem

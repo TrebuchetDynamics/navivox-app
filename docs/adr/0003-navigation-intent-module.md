@@ -1,6 +1,10 @@
 # 0003 — Navigation intent module
 
-Navigation intent variants are a sealed Dart class with static `go`/`maybeGo` methods rather than raw `context.go()` calls or a provider-based service. The resolver lives in `lib/router/navigation_intent.dart`, collocated with `app_router.dart` and `app_routes.dart`.
+Status: active implementation decision. The compatibility export remains at
+`lib/router/navigation_intent.dart`, while the implementation lives under
+`lib/router/intents/navigation_intent.dart` beside router provider/route modules.
+
+Navigation intent variants are a sealed Dart class with static `go`/`maybeGo` methods rather than raw `context.go()` calls or a provider-based service. The resolver lives in `lib/router/navigation_intent.dart`, collocated with the app router and app route exports.
 
 **Considered alternatives:**
 - **Raw `context.go(AppRoutes.xxx)`** — the original pattern. Duplicated route constants across 6+ files, three different GoRouter access patterns (`context.go()`, `GoRouter.of().go()`, `GoRouter.maybeOf()?.go()`), no compile-time exhaustiveness.

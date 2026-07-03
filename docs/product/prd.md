@@ -1,16 +1,38 @@
 # Navivox Product Requirements
 
-Status: planning draft
-Updated: 2026-05-16
-Scope: Flutter Navivox app and Gormes `navivox` HTTP/WebSocket channel
+Status: historical Gormes PRD plus active Hermes-first addendum
+Updated: 2026-07-03
+Scope: Flutter Navivox app, active Hermes Agent companion surface, and preserved legacy Gormes `navivox` HTTP/WebSocket channel
 
 ## 1. Summary
 
-Navivox is the operator-facing Flutter app for talking to local or self-hosted
-Gormes agents. Its first useful screen must let the operator connect to a
-Gormes host and talk to an agent immediately, without telephony setup.
+Navivox is now moving mainline toward a Hermes Agent mobile/desktop companion.
+The active first useful screen is `/hermes`, a native Hermes Agent connect,
+session, chat, and local continuous-voice surface backed by `HermesApiChannel`
+and `HermesChatScreen` (`lib/core/hermes/channel/hermes_api_channel.dart:19`,
+`lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`). Voice remains
+local device speech-to-text submitted as Hermes text; Hermes realtime/server
+audio is not implemented.
 
-The current transport is the Gormes Navivox gateway:
+The preserved legacy product is the operator-facing Flutter app for talking to
+local or self-hosted Gormes agents. Its first useful legacy screen lets the
+operator connect to a Gormes host and talk to an agent immediately, without
+telephony setup.
+
+The active Hermes transport is the Hermes Agent API server:
+
+- `GET /health` and `GET /v1/capabilities` prove API/capability readiness.
+- `GET/POST/PATCH/DELETE /api/sessions` manage Hermes conversations.
+- `POST /api/sessions/{session_id}/chat/stream` streams the MVP chat path.
+- `/v1/runs`, `/v1/runs/{run_id}/events`, `/approval`, and `/stop` are used
+  when capabilities advertise safe run transport.
+- Read-only health/catalog/jobs diagnostics are shown when advertised; config
+  admin, memory UI, jobs admin, messaging gateways, persona/SOUL, attachments,
+  files/context folders, raw diagnostics/log export, and multi-endpoint/profile
+  management remain deferred/read-only per `hermesSurfaceReadiness()`
+  (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
+
+The preserved legacy transport is the Gormes Navivox gateway:
 
 - `gormes navivox connect-info` prints reachable base URLs.
 - `GET /healthz` proves basic readiness.
@@ -24,9 +46,18 @@ retries, circuit breakers, phone numbers, or human handoff.
 
 ## 2. Goals
 
-- Connect to a Gormes Navivox gateway from a base URL and token.
+- Connect to a Hermes Agent API endpoint from a base URL and optional API key.
+- Let the operator send text and device-transcribed local voice turns from the
+  `/hermes` screen.
+- Show Hermes endpoint readiness, capabilities, active session state, streaming
+  assistant text, approvals/tool progress, and bounded diagnostics without raw
+  logs, transcripts, tool payloads, or secrets.
+- Keep legacy Gormes gateway connect-and-talk behavior preserved while the
+  mainline product moves Hermes-first.
+- Connect to a Gormes Navivox gateway from a base URL and token on the preserved
+  legacy path.
 - Let the operator send a text or device-transcribed voice turn from the first
-  main screen.
+  legacy main screen.
 - Show gateway readiness, active session state, streaming assistant text, and
   structured errors.
 - Create agents from short natural-language seeds such as "screen inbound
@@ -42,6 +73,17 @@ retries, circuit breakers, phone numbers, or human handoff.
 
 ## 3. Non-Goals
 
+- Treating tests, APK hashes, configured Hermes home, local workflow YAML, or
+  dispatch-only workflow output as completion/readiness proof.
+- Hermes realtime/server audio in the current MVP; voice is local STT -> text.
+- Hermes config editing/admin, memory UI, jobs/schedules admin, messaging
+  gateways, persona/SOUL, attachments/media, files/context folders, raw
+  diagnostics/log export, or multi-endpoint/profile management in the current
+  MVP.
+- Native Windows/iOS readiness without successful native-host job/artifact
+  receipts. The platform workflow exists locally, but publishing remains blocked
+  until a GitHub credential with `workflow` scope can push
+  `.github/workflows/hermes-platform-smoke.yml`.
 - Telephony setup in the first activation loop.
 - Campaign management, retries, scheduling, circuit breakers, or human handoff.
 - Direct editing of local config files from the app.

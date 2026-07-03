@@ -1,9 +1,58 @@
 # Navivox Architecture
 
-Status: planning draft
-Updated: 2026-05-16
+Status: historical Gormes architecture plus active Hermes-first addendum
+Updated: 2026-07-03
+
+Current mainline has two runtime surfaces:
+
+- Active Hermes companion path: native `HermesChannel`/`HermesApiChannel` over
+  Hermes Agent HTTP/SSE API, rendered by `/hermes` (`lib/core/hermes/channel/hermes_api_channel.dart:19`,
+  `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`).
+- Preserved legacy Gormes path: `GatewayNavivoxChannel` and the existing
+  Gormes `/v1/navivox/*` routes remain for historical/legacy operation.
+
+The diagrams and detailed sections below were originally written for the
+Gormes-first architecture. Treat them as legacy unless a section explicitly
+mentions Hermes.
 
 ## 1. High-Level Architecture
+
+### 1.1 Active Hermes-first path
+
+```text
++----------------------------------------------------------------+
+| Flutter Navivox app                                            |
+|                                                                |
+|  /hermes -> HermesChatScreen                                   |
+|       |                                                        |
+|       v                                                        |
+|  HermesChannel / HermesApiChannel                              |
+|       |                                                        |
+|       v                                                        |
+|  HermesApiClient + HermesTransportPolicy + SSE decoder         |
++-------+--------------------------------------------------------+
+        |
+        | HTTP JSON + SSE streams
+        v
++----------------------------------------------------------------+
+| Hermes Agent API server                                        |
+|                                                                |
+|  /health, /health/detailed, /v1/capabilities                   |
+|  /api/sessions, /api/sessions/{id}/messages                    |
+|  /api/sessions/{id}/chat(/stream), /api/sessions/{id}/fork     |
+|  /v1/runs, /v1/runs/{id}/events, /approval, /stop              |
++----------------------------------------------------------------+
+```
+
+The Hermes path is native, not a compatibility adapter into the old Gormes
+`NavivoxChannel` shape. Deferred/read-only surface honesty is centralized in
+`hermesSurfaceReadiness()` (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`),
+and bounded diagnostics intentionally exclude secrets/raw payloads
+(`lib/features/hermes_chat/diagnostics/hermes_diagnostics_export.dart:10`).
+Voice remains local device STT -> Hermes text turn; Hermes realtime/server audio
+is not wired.
+
+### 1.2 Preserved legacy Gormes path
 
 ```text
 +---------------------------------------------------------------+
@@ -49,13 +98,26 @@ lib/
   app.dart
   main.dart
   core/
-    channel/
-      gateway_navivox_channel.dart
-      navivox_channel.dart
-      navivox_channel_provider.dart
-    gateway/
-      navivox_gateway_client.dart
-      navivox_gateway_protocol.dart
+    channel/                         # preserved legacy Gormes channel
+      contracts/navivox_channel.dart
+      gateway/gateway_navivox_channel.dart
+      providers/navivox_channel_provider.dart
+    gateway/                         # preserved legacy Gormes client/protocol
+      client/
+      capabilities/
+      events/
+      runtime/
+    hermes/                          # active Hermes Agent API client/channel
+      channel/hermes_api_channel.dart
+      channel/hermes_channel.dart
+      channel/hermes_channel_state.dart
+      client/hermes_api_client.dart
+      client/platform/
+      models/
+      policy/hermes_surface_readiness.dart
+      policy/hermes_transport_policy.dart
+      setup/secure_hermes_endpoint_store.dart
+      sse/hermes_sse_event_decoder.dart
     protocol/
       navivox_event.dart
   features/
@@ -96,6 +158,11 @@ lib/
       config_screen_presentation.dart
       config_section_presentation.dart
       screens/config_screen.dart
+    hermes_chat/                    # active Hermes endpoint/session UI
+      controllers/hermes_voice_run_controller.dart
+      diagnostics/hermes_diagnostics_export.dart
+      providers/hermes_channel_provider.dart
+      screens/hermes_chat_screen.dart
     memory/
       memory_dashboard_presentation.dart
       screens/memory_dashboard_screen.dart
@@ -123,14 +190,16 @@ lib/
       services/voice_capture_service.dart
       widgets/voice_morph_surface.dart
   router/
-    app_router.dart
-    app_routes.dart
+    providers/app_router.dart
+    routes/app_routes.dart
   shared/
     widgets/app_shell.dart
     widgets/app_shell_presentation.dart
 ```
 
-Near-term additions should follow the same feature-first shape.
+Near-term additions should follow the same feature-first shape. New Hermes work
+belongs under `core/hermes/` and `features/hermes_chat/`; preserved Gormes work
+stays under the legacy gateway/channel/features modules.
 
 ## 3. Core Responsibilities
 
@@ -163,7 +232,23 @@ segments.
 `AppShell` keeps Flutter layout, Material drawer/rail rendering, theme lookups,
 `Scaffold` placement, and `GoRouter` navigation side effects.
 
-### 3.1 Gateway Client
+### 3.1 Hermes API client and channel
+
+`HermesApiConfig` and `HermesApiClient` own Hermes Agent API URL derivation and
+HTTP/SSE calls:
+
+- `/health`, `/health/detailed`, and `/v1/capabilities` for readiness and
+  transport gating.
+- `/api/sessions`, `/api/sessions/{id}/messages`, session chat streaming,
+  session rename/delete/fork, and read-only jobs/catalog calls.
+- `/v1/runs`, run events, approval response, and stop when capability-gated.
+
+`HermesApiChannel` adapts those calls into `HermesChannelState` for
+`HermesChatScreen`, including active session, messages, voice runs, approvals,
+detailed health, catalogs, jobs, and bounded error state. API keys are stored
+through the Hermes endpoint store, not routes or diagnostics.
+
+### 3.2 Legacy Gateway Client
 
 `NavivoxGatewayConfig` owns URL derivation:
 
@@ -174,11 +259,12 @@ segments.
 - `streamUri` -> `/v1/navivox/stream` with `http` mapped to `ws` and `https`
   mapped to `wss`
 
-It also owns bearer auth header creation. Tokens remain in memory or secure
-local storage once that feature is added; they are never embedded in route
-paths.
+It also owns bearer auth header creation. Bootstrap tokens remain in memory, while
+issued durable device credentials are written through
+`SecureStorageDurableCredentialStore`/platform durable key stores rather than
+`shared_preferences`; secrets are never embedded in route paths or diagnostics.
 
-### 3.2 Gateway Channel
+### 3.3 Legacy Gateway Channel
 
 `GatewayNavivoxChannel` adapts gateway events into UI state:
 
@@ -775,7 +861,7 @@ transcript source, pending-send/cancel/failure state, and planned STT/TTS
 status while continuing to submit the final transcript through the existing
 `start_turn` path.
 
-Server voice events are future work. Planned event names are:
+Historical Gormes server voice events remain deferred. Planned event names were:
 
 - `voice_run_started`
 - `voice_transcript_partial`

@@ -39,6 +39,9 @@ void main() {
     expect(readme, contains('tests, APK hashes, configured Hermes home'));
     expect(readme, contains('workflow YAML, or dispatch-only output'));
     expect(readme, contains('npm run platform:workflow-smoke'));
+    expect(readme, contains('latest push was rejected'));
+    expect(readme, contains('lacks GitHub `workflow` scope'));
+    expect(readme, contains('successful `gh run view` job/artifact receipts'));
     expect(readme, contains('npm run android:live-mic-prep'));
     expect(
       readme,

@@ -1,8 +1,8 @@
 # Voice Run Lifecycle Design
 
-Status: approved design draft
+Status: historical approved Gormes design draft; superseded for current Hermes readiness by the Hermes-first runbooks
 Date: 2026-05-20
-Scope: Navivox Flutter app first; Gormes Navivox channel protocol later
+Scope: Historical Navivox Flutter/Gormes voice-run design; current Hermes voice remains local STT → text with realtime/server audio deferred
 
 ## Goal
 
@@ -18,7 +18,7 @@ Deepen **Voice run** into the canonical Navivox module for one end-to-end voice 
 6. Local command parsing stays in `ChatScreen`; a detected **Local command** must not create or submit a Voice run to the **Gormes gateway**.
 7. The first Voice run model is client-local. Existing transcript fallback still submits the final transcript through the current `start_turn` path.
 8. Gateway event reduction for voice streams is planned now, but implementation waits until at least one server voice event exists.
-9. A separate voice control plane is future work. The first slice keeps `start_turn` compatibility.
+9. A separate voice control plane is deferred. The first slice keeps `start_turn` compatibility.
 10. STT/TTS profile readiness appears first as read-only **Profile contact** capability state, not config editing UI.
 11. Binary audio transport is deferred until all three are true:
     - Voice run lifecycle exists.

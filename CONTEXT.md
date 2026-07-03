@@ -29,8 +29,8 @@ Legacy preserved-branch runtime term for the old `/v1/navivox/*` gateway. Do not
 _Avoid_: using as a synonym for Hermes endpoint
 
 **Pairing handoff**:
-The first-run transfer of Gormes gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway.
-_Avoid_: QR flow, connect-info flow, login
+Legacy Gormes-path first-run transfer of gateway connection details from Gormes or Termux to Navivox, completed only when Navivox successfully connects to the Gormes gateway. New Hermes setup uses **Hermes endpoint** connection language instead.
+_Avoid_: QR flow, connect-info flow, login, Hermes login
 
 **Pairing handoff source**:
 How Navivox received a **Pairing handoff**, such as direct app open from Gormes, shared text, QR/image import, or manual entry. The source affects how much operator confirmation is required before Navivox probes or switches a **Gormes gateway**.
@@ -117,8 +117,8 @@ Per-**Profile contact** **Gormes gateway** configuration for STT/TTS providers, 
 _Avoid_: voice run settings, local mic permission, raw provider credentials
 
 **Voice run**:
-One end-to-end Navivox voice interaction, from capture through transcript, optional server STT, agent turn, optional server TTS, playback, cancellation, errors, and retention policy.
-_Avoid_: audio blob, transcript string, voice message
+One end-to-end Navivox voice interaction, from capture through transcript, optional server STT, agent turn, optional server TTS, playback, cancellation, errors, and retention policy. In the current Hermes path this is local device STT submitted as a Hermes text turn; Hermes realtime/server audio is not implemented.
+_Avoid_: audio blob, transcript string, voice message, server audio receipt
 
 **Voice readiness**:
 The per-**Profile contact** operator-visible state that says whether Navivox can start a **Voice run** now, and the blocking reason or recovery action when it cannot. It combines shared local device conditions with active **Profile contact** and **Gormes gateway** conditions.
@@ -134,11 +134,12 @@ _Avoid_: message id, row id, guessed run id
 
 ## Relationships
 
-- **Navivox** connects to one trusted **Hermes endpoint** for the first Hermes MVP; multi-endpoint management can follow later.
+- **Navivox** connects to one trusted **Hermes endpoint** for the first Hermes MVP; multi-endpoint management can follow later and is deferred/read-only until explicitly implemented.
 - Operator-facing connection surfaces should label the target as a Hermes endpoint or Hermes Agent server, not a Gormes gateway.
 - **Hermes sessions** are the main conversation list and replace Profile contacts in new product language.
-- **Hermes API keys** are secret connection credentials and must stay out of shared preferences, logs, routes, notices, transcript state, and screenshots.
+- **Hermes API keys** are secret connection credentials and must stay out of shared preferences, logs, routes, notices, transcript state, screenshots, and diagnostics exports.
 - A **Hermes Desktop reference** may inform Navivox app shape and transport-gating behavior, but Navivox should not copy Electron install/update mechanics or old Gormes domain terms.
+- Hermes config admin, memory UI, jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media, files/context folders, raw diagnostics/log export, and multi-endpoint/profile management are deferred/read-only in the current Hermes MVP unless a source-backed implementation changes that status.
 - A **Pairing handoff** gives Navivox the connection details for a **Gormes gateway**.
 - A **Pairing handoff source** determines whether Navivox may try the handoff immediately or must wait for operator confirmation.
 - **Pairing readiness** belongs to the setup and pairing surfaces; a ready or connected **Pairing readiness** state does not imply durable reconnect is available.
@@ -202,7 +203,7 @@ _Avoid_: message id, row id, guessed run id
 
 ## Flagged ambiguities
 
-- "Hermes app" can imply replacing the **Gormes gateway** runtime. Resolved: use **Hermes Desktop reference** when borrowing app-shape ideas from Hermes Desktop while keeping Navivox Gormes-first.
+- "Hermes app" can imply replacing every preserved **Gormes gateway** surface. Resolved: use **Hermes endpoint**/**Hermes session** for new mainline runtime work, keep **Gormes gateway** terms only for preserved legacy paths, and use **Hermes Desktop reference** only for borrowed app-shape ideas.
 - "profile", "agent", and "contact" can drift together. Resolved: use **Profile contact** for the `server_id + profile_id` chat-list identity; use agent only for server-owned runtime behavior.
 - "wake word" can imply always-listening audio. Resolved: use **Command word** for the local prefix active only in Navivox text or voice command mode.
 - "message list" can imply a passive log. Resolved: use **Transcript surface** for the active chat UI area because it renders tool activity, safety notices, approval prompts, and voice transcript bubbles as product state.

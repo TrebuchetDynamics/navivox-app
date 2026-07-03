@@ -18,6 +18,8 @@ void main() {
       'Strict readiness audit now reports 16 blockers',
       'full live provider-backed chat/voice smoke is an explicit closeout blocker',
       'Completion verdict: NOT COMPLETE',
+      'current OAuth\n   app token lacks GitHub `workflow` scope',
+      'two local commits remain\n   ahead of `origin/main`',
       'not to promote proxy evidence',
       'tests, APK hashes, configured\n   Hermes home, workflow YAML, or dispatch-only output',
       'direct native-host reprobes on this Linux host still fail',

@@ -20,6 +20,8 @@ void main() {
       'npm run android:durable-key-smoke',
       'Not whole-goal completion evidence by itself; run strict readiness audit',
       'npm run platform:workflow-smoke',
+      'OAuth app token lacks GitHub `workflow` scope',
+      'successful `gh run view` jobs/artifacts are still required',
       'npm run hermes:readiness-audit',
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Informational only; strict mode must fail while blockers remain.',

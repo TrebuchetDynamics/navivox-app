@@ -16,7 +16,7 @@ historical Gormes-first plan:
 | Provider-backed text + transcript voice | `npm run hermes:provider-smoke:local` or `npm run hermes:provider-smoke` | Requires configured provider/model credentials; transcript voice only. |
 | Android readiness/prep | `npm run android:voice-smoke`; `npm run android:hermes-voice-loop-smoke`; `npm run android:live-mic-prep` | Prep/readiness/deterministic loop only; physical audio requires `../runbooks/android/live-mic-smoke.md`. Not whole-goal completion evidence by itself; run strict readiness audit before completion claims. |
 | Android durable key readiness | `npm run android:durable-key-smoke` | Keypair readiness only; real Gormes restart reconnect remains manual closeout. Not whole-goal completion evidence by itself; run strict readiness audit before completion claims. |
-| Native host builds | `npm run platform:workflow-smoke` after workflow is visible remotely | Windows/iOS/hosted Android receipts require native runners. |
+| Native host builds | `npm run platform:workflow-smoke` after workflow is visible remotely | Windows/iOS/hosted Android receipts require native runners. Current local workflow YAML is not a receipt: the latest push was rejected because the OAuth app token lacks GitHub `workflow` scope, so successful `gh run view` jobs/artifacts are still required. |
 | Completion blocker audit | `npm run hermes:readiness-audit`; `NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit` | Informational only; strict mode must fail while blockers remain. The helper must print `Completion verdict: NOT COMPLETE` while live provider/device/native-host/reconnect or deferred-surface blockers remain, and must not promote proxy evidence such as tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output. |
 
 ## 1. Strategy
@@ -66,7 +66,7 @@ setup.
 
 ### 3.2 Gateway Client
 
-**File**: `test/core/gateway/navivox_gateway_client_test.dart`
+**Current coverage**: `test/core/gateway/navivox_gateway_protocol_test.dart` and gateway runtime/client-policy tests under `test/core/channel/gateway/`
 
 | Test | Setup | Expected |
 |------|-------|----------|
@@ -79,7 +79,7 @@ setup.
 
 ### 3.3 Gateway Channel
 
-**File**: `test/core/channel/gateway_navivox_channel_test.dart`
+**Current coverage**: `test/core/channel/gateway/runtime/channel_test.dart` plus reducer/policy/state tests under `test/core/channel/gateway/`
 
 | Test | Setup | Expected |
 |------|-------|----------|
@@ -249,9 +249,8 @@ path that enters setup fields, proves health/status/stream, sends through the
 real composer, and observes gateway-driven assistant output.
 
 ```bash
-cd flutter-navivox/app
 flutter test --platform chrome test/e2e/connect_and_talk_web_e2e_test.dart
-flutter build web --no-web-resources-cdn
+flutter build web --release -t lib/main_e2e.dart
 npx playwright test --config=playwright.config.mjs
 ```
 
@@ -259,44 +258,32 @@ Flutter's `integration_test` web runner remains available for environments
 with matching ChromeDriver/WebDriver configured:
 
 ```bash
-cd flutter-navivox/app
 flutter drive --driver=test_driver/integration_test.dart \
   --target=integration_test/connect_and_talk_e2e_test.dart -d chrome
 ```
 
-## 8. Fixtures
+## 8. Historical fixture guidance
 
-Recommended fixtures:
-
-- `test/fixtures/navivox/status_ok.json`
-- `test/fixtures/navivox/status_unauthorized.json`
-- `test/fixtures/navivox/session_started.json`
-- `test/fixtures/navivox/assistant_delta.json`
-- `test/fixtures/navivox/assistant_message.json`
-- `test/fixtures/navivox/tool_call_started.json`
-- `test/fixtures/navivox/tool_call_finished.json`
-- `test/fixtures/navivox/error.json`
-- `test/fixtures/config/navivox_schema.json`
-- `test/fixtures/agents/seed_lead_screening.json`
-
-Fixtures must not contain real tokens, transcripts from real users, provider
-keys, or private tool output.
+The original Gormes-first plan recommended JSON fixtures for status, session
+start, assistant deltas/messages, tool calls, errors, config schema, and seed
+profiles. Those fixture paths are not current repo inventory; current browser
+coverage uses the e2e app/fake Hermes server instead. Any future fixtures must
+not contain real tokens, transcripts from real users, provider keys, or private
+tool output.
 
 ## 9. CI Commands
 
 ```bash
-go test ./cmd/gormes -run NavivoxConnectInfo -count=1
-go test ./internal/channels/navivox -count=1
-go test ./internal/config -run Navivox -count=1
-cd flutter-navivox/app && flutter test
-cd flutter-navivox/app && flutter test --platform chrome test/e2e/connect_and_talk_web_e2e_test.dart
-cd flutter-navivox/app && flutter build web --no-web-resources-cdn
+flutter test --concurrency=1
+flutter test --platform chrome test/e2e/connect_and_talk_web_e2e_test.dart
+flutter build web --release -t lib/main_e2e.dart
+npx playwright test --config=playwright.config.mjs --list
 ```
 
 Docs-only rows should also run:
 
 ```bash
-go run ./cmd/progress validate
+flutter test test/tooling
 git diff --check
 ```
 

@@ -1,5 +1,15 @@
 # Analyst Summary — Navivox App Playwright E2E
 
+Status: historical 2026-05 Gormes Playwright analyst note. Current Hermes-first
+browser/readiness status lives in [Hermes platform smoke checklist](../runbooks/hermes-platform-smoke.md)
+and [Hermes companion readiness audit](../runbooks/hermes-readiness-audit.md).
+As of 2026-07-03, the current usable browser receipt is the focused Playwright
+rerun of `navivox-e2e.spec.mjs` plus `hermes-smoke.spec.mjs` (68 Chromium tests),
+while broad platform readiness still depends on provider credentials, Android
+physical-audio receipts, native-host Windows/iOS jobs, and a published workflow
+(the local workflow push is blocked until credentials include GitHub `workflow`
+scope).
+
 ## Session metadata
 - APP_URL = http://127.0.0.1:8767/
 - sessionDate = 2026-05-21 10:00 CST
@@ -7,12 +17,12 @@
 
 ## Results
 
-### E2E Test Counts (navivox-e2e.spec.mjs)
-- 43 specs passed
-- 12 new screenshot specs added (`playwright/tests/e2e-screenshots.spec.mjs`)
-- Total valid coverage = 55
+### Historical E2E Test Counts (`navivox-e2e.spec.mjs`)
+- 43 specs passed in this 2026-05 Gormes report
+- 12 screenshot specs were added later under `playwright/tests/screenshots/e2e-screenshots.spec.mjs`
+- Historical valid coverage at this point: 55 checks
 
-### Screenshot Inventory (55 unique captures)
+### Historical Screenshot Inventory (55 unique captures)
 #### Gateway coverage (14e-g)
   14c gateway list, 14d admin detail, 14e register modal, 14f voice agent gateway, 14g gateway setup screen
 
@@ -27,15 +37,15 @@
 #### Extra Nav Tiles (12l-o)
   12l gateway list nav, 12m gateway admin health, 12n contact detail, 12o chat detail
 
-### Blocker Specs (5 not-passing)
+### Historical Blocker Specs (5 not-passing in this 2026-05 run)
   1h gateway register: `_connectIntentSubscription?.cancel()` not wired
   2b chat read state: `_profileSelectedSegments.removeListener(_onChannelChanged)` not wired
   5a servers gateway: `_serversPresentation.refreshGateways` not dispatched
   5d memory degraded: `_memoryPresentation.memorySearchUnavailableMessage` not dispatched
   5e settings disabled: `_settingsPresentation.settingsUnavailableMessage` not dispatched
 
-### Status & Next
+### Historical Status & Next
 
-- Goal remains active (55 coverage points, 5 blockers unresolved)
-- Dispatch gateway admin wiring: connect intent source, profile read state listener, server refresh, memory/settings availability messages
-- Need owner decision on which gateway admin channel handler to apply first from navivox-gormes protocol
+- Historical 2026-05 Gormes UI goal remained active at this point (55 coverage points, 5 blockers unresolved).
+- That status is not the current Hermes readiness status. Use the runbooks linked at the top of this file for current blockers and completion criteria.
+- Historical next step was gateway-admin dispatch wiring: connect intent source, profile read state listener, server refresh, memory/settings availability messages.

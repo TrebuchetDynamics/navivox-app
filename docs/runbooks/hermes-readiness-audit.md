@@ -36,7 +36,7 @@ or deferred blocker but is not a completion receipt.
 | Overall Dart/widget regression | `flutter test --concurrency=1` passed on 2026-07-03 with 1016 tests after the latest diagnostics, workflow, docs, and readiness-guard changes. | Covered locally, but does not replace device/host receipts. |
 | Static analysis | `flutter analyze` passed with no issues after the readiness audit/docs/test guard changes and again after the closeout status refreshes. | Covered locally. |
 | E2E web release build | `flutter build web --release -t lib/main_e2e.dart` passed after the closeout status refreshes and produced `build/web`. Flutter still reports wasm dry-run incompatibilities from `flutter_secure_storage_web`, but the JS web build succeeds. | Covered locally for web build only. |
-| CI receipt path robustness | `.github/workflows/hermes-platform-smoke.yml` has quoted `"on"`, artifact uploads, optional provider/Android emulator jobs, and bounded job timeouts. `NAVIVOX_WATCH_WORKFLOW=false npm run platform:workflow-smoke` still exits 2 because `Hermes platform smoke` is not visible to `gh`; a direct `gh workflow list` recheck still shows only `pages-build-deployment`. The helper and readiness audit print visible workflows as blocker evidence, not native-host receipt evidence. | CI path improved; no run receipt yet. |
+| CI receipt path robustness | `.github/workflows/hermes-platform-smoke.yml` has quoted `"on"`, artifact uploads, optional provider/Android emulator jobs, and bounded job timeouts. `NAVIVOX_WATCH_WORKFLOW=false npm run platform:workflow-smoke` still exits 2 because `Hermes platform smoke` is not visible to `gh`; a direct `gh workflow list` recheck still shows only `pages-build-deployment`. A later `git push` containing the workflow was rejected because the current OAuth app token lacks `workflow` scope, so the workflow remains unpublished remotely. The helper and readiness audit print visible workflows as blocker evidence, not native-host receipt evidence. | CI path improved locally; no published workflow or run receipt yet. |
 
 ## Open blockers
 
@@ -96,8 +96,9 @@ non-overlapping categories:
   `npm run hermes:provider-smoke:local` receipt with configured model/provider
   credentials, and deterministic transcript voice still is not physical
   microphone or Hermes server-audio evidence.
-- Native/host receipts: workflow not visible remotely, missing Windows host
-  receipt, missing iOS/macOS host receipt, and no online Android target. When
+- Native/host receipts: workflow not visible remotely because the current push
+  credential lacks GitHub `workflow` scope, missing Windows host receipt,
+  missing iOS/macOS host receipt, and no online Android target. When
   Android is missing, the helper prints `flutter devices`, `flutter emulators`,
   and `emulator -accel-check` output as blocker context only, not Android/audio
   or live-mic receipt evidence.

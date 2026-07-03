@@ -1,5 +1,9 @@
 # Task 1 Subagent Packet — Transcript Surface Deepening
 
+Status: historical 2026-05 Gormes UI subagent packet. Do not use this as current
+Hermes-first implementation guidance; see `docs/product/hermes-agent-interface-plan.md`
+and `docs/runbooks/hermes-readiness-audit.md` for current companion readiness.
+
 Use this packet with an Agent/subagent dispatch tool.
 
 Task tool description: `Implement Task 1: Establish the new public Transcript surface seam`
@@ -10,8 +14,8 @@ You are implementing Task 1: Establish the new public Transcript surface seam.
 ## Task Description
 
 **Files:**
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Modify: `/home/xel/git/gormes/navivox-test/features/chat/composer_actions_test.dart`
 
 - [ ] Step 1: Write the failing public-seam test change.
 
@@ -87,7 +91,7 @@ void main() {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart
 ```
 
@@ -139,7 +143,7 @@ Do not change any behavior inside the renamed state class in this task.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart
 ```
 
@@ -147,7 +151,7 @@ Expected: PASS. Both composer tests pass.
 
 - [ ] Step 5: Commit this slice if the repository ownership is clear.
 
-If `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app` is still untracked under the parent repository, do not commit a partial Navivox project. Record the blocker instead of staging only a few files.
+If `/home/xel/git/gormes/navivox-app` is still untracked under the parent repository, do not commit a partial Navivox project. Record the blocker instead of staging only a few files.
 
 ## Context
 
@@ -157,11 +161,11 @@ This is a rename-only first slice. Keep `NavivoxChatMessage` as the input model.
 
 ## Work from
 
-`/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app`
+`/home/xel/git/gormes/navivox-app`
 
 ## Before You Begin
 
-Ask questions if anything is unclear. If the project is still untracked under the parent repository, complete files/tests but report commit as BLOCKED with exact `git status --short -- /home/xel/git/sages-openclaw/workspace-mineru/navivox-app` evidence.
+Ask questions if anything is unclear. If the project is still untracked under the parent repository, complete files/tests but report commit as BLOCKED with exact `git status --short -- /home/xel/git/gormes/navivox-app` evidence.
 
 ## Report Format
 

@@ -1,5 +1,9 @@
 # Connect Screen Simplification Implementation Plan
 
+Status: historical 2026-06 Gormes connect-screen implementation plan. Current
+fresh-install companion path is `/hermes`; preserved Gormes pairing/setup docs
+remain under `docs/runbooks/android/` and `docs/runbooks/termux/`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Restructure the setup/connect screen so QR import is the primary action and manual entry lives inside a collapsed expansion tile, removing the address+port split and the "Copy fix instructions" button from the main card.

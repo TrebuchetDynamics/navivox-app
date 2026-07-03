@@ -212,6 +212,12 @@ the remote branch, run:
 npm run platform:workflow-smoke
 ```
 
+Current delivery note: `.github/workflows/hermes-platform-smoke.yml` exists
+locally, but the latest push was rejected because the current OAuth app token
+lacks GitHub `workflow` scope. Until a credential with workflow scope publishes
+that file and successful `gh run view` job/artifact receipts exist, workflow YAML
+and dispatch attempts are not native-host readiness evidence.
+
 For a real spoken Android microphone closeout, prepare an audio-capable target
 and launch the app with:
 

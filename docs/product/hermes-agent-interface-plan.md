@@ -1,6 +1,8 @@
 # Hermes Agent interface plan for Navivox
 
-Status: planning note for steering Navivox away from Gormes-only runtime toward Hermes Agent-only operation. The current Gormes-first app state is preserved on the `gormes` branch at `b0b4390`; this plan targets future work on `main` or a new Hermes-focused delivery branch.
+Status: active Hermes-first plan plus implementation tracker. The original plan steered Navivox away from a Gormes-only runtime; `main` now contains the native Hermes API client/channel and `/hermes` UI (`lib/core/hermes/channel/hermes_api_channel.dart:19`, `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`). The current Gormes-first app state remains preserved on the `gormes` branch at `b0b4390` for legacy reference.
+
+Delivery note: the Hermes companion surface and readiness guardrails are committed locally (`c6c7e61`, `d1ee413`), but the latest push is blocked because publishing `.github/workflows/hermes-platform-smoke.yml` requires a GitHub credential with `workflow` scope. Until that workflow is published and successful `gh run view` jobs/artifacts exist, native-host platform readiness remains unclaimed.
 
 **Amendment (see [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md)):** the early transition-seam idea that adapted Hermes to the old Gormes-shaped `NavivoxChannel` interface is superseded. Navivox builds a native `HermesChannel` abstraction sized to Hermes's actual surface. Old Gormes-only screens (profile contacts, config-admin, memory, profile seed, voice profiles, run-record) are not wired to Hermes; new chat/session/voice screens are built against the native channel. The rest of this document (Hermes surface coverage table, target product model, MVP chat/session/streaming mapping) still holds as the source of truth for *what* Hermes surface to expose and in what order — only the *how* (adapter vs. native) changed.
 
@@ -115,7 +117,7 @@ The plan must consider every Hermes Desktop/Hermes Agent surface, but not every 
 | Logs/debug dump | Desktop Settings surfaces logs/backup/debug | **Bounded diagnostics now, raw logs later** | Export safe status/capability/readiness counts only; raw logs, transcript contents, tool payloads, and secrets stay excluded. |
 | i18n/theme/accessibility | Desktop has i18n/theme; Flutter app has platform accessibility needs | **Always** | Keep basic accessibility and clear mobile copy in every slice. |
 
-Hard default from the grill: **ship mobile chat/session/voice-to-text first, with every other Hermes surface either read-only, hidden, or explicitly deferred.** Consequence: the app becomes useful quickly without reimplementing Hermes Desktop in Flutter; full parity remains a roadmap, not a prerequisite.
+Hard default from the grill: **ship mobile chat/session/voice-to-text first, with every other Hermes surface either read-only, hidden, or explicitly deferred.** Consequence: the app becomes useful quickly without reimplementing Hermes Desktop in Flutter; full parity remains a roadmap, not a prerequisite. Track that staged parity work in [Hermes Desktop parity roadmap](hermes-desktop-parity-roadmap.md).
 
 ## Recommended architecture
 

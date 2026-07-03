@@ -42,6 +42,24 @@ The first integration path is:
 
 Detailed implementation slices live in [Hermes Agent interface plan for Navivox](../product/hermes-agent-interface-plan.md).
 
+## Implementation status — 2026-07-03
+
+The mainline implementation now follows this decision: `HermesApiChannel` and
+`HermesChannelState` live under `lib/core/hermes/channel/`, the `/hermes` route
+renders `HermesChatScreen`, and the UI uses Hermes endpoint/session language
+instead of adapting Hermes to `NavivoxChannel` (`lib/core/hermes/channel/hermes_api_channel.dart:19`,
+`lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`).
+
+Readiness remains intentionally incomplete. `hermesSurfaceReadiness()` keeps
+server realtime audio, config admin, memory UI, jobs admin, messaging gateways,
+persona/SOUL, attachments/media, files/context folders, raw diagnostics/log
+export, and multi-endpoint/profile management deferred/read-only until a later
+source-backed implementation lands (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
+The platform workflow exists locally, but publishing it is blocked until a
+GitHub credential with `workflow` scope can push
+`.github/workflows/hermes-platform-smoke.yml`; native-host receipts still require
+successful `gh run view` jobs/artifacts.
+
 ## Consequences
 
 - Product language shifts from Gormes gateway/profile contacts to Hermes endpoint/sessions/conversations.

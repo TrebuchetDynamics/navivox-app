@@ -1,6 +1,6 @@
 # Hermes Desktop Reference For Navivox
 
-Status: superseded for runtime direction by [ADR 0006](../adr/0006-hermes-agent-first-runtime.md), amended by [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md), and replaced operationally by the [Hermes Agent interface plan](hermes-agent-interface-plan.md). Still useful as historical UX reference.
+Status: superseded for runtime direction by [ADR 0006](../adr/0006-hermes-agent-first-runtime.md), amended by [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md), and replaced operationally by the [Hermes Agent interface plan](hermes-agent-interface-plan.md). Still useful as historical UX reference. Current mainline Hermes implementation lives in the native channel and `/hermes` UI (`lib/core/hermes/channel/hermes_api_channel.dart:19`, `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`), with deferred/read-only surface honesty centralized in `lib/core/hermes/policy/hermes_surface_readiness.dart:27`.
 
 Former status: accepted reference direction
 Reference: `fathah/hermes-desktop` cloned at `/tmp/hermes-desktop` during the 2026-06-03 planning session
@@ -55,7 +55,11 @@ This section is historical. ADR 0006 explicitly reopened Hermes runtime support 
 
 The 2026-06-03 Hermes runtime spike was removed from production code after the Gormes-first decision was accepted; later Hermes Agent-first work superseded that removal with a production Hermes client/channel.
 
-## Next Gormes-First Slices Inspired By Hermes Desktop
+## Historical Gormes-First Slices Inspired By Hermes Desktop
+
+These are preserved for the legacy Gormes path only. For mainline Hermes work,
+use the active implementation/readiness docs instead: [Hermes Agent interface
+plan](hermes-agent-interface-plan.md), [Hermes platform smoke checklist](../runbooks/hermes-platform-smoke.md), and [Hermes companion readiness audit](../runbooks/hermes-readiness-audit.md).
 
 1. Improve the Profile contact chat surface using Hermes Desktop's chat-first ergonomics.
 2. Wire Gormes sessions and Run records into a discoverable operator evidence surface.

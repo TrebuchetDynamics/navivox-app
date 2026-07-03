@@ -191,7 +191,7 @@ void main() {
         'no live Android target, physical mic, or full durable reconnect receipt',
       ),
     );
-    expect(auditText, contains('missing Windows host\n  receipt'));
+    expect(auditText, contains('missing Windows host receipt'));
     expect(auditText, contains('missing iOS/macOS host receipt'));
     expect(auditText, contains('flutter build windows --debug` exits 1'));
     expect(auditText, contains('only supported on Windows hosts'));
@@ -205,6 +205,8 @@ void main() {
     expect(auditText, contains('produced `build/web`'));
     expect(auditText, contains('gh workflow list` recheck still shows only'));
     expect(auditText, contains('pages-build-deployment'));
+    expect(auditText, contains('OAuth app token lacks `workflow` scope'));
+    expect(auditText, contains('workflow remains unpublished remotely'));
     expect(
       auditText,
       contains('prints `flutter devices`, `flutter emulators`,'),

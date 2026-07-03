@@ -1,7 +1,7 @@
 # Connect Screen Simplification
 
 **Date:** 2026-06-17
-**Status:** approved
+**Status:** historical approved Gormes connect-screen design; current fresh-install companion path is `/hermes`, with Gormes setup preserved as legacy runbooks.
 
 ## Problem
 

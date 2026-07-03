@@ -1,23 +1,26 @@
 # Navivox UI Design Guide
 
-Status: planning draft
-Updated: 2026-05-16
-Source: current HTTP/WebSocket gateway plan, PRD, and app shell
+Status: historical Gormes UI guide plus active Hermes-first addendum
+Updated: 2026-07-03
+Source: current Hermes `/hermes` UI, legacy HTTP/WebSocket gateway plan, PRD, and app shell
 
 ## 1. Design Principles
 
-1. **Connect and talk first**: the first useful path is base URL, token, health
-   check, stream, chat.
+1. **Connect and talk first**: the active Hermes-first path is `/hermes` ->
+   Hermes base URL/API key -> health/capabilities -> session chat. The preserved
+   Gormes path remains base URL, token, health check, stream, chat.
 2. **Work-focused, not marketing**: no landing page before the operator can talk
-   to a Gormes profile.
+   to a Hermes session or preserved Gormes profile.
 3. **Tool calls are first-class UI**: use structured cards, not transcript log
    dumps.
 4. **Secrets are invisible by design**: write-only fields, redacted status, no
    read-back.
-5. **Server-authoritative config**: the app edits drafts; Gormes validates and
-   applies.
+5. **Server-authoritative config**: the app edits drafts only where safe APIs
+   exist. Hermes config admin remains deferred/read-only; preserved Gormes
+   validates and applies legacy config changes.
 6. **Voice is an input mode, not a setup blocker**: text turn fallback always
-   works.
+   works. Current Hermes voice is local device STT submitted as a text turn;
+   Hermes realtime/server audio is not implemented.
 7. **Trust boundaries stay visible**: connected host, auth mode, exposure mode,
    and token-required state are shown without leaking secrets.
 8. **Dense, adaptive layout**: mobile keeps chat immersive with a
@@ -37,12 +40,38 @@ Source: current HTTP/WebSocket gateway plan, PRD, and app shell
 
 ## 2. Primary Screens
 
-### 2.1 Launch Routing
+### 2.1 Active Hermes Screen
 
-- No saved or trusted server: open setup.
-- One healthy saved server and usable profile: open that profile chat.
-- Multiple servers, offline/auth issue, or pending attention: open the profile
-  contact list.
+`HermesChatScreen` is the fresh-install default route through `/hermes`
+(`lib/router/providers/app_router.dart:22`, `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`).
+It owns its own Hermes endpoint setup form and is not gated by legacy Gormes
+server state.
+
+Active Hermes UI elements:
+
+- Setup presets for local host, Android emulator, and remote/LAN Hermes URLs.
+- Base URL plus optional API key entry; keys must not appear in routes,
+  screenshots, diagnostics, or transcripts.
+- Capability/health strip with safe summaries only.
+- Sessions panel with list/select/new plus capability/API-gated rename, fork,
+  and delete actions.
+- Composer, push-to-talk, and continuous voice; voice submits local STT
+  transcripts as Hermes text turns.
+- Approval, stop, tool-progress, read-only catalog/jobs, and bounded diagnostics
+  surfaces when advertised.
+- Deferred/read-only labels for server realtime audio, config admin, memory UI,
+  jobs admin, messaging gateways, persona/SOUL, attachments/media, files/context
+  folders, raw diagnostics/log export, and multi-endpoint/profile management via
+  `hermesSurfaceReadiness()` (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
+
+### 2.2 Launch Routing
+
+- Fresh install or no saved legacy Gormes server: open `/hermes`.
+- Legacy Gormes setup explicitly requested: open `/setup`.
+- One healthy saved legacy Gormes server and usable profile: open that profile
+  chat.
+- Multiple legacy servers, offline/auth issue, or pending attention: open the
+  profile contact list.
 
 ### 2.2 Profile Contact List
 

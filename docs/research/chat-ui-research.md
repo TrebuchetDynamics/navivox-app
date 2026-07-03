@@ -1,24 +1,36 @@
 # Navivox Chat UI Research
 
-Status: planning draft
-Updated: 2026-05-16
-Source: current Navivox product direction and prior open-source UI survey
+Status: historical Gormes chat UI research plus active Hermes-first addendum
+Updated: 2026-07-03
+Source: current Hermes `/hermes` UI, preserved Gormes product direction, and prior open-source UI survey
 
 ## 1. Decision Summary
 
-Navivox should keep the current simple chat adapter until the connect-and-talk
-loop is proven. After that, the production chat surface should become
-Telegram-inspired around Gormes profiles as contacts: a dense flat profile
-list, fast message scan, grouped bubbles with tails, compact timestamps, status
-ticks, bottom-sheet actions, continuous voice transcript bubbles, and
-first-class tool cards.
+Active Hermes-first update: the current mainline chat surface is the native
+`/hermes` screen, not a package-driven replacement of the legacy transcript UI.
+`HermesChatScreen` renders Hermes sessions, streaming turns, approvals, tool
+progress, local-STT voice transcripts, session management, bounded diagnostics,
+and deferred/read-only surface labels directly over `HermesChannel` state
+(`lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`,
+`lib/core/hermes/channel/hermes_channel.dart`,
+`lib/core/hermes/policy/hermes_surface_readiness.dart:27`). Any future chat UI
+package must remain a rendering layer over that state and must not own Hermes
+transport, persistence, routing, credentials, or diagnostics.
 
-The Flutter app talks to Gormes, not directly to model providers. Any chat UI
-package is only a rendering layer over `GatewayNavivoxChannel` state.
+Historical Gormes guidance: Navivox should keep the simple chat adapter until
+the connect-and-talk loop is proven. After that, the production Gormes transcript
+surface can become Telegram-inspired around Gormes profiles as contacts: a dense
+flat profile list, fast message scan, grouped bubbles with tails, compact
+timestamps, status ticks, bottom-sheet actions, continuous voice transcript
+bubbles, and first-class tool cards.
 
-The stable contact identity is `server_id + profile_id`. A Gormes profile is an
-isolated home/config/secrets/sessions/memory/skills/runtime state, not the same
-thing as OpenClaw-style live multi-agent routing.
+The preserved legacy Flutter app talks to Gormes, not directly to model
+providers. Any chat UI package there is only a rendering layer over
+`GatewayNavivoxChannel` state.
+
+The stable legacy contact identity is `server_id + profile_id`. A Gormes profile
+is an isolated home/config/secrets/sessions/memory/skills/runtime state, not the
+same thing as OpenClaw-style live multi-agent routing.
 
 ## 2. Telegram-Inspired Reference Plan
 
@@ -56,16 +68,16 @@ their behavior in product contracts without that evidence.
 
 ### 2.3 Product Translation
 
-Telegram pattern | Navivox translation
----|---
-Chat list with avatars, last message, unread/status/time | Flat profile contact list keyed by `server_id + profile_id`, with server label, latest sanitized preview, health, attention count, mic affordance
-Message bubbles | User/assistant/system bubbles backed by `GatewayNavivoxChannel`
-Read ticks | Local send/queued/streaming/done/error state, not server read receipts
-Voice message | Device transcript bubble with auto-send grace; audio playback only after Voice run lifecycle state exists
-Attachment/action tray | Draggable sheet for tools, voice, profile seed, workspace roots, config, and future files
-Pinned banner | Active server/profile/trust warning
-Context menu | Copy, retry, inspect tool, reveal redacted fields when authorized
-Search | Profile contact search first; session/message search once retention and APIs exist
+Telegram pattern | Active Hermes translation | Preserved Gormes translation
+---|---|---
+Chat list with avatars, last message, unread/status/time | Hermes sessions panel; one saved endpoint MVP, multi-endpoint/profile management deferred | Flat profile contact list keyed by `server_id + profile_id`, with server label, latest sanitized preview, health, attention count, mic affordance
+Message bubbles | User/assistant/system/tool turns backed by `HermesChannel` | User/assistant/system bubbles backed by `GatewayNavivoxChannel`
+Read ticks | Local queued/streaming/done/error state, not server read receipts | Local send/queued/streaming/done/error state, not server read receipts
+Voice message | Local STT transcript submitted as Hermes text; server realtime audio deferred | Device transcript bubble with auto-send grace; audio playback only after Voice run lifecycle state exists
+Attachment/action tray | Explain attachments/media/files as deferred until Hermes mobile-safe APIs exist | Draggable sheet for tools, voice, profile seed, workspace roots, config, and future files
+Pinned banner | Hermes endpoint/capability/auth/readiness warning | Active server/profile/trust warning
+Context menu | Copy, retry/stop where supported, approvals, bounded diagnostics; no raw payloads | Copy, retry, inspect tool, reveal redacted fields when authorized
+Search | Session/message search later once Hermes retention/search APIs and mobile UX are defined | Profile contact search first; session/message search once retention and APIs exist
 
 ## 3. Adopt
 

@@ -1,12 +1,13 @@
 # Navivox Documentation
 
-Start with `../CONTEXT.md` for stable product language, then use this index to find the durable docs.
+Start with `../CONTEXT.md` for stable product language, then use this index to find the durable docs. Current `main` is Hermes Agent-first; Gormes pages and early ADRs are preserved as legacy/historical context unless they explicitly say they are active.
 
 ## Product
 
 - [PRD](product/prd.md)
 - [Hermes Desktop reference direction](product/hermes-desktop-reference.md)
 - [Hermes Agent interface plan](product/hermes-agent-interface-plan.md)
+- [Hermes Desktop parity roadmap](product/hermes-desktop-parity-roadmap.md)
 - [Routes](product/routes.md)
 - [Testing plan](product/testing-plan.md)
 - [UI design](product/ui-design.md)
@@ -24,6 +25,11 @@ Start with `../CONTEXT.md` for stable product language, then use this index to f
 - [Chat UI research](research/chat-ui-research.md)
 - [Library research](research/library-research.md)
 
+## Testing And Historical Implementation Notes
+
+- [Playwright E2E guide](../playwright/README.md) — current browser test inventory, including deterministic Hermes fake smoke and env-gated live/provider specs.
+- [Superpowers plans/specs](superpowers/) — historical implementation packets; use them as record, not as current Hermes-first readiness source.
+
 ## Runbooks And Handoffs
 
 Before any Hermes readiness completion claim, run strict readiness audit:
@@ -35,7 +41,11 @@ NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit
 While external/deferred blockers remain, the expected result is exit 3 with
 `Completion verdict: NOT COMPLETE`; do not treat proxy evidence such as passing
 tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output
-as completion.
+as completion. Current delivery note: the local
+`.github/workflows/hermes-platform-smoke.yml` push was rejected because the
+current OAuth app token lacks GitHub `workflow` scope, so host-runner workflow
+receipts are still unavailable until that file is published with proper scope
+and successful `gh run view` jobs/artifacts exist.
 
 - [Hermes platform smoke checklist](runbooks/hermes-platform-smoke.md)
 - [Hermes companion readiness audit](runbooks/hermes-readiness-audit.md)

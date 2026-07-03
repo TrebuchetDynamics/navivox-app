@@ -1,8 +1,8 @@
 # Navivox Library Research
 
-Status: planning draft
-Updated: 2026-05-16
-Source: current `flutter-navivox/app/pubspec.yaml` plus feature planning
+Status: historical Gormes library research plus active Hermes-first addendum
+Updated: 2026-07-03
+Source: current root `pubspec.yaml`, active Hermes API/channel implementation, and preserved legacy gateway planning
 
 ## 1. Current Dependency Baseline
 
@@ -14,22 +14,34 @@ The app should stay small until a feature needs a package. The current
 | Flutter | App framework | Required. |
 | `flutter_riverpod` | State management | Connection, channel, chat, voice, and route state. |
 | `go_router` | Navigation | Setup redirect and shell tabs. |
-| `freezed_annotation` | Future immutable models | Annotation dependency is present; codegen should be added only when unions grow. |
-| `json_annotation` | Future JSON models | Useful for generated gateway/config DTOs. |
-| `uuid` | Client request ids | Used by channel messages. |
+| `uuid` | Client request ids | Used by channel messages and Hermes client-generated session/run ids. |
 | `intl` | Formatting | Timestamps and durations. |
+| `image_picker`, `mobile_scanner` | Legacy/import affordances | Preserved Gormes setup/import surfaces; not Hermes readiness receipts. |
 | `path` | Path helpers | Local cache paths when needed. |
+| `shared_preferences` | Non-secret local preferences | Stores safe endpoint/base URL metadata; never API keys. |
+| `flutter_secure_storage` | Secret local storage | Stores Hermes API keys and durable credential secrets through secure-store paths. |
+| `web` | Browser transport interop | Used by web-compatible Hermes HTTP/SSE transport. |
+| `speech_to_text` | Local STT | Device transcript capture for local voice-to-text; not Hermes server audio. |
+| `crypto` | Signing/hash helpers | Durable credential and protocol support. |
 
 Dependencies removed from the current app should not be reintroduced as
 planning defaults. Add packages only with the feature slice that needs them and
 with tests proving the package participates in the current HTTP/WebSocket
 gateway loop.
 
-## 2. HTTP/WebSocket Gateway
+## 2. HTTP/SSE And Legacy WebSocket Transports
 
-The current app uses `dart:io` `HttpClient` and `WebSocket`.
+Active Hermes path: `HermesApiClient` uses platform-specific HTTP transports
+for IO and web plus SSE/event decoding for session chat and run events
+(`lib/core/hermes/client/hermes_api_client.dart`,
+`lib/core/hermes/client/platform/`, `lib/core/hermes/sse/`). It supports
+`GET`/`POST`/streaming `POST`/streaming `GET`/`PATCH`/`DELETE` so the native
+Hermes channel can load capabilities, sessions, messages, health/catalog/jobs,
+and session mutation actions without adding new third-party networking packages.
 
-Current gateway client responsibilities:
+Preserved Gormes path uses `dart:io` `HttpClient` and `WebSocket`.
+
+Current legacy gateway client responsibilities:
 
 - Build `/healthz`, `/v1/navivox/status`, `/v1/navivox/sessions`,
   `/v1/navivox/turn`, and `/v1/navivox/stream` URLs from a base URL.
@@ -38,9 +50,10 @@ Current gateway client responsibilities:
 - Decode JSON server events into typed Dart objects.
 - Apply reconnect backoff.
 
-When browser/web support becomes a target, evaluate a cross-platform HTTP and
-WebSocket package in that specific slice. Until then, the existing Dart IO path
-is enough for mobile and desktop.
+Browser/web support for Hermes now uses the first-party `web` package and the
+existing platform transport abstraction; do not add a cross-platform HTTP/SSE
+package unless a source-backed slice proves the current IO/web split is
+insufficient.
 
 ## 3. State And Navigation
 
@@ -77,9 +90,16 @@ Rules:
 
 ## 4. Chat UI
 
-The planned chat foundation is `flyerhq/flutter_chat_ui` v2, but the current
-app still uses a simple adapter. Introduce the chat package in the slice that
-needs:
+Active Hermes path keeps local Flutter widgets in `HermesChatScreen` for now.
+It already renders session turns, approvals, tool progress, local-STT voice
+transcripts, session management, read-only diagnostics, and readiness labels
+without adding a chat UI dependency. Any package adoption must remain a
+rendering layer over `HermesChannel` state and must not own Hermes transport,
+credentials, persistence, or routing.
+
+Historical Gormes plan: the planned chat foundation was
+`flyerhq/flutter_chat_ui` v2, but the preserved app still uses local adapters.
+Introduce a chat package only in the slice that needs:
 
 - Streaming assistant text.
 - Custom tool card builders.
@@ -96,8 +116,9 @@ Acceptance for adding the package:
 
 ## 5. Secure Local Storage
 
-A secure storage package is needed when the app persists tokens or local unlock
-state.
+Secure storage has landed for Hermes endpoint credentials and durable-key paths.
+Continue using `flutter_secure_storage` for API keys/secrets and
+`shared_preferences` only for non-secret endpoint metadata.
 
 Requirements:
 

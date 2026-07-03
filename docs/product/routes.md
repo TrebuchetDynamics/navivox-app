@@ -1,13 +1,20 @@
 # Navivox Route Design
 
-Status: planning draft
-Source: derived from docs/product/prd.md and the current Flutter router
+Status: historical Gormes route plan plus active Hermes route addendum
+Updated: 2026-07-03
+Source: derived from docs/product/prd.md and the current Flutter router (`lib/router/routes/app_routes.dart`, `lib/router/providers/app_router.dart`)
 
 ## 1. Route Architecture
 
-GoRouter uses Riverpod state to decide whether the app should show setup or the
-main shell. A configured gateway connection is enough to enter the product; the
-first useful screen is chat.
+GoRouter uses Riverpod state to decide whether the app should show setup, the
+legacy Gormes shell, or the native Hermes screen. Current `initialLocation` is
+`AppRoutes.hermes` when no legacy Gormes server is connected, and `AppRoutes.chats`
+when preserved Gormes state already has a server (`lib/router/providers/app_router.dart:22`).
+The `/hermes` route is allowed through the setup redirect without a Gormes gateway
+(`lib/router/providers/app_router.dart:27`).
+
+The sections below preserve the original Gormes-first route plan and add the
+active Hermes route where it now exists.
 
 ### 1.1 Current Route Constants
 
@@ -28,6 +35,7 @@ abstract final class AppRoutes {
   static const terminal = '/terminal';
   static const terminalSession = '/terminal/:serverId';
   static const settings = '/settings';
+  static const hermes = '/hermes';
 
   static String chatLocation({
     required String serverId,
@@ -40,15 +48,18 @@ abstract final class AppRoutes {
   static bool isSetupLocation(String location) =>
       location == setup || location.startsWith('$setup/');
 
+  static bool isHermesLocation(String location) =>
+      location == hermes || location.startsWith('$hermes/');
+
   static bool isChatThreadLocation(String location) =>
       location.startsWith('$chats/');
 }
 ```
 
 Setup, chats, chat thread, servers, agents, memory, config, config section,
-and settings are currently mounted in the router. Server detail, agent editor,
-agent create, secret editor, terminal, and terminal session constants remain
-future surfaces until their screens have current gateway-backed behavior.
+settings, and `/hermes` are currently mounted in the router. Server detail,
+agent editor, agent create, secret editor, terminal, and terminal session constants
+remain future surfaces until their screens have current gateway-backed behavior.
 
 Profile contact chat locations must be built through `AppRoutes.chatLocation`
 so `server_id` and `profile_id` values with spaces or slashes are encoded as
@@ -56,15 +67,17 @@ route path segments before GoRouter matching.
 
 ## 2. Current Route Table
 
-### 2.1 Setup
+### 2.1 Hermes and setup entry points
 
 | Path | Screen | Guard | Notes |
 |------|--------|-------|-------|
-| `/setup` | `SetupScreen` | None | Paste or scan `gormes navivox connect-info` output, enter token when required, probe `/healthz`, and connect to the stream. |
+| `/hermes` | `HermesChatScreen` | None; setup redirect allows it without legacy Gormes state | Native Hermes Agent connect/session/chat/voice surface. API keys are entered only into the Hermes form/store path, not routes. |
+| `/setup` | `SetupScreen` | None | Legacy Gormes setup: paste or scan `gormes navivox connect-info` output, enter token when required, probe `/healthz`, and connect to the stream. |
 
-The setup screen should prefer a single "connect and talk now" path. Advanced
-server inventory, imports, and terminal workflows are not part of the first
-activation loop.
+The Hermes route is the fresh-install default. The legacy setup screen should
+still prefer a single "connect and talk now" path for Gormes. Advanced server
+inventory, imports, and terminal workflows are not part of the first activation
+loop.
 
 ### 2.2 Main Shell
 
@@ -77,6 +90,7 @@ The shell route wraps the primary authenticated surfaces with app navigation.
 | Profiles | `/agents` | `AgentsScreen` | Connected gateway |
 | Memory | `/memory` | `MemoryDashboardScreen` | Connected gateway |
 | Config | `/config`, `/config/:section` | `ConfigScreen` | Connected gateway; mutation controls require server role evidence |
+| Hermes | `/hermes` | `HermesChatScreen` | Native Hermes endpoint/session UI; not gated by Gormes server state |
 
 ### 2.3 Planned Detail Routes
 
@@ -93,56 +107,46 @@ The shell route wraps the primary authenticated surfaces with app navigation.
 
 ## 3. Router Configuration
 
-The current provider redirects to setup until a gateway-backed server is present
-in channel state.
+The current provider redirects to legacy setup until a gateway-backed server is
+present, but exempts `/hermes` so a fresh install opens the native Hermes flow.
+This excerpt is intentionally shortened; verify changes against
+`lib/router/providers/app_router.dart`.
 
 ```dart
-final routerProvider = Provider<GoRouter>((ref) {
-  final channel = ref.watch(navivoxChannelProvider);
+return GoRouter(
+  initialLocation: channel.state.servers.isEmpty
+      ? AppRoutes.hermes
+      : AppRoutes.chats,
+  redirect: (context, state) {
+    final hasServers = channel.state.servers.isNotEmpty;
+    final isSetup = AppRoutes.isSetupLocation(state.matchedLocation);
+    final isHermes = AppRoutes.isHermesLocation(state.uri.toString());
 
-  return GoRouter(
-    initialLocation: AppRoutes.chats,
-    refreshListenable: channel,
-    redirect: (context, state) {
-      final hasServers = channel.state.servers.isNotEmpty;
-      final isSetup = state.matchedLocation.startsWith(AppRoutes.setup);
-
-      if (!hasServers && !isSetup) return AppRoutes.setup;
-      if (hasServers && isSetup) return AppRoutes.chats;
-      return null;
-    },
-    routes: [
-      GoRoute(
-        path: AppRoutes.setup,
-        builder: (context, state) => const SetupScreen(),
+    if (!hasServers && !isSetup && !isHermes) return AppRoutes.setup;
+    if (hasServers && isSetup) return AppRoutes.chats;
+    return null;
+  },
+  routes: [
+    GoRoute(path: AppRoutes.setup, builder: (_, __) => const SetupScreen()),
+    ShellRoute(
+      builder: (_, state, child) => AppShell(
+        location: state.matchedLocation,
+        child: child,
       ),
-      ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.matchedLocation, child: child),
-        routes: [
-          GoRoute(path: AppRoutes.chats, builder: (_, __) => const ProfileContactsScreen()),
-          GoRoute(
-            path: AppRoutes.chatThread,
-            builder: (_, state) => ChatScreen(
-              serverId: state.pathParameters['serverId'],
-              profileId: state.pathParameters['profileId'],
-            ),
-          ),
-          GoRoute(path: AppRoutes.servers, builder: (_, __) => const ServersScreen()),
-          GoRoute(path: AppRoutes.agents, builder: (_, __) => const AgentsScreen()),
-          GoRoute(path: AppRoutes.memory, builder: (_, __) => const MemoryDashboardScreen()),
-          GoRoute(path: AppRoutes.config, builder: (_, __) => const ConfigScreen()),
-          GoRoute(
-            path: AppRoutes.configSection,
-            builder: (_, state) => ConfigScreen(
-              sectionId: state.pathParameters['section'],
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-});
+      routes: [
+        GoRoute(path: AppRoutes.chats, builder: (_, __) => const ProfileContactsScreen()),
+        GoRoute(path: AppRoutes.chatThread, builder: (_, state) => ChatScreen(...)),
+        GoRoute(path: AppRoutes.servers, builder: (_, __) => const ServersScreen()),
+        GoRoute(path: AppRoutes.agents, builder: (_, __) => const AgentsScreen()),
+        GoRoute(path: AppRoutes.memory, builder: (_, __) => const MemoryDashboardScreen()),
+        GoRoute(path: AppRoutes.config, builder: (_, __) => const ConfigScreen()),
+        GoRoute(path: AppRoutes.configSection, builder: (_, state) => ConfigScreen(...)),
+        GoRoute(path: AppRoutes.settings, builder: (_, __) => const SettingsScreen()),
+        GoRoute(path: AppRoutes.hermes, builder: (_, __) => const HermesChatScreen()),
+      ],
+    ),
+  ],
+);
 ```
 
 ## 4. Route Guards
@@ -156,8 +160,10 @@ final hasGatewayProvider = Provider<bool>((ref) {
 });
 ```
 
-Setup owns connection creation. The shell assumes a gateway exists and renders
-connection loss as recoverable UI, not a route crash.
+Legacy Gormes setup owns Gormes connection creation. `/hermes` owns its own
+Hermes endpoint connection form and saved-endpoint store, so it is not blocked
+by `hasGatewayProvider`. The shell renders connection loss as recoverable UI,
+not a route crash.
 
 ### 4.2 Role Guards
 
@@ -193,7 +199,17 @@ class ConfigMutationGuard extends ConsumerWidget {
 
 ## 5. Navigation Patterns
 
-### 5.1 Setup To Chat
+### 5.1 Hermes setup to chat
+
+```text
+Open /hermes
+  -> enter Hermes API base URL + optional API key
+  -> GET /health and /v1/capabilities
+  -> GET/POST /api/sessions
+  -> POST /api/sessions/{id}/chat/stream or /v1/runs when capability-gated
+```
+
+### 5.2 Legacy Gormes setup to chat
 
 ```text
 Paste connect-info base URL + token

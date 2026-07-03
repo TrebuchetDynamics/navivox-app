@@ -1,5 +1,10 @@
 # Transcript Surface Deepening Implementation Plan
 
+Status: historical 2026-05 Gormes UI implementation plan. Current mainline docs
+for Hermes-first chat live in `docs/product/hermes-agent-interface-plan.md`,
+`docs/product/ui-design.md`, and `docs/runbooks/hermes-readiness-audit.md`.
+Preserve this file as implementation history, not as current task state.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rename the current chat adapter to `TranscriptSurface` and deepen it into one public module with private/internal behavior files, without changing UI behavior or adding a chat package.
@@ -24,47 +29,47 @@
 
 Create:
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
   - Public module and only import target for callers.
   - Defines `TranscriptSurface` and `_TranscriptSurfaceState`.
   - Includes imports and `part` declarations.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_bubble.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_bubble.dart`
   - Private bubble row, tail painter, typing indicator.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_bodies.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_message_bodies.dart`
   - Private text/tool/safety/approval/voice body renderers.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_composer.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_composer.dart`
   - Private input bar, emoji row, attach sheet, voice unavailable sheet.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_actions.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_message_actions.dart`
   - Private message action sheet and message action text extraction.
 
 Modify:
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/screens/chat_screen.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/screens/chat_screen.dart`
   - Import `transcript_surface.dart`.
   - Instantiate `TranscriptSurface`.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart`
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart`
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart`
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/tool_artifacts_render_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/chat/composer_actions_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/chat/message_actions_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/chat/chat_voice_button_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/chat/tool_artifacts_render_test.dart`
   - Import `transcript_surface.dart`.
   - Instantiate `TranscriptSurface`.
 
 Delete after all imports move:
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/simple_chat_adapter.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/simple_chat_adapter.dart`
 
 ---
 
 ## Task 1: Establish the new public Transcript surface seam
 
 **Files:**
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Modify: `/home/xel/git/gormes/navivox-test/features/chat/composer_actions_test.dart`
 
 - [ ] **Step 1: Write the failing public-seam test change**
 
@@ -140,7 +145,7 @@ void main() {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart
 ```
 
@@ -192,7 +197,7 @@ Do not change any behavior inside the renamed state class in this task.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart
 ```
 
@@ -200,14 +205,14 @@ Expected: PASS. Both composer tests pass.
 
 - [ ] **Step 5: Commit this slice if the repository ownership is clear**
 
-If `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app` is still untracked under the parent repository, do not commit a partial Navivox project. Record the blocker instead of staging only a few files.
+If `/home/xel/git/gormes/navivox-app` is still untracked under the parent repository, do not commit a partial Navivox project. Record the blocker instead of staging only a few files.
 
 If the Navivox project has been made trackable as a complete repo or submodule, run:
 
 ```bash
-cd /home/xel/git/sages-openclaw
- git add workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart
+cd /home/xel/git/gormes/navivox-app
+ git add lib/features/chat/widgets/transcript_surface.dart \
+   test/features/chat/composer_actions_test.dart
  git commit -m "refactor(navivox): introduce transcript surface seam"
 ```
 
@@ -216,10 +221,10 @@ cd /home/xel/git/sages-openclaw
 ## Task 2: Move production and widget tests to the new public seam
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/screens/chat_screen.dart`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/tool_artifacts_render_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-lib/features/chat/screens/chat_screen.dart`
+- Modify: `/home/xel/git/gormes/navivox-test/features/chat/message_actions_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-test/features/chat/chat_voice_button_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-test/features/chat/tool_artifacts_render_test.dart`
 
 - [ ] **Step 1: Write failing references to the new public seam**
 
@@ -266,7 +271,7 @@ Then replace every `SimpleChatAdapter(` call with `TranscriptSurface(`.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test \
   test/features/chat/composer_actions_test.dart \
   test/features/chat/message_actions_test.dart \
@@ -282,7 +287,7 @@ Expected before Task 1 implementation: FAIL because `TranscriptSurface` is missi
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 rg "SimpleChatAdapter|simple_chat_adapter" lib test
 ```
 
@@ -293,7 +298,7 @@ Expected before cleanup: only references in `simple_chat_adapter.dart` itself. I
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test \
   test/features/chat/composer_actions_test.dart \
   test/features/chat/message_actions_test.dart \
@@ -309,11 +314,11 @@ Expected: PASS.
 If the Navivox project has been made trackable as a complete repo or submodule, run:
 
 ```bash
-cd /home/xel/git/sages-openclaw
- git add workspace-mineru/navivox-app/app/lib/features/chat/screens/chat_screen.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/tool_artifacts_render_test.dart
+cd /home/xel/git/gormes/navivox-app
+ git add lib/features/chat/screens/chat_screen.dart \
+   test/features/chat/message_actions_test.dart \
+   test/features/chat/chat_voice_button_test.dart \
+   test/features/chat/tool_artifacts_render_test.dart
  git commit -m "refactor(navivox): use transcript surface in chat"
 ```
 
@@ -322,16 +327,16 @@ cd /home/xel/git/sages-openclaw
 ## Task 3: Extract transcript message actions into a private part file
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_actions.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_message_actions.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/message_actions_test.dart`
 
 - [ ] **Step 1: Confirm green behavior before refactor**
 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/message_actions_test.dart
 ```
 
@@ -474,7 +479,7 @@ _showTranscriptMessageActions(
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/message_actions_test.dart
 ```
 
@@ -485,7 +490,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/features/chat/widgets/transcript_surface.dart lib/features/chat/widgets/src/transcript_message_actions.dart
 ```
 
@@ -496,17 +501,17 @@ Expected: `Formatted` output or `Changed 0 files`.
 ## Task 4: Extract composer behavior into a private part file
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_composer.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_composer.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/composer_actions_test.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/chat_voice_button_test.dart`
 
 - [ ] **Step 1: Confirm green behavior before refactor**
 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart test/features/chat/chat_voice_button_test.dart
 ```
 
@@ -535,7 +540,7 @@ Move the full existing `_InputBar` and `_InputBarState` declarations from `trans
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/composer_actions_test.dart test/features/chat/chat_voice_button_test.dart
 ```
 
@@ -546,7 +551,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/features/chat/widgets/transcript_surface.dart lib/features/chat/widgets/src/transcript_composer.dart
 ```
 
@@ -557,17 +562,17 @@ Expected: `Formatted` output or `Changed 0 files`.
 ## Task 5: Extract message body rendering into a private part file
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_bodies.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/tool_artifacts_render_test.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_message_bodies.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/tool_artifacts_render_test.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/chat_voice_button_test.dart`
 
 - [ ] **Step 1: Confirm green behavior before refactor**
 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/tool_artifacts_render_test.dart test/features/chat/chat_voice_button_test.dart
 ```
 
@@ -603,7 +608,7 @@ Copy each declaration from its `class` line through its final closing brace. Do 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/tool_artifacts_render_test.dart test/features/chat/chat_voice_button_test.dart
 ```
 
@@ -614,7 +619,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/features/chat/widgets/transcript_surface.dart lib/features/chat/widgets/src/transcript_message_bodies.dart
 ```
 
@@ -625,17 +630,17 @@ Expected: `Formatted` output or `Changed 0 files`.
 ## Task 6: Extract bubble, tail, and typing rendering into a private part file
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
-- Create: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_bubble.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/typing_indicator_test.dart`
-- Test: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart`
+- Modify: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
+- Create: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/src/transcript_bubble.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/typing_indicator_test.dart`
+- Test: `/home/xel/git/gormes/navivox-test/features/chat/message_actions_test.dart`
 
 - [ ] **Step 1: Confirm green behavior before refactor**
 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/typing_indicator_test.dart test/features/chat/message_actions_test.dart
 ```
 
@@ -670,7 +675,7 @@ Copy each declaration from its `class` line through its final closing brace. Do 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/typing_indicator_test.dart test/features/chat/message_actions_test.dart
 ```
 
@@ -681,7 +686,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/features/chat/widgets/transcript_surface.dart lib/features/chat/widgets/src/transcript_bubble.dart
 ```
 
@@ -692,7 +697,7 @@ Expected: `Formatted` output or `Changed 0 files`.
 ## Task 7: Remove the old adapter file and run full Navivox validation
 
 **Files:**
-- Delete: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/simple_chat_adapter.dart`
+- Delete: `/home/xel/git/gormes/navivox-lib/features/chat/widgets/simple_chat_adapter.dart`
 - Modify: imports only if `rg` finds remaining old references.
 
 - [ ] **Step 1: Verify no callers use the old seam**
@@ -700,7 +705,7 @@ Expected: `Formatted` output or `Changed 0 files`.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 rg "SimpleChatAdapter|simple_chat_adapter" lib test
 ```
 
@@ -711,14 +716,14 @@ Expected: only the old file itself appears. If any caller appears, change that c
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 trash lib/features/chat/widgets/simple_chat_adapter.dart
 ```
 
 If `trash` is not available, move the file to a timestamped backup outside `lib`:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 mkdir -p ../_backups
 mv lib/features/chat/widgets/simple_chat_adapter.dart ../_backups/simple_chat_adapter.dart.$(date +%Y%m%dT%H%M%S%z)
 ```
@@ -728,7 +733,7 @@ mv lib/features/chat/widgets/simple_chat_adapter.dart ../_backups/simple_chat_ad
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 rg "SimpleChatAdapter|simple_chat_adapter" lib test
 ```
 
@@ -739,7 +744,7 @@ Expected: no output and exit code 1 from `rg` because no matches exist.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test \
   test/features/chat/composer_actions_test.dart \
   test/features/chat/message_actions_test.dart \
@@ -760,7 +765,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test
 ```
 
@@ -771,10 +776,10 @@ Expected: PASS. If unrelated tests fail, capture the first failing test name and
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib test
-cd /home/xel/git/sages-openclaw
-git diff --check -- workspace-mineru/navivox-app
+cd /home/xel/git/gormes/navivox-app
+git diff --check
 ```
 
 Expected: Dart formatter completes; `git diff --check` exits 0.
@@ -784,23 +789,23 @@ Expected: Dart formatter completes; `git diff --check` exits 0.
 If the Navivox project has been made trackable as a complete repo or submodule, run:
 
 ```bash
-cd /home/xel/git/sages-openclaw
- git add workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_bubble.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_bodies.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_composer.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/widgets/src/transcript_message_actions.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/screens/chat_screen.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/composer_actions_test.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/message_actions_test.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart \
-   workspace-mineru/navivox-app/app/test/features/chat/tool_artifacts_render_test.dart \
-   workspace-mineru/navivox-app/app/lib/features/chat/widgets/simple_chat_adapter.dart
+cd /home/xel/git/gormes/navivox-app
+ git add lib/features/chat/widgets/transcript_surface.dart \
+   lib/features/chat/widgets/src/transcript_bubble.dart \
+   lib/features/chat/widgets/src/transcript_message_bodies.dart \
+   lib/features/chat/widgets/src/transcript_composer.dart \
+   lib/features/chat/widgets/src/transcript_message_actions.dart \
+   lib/features/chat/screens/chat_screen.dart \
+   test/features/chat/composer_actions_test.dart \
+   test/features/chat/message_actions_test.dart \
+   test/features/chat/chat_voice_button_test.dart \
+   test/features/chat/tool_artifacts_render_test.dart \
+   lib/features/chat/widgets/simple_chat_adapter.dart
  git commit -m "refactor(navivox): deepen transcript surface internals"
  git push origin docs/normalize-bin-gormes-to-gormes
 ```
 
-If the project is still untracked, do not run the commit commands. Report the exact `git status --short -- workspace-mineru/navivox-app` output.
+If the project is still untracked, do not run the commit commands. Report the exact `git status --short` output.
 
 ---
 

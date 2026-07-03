@@ -91,8 +91,11 @@ instead of hanging:
 The workflow file must be visible to GitHub before this counts as a receipt.
 A local YAML file is not enough: as of 2026-07-03,
 `NAVIVOX_WATCH_WORKFLOW=false npm run platform:workflow-smoke` still exits 2
-and prints visible workflows (`pages-build-deployment` only), so no native-host
-Windows/iOS/hosted Android receipt is present yet.
+and prints visible workflows (`pages-build-deployment` only). A later delivery
+push containing `.github/workflows/hermes-platform-smoke.yml` was rejected by
+GitHub because the current OAuth app token lacks `workflow` scope, so the
+workflow still is not published remotely and no native-host Windows/iOS/hosted
+Android receipt is present yet.
 
 Once the workflow file is published to the remote branch, dispatch and watch the
 host-runner receipt path with:
@@ -150,9 +153,11 @@ Current receipts:
   disconnected setup hints plus connected text, new-session, voice-transcript,
   approval, stop, and tool-progress UI.
 - 2026-07-03: focused regression rerun of `navivox-e2e.spec.mjs` plus
-  `hermes-smoke.spec.mjs` passed. The broad `npm run web:e2e` wrapper timed out
-  in this environment, so the current usable receipt is the focused Playwright
-  command recorded in `TODO.md`.
+  `hermes-smoke.spec.mjs` passed 68 Chromium tests with:
+  `npx playwright test --config=playwright.config.mjs playwright/tests/regression/navivox-e2e.spec.mjs playwright/tests/regression/hermes-smoke.spec.mjs --reporter=list`.
+  The broad `npm run web:e2e` wrapper timed out in this environment, so use the
+  focused command as the current browser receipt until the wrapper timeout is
+  revalidated.
 
 ## Live Hermes Agent smoke
 
@@ -359,9 +364,10 @@ Current receipt (refreshed 2026-07-03): after KVM-backed `fractal_test`
 emulator boot stabilized, `NAVIVOX_ANDROID_DEVICE_ID=<emulator>
 NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1 NAVIVOX_ANDROID_TEST_TIMEOUT_SECONDS=900
 npm run android:durable-key-smoke` passed. This verifies keypair readiness only;
-durable credential issuance and silent reconnect remain future work. It is not
-whole-goal completion evidence by itself; the helper points operators back to
-strict readiness audit before any completion claim.
+full real Gormes durable credential issuance plus silent reconnect remain
+unproven on Android. It is not whole-goal completion evidence by itself; the
+helper points operators back to strict readiness audit before any completion
+claim.
 
 Dart-side durable reconnect evidence was refreshed on 2026-07-03:
 

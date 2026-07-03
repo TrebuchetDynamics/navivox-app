@@ -1,28 +1,49 @@
 # Navivox Decision Record
 
-Status: accepted baseline
-Date: 2026-05-16
-Scope: Flutter app plus Gormes `navivox` channel planning
+Status: historical Gormes baseline plus active Hermes-first amendments
+Date: 2026-07-03
+Scope: Flutter app, active Hermes Agent companion surface, and preserved legacy Gormes `navivox` channel planning
 
-This file is the canonical decision surface for current Navivox planning docs.
-The PRD, architecture, routes, UI, library research, and testing plan may add
-detail, but should not contradict the decisions below.
+This file records durable product/architecture decisions. The original
+Gormes-first baseline remains below for preserved legacy paths; ADR 0006 and ADR
+0007 amend mainline direction to a native Hermes Agent runtime. Current Hermes
+implementation evidence lives in `lib/core/hermes/channel/hermes_api_channel.dart:19`,
+`lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`, and
+`lib/core/hermes/policy/hermes_surface_readiness.dart:27`.
 
 ## 1. Product Activation
 
-The first useful Navivox screen lets an operator connect to a Gormes host and
-talk to an agent immediately, without telephony setup. Dograh's "Web Call"
-lesson translates to Gormes as "connect and talk now" over the existing
-HTTP/WebSocket gateway.
+Active Hermes-first decision: the fresh-install first useful screen is `/hermes`.
+It lets an operator connect to a trusted local, LAN, VPN, or self-hosted Hermes
+Agent API server, create/select a Hermes session, send text, and submit local
+STT voice transcripts without telephony setup. Voice remains local STT -> text;
+Hermes realtime/server audio is not implemented.
 
-Scope for this activation loop:
+Preserved legacy Gormes decision: the first useful Gormes path lets an operator
+connect to a Gormes host and talk to an agent immediately, without telephony
+setup. Dograh's "Web Call" lesson translates to Gormes as "connect and talk now"
+over the existing HTTP/WebSocket gateway.
+
+Scope for the active Hermes activation loop:
+
+- The operator enters a Hermes endpoint base URL plus optional API key.
+- The app probes `/health` and `/v1/capabilities`, then loads or creates a
+  Hermes session through `/api/sessions`.
+- Chat streams through `/api/sessions/{session_id}/chat/stream`, with `/v1/runs`
+  controls only when capabilities advertise a safe run transport.
+- The primary surface is Hermes session chat with optional local device
+  transcript input. Phone numbers, campaigns, retries, scheduling, circuit
+  breakers, human handoff, server realtime audio, config admin, memory UI, jobs
+  admin, messaging gateways, persona/SOUL, attachments/media, files/context
+  folders, raw diagnostics/log export, and multi-endpoint management stay out of
+  the current MVP unless a later source-backed decision changes that.
+
+Scope for the preserved Gormes activation loop:
 
 - The operator runs `gormes navivox connect-info` on the host.
 - The app accepts a base URL plus token, probes `/healthz`, then opens the
   Navivox stream.
-- The primary surface is chat with optional device transcript input. Phone
-  numbers, campaigns, retries, scheduling, circuit breakers, and human handoff
-  stay out of scope until the local loop is excellent.
+- The primary legacy surface is chat with optional device transcript input.
 
 ## 2. Chat UI Foundation
 
@@ -117,7 +138,7 @@ Rules:
   URL returned by `connect-info`.
 - Tool events are structured cards with bounded summaries; raw tool arguments,
   stdout, secrets, and full logs must not be serialized as chat text.
-- Binary audio transport is future work; the first voice loop can submit device
+- Binary audio transport is deferred; the first voice loop submits device
   transcripts as text while Voice run lifecycle state is designed.
 
 ## 5. Voice Architecture

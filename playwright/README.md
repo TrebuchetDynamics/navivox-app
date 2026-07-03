@@ -39,35 +39,35 @@ playwright/
 └── screenshots/      # Generated local screenshots, ignored by git
 ```
 
-## Test Coverage (83 Playwright tests total)
+## Test Coverage (92 listed Playwright tests)
 
-Current count comes from `npm run web:e2e -- --list`.
+Current count comes from `npx playwright test --config=playwright.config.mjs --list`.
+The default local suite includes deterministic fake-Hermes coverage; two live
+Hermes specs are env-gated and skipped unless their endpoint variables are set.
+Passing browser tests are useful receipts, but they are not platform-readiness
+completion evidence by themselves; use `docs/runbooks/hermes-readiness-audit.md`
+for the current blocker list.
 
 | Area | Tests | Verifies |
 |------|-------|----------|
-| **Profile Contacts** | 4 | 3 seeded profiles visible, UI elements (FAB, search, menu), health previews, attention badge on needs-auth profile |
-| **Chat Navigation** | 3 | Clicking each profile navigates to correct `/chats/:server/:profile` URL, chat composer present |
-| **Menu Navigation** | 5 | Menu → Gateways (`/servers`), Manage profiles (`/agents`), Memory (`/memory`), Config (`/config`), Settings (`/settings`) |
-| **Gateways Screen** | 1 | Gateway list with Local Gormes + Office Gormes + Register gateway button |
-| **Profiles Screen** | 2 | Profiles listed with Status/Channels/Memory/Latest details, Active profile indicator, Refresh button |
-| **Memory Screen** | 1 | Degraded state with "Gormes memory API is unavailable" message |
-| **Config Screen** | 1 | Profile scope, server info, profile ID, "No config available" state |
-| **Settings Screen** | 1 | Settings, Local settings, Local voice preferences, command word "navi", gateway/profile overview |
-| **Screenshots** | 7 | All 7 screens captured as PNG |
-| **Setup Screen*** | 14 | Form fields, token toggle, error states, retry guidance |
-| **Additional Regression Coverage** | 4 | Office-scoped profile chat routing, accessible switch state, config fallback boundaries, gateway chip semantics |
-
-*\* Setup screen tests (from earlier session) use the real (non-e2e) build.*
+| **Hermes fake browser smoke** | 2 | `/hermes` connect form, setup hints, fake Hermes HTTP/SSE transport, sessions, capabilities, catalogs/jobs, approvals, stop, text turns, and device-transcript voice submission |
+| **Hermes live/API smoke** | 1 env-gated | Installed Hermes Agent API connection and session drawer rendering via `NAVIVOX_LIVE_HERMES_URL` |
+| **Hermes provider chat/voice smoke** | 1 env-gated | Provider-backed text and device-transcript voice prompts via `NAVIVOX_PROVIDER_HERMES_URL`; this does not replace physical Android microphone receipts |
+| **Legacy Gormes regression flow** | 66 | Preserved profile/gateway/chat/menu/memory/config/settings/setup/config-admin behavior in `navivox-e2e.spec.mjs` |
+| **Screenshot/back-navigation coverage** | 22 | Route back behavior, gateway/profile detail surfaces, mobile transcript actions, and screenshot inventory |
 
 ## Architecture
 
-The e2e build (`lib/main_e2e.dart`) uses `E2EMockChannel` — a `ChangeNotifier`
-implementing `NavivoxChannel` — pre-seeded with:
+The e2e build (`lib/main_e2e.dart`) uses both Hermes and preserved Gormes test
+surfaces:
 
-- **2 gateways**: Local Gormes (online), Office Gormes (online)
-- **3 profiles**: Mineru Builder (online, mic), Support Triage (needs-auth, badge),
-  Voice Agent (online, mic)
-- **Chat echo**: `sendText()` stores messages and echoes back "Echo: {text}"
+- `E2EMockChannel` implements the legacy `NavivoxChannel` with seeded Gormes
+  gateways/profiles and echo chat behavior for preserved regression routes.
+- `serve_web.mjs` exposes a fake Hermes HTTP/SSE API for deterministic browser
+  tests, and `globalThis.navivoxE2EHermesConnect`/send helpers drive the real
+  `HermesApiChannel` web transport.
+- Live Hermes specs use explicit environment variables and are skipped by
+  default so local runs do not require provider secrets.
 
 Flutter web renders via CanvasKit (no DOM widgets). Tests interact through the
 **accessibility semantics tree** — parallel `flt-semantics` elements with ARIA

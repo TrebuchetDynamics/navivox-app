@@ -1,5 +1,10 @@
 # Voice Run Lifecycle Implementation Plan
 
+Status: historical 2026-05 Gormes voice-run implementation plan. Current Hermes
+voice readiness is local STT → text plus TTS/re-arm only, with Hermes
+realtime/server audio still unimplemented; use `docs/runbooks/android/live-mic-smoke.md`
+and `docs/runbooks/hermes-readiness-audit.md` for current blockers.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a client-local Voice run lifecycle to Navivox so voice capture, transcript source, grace-window submission, cancellation, failure, and planned STT/TTS state are represented outside `ChatScreen` while preserving the current `start_turn` transcript fallback.
@@ -14,7 +19,7 @@
 
 Finish or intentionally pause the Transcript surface rename/extraction before executing this plan. This plan assumes callers use `TranscriptSurface` from:
 
-`/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
+`/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
 
 If the codebase still uses `SimpleChatAdapter`, apply the callback changes in this plan to that current public transcript widget, then rename through the transcript plan before final validation.
 
@@ -33,39 +38,39 @@ If the codebase still uses `SimpleChatAdapter`, apply the callback changes in th
 
 Create:
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/core/protocol/navivox_voice_run.dart`
+- `/home/xel/git/gormes/navivox-lib/core/protocol/navivox_voice_run.dart`
   - Voice run enums and immutable value object.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/core/protocol/navivox_voice_run_test.dart`
+- `/home/xel/git/gormes/navivox-test/core/protocol/navivox_voice_run_test.dart`
   - Model and lifecycle transition tests.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/core/channel/navivox_channel_voice_run_test.dart`
+- `/home/xel/git/gormes/navivox-test/core/channel/navivox_channel_voice_run_test.dart`
   - Channel state and gateway adapter Voice run tests.
 
 Modify:
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/core/channel/navivox_channel.dart`
+- `/home/xel/git/gormes/navivox-lib/core/channel/navivox_channel.dart`
   - Add Voice run state and channel actions.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/core/channel/gateway_navivox_channel.dart`
+- `/home/xel/git/gormes/navivox-lib/core/channel/gateway_navivox_channel.dart`
   - Implement Voice run actions and keep `sendVoice` compatibility.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/core/protocol/navivox_event.dart`
+- `/home/xel/git/gormes/navivox-lib/core/protocol/navivox_event.dart`
   - Link `NavivoxVoiceMessage` to a Voice run id and status.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/screens/chat_screen.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/screens/chat_screen.dart`
   - Remove pending voice lifecycle fields and use channel Voice run state.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/lib/features/chat/widgets/transcript_surface.dart`
+- `/home/xel/git/gormes/navivox-lib/features/chat/widgets/transcript_surface.dart`
   - Add voice capture lifecycle callbacks.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/support/test_navivox_channel.dart`
+- `/home/xel/git/gormes/navivox-test/support/test_navivox_channel.dart`
   - Implement Voice run actions for widget tests.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/voice/continuous_voice_command_mode_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/voice/continuous_voice_command_mode_test.dart`
   - Assert Voice run lifecycle behavior.
 
-- `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app/test/features/chat/chat_voice_button_test.dart`
+- `/home/xel/git/gormes/navivox-test/features/chat/chat_voice_button_test.dart`
   - Assert capture start/failure callbacks from Transcript surface.
 
 ---
@@ -73,12 +78,12 @@ Modify:
 ## Task 1: Add core Voice run model
 
 **Files:**
-- Create: `app/lib/core/protocol/navivox_voice_run.dart`
-- Create: `app/test/core/protocol/navivox_voice_run_test.dart`
+- Create: `lib/core/protocol/navivox_voice_run.dart`
+- Create: `test/core/protocol/navivox_voice_run_test.dart`
 
 - [ ] **Step 1: Write failing model tests**
 
-Create `app/test/core/protocol/navivox_voice_run_test.dart`:
+Create `test/core/protocol/navivox_voice_run_test.dart`:
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
@@ -148,7 +153,7 @@ void main() {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/protocol/navivox_voice_run_test.dart
 ```
 
@@ -156,7 +161,7 @@ Expected: FAIL because `navivox_voice_run.dart` does not exist.
 
 - [ ] **Step 3: Implement the minimal Voice run model**
 
-Create `app/lib/core/protocol/navivox_voice_run.dart`:
+Create `lib/core/protocol/navivox_voice_run.dart`:
 
 ```dart
 enum NavivoxVoiceRunStatus {
@@ -315,7 +320,7 @@ class NavivoxVoiceRun {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/protocol/navivox_voice_run_test.dart
 ```
 
@@ -326,7 +331,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/core/protocol/navivox_voice_run.dart test/core/protocol/navivox_voice_run_test.dart
 ```
 
@@ -337,13 +342,13 @@ Expected: formatter exits 0.
 ## Task 2: Add Voice run state and channel actions
 
 **Files:**
-- Modify: `app/lib/core/channel/navivox_channel.dart`
-- Modify: `app/test/support/test_navivox_channel.dart`
-- Create: `app/test/core/channel/navivox_channel_voice_run_test.dart`
+- Modify: `lib/core/channel/navivox_channel.dart`
+- Modify: `test/support/test_navivox_channel.dart`
+- Create: `test/core/channel/navivox_channel_voice_run_test.dart`
 
 - [ ] **Step 1: Write failing channel state tests**
 
-Create `app/test/core/channel/navivox_channel_voice_run_test.dart`:
+Create `test/core/channel/navivox_channel_voice_run_test.dart`:
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
@@ -413,7 +418,7 @@ void main() {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/navivox_channel_voice_run_test.dart
 ```
 
@@ -550,7 +555,7 @@ void submitVoiceRun(String voiceRunId) {
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/navivox_channel_voice_run_test.dart
 ```
 
@@ -561,7 +566,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/core/channel/navivox_channel.dart test/support/test_navivox_channel.dart test/core/channel/navivox_channel_voice_run_test.dart
 ```
 
@@ -572,9 +577,9 @@ Expected: formatter exits 0.
 ## Task 3: Implement GatewayNavivoxChannel Voice run lifecycle
 
 **Files:**
-- Modify: `app/lib/core/channel/gateway_navivox_channel.dart`
-- Modify: `app/lib/core/protocol/navivox_event.dart`
-- Modify: `app/test/core/channel/gateway_navivox_channel_test.dart`
+- Modify: `lib/core/channel/gateway_navivox_channel.dart`
+- Modify: `lib/core/protocol/navivox_event.dart`
+- Modify: `test/core/channel/gateway_navivox_channel_test.dart`
 
 - [ ] **Step 1: Write failing gateway Voice run tests**
 
@@ -648,7 +653,7 @@ import 'package:navivox/core/protocol/navivox_voice_run.dart';
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/gateway_navivox_channel_test.dart
 ```
 
@@ -700,7 +705,7 @@ Use this behavior:
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/gateway_navivox_channel_test.dart
 ```
 
@@ -711,7 +716,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/core/channel/gateway_navivox_channel.dart lib/core/protocol/navivox_event.dart test/core/channel/gateway_navivox_channel_test.dart
 ```
 
@@ -722,10 +727,10 @@ Expected: formatter exits 0.
 ## Task 4: Move ChatScreen pending voice lifecycle into channel state
 
 **Files:**
-- Modify: `app/lib/features/chat/screens/chat_screen.dart`
-- Modify: `app/lib/features/chat/widgets/transcript_surface.dart`
-- Modify: `app/test/features/chat/chat_voice_button_test.dart`
-- Modify: `app/test/features/voice/continuous_voice_command_mode_test.dart`
+- Modify: `lib/features/chat/screens/chat_screen.dart`
+- Modify: `lib/features/chat/widgets/transcript_surface.dart`
+- Modify: `test/features/chat/chat_voice_button_test.dart`
+- Modify: `test/features/voice/continuous_voice_command_mode_test.dart`
 
 - [ ] **Step 1: Write failing widget tests for Voice run lifecycle**
 
@@ -768,7 +773,7 @@ import 'package:navivox/core/protocol/navivox_voice_run.dart';
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/voice/continuous_voice_command_mode_test.dart
 ```
 
@@ -834,7 +839,7 @@ In `_cancelPendingVoice`, call `channel.cancelVoiceRun(id)` instead of deleting 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/voice/continuous_voice_command_mode_test.dart
 ```
 
@@ -845,7 +850,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/features/chat/chat_voice_button_test.dart
 ```
 
@@ -856,7 +861,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/features/chat/screens/chat_screen.dart lib/features/chat/widgets/transcript_surface.dart test/features/chat/chat_voice_button_test.dart test/features/voice/continuous_voice_command_mode_test.dart
 ```
 
@@ -867,10 +872,10 @@ Expected: formatter exits 0.
 ## Task 5: Add read-only Profile contact voice capability state
 
 **Files:**
-- Modify: `app/lib/core/channel/navivox_channel.dart`
-- Modify: `app/lib/core/channel/gateway_navivox_channel.dart`
-- Modify: `app/test/core/channel/gateway_navivox_channel_test.dart`
-- Modify: `app/test/features/chat/profile_contact_list_test.dart`
+- Modify: `lib/core/channel/navivox_channel.dart`
+- Modify: `lib/core/channel/gateway_navivox_channel.dart`
+- Modify: `test/core/channel/gateway_navivox_channel_test.dart`
+- Modify: `test/features/chat/profile_contact_list_test.dart`
 
 - [ ] **Step 1: Write failing capability decode test**
 
@@ -900,7 +905,7 @@ expect(contact.voiceCapability.enabled, isTrue);
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/gateway_navivox_channel_test.dart
 ```
 
@@ -954,7 +959,7 @@ In `GatewayNavivoxChannel._profileContactFromJson`, parse `voice_capability` whe
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test test/core/channel/gateway_navivox_channel_test.dart test/features/chat/profile_contact_list_test.dart
 ```
 
@@ -965,7 +970,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib/core/channel/navivox_channel.dart lib/core/channel/gateway_navivox_channel.dart test/core/channel/gateway_navivox_channel_test.dart test/features/chat/profile_contact_list_test.dart
 ```
 
@@ -976,8 +981,8 @@ Expected: formatter exits 0.
 ## Task 6: Document future server voice stream events without implementing protocol changes
 
 **Files:**
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/docs/architecture/architecture.md`
-- Modify: `/home/xel/git/sages-openclaw/workspace-mineru/navivox-app/docs/product/testing-plan.md`
+- Modify: `/home/xel/git/gormes/navivox-docs/architecture/architecture.md`
+- Modify: `/home/xel/git/gormes/navivox-docs/product/testing-plan.md`
 
 - [ ] **Step 1: Update architecture doc**
 
@@ -991,7 +996,7 @@ transcript source, pending-send/cancel/failure state, and planned STT/TTS
 status while continuing to submit the final transcript through the existing
 `start_turn` path.
 
-Server voice events are future work. Planned event names are:
+Historical Gormes server voice events were deferred. Planned event names were:
 
 - `voice_run_started`
 - `voice_transcript_partial`
@@ -1029,8 +1034,8 @@ In `docs/product/testing-plan.md` under Flutter widget tests, add Voice run rows
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw
-git diff --check -- workspace-mineru/navivox-app/docs/architecture/architecture.md workspace-mineru/navivox-app/docs/product/testing-plan.md
+cd /home/xel/git/gormes/navivox-app
+git diff --check -- docs/architecture/architecture.md docs/product/testing-plan.md
 ```
 
 Expected: exit 0.
@@ -1047,7 +1052,7 @@ Expected: exit 0.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test \
   test/core/protocol/navivox_voice_run_test.dart \
   test/core/channel/navivox_channel_voice_run_test.dart \
@@ -1064,7 +1069,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 flutter test
 ```
 
@@ -1075,10 +1080,10 @@ Expected: PASS. If unrelated WIP fails, capture the first failing test name and 
 Run:
 
 ```bash
-cd /home/xel/git/sages-openclaw/workspace-mineru/navivox-app/app
+cd /home/xel/git/gormes/navivox-app
 dart format lib test
-cd /home/xel/git/sages-openclaw
-git diff --check -- workspace-mineru/navivox-app
+cd /home/xel/git/gormes/navivox-app
+git diff --check
 ```
 
 Expected: formatter exits 0; diff check exits 0.
@@ -1088,14 +1093,14 @@ Expected: formatter exits 0; diff check exits 0.
 If `navivox-app` is still untracked in the parent repo, do not stage partial files. Report:
 
 ```bash
-git status --short -- workspace-mineru/navivox-app
+git status --short
 ```
 
 If the app has been made trackable as a complete repo or submodule, commit and push the validated slice:
 
 ```bash
-cd /home/xel/git/sages-openclaw
-git add workspace-mineru/navivox-app
+cd /home/xel/git/gormes/navivox-app
+git add .
 git commit -m "feat(navivox): add client-local voice run lifecycle"
 git push origin docs/normalize-bin-gormes-to-gormes
 ```

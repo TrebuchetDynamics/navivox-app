@@ -1,13 +1,18 @@
 # Navivox Data Model
 
-Status: planning draft
-Updated: 2026-05-16
-Source: current HTTP/WebSocket gateway contract and Navivox PRD
+Status: historical Gormes data model plus active Hermes-first addendum
+Updated: 2026-07-03
+Source: legacy HTTP/WebSocket gateway contract, Navivox PRD, and current Hermes API/channel implementation
 
 ## 1. Model Principles
 
-- Gormes is authoritative for agents, sessions, config, tools, provider
-  settings, and voice profiles.
+- Active Hermes path: Hermes Agent is authoritative for sessions, messages,
+  runs, capabilities, catalogs, jobs inventory, and health snapshots. Flutter
+  renders these through `HermesChannelState`/`HermesApiChannel`
+  (`lib/core/hermes/channel/hermes_channel_state.dart`,
+  `lib/core/hermes/channel/hermes_api_channel.dart:19`).
+- Preserved legacy Gormes path: Gormes remains authoritative for legacy agents,
+  sessions, config, tools, provider settings, and voice profiles.
 - Flutter caches local UI state and safe snapshots only.
 - Tokens and secrets are never serialized into route paths, screenshots, debug
   logs, or exported diagnostics.
@@ -16,9 +21,31 @@ Source: current HTTP/WebSocket gateway contract and Navivox PRD
 - Every model should be rebuildable from server state plus local connection
   settings.
 
-## 2. Gateway Connection
+## 2. Hermes Endpoint And Session Models
 
-Represents one saved way to reach a Navivox gateway.
+The active `/hermes` route uses Hermes-native terms and models instead of the
+legacy Gormes gateway/contact model:
+
+| Model | Source | Notes |
+| --- | --- | --- |
+| `HermesApiConfig` | `lib/core/hermes/client/hermes_api_config.dart` | Derives `/health`, `/v1/capabilities`, `/api/sessions`, `/api/jobs`, session chat, fork, run, approval, and stop URIs from one configured base URL. |
+| `HermesSession` | `lib/core/hermes/models/hermes_session.dart` | Server-backed conversation lane loaded from `GET /api/sessions`; create/rename/delete/fork are capability/API gated in the channel/client. |
+| `HermesChatTurn` | `lib/core/hermes/models/hermes_chat_turn.dart` | Renderable user/assistant/system/tool turn derived from Hermes session messages and streamed SSE events. |
+| `HermesChannelState` | `lib/core/hermes/channel/hermes_channel_state.dart` | UI snapshot for connection status, active session, messages, voice runs, approvals, capabilities, detailed health, catalog lists, and read-only jobs. |
+| `HermesJob` | `lib/core/hermes/models/hermes_job.dart` | Read-only job/schedule inventory item; jobs admin remains deferred. |
+| `HermesSurfaceReadiness` | `lib/core/hermes/policy/hermes_surface_readiness.dart:27` | Explicit available/read-only/deferred/blocked surface matrix so config admin, memory UI, server audio, attachments, raw diagnostics, and multi-endpoint management are not accidentally claimed. |
+
+Hermes API keys are saved only through the endpoint store's secure-key path;
+operator diagnostics intentionally export counts/status/capability names, not
+raw transcripts, headers, API keys, logs, or tool payloads
+(`lib/features/hermes_chat/diagnostics/hermes_diagnostics_export.dart:10`).
+Voice runs keep using the generic `NavivoxVoiceRun` model, but the Hermes path
+submits local device transcripts as normal Hermes text turns; server realtime
+audio is not implemented.
+
+## 3. Legacy Gateway Connection
+
+Represents one saved way to reach a legacy Navivox/Gormes gateway.
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -56,7 +83,7 @@ Example:
 }
 ```
 
-## 3. Gateway Status Snapshot
+## 4. Gateway Status Snapshot
 
 Mirrors `GET /v1/navivox/status`.
 
@@ -74,7 +101,7 @@ Mirrors `GET /v1/navivox/status`.
 The app should keep the latest status snapshot for UI display, but should not
 treat cached status as authorization.
 
-## 4. Session
+## 5. Legacy Session
 
 Mirrors server session state.
 
@@ -90,7 +117,7 @@ Mirrors server session state.
 
 Sessions are loaded from `/v1/navivox/sessions` and updated by stream events.
 
-## 5. Messages
+## 6. Legacy Messages
 
 Messages are local render objects derived from user input and gateway events.
 
@@ -109,7 +136,7 @@ Messages are local render objects derived from user input and gateway events.
 Assistant deltas should update one message per request rather than appending a
 new bubble for every delta.
 
-## 6. Tool Calls
+## 7. Legacy Tool Calls
 
 Tool calls are first-class UI objects.
 
@@ -132,7 +159,7 @@ Tool calls are first-class UI objects.
 Raw JSON belongs behind a debug affordance. The default renderer is
 `ToolCallCard`.
 
-## 7. Agent Draft And Profile
+## 8. Legacy Agent Draft And Profile
 
 The natural-language seed flow produces an editable draft.
 
@@ -167,7 +194,7 @@ The natural-language seed flow produces an editable draft.
 | `permission` | enum | `allow`, `ask`, `deny`. |
 | `redaction_policy` | enum | `default`, `strict`. |
 
-## 8. Voice Profile And Voice Run
+## 9. Voice Profile And Voice Run
 
 ### 8.1 Voice Profile
 
@@ -200,7 +227,7 @@ Voice runs should exist before persistent audio upload/playback features.
 | `tts_profile_id` | string | Optional. |
 | `retention_policy` | string | Required before audio persistence. |
 
-## 9. Config Models
+## 10. Config Models
 
 Config admin is schema-driven and server-authoritative.
 
@@ -246,7 +273,7 @@ Config admin is schema-driven and server-authoritative.
 | `validation_state` | enum | `unknown`, `valid`, `invalid`. |
 | `requires_confirmation` | boolean | High-risk fields. |
 
-## 10. Local Settings
+## 11. Local Settings
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -257,7 +284,7 @@ Config admin is schema-driven and server-authoritative.
 | `wake_word` | string | Local voice hint. |
 | `text_fallback_enabled` | boolean | Always true by default. |
 
-## 11. Persistence Plan
+## 12. Persistence Plan
 
 ### 11.1 In-Memory First
 
@@ -294,7 +321,7 @@ Add a database only when the product needs durable:
 Before adding one, define migrations, clear-local-data behavior, redaction
 policy, and export policy.
 
-## 12. Event Mapping
+## 13. Event Mapping
 
 | Gateway Event | Model Update |
 |---------------|--------------|
@@ -306,7 +333,7 @@ policy, and export policy.
 | `error` | Append safe system/error `Message`. |
 | `done` | Mark active turn complete. |
 
-## 13. Redaction Rules
+## 14. Redaction Rules
 
 - Token fields store only `token_ref` and status.
 - Secret config values store only `secret_status` and source evidence.

@@ -329,7 +329,10 @@ readiness checklist and non-completion caveats.
    full live provider-backed chat/voice smoke is an explicit closeout blocker,
    Windows and iOS/macOS host receipts are split explicitly, and configured
    Hermes home presence is informational only, not a provider-smoke receipt. External
-   recheck still shows the platform workflow is not visible to `gh`. A later
+   recheck still shows the platform workflow is not visible to `gh`; a later
+   delivery push containing the workflow was rejected because the current OAuth
+   app token lacks GitHub `workflow` scope, so the two local commits remain
+   ahead of `origin/main` and the workflow is still unpublished remotely. A later
    KVM-backed `fractal_test` launch became responsive long enough for
    `npm run android:voice-smoke`, `npm run android:hermes-voice-loop-smoke`,
    `npm run android:durable-key-smoke`, and `npm run android:live-mic-prep` to
@@ -356,8 +359,9 @@ readiness checklist and non-completion caveats.
    explicit warning not to promote proxy evidence (tests, APK hashes, configured
    Hermes home, workflow YAML, or dispatch-only output) to completion,
    `gh workflow list` still exposes only
-   `pages-build-deployment`, so no hosted Windows/iOS/native-host receipt is
-   available, direct native-host reprobes on this Linux host still fail
+   `pages-build-deployment`, and the latest `git push` was rejected for missing
+   OAuth `workflow` scope while trying to publish `.github/workflows/hermes-platform-smoke.yml`,
+   so no hosted Windows/iOS/native-host receipt is available, direct native-host reprobes on this Linux host still fail
    (`flutter build windows --debug` exits 1 because Windows builds require a
    Windows host; `flutter build ios --simulator --debug` exits 64 because this
    toolchain has no `--simulator` option), and a direct Android-target recheck
