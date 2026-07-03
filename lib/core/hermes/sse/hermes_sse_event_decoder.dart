@@ -113,11 +113,15 @@ class HermesSseEventDecoder {
   _SseSeparator _eventSeparatorIndex(String text) {
     final crlf = text.indexOf('\r\n\r\n');
     final lf = text.indexOf('\n\n');
-    if (crlf == -1 && lf == -1) return const _SseSeparator(-1, 0);
-    if (crlf != -1 && (lf == -1 || crlf < lf)) {
-      return _SseSeparator(crlf, 4);
-    }
-    return _SseSeparator(lf, 2);
+    final cr = text.indexOf('\r\r');
+    final candidates = <_SseSeparator>[
+      if (crlf != -1) _SseSeparator(crlf, 4),
+      if (lf != -1) _SseSeparator(lf, 2),
+      if (cr != -1) _SseSeparator(cr, 2),
+    ];
+    if (candidates.isEmpty) return const _SseSeparator(-1, 0);
+    candidates.sort((a, b) => a.index.compareTo(b.index));
+    return candidates.first;
   }
 
   HermesSseEvent? _parseFrame(String frame) {
@@ -125,7 +129,8 @@ class HermesSseEventDecoder {
     var event = 'message';
     final dataLines = <String>[];
 
-    for (final line in frame.replaceAll('\r\n', '\n').split('\n')) {
+    final normalizedFrame = frame.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    for (final line in normalizedFrame.split('\n')) {
       if (line.isEmpty || line.startsWith(':')) continue;
       final colon = line.indexOf(':');
       final field = colon == -1 ? line : line.substring(0, colon);

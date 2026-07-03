@@ -416,6 +416,36 @@ void main() {
     expect(events.last.isDone, isTrue);
   });
 
+  test('decodes CR-only server-sent event frames', () {
+    final decoder = HermesSseEventDecoder();
+
+    final events = decoder.decode([
+      'event: assistant.delta\rdata: first\r',
+      'data: second\r\r',
+      'event: done\rdata: {}\r\r',
+    ]);
+
+    expect(events, hasLength(2));
+    expect(events.first.event, 'assistant.delta');
+    expect(events.first.data, 'first\nsecond');
+    expect(events.last.isDone, isTrue);
+  });
+
+  test('keeps incomplete final SSE frame buffered until a separator arrives', () {
+    final decoder = HermesSseEventDecoder();
+
+    expect(
+      decoder.decode(['event: assistant.delta\ndata: {"delta":"partial"}']),
+      isEmpty,
+    );
+  });
+
+  test('ignores empty chunks and no-data CR-only control frames', () {
+    final decoder = HermesSseEventDecoder();
+
+    expect(decoder.decode(['', '\r', 'id: 9\revent: ping\r\r']), isEmpty);
+  });
+
   test('decodes Hermes JSON SSE payloads and skips malformed events', () {
     final decoder = HermesSseEventDecoder();
 
