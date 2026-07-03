@@ -171,10 +171,11 @@ test.describe('5. Screen Content', () => {
     await expect(page.getByText('Refresh profiles').first()).toBeVisible();
     await expect(page.getByText('Active profile').first()).toBeVisible();
   });
-  test('5c Memory degraded', async ({page}) => {
+  test('5c Memory read-only/empty state', async ({page}) => {
     await page.goto(APP+'#/memory', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
     await expect(page.getByText('Memory').first()).toBeVisible();
-    await expectSemanticVisible(page, 'Gormes memory API is unavailable.');
+    await expectSemanticVisible(page, 'Memory empty');
+    await expectSemanticVisible(page, 'Memory scope');
   });
   test('5d Config unavailable', async ({page}) => {
     await page.goto(APP+'#/config', {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
@@ -337,11 +338,11 @@ test.describe('11. Mobile', () => {
   test('11c mobile tab click navigates', async ({page}) => {
     await page.setViewportSize({width:390,height:844});
     await page.goto(APP, {timeout:15000}); await page.waitForTimeout(2000); await a11y(page);
-    // Click Memory tab (index 2) via mouse coords
+    // Click Settings tab (index 3) via mouse coords. Memory now lives behind More.
     const tabX = await page.evaluate(() => {
       const tabs = document.querySelectorAll('flt-semantics[role="tab"]');
-      if (tabs.length >= 3) {
-        const r = tabs[2].getBoundingClientRect();
+      if (tabs.length >= 4) {
+        const r = tabs[3].getBoundingClientRect();
         return r.x + r.width/2;
       }
       return null;
@@ -349,7 +350,7 @@ test.describe('11. Mobile', () => {
     if (tabX) {
       await page.mouse.click(tabX, 800);
       await page.waitForTimeout(2000);
-      expect(page.url()).toContain('/memory');
+      expect(page.url()).toContain('/settings');
     }
   });
 });

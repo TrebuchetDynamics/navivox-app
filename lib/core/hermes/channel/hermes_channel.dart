@@ -19,6 +19,12 @@ abstract interface class HermesChannel implements Listenable {
 
   Future<void> selectSession(String sessionId);
   Future<void> createSession({String? title});
+  Future<void> renameSession({
+    required String sessionId,
+    required String title,
+  });
+  Future<void> deleteSession(String sessionId);
+  Future<void> forkSession(String sessionId, {String? title});
 
   Future<void> sendText(String text);
 

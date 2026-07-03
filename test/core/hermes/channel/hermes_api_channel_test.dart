@@ -36,6 +36,80 @@ void main() {
     },
   );
 
+  test('connect loads read-only Hermes catalog when advertised', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _catalogCapabilitiesFixture,
+            '/v1/models' => _modelsFixture,
+            '/v1/skills' => _skillsFixture,
+            '/v1/toolsets' => _toolsetsFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    expect(channel.state.models, ['hermes-agent']);
+    expect(channel.state.skills, ['ascii-art', 'github']);
+    expect(channel.state.enabledToolsets, ['default']);
+  });
+
+  test('connect loads read-only Hermes jobs when advertised', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _jobsCapabilitiesFixture,
+            '/api/jobs' => _jobsFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    expect(channel.state.jobs.single.id, 'job_1');
+    expect(channel.state.jobs.single.displayName, 'Morning check');
+  });
+
+  test('connect loads detailed Hermes health when advertised', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _healthCapabilitiesFixture,
+            '/health/detailed' =>
+              '{"status":"ok","platform":"hermes-agent","version":"0.16.0","gateway_state":"running","active_agents":0}',
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    expect(channel.state.detailedHealth?.version, '0.16.0');
+    expect(channel.state.detailedHealth?.gatewayState, 'running');
+    expect(channel.state.detailedHealth?.activeAgents, 0);
+  });
+
   test('connect creates a session with a generated id when none exist', () async {
     final posts = <String, Map<String, Object?>>{};
     final channel = HermesApiChannel(
@@ -155,6 +229,191 @@ void main() {
       expect(channel.state.activeMessages.single.text, 'From two');
     },
   );
+
+  test(
+    'renameSession patches the server and replaces the local session row',
+    () async {
+      final patches = <String, Map<String, Object?>>{};
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _capabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          patch: (uri, headers, body) async {
+            patches[uri.path] = jsonDecode(body) as Map<String, Object?>;
+            return '{"object":"hermes.session","session":{"id":"sess_1","source":"api_server","title":"Renamed"}}';
+          },
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.renameSession(sessionId: 'sess_1', title: ' Renamed ');
+
+      expect(patches['/api/sessions/sess_1'], {'title': 'Renamed'});
+      expect(channel.state.sessions.single.title, 'Renamed');
+      expect(channel.state.activeSession?.title, 'Renamed');
+    },
+  );
+
+  test('renameSession rejects a blank title before PATCH', () async {
+    var patched = false;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        patch: (uri, headers, body) async {
+          patched = true;
+          return '{}';
+        },
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(
+      channel.renameSession(sessionId: 'sess_1', title: '   '),
+      throwsArgumentError,
+    );
+    expect(patched, isFalse);
+  });
+
+  test(
+    'deleteSession removes the active session and selects the next one',
+    () async {
+      final deletes = <String>[];
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _capabilitiesFixture,
+              '/api/sessions' => _twoSessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              '/api/sessions/sess_2/messages' =>
+                '{"object":"list","session_id":"sess_2","data":[{"id":"msg_9","session_id":"sess_2","role":"assistant","content":"From two"}]}',
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          delete: (uri, headers) async {
+            deletes.add(uri.path);
+            return '{"object":"hermes.session.deleted","id":"sess_1","deleted":true}';
+          },
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.deleteSession('sess_1');
+
+      expect(deletes, ['/api/sessions/sess_1']);
+      expect(channel.state.sessions.map((s) => s.id), ['sess_2']);
+      expect(channel.state.activeSessionId, 'sess_2');
+      expect(channel.state.activeMessages.single.text, 'From two');
+    },
+  );
+
+  test(
+    'deleteSession leaves local state alone when the server fails',
+    () async {
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _capabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          delete: (uri, headers) async => throw StateError('delete failed'),
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await expectLater(channel.deleteSession('sess_1'), throwsStateError);
+
+      expect(channel.state.sessions.single.id, 'sess_1');
+      expect(channel.state.activeSessionId, 'sess_1');
+    },
+  );
+
+  test('forkSession creates and selects a copied child session', () async {
+    final posts = <String, Map<String, Object?>>{};
+    final channel = HermesApiChannel(
+      sessionIdFactory: () => 'fork_1',
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/fork_1/messages' =>
+              '{"object":"list","session_id":"fork_1","data":[{"id":"msg_f","session_id":"fork_1","role":"assistant","content":"Forked history"}]}',
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+          return '{"object":"hermes.session","session":{"id":"fork_1","source":"api_server","title":"Fork","parent_session_id":"sess_1"}}';
+        },
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.forkSession('sess_1', title: 'Fork');
+
+    expect(posts['/api/sessions/sess_1/fork'], {
+      'id': 'fork_1',
+      'title': 'Fork',
+    });
+    expect(channel.state.sessions.map((s) => s.id), ['sess_1', 'fork_1']);
+    expect(channel.state.activeSessionId, 'fork_1');
+    expect(channel.state.activeSession?.parentSessionId, 'sess_1');
+    expect(channel.state.activeMessages.single.text, 'Forked history');
+  });
+
+  test('forkSession leaves local state alone when the server fails', () async {
+    final channel = HermesApiChannel(
+      sessionIdFactory: () => 'fork_1',
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async => throw StateError('fork failed'),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(channel.forkSession('sess_1'), throwsStateError);
+
+    expect(channel.state.sessions.map((s) => s.id), ['sess_1']);
+    expect(channel.state.activeSessionId, 'sess_1');
+  });
 
   test('createSession creates and selects a new session', () async {
     final posts = <String, Map<String, Object?>>{};
@@ -508,6 +767,47 @@ const _capabilitiesFixture = '''
 }
 ''';
 
+const _catalogCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {},
+  "endpoints": {
+    "models": {"method": "GET", "path": "/v1/models"},
+    "skills": {"method": "GET", "path": "/v1/skills"},
+    "toolsets": {"method": "GET", "path": "/v1/toolsets"}
+  }
+}
+''';
+
+const _jobsCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {"jobs_admin": false},
+  "endpoints": {
+    "jobs": {"method": "GET", "path": "/api/jobs"}
+  }
+}
+''';
+
+const _healthCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {},
+  "endpoints": {
+    "health_detailed": {"method": "GET", "path": "/health/detailed"}
+  }
+}
+''';
+
 const _runsCapableCapabilitiesFixture = '''
 {
   "object": "hermes.api_server.capabilities",
@@ -530,6 +830,44 @@ const _runsCapableCapabilitiesFixture = '''
     "run_approval": {"method": "POST", "path": "/v1/runs/{run_id}/approval"},
     "run_stop": {"method": "POST", "path": "/v1/runs/{run_id}/stop"}
   }
+}
+''';
+
+const _modelsFixture = '''
+{
+  "object": "list",
+  "data": [
+    {"id": "hermes-agent", "owned_by": "hermes"}
+  ]
+}
+''';
+
+const _skillsFixture = '''
+{
+  "object": "list",
+  "data": [
+    {"name": "ascii-art", "description": "ASCII art generation", "category": "creative"},
+    {"name": "github", "description": "GitHub workflow skill", "category": "github"}
+  ]
+}
+''';
+
+const _toolsetsFixture = '''
+{
+  "object": "list",
+  "platform": "api_server",
+  "data": [
+    {"name": "default", "label": "Default Tools", "enabled": true, "configured": true, "tools": ["read_file"]},
+    {"name": "web", "label": "Web Tools", "enabled": false, "configured": true, "tools": ["web_search"]}
+  ]
+}
+''';
+
+const _jobsFixture = '''
+{
+  "jobs": [
+    {"id": "job_1", "name": "Morning check", "enabled": true, "schedule_display": "Daily"}
+  ]
 }
 ''';
 

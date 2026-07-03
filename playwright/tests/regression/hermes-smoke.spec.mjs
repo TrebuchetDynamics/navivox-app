@@ -13,6 +13,9 @@ test('Hermes route renders connect form and cross-platform setup hints in a real
 
   await expect(page.getByText('Connect to Hermes Agent').first()).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Hermes API base URL' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Local Hermes' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Android emulator' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Remote/LAN' })).toBeVisible();
   await expect(page.getByText('Android emulator: http://10.0.2.2:8642').first()).toBeVisible();
   await expect(page.getByText('Physical device: LAN/VPN/Tailscale URL').first()).toBeVisible();
 });
@@ -28,7 +31,24 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
   await expect(semanticLabel(page, 'Hermes Agent hermes-agent')).toBeVisible();
   await expect(semanticLabel(page, 'Runs/tool progress enabled')).toBeVisible();
   await expect(semanticLabel(page, 'Voice uses device speech-to-text')).toBeVisible();
+  await expect(semanticLabel(page, 'Version: 0.16.0')).toBeVisible();
+  await expect(semanticLabel(page, 'Gateway: running')).toBeVisible();
+  await expect(semanticLabel(page, 'Models: hermes-agent')).toBeVisible();
+  await expect(semanticLabel(page, 'Skills: 2')).toBeVisible();
+  await expect(semanticLabel(page, 'Toolsets enabled: 1')).toBeVisible();
+  await expect(semanticLabel(page, 'Jobs: 1')).toBeVisible();
   await expect(page.getByText('E2E Hermes is ready.').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sessions' }).click();
+  await page.getByRole('button', { name: 'Session actions' }).first().click();
+  await page.getByRole('menuitem', { name: 'Rename' }).click();
+  await page.getByRole('textbox', { name: 'Session title' }).fill('Renamed e2e session');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('heading', { name: 'Renamed e2e session' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sessions' }).click();
+  await page.getByRole('button', { name: 'Session actions' }).first().click();
+  await page.getByRole('menuitem', { name: 'Fork' }).click();
+  await expect(page.getByRole('heading', { name: 'Renamed e2e session fork' })).toBeVisible();
 
   await page.evaluate(() => globalThis.navivoxE2EHermesSendText('hello hermes browser'));
   await expect(page.getByText('hello hermes browser').first()).toBeVisible();
@@ -51,6 +71,12 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
   await page.waitForTimeout(1000);
   await expect(page.getByText('voice browser turn').first()).toBeVisible();
   await expect(page.getByText('Hermes echo: voice browser turn').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Sessions' }).click();
+  await page.getByRole('button', { name: 'Session actions' }).last().click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('heading', { name: 'Renamed e2e session' })).toBeVisible();
 
   await page.evaluate(() => globalThis.navivoxE2EHermesSendText('slow browser turn'));
   await expect(page.getByRole('button', { name: 'Stop' })).toBeVisible();

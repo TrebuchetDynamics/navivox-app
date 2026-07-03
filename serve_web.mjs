@@ -58,7 +58,7 @@ function json(res, status, body) {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     'Cache-Control': 'no-store',
     'Content-Length': data.length,
   });
@@ -77,6 +77,15 @@ async function handleHermesApi(req, res, url) {
   if (req.method === 'GET' && url === '/health') {
     return json(res, 200, { status: 'ok', platform: 'hermes-agent' });
   }
+  if (req.method === 'GET' && url === '/health/detailed') {
+    return json(res, 200, {
+      status: 'ok',
+      platform: 'hermes-agent',
+      version: '0.16.0',
+      gateway_state: 'running',
+      active_agents: 0,
+    });
+  }
   if (req.method === 'GET' && url === '/v1/capabilities') {
     return json(res, 200, {
       object: 'hermes.api_server.capabilities',
@@ -94,16 +103,62 @@ async function handleHermesApi(req, res, url) {
         realtime_voice: false,
       },
       endpoints: {
+        health_detailed: { method: 'GET', path: '/health/detailed' },
         sessions: { method: 'GET', path: '/api/sessions' },
         session_create: { method: 'POST', path: '/api/sessions' },
         session_messages: { method: 'GET', path: '/api/sessions/{session_id}/messages' },
         session_chat_stream: { method: 'POST', path: '/api/sessions/{session_id}/chat/stream' },
+        session_update: { method: 'PATCH', path: '/api/sessions/{session_id}' },
+        session_delete: { method: 'DELETE', path: '/api/sessions/{session_id}' },
+        session_fork: { method: 'POST', path: '/api/sessions/{session_id}/fork' },
+        models: { method: 'GET', path: '/v1/models' },
+        skills: { method: 'GET', path: '/v1/skills' },
+        toolsets: { method: 'GET', path: '/v1/toolsets' },
+        jobs: { method: 'GET', path: '/api/jobs' },
         runs: { method: 'POST', path: '/v1/runs' },
         run_status: { method: 'GET', path: '/v1/runs/{run_id}' },
         run_events: { method: 'GET', path: '/v1/runs/{run_id}/events' },
         run_approval: { method: 'POST', path: '/v1/runs/{run_id}/approval' },
         run_stop: { method: 'POST', path: '/v1/runs/{run_id}/stop' },
       },
+    });
+  }
+  if (req.method === 'GET' && url === '/v1/models') {
+    return json(res, 200, {
+      object: 'list',
+      data: [{ id: 'hermes-agent', owned_by: 'hermes' }],
+    });
+  }
+  if (req.method === 'GET' && url === '/v1/skills') {
+    return json(res, 200, {
+      object: 'list',
+      data: [
+        { name: 'github', description: 'GitHub workflow skill', category: 'github' },
+        { name: 'ascii-art', description: 'ASCII art generation', category: 'creative' },
+      ],
+    });
+  }
+  if (req.method === 'GET' && url === '/v1/toolsets') {
+    return json(res, 200, {
+      object: 'list',
+      platform: 'api_server',
+      data: [
+        { name: 'default', label: 'Default Tools', enabled: true, configured: true, tools: ['read_file'] },
+        { name: 'web', label: 'Web Tools', enabled: false, configured: true, tools: ['web_search'] },
+      ],
+    });
+  }
+  if (req.method === 'GET' && url === '/api/jobs') {
+    return json(res, 200, {
+      jobs: [
+        {
+          id: 'job_1',
+          name: 'Morning check',
+          enabled: true,
+          state: 'scheduled',
+          schedule_display: 'Every day at 09:00',
+        },
+      ],
     });
   }
   if (req.method === 'GET' && url === '/api/sessions') {
@@ -128,6 +183,42 @@ async function handleHermesApi(req, res, url) {
     hermesState.sessions.push(session);
     const { messages, ...wireSession } = session;
     return json(res, 200, { object: 'hermes.session', session: wireSession });
+  }
+  const sessionMatch = url.match(/^\/api\/sessions\/([^/]+)$/);
+  if (req.method === 'DELETE' && sessionMatch) {
+    const sessionId = decodeURIComponent(sessionMatch[1]);
+    const before = hermesState.sessions.length;
+    hermesState.sessions = hermesState.sessions.filter((session) => session.id !== sessionId);
+    return json(res, 200, {
+      object: 'hermes.session.deleted',
+      id: sessionId,
+      deleted: hermesState.sessions.length < before,
+    });
+  }
+  if (req.method === 'PATCH' && sessionMatch) {
+    const session = findHermesSession(decodeURIComponent(sessionMatch[1]));
+    if (!session) return json(res, 404, { error: { message: 'session not found' } });
+    const body = await readJsonBody(req);
+    if (Object.hasOwn(body, 'title')) session.title = String(body.title ?? '');
+    const { messages, ...wireSession } = session;
+    return json(res, 200, { object: 'hermes.session', session: wireSession });
+  }
+  const forkMatch = url.match(/^\/api\/sessions\/([^/]+)\/fork$/);
+  if (req.method === 'POST' && forkMatch) {
+    const source = findHermesSession(decodeURIComponent(forkMatch[1]));
+    if (!source) return json(res, 404, { error: { message: 'session not found' } });
+    const body = await readJsonBody(req);
+    const fork = {
+      id: body.id || `e2e-hermes-session-${hermesState.nextSessionNumber}`,
+      source: 'e2e',
+      model: source.model,
+      title: body.title || `${source.title} fork`,
+      parent_session_id: source.id,
+      messages: source.messages.map((message) => ({ ...message })),
+    };
+    hermesState.sessions.push(fork);
+    const { messages, ...wireSession } = fork;
+    return json(res, 201, { object: 'hermes.session', session: wireSession });
   }
   const messagesMatch = url.match(/^\/api\/sessions\/([^/]+)\/messages$/);
   if (req.method === 'GET' && messagesMatch) {

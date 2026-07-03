@@ -46,8 +46,11 @@ void main() {
         channel.setConfigAdminMode(E2EConfigAdminMode.unsupported);
     }
   }).toJS;
-  _navivoxE2EHermesConnect = (() {
-    hermesChannel.connect(baseUrl: 'http://127.0.0.1:8767');
+  _navivoxE2EHermesConnect = (([JSString? baseUrl, JSString? apiKey]) {
+    hermesChannel.connect(
+      baseUrl: baseUrl?.toDart ?? 'http://127.0.0.1:8767',
+      apiKey: apiKey?.toDart,
+    );
   }).toJS;
   _navivoxE2EHermesSendText = ((JSString text) {
     hermesChannel.sendText(text.toDart);

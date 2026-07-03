@@ -18,9 +18,22 @@ void main() {
         'https://hermes.example:8642/v1/capabilities',
       );
       expect(
+        config.modelsUri.toString(),
+        'https://hermes.example:8642/v1/models',
+      );
+      expect(
+        config.skillsUri.toString(),
+        'https://hermes.example:8642/v1/skills',
+      );
+      expect(
+        config.toolsetsUri.toString(),
+        'https://hermes.example:8642/v1/toolsets',
+      );
+      expect(
         config.sessionsUri.toString(),
         'https://hermes.example:8642/api/sessions',
       );
+      expect(config.jobsUri.toString(), 'https://hermes.example:8642/api/jobs');
       expect(
         config.sessionUri(' s/1 ').toString(),
         'https://hermes.example:8642/api/sessions/s%2F1',
@@ -28,6 +41,10 @@ void main() {
       expect(
         config.sessionMessagesUri('s 1').toString(),
         'https://hermes.example:8642/api/sessions/s%201/messages',
+      );
+      expect(
+        config.sessionForkUri('s 1').toString(),
+        'https://hermes.example:8642/api/sessions/s%201/fork',
       );
       expect(
         config.sessionChatStreamUri('s 1').toString(),
@@ -74,7 +91,82 @@ void main() {
   );
 
   test(
-    'client parses health, sessions, created sessions, and messages',
+    'surface readiness does not claim unwired Hermes APIs are implemented',
+    () {
+      final capabilities = HermesCapabilityDocument.fromJson(
+        jsonDecode(_futureSurfaceCapabilitiesFixture) as Map<String, Object?>,
+      );
+      final readiness = hermesSurfaceReadiness(capabilities);
+
+      final statuses = {for (final item in readiness) item.title: item.status};
+      final details = {for (final item in readiness) item.title: item.detail};
+
+      expect(
+        statuses.keys,
+        unorderedEquals([
+          'Chat transport',
+          'Sessions',
+          'Local voice-to-text',
+          'Server realtime voice/audio',
+          'Config editing/admin',
+          'Memory UI',
+          'Jobs/schedules inventory',
+          'Jobs/schedules admin',
+          'Messaging gateways',
+          'Persona/SOUL',
+          'Attachments/media',
+          'Files/context folders',
+          'Bounded diagnostics',
+          'Raw diagnostics/log export',
+          'Multi-endpoint/profile management',
+          'Legacy durable reconnect',
+        ]),
+      );
+      expect(statuses['Chat transport'], HermesSurfaceStatus.blocked);
+      expect(statuses['Sessions'], HermesSurfaceStatus.blocked);
+      expect(statuses['Local voice-to-text'], HermesSurfaceStatus.available);
+      expect(
+        statuses['Server realtime voice/audio'],
+        HermesSurfaceStatus.deferred,
+      );
+      expect(statuses['Config editing/admin'], HermesSurfaceStatus.deferred);
+      expect(statuses['Memory UI'], HermesSurfaceStatus.deferred);
+      expect(
+        statuses['Jobs/schedules inventory'],
+        HermesSurfaceStatus.readOnly,
+      );
+      expect(statuses['Jobs/schedules admin'], HermesSurfaceStatus.deferred);
+      expect(
+        details['Jobs/schedules admin'],
+        contains('create/edit/delete scheduling'),
+      );
+      expect(statuses['Messaging gateways'], HermesSurfaceStatus.deferred);
+      expect(statuses['Persona/SOUL'], HermesSurfaceStatus.deferred);
+      expect(statuses['Attachments/media'], HermesSurfaceStatus.deferred);
+      expect(statuses['Files/context folders'], HermesSurfaceStatus.deferred);
+      expect(statuses['Bounded diagnostics'], HermesSurfaceStatus.readOnly);
+      expect(
+        statuses['Raw diagnostics/log export'],
+        HermesSurfaceStatus.deferred,
+      );
+      expect(
+        details['Raw diagnostics/log export'],
+        contains('safe redaction contract'),
+      );
+      expect(
+        statuses['Multi-endpoint/profile management'],
+        HermesSurfaceStatus.deferred,
+      );
+      expect(statuses['Legacy durable reconnect'], HermesSurfaceStatus.blocked);
+      expect(
+        details['Legacy durable reconnect'],
+        contains('full Gormes issuance/auth/silent reconnect is not proven'),
+      );
+    },
+  );
+
+  test(
+    'client parses health, catalog, sessions, created sessions, and messages',
     () async {
       final requests = <String>[];
       final posts = <String, Map<String, Object?>>{};
@@ -88,7 +180,13 @@ void main() {
           requests.add(uri.path);
           return switch (uri.path) {
             '/health' => '{"status":"ok","platform":"hermes-agent"}',
+            '/health/detailed' =>
+              '{"status":"ok","platform":"hermes-agent","version":"0.16.0","gateway_state":"running","active_agents":0}',
             '/v1/capabilities' => _capabilitiesFixture,
+            '/v1/models' => _modelsFixture,
+            '/v1/skills' => _skillsFixture,
+            '/v1/toolsets' => _toolsetsFixture,
+            '/api/jobs' => _jobsFixture,
             '/api/sessions' => _sessionsFixture,
             '/api/sessions/sess_1/messages' => _messagesFixture,
             _ => throw StateError('unexpected GET $uri'),
@@ -103,7 +201,17 @@ void main() {
       );
 
       expect((await client.health()).status, 'ok');
+      final detailed = await client.healthDetailed();
+      expect(detailed.version, '0.16.0');
+      expect(detailed.gatewayState, 'running');
+      expect(detailed.activeAgents, 0);
       expect((await client.capabilities()).model, 'hermes-agent');
+      expect(await client.listModels(), ['hermes-agent']);
+      expect(await client.listSkills(), ['ascii-art', 'github']);
+      expect(await client.listEnabledToolsets(), ['default']);
+      final jobs = await client.listJobs();
+      expect(jobs.single.displayName, 'Morning check');
+      expect(jobs.single.scheduleDisplay, 'Every day at 09:00');
       expect((await client.listSessions()).single.id, 'sess_1');
       expect((await client.sessionMessages('sess_1')).single.content, 'Hello');
 
@@ -112,12 +220,94 @@ void main() {
       expect(posts['/api/sessions'], {'id': 'navi-1', 'title': 'Mobile'});
       expect(requests, [
         '/health',
+        '/health/detailed',
         '/v1/capabilities',
+        '/v1/models',
+        '/v1/skills',
+        '/v1/toolsets',
+        '/api/jobs',
         '/api/sessions',
         '/api/sessions/sess_1/messages',
       ]);
     },
   );
+
+  test('updates a session title over PATCH', () async {
+    final patches = <String, Map<String, Object?>>{};
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl(
+        'http://127.0.0.1:8642',
+        apiKey: 'api-key',
+      ),
+      patch: (uri, headers, body) async {
+        expect(headers['Authorization'], 'Bearer api-key');
+        expect(headers['Content-Type'], 'application/json');
+        patches[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        return '{"object":"hermes.session","session":{"id":"sess_1","source":"api_server","title":"Renamed"}}';
+      },
+    );
+
+    final updated = await client.updateSessionTitle(
+      'sess_1',
+      title: ' Renamed ',
+    );
+
+    expect(patches['/api/sessions/sess_1'], {'title': 'Renamed'});
+    expect(updated.title, 'Renamed');
+  });
+
+  test('deletes a session over DELETE and verifies the envelope', () async {
+    final deletes = <String>[];
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl(
+        'http://127.0.0.1:8642',
+        apiKey: 'api-key',
+      ),
+      delete: (uri, headers) async {
+        expect(headers['Authorization'], 'Bearer api-key');
+        deletes.add(uri.path);
+        return '{"object":"hermes.session.deleted","id":"sess_1","deleted":true}';
+      },
+    );
+
+    await client.deleteSession('sess_1');
+
+    expect(deletes, ['/api/sessions/sess_1']);
+  });
+
+  test('rejects an unconfirmed delete response', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      delete: (uri, headers) async =>
+          '{"object":"hermes.session.deleted","id":"other","deleted":false}',
+    );
+
+    await expectLater(client.deleteSession('sess_1'), throwsStateError);
+  });
+
+  test('forks a session over POST', () async {
+    final posts = <String, Map<String, Object?>>{};
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      post: (uri, headers, body) async {
+        posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        return '{"object":"hermes.session","session":{"id":"fork_1","source":"api_server","title":"Fork","parent_session_id":"sess_1"}}';
+      },
+    );
+
+    final fork = await client.forkSession(
+      'sess_1',
+      id: 'fork_1',
+      title: 'Fork',
+    );
+
+    expect(posts['/api/sessions/sess_1/fork'], {
+      'id': 'fork_1',
+      'title': 'Fork',
+    });
+    expect(fork.id, 'fork_1');
+    expect(fork.parentSessionId, 'sess_1');
+  });
 
   test(
     'streams session chat turns as decoded Hermes events over POST body chunks',
@@ -278,6 +468,70 @@ const _capabilitiesFixture = '''
     "run_approval": {"method": "POST", "path": "/v1/runs/{run_id}/approval"},
     "run_stop": {"method": "POST", "path": "/v1/runs/{run_id}/stop"}
   }
+}
+''';
+
+const _futureSurfaceCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {
+    "realtime_voice": true,
+    "admin_config_rw": true,
+    "memory_write_api": true,
+    "jobs_admin": true,
+    "attachments_api": true
+  },
+  "endpoints": {
+    "jobs": {"method": "GET", "path": "/api/jobs"}
+  }
+}
+''';
+
+const _modelsFixture = '''
+{
+  "object": "list",
+  "data": [
+    {"id": "hermes-agent", "owned_by": "hermes"}
+  ]
+}
+''';
+
+const _skillsFixture = '''
+{
+  "object": "list",
+  "data": [
+    {"name": "ascii-art", "description": "ASCII art generation", "category": "creative"},
+    {"name": "github", "description": "GitHub workflow skill", "category": "github"}
+  ]
+}
+''';
+
+const _toolsetsFixture = '''
+{
+  "object": "list",
+  "platform": "api_server",
+  "data": [
+    {"name": "default", "label": "Default Tools", "enabled": true, "configured": true, "tools": ["read_file"]},
+    {"name": "web", "label": "Web Tools", "enabled": false, "configured": true, "tools": ["web_search"]}
+  ]
+}
+''';
+
+const _jobsFixture = '''
+{
+  "jobs": [
+    {
+      "id": "job_1",
+      "name": "Morning check",
+      "enabled": true,
+      "state": "scheduled",
+      "schedule": {"display": "Every day at 09:00"},
+      "next_run_at": "2026-07-03T09:00:00Z"
+    }
+  ]
 }
 ''';
 

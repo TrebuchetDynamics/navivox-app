@@ -1,6 +1,8 @@
 import '../../protocol/voice/models/navivox_voice_run.dart';
 import '../models/hermes_capabilities.dart';
 import '../models/hermes_chat_turn.dart';
+import '../models/hermes_health.dart';
+import '../models/hermes_job.dart';
 import '../models/hermes_session.dart';
 
 enum HermesConnectionStatus { disconnected, connecting, connected, error }
@@ -10,6 +12,11 @@ class HermesChannelState {
     this.status = HermesConnectionStatus.disconnected,
     this.errorMessage,
     this.capabilities,
+    this.detailedHealth,
+    this.models = const [],
+    this.skills = const [],
+    this.enabledToolsets = const [],
+    this.jobs = const [],
     this.sessions = const [],
     this.activeSessionId,
     this.messages = const {},
@@ -20,6 +27,11 @@ class HermesChannelState {
   final HermesConnectionStatus status;
   final String? errorMessage;
   final HermesCapabilityDocument? capabilities;
+  final HermesHealthStatus? detailedHealth;
+  final List<String> models;
+  final List<String> skills;
+  final List<String> enabledToolsets;
+  final List<HermesJob> jobs;
   final List<HermesSession> sessions;
   final String? activeSessionId;
 
@@ -67,13 +79,23 @@ class HermesChannelState {
     String? errorMessage,
     bool clearErrorMessage = false,
     HermesCapabilityDocument? capabilities,
+    HermesHealthStatus? detailedHealth,
+    List<String>? models,
+    List<String>? skills,
+    List<String>? enabledToolsets,
+    List<HermesJob>? jobs,
     List<HermesSession>? sessions,
     String? activeSessionId,
+    bool clearActiveSessionId = false,
     Map<String, List<HermesChatTurn>>? messages,
     Map<String, NavivoxVoiceRun>? voiceRuns,
     String? activeVoiceRunId,
     bool clearActiveVoiceRunId = false,
   }) {
+    assert(
+      !clearActiveSessionId || activeSessionId == null,
+      'copyWith cannot set and clear activeSessionId at the same time.',
+    );
     assert(
       !clearActiveVoiceRunId || activeVoiceRunId == null,
       'copyWith cannot set and clear activeVoiceRunId at the same time.',
@@ -84,8 +106,15 @@ class HermesChannelState {
           ? null
           : errorMessage ?? this.errorMessage,
       capabilities: capabilities ?? this.capabilities,
+      detailedHealth: detailedHealth ?? this.detailedHealth,
+      models: models ?? this.models,
+      skills: skills ?? this.skills,
+      enabledToolsets: enabledToolsets ?? this.enabledToolsets,
+      jobs: jobs ?? this.jobs,
       sessions: sessions ?? this.sessions,
-      activeSessionId: activeSessionId ?? this.activeSessionId,
+      activeSessionId: clearActiveSessionId
+          ? null
+          : activeSessionId ?? this.activeSessionId,
       messages: messages ?? this.messages,
       voiceRuns: voiceRuns ?? this.voiceRuns,
       activeVoiceRunId: clearActiveVoiceRunId

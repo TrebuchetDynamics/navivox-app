@@ -1,0 +1,161 @@
+import '../models/hermes_capabilities.dart';
+import 'hermes_transport_policy.dart';
+
+enum HermesSurfaceStatus { available, readOnly, deferred, blocked }
+
+extension HermesSurfaceStatusLabel on HermesSurfaceStatus {
+  String get label => switch (this) {
+    HermesSurfaceStatus.available => 'Available',
+    HermesSurfaceStatus.readOnly => 'Read-only',
+    HermesSurfaceStatus.deferred => 'Deferred',
+    HermesSurfaceStatus.blocked => 'Blocked',
+  };
+}
+
+class HermesSurfaceReadiness {
+  const HermesSurfaceReadiness({
+    required this.title,
+    required this.status,
+    required this.detail,
+  });
+
+  final String title;
+  final HermesSurfaceStatus status;
+  final String detail;
+}
+
+List<HermesSurfaceReadiness> hermesSurfaceReadiness(
+  HermesCapabilityDocument capabilities,
+) {
+  final policy = HermesTransportPolicy(capabilities);
+  final supportsSessions = capabilities.advertisesEndpoint(
+    'sessions',
+    'GET',
+    '/api/sessions',
+  );
+  final supportsSessionCreate = capabilities.advertisesEndpoint(
+    'session_create',
+    'POST',
+    '/api/sessions',
+  );
+  final advertisesJobsList = capabilities.advertisesEndpoint(
+    'jobs',
+    'GET',
+    '/api/jobs',
+  );
+  final supportsJobsAdmin =
+      capabilities.supportsFeature('jobs_admin') && advertisesJobsList;
+  final supportsAttachments =
+      capabilities.supportsFeature('attachments_api') ||
+      capabilities.supportsFeature('multimodal_chat');
+
+  return [
+    HermesSurfaceReadiness(
+      title: 'Chat transport',
+      status: policy.supportsRunsTransport || policy.supportsSessionChatStream
+          ? HermesSurfaceStatus.available
+          : HermesSurfaceStatus.blocked,
+      detail: policy.supportsRunsTransport
+          ? 'Runs SSE transport with tool progress, approvals, and stop.'
+          : policy.supportsSessionChatStream
+          ? 'Session chat streaming fallback.'
+          : 'No supported Hermes chat stream endpoint advertised.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Sessions',
+      status: supportsSessions && supportsSessionCreate
+          ? HermesSurfaceStatus.available
+          : HermesSurfaceStatus.blocked,
+      detail: supportsSessions && supportsSessionCreate
+          ? 'List, create, select, rename, delete, and fork when advertised.'
+          : 'Required session list/create endpoints are missing.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Local voice-to-text',
+      status: HermesSurfaceStatus.available,
+      detail: 'Device speech capture submits transcripts as Hermes text turns.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Server realtime voice/audio',
+      status: HermesSurfaceStatus.deferred,
+      detail: policy.supportsRealtimeVoice
+          ? 'Hermes realtime voice is advertised, but Navivox has not wired server audio; local STT remains the voice path.'
+          : 'Hermes realtime/server audio is not advertised; local STT remains the voice path.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Config editing/admin',
+      status: HermesSurfaceStatus.deferred,
+      detail: policy.supportsConfigWrite
+          ? 'admin_config_rw is advertised, but Hermes config editing is not wired in Navivox.'
+          : 'admin_config_rw is not advertised; Navivox keeps this hidden.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Memory UI',
+      status: HermesSurfaceStatus.deferred,
+      detail: policy.supportsMemoryWrite
+          ? 'Hermes memory API is advertised, but Navivox memory UI is not wired.'
+          : 'memory_write_api is not advertised; Hermes memory stays hidden.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Jobs/schedules inventory',
+      status: advertisesJobsList
+          ? HermesSurfaceStatus.readOnly
+          : HermesSurfaceStatus.deferred,
+      detail: advertisesJobsList
+          ? 'Jobs list endpoint is advertised; Navivox shows a read-only inventory.'
+          : 'Jobs list endpoint is not advertised for mobile use.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Jobs/schedules admin',
+      status: HermesSurfaceStatus.deferred,
+      detail: supportsJobsAdmin
+          ? 'Jobs admin is advertised, but Navivox has not wired create/edit/delete scheduling.'
+          : 'Jobs create/edit/delete scheduling remains outside the mobile MVP.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Messaging gateways',
+      status: HermesSurfaceStatus.deferred,
+      detail: 'No safe mobile Hermes gateway admin contract is wired.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Persona/SOUL',
+      status: HermesSurfaceStatus.deferred,
+      detail: 'Needs an explicit Hermes API or safe file/CLI flow.',
+    ),
+    HermesSurfaceReadiness(
+      title: 'Attachments/media',
+      status: HermesSurfaceStatus.deferred,
+      detail: supportsAttachments
+          ? 'Attachment/multimodal capability is advertised, but Navivox has not wired mobile attachments.'
+          : 'Text-only plus local voice transcript until fixture coverage lands.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Files/context folders',
+      status: HermesSurfaceStatus.deferred,
+      detail: 'Needs mobile-safe workspace and remote path semantics.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Bounded diagnostics',
+      status: HermesSurfaceStatus.readOnly,
+      detail:
+          'Safe copyable status is available; raw logs and payloads remain excluded.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Raw diagnostics/log export',
+      status: HermesSurfaceStatus.deferred,
+      detail:
+          'Raw logs, transcripts, credentials, and tool payload export remain excluded until a safe redaction contract exists.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Multi-endpoint/profile management',
+      status: HermesSurfaceStatus.deferred,
+      detail: 'Current Hermes MVP targets one saved endpoint.',
+    ),
+    const HermesSurfaceReadiness(
+      title: 'Legacy durable reconnect',
+      status: HermesSurfaceStatus.blocked,
+      detail:
+          'Android keypair readiness exists; full Gormes issuance/auth/silent reconnect is not proven.',
+    ),
+  ];
+}

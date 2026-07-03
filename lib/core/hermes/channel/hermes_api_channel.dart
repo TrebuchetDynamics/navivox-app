@@ -8,6 +8,8 @@ import '../../protocol/voice/models/navivox_voice_run.dart';
 import '../client/hermes_api_client.dart';
 import '../client/hermes_api_config.dart';
 import '../models/hermes_chat_turn.dart';
+import '../models/hermes_health.dart';
+import '../models/hermes_job.dart';
 import '../policy/hermes_transport_policy.dart';
 import '../sse/hermes_sse_event_decoder.dart';
 import 'hermes_channel.dart';
@@ -37,6 +39,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   String? _activeRunId;
   final _approvalController =
       StreamController<NavivoxApprovalRequest>.broadcast();
+  final _deletingSessionIds = <String>{};
 
   @override
   HermesChannelState get state => _state;
@@ -71,6 +74,30 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     try {
       await client.health();
       final capabilities = await client.capabilities();
+      final detailedHealth = await _optionalHealth(
+        capabilities.advertisesEndpoint(
+          'health_detailed',
+          'GET',
+          '/health/detailed',
+        ),
+        client.healthDetailed,
+      );
+      final models = await _optionalCatalogList(
+        capabilities.advertisesEndpoint('models', 'GET', '/v1/models'),
+        client.listModels,
+      );
+      final skills = await _optionalCatalogList(
+        capabilities.advertisesEndpoint('skills', 'GET', '/v1/skills'),
+        client.listSkills,
+      );
+      final enabledToolsets = await _optionalCatalogList(
+        capabilities.advertisesEndpoint('toolsets', 'GET', '/v1/toolsets'),
+        client.listEnabledToolsets,
+      );
+      final jobs = await _optionalJobs(
+        capabilities.advertisesEndpoint('jobs', 'GET', '/api/jobs'),
+        client.listJobs,
+      );
       var sessions = await client.listSessions();
       String activeId;
       if (sessions.isEmpty) {
@@ -85,6 +112,11 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         _state.copyWith(
           status: HermesConnectionStatus.connected,
           capabilities: capabilities,
+          detailedHealth: detailedHealth,
+          models: models,
+          skills: skills,
+          enabledToolsets: enabledToolsets,
+          jobs: jobs,
           sessions: sessions,
           activeSessionId: activeId,
           messages: {...(_state.messages), activeId: messages},
@@ -97,6 +129,42 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           errorMessage: error.toString(),
         ),
       );
+    }
+  }
+
+  Future<HermesHealthStatus?> _optionalHealth(
+    bool advertised,
+    Future<HermesHealthStatus> Function() load,
+  ) async {
+    if (!advertised) return null;
+    try {
+      return await load();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<String>> _optionalCatalogList(
+    bool advertised,
+    Future<List<String>> Function() load,
+  ) async {
+    if (!advertised) return const [];
+    try {
+      return await load();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<HermesJob>> _optionalJobs(
+    bool advertised,
+    Future<List<HermesJob>> Function() load,
+  ) async {
+    if (!advertised) return const [];
+    try {
+      return await load();
+    } catch (_) {
+      return const [];
     }
   }
 
@@ -154,6 +222,97 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
       ),
     );
     _setTurns(created.id, await _fetchTurns(client, created.id));
+  }
+
+  @override
+  Future<void> renameSession({
+    required String sessionId,
+    required String title,
+  }) async {
+    final client = _client;
+    final trimmed = title.trim();
+    if (client == null) {
+      throw StateError('Hermes channel is not connected.');
+    }
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(
+        title,
+        'title',
+        'Session title cannot be empty.',
+      );
+    }
+    final updated = await client.updateSessionTitle(sessionId, title: trimmed);
+    _setState(
+      _state.copyWith(
+        sessions: [
+          for (final session in _state.sessions)
+            if (session.id == updated.id) updated else session,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Hermes channel is not connected.');
+    }
+    if (!_deletingSessionIds.add(sessionId)) {
+      throw StateError('Hermes session delete is already in progress.');
+    }
+    try {
+      await client.deleteSession(sessionId);
+      final remaining = [
+        for (final session in _state.sessions)
+          if (session.id != sessionId) session,
+      ];
+      final wasActive = _state.activeSessionId == sessionId;
+      final nextActiveId = wasActive
+          ? remaining.firstOrNull?.id
+          : _state.activeSessionId;
+      final messages = Map<String, List<HermesChatTurn>>.from(_state.messages)
+        ..remove(sessionId);
+      if (wasActive &&
+          nextActiveId != null &&
+          !messages.containsKey(nextActiveId)) {
+        try {
+          messages[nextActiveId] = await _fetchTurns(client, nextActiveId);
+        } catch (_) {
+          messages[nextActiveId] = const [];
+        }
+      }
+      _setState(
+        _state.copyWith(
+          sessions: remaining,
+          activeSessionId: nextActiveId,
+          clearActiveSessionId: nextActiveId == null,
+          messages: messages,
+        ),
+      );
+    } finally {
+      _deletingSessionIds.remove(sessionId);
+    }
+  }
+
+  @override
+  Future<void> forkSession(String sessionId, {String? title}) async {
+    final client = _client;
+    if (client == null) {
+      throw StateError('Hermes channel is not connected.');
+    }
+    final fork = await client.forkSession(
+      sessionId,
+      id: _sessionIdFactory(),
+      title: title,
+    );
+    _setState(
+      _state.copyWith(
+        sessions: [..._state.sessions, fork],
+        activeSessionId: fork.id,
+      ),
+    );
+    _setTurns(fork.id, await _fetchTurns(client, fork.id));
   }
 
   @override

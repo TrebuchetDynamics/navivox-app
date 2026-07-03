@@ -13,6 +13,14 @@ Future<String> defaultPost(Uri uri, Map<String, String> headers, String body) {
   return _request(uri: uri, method: 'POST', headers: headers, body: body);
 }
 
+Future<String> defaultPatch(Uri uri, Map<String, String> headers, String body) {
+  return _request(uri: uri, method: 'PATCH', headers: headers, body: body);
+}
+
+Future<String> defaultDelete(Uri uri, Map<String, String> headers) {
+  return _request(uri: uri, method: 'DELETE', headers: headers);
+}
+
 Stream<String> defaultPostStream(
   Uri uri,
   Map<String, String> headers,

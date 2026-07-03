@@ -18,6 +18,7 @@ class HermesApiConfig {
   Uri get skillsUri => _withPath('/v1/skills');
   Uri get toolsetsUri => _withPath('/v1/toolsets');
   Uri get sessionsUri => _withPath('/api/sessions');
+  Uri get jobsUri => _withPath('/api/jobs');
   Uri get runsUri => _withPath('/v1/runs');
 
   Uri sessionUri(String sessionId) => _withPath(
@@ -26,6 +27,10 @@ class HermesApiConfig {
 
   Uri sessionMessagesUri(String sessionId) => _withPath(
     '/api/sessions/${hermesApiTrimmedPathSegment(sessionId, name: 'sessionId')}/messages',
+  );
+
+  Uri sessionForkUri(String sessionId) => _withPath(
+    '/api/sessions/${hermesApiTrimmedPathSegment(sessionId, name: 'sessionId')}/fork',
   );
 
   Uri sessionChatUri(String sessionId) => _withPath(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../protocol/navivox_json.dart';
 import '../models/hermes_capabilities.dart';
 import '../models/hermes_health.dart';
+import '../models/hermes_job.dart';
 import '../models/hermes_run.dart';
 import '../models/hermes_session.dart';
 import '../shared/hermes_api_http.dart';
@@ -19,21 +20,33 @@ class HermesApiClient {
     required this.config,
     HermesApiGet? get,
     HermesApiPost? post,
+    HermesApiPatch? patch,
+    HermesApiDelete? delete,
     HermesApiPostStream? postStream,
     HermesApiGetStream? getStream,
   }) : _get = get ?? transport.defaultGet,
        _post = post ?? transport.defaultPost,
+       _patch = patch ?? transport.defaultPatch,
+       _delete = delete ?? transport.defaultDelete,
        _postStream = postStream ?? transport.defaultPostStream,
        _getStream = getStream ?? transport.defaultGetStream;
 
   final HermesApiConfig config;
   final HermesApiGet _get;
   final HermesApiPost _post;
+  final HermesApiPatch _patch;
+  final HermesApiDelete _delete;
   final HermesApiPostStream _postStream;
   final HermesApiGetStream _getStream;
 
   Future<HermesHealthStatus> health() async {
     return HermesHealthStatus.fromJson(await _getJson(config.healthUri));
+  }
+
+  Future<HermesHealthStatus> healthDetailed() async {
+    return HermesHealthStatus.fromJson(
+      await _getJson(config.healthDetailedUri),
+    );
   }
 
   Future<HermesCapabilityDocument> capabilities() async {
@@ -42,11 +55,42 @@ class HermesApiClient {
     );
   }
 
+  Future<List<String>> listModels() async {
+    return _namedList(await _getJson(config.modelsUri), const [
+      'id',
+      'root',
+      'model',
+      'name',
+    ]);
+  }
+
+  Future<List<String>> listSkills() async {
+    return _namedList(await _getJson(config.skillsUri), const ['name']);
+  }
+
+  Future<List<String>> listEnabledToolsets() async {
+    final body = await _getJson(config.toolsetsUri);
+    return navivoxMapListFromJson(body['data'])
+        .where((item) => navivoxBoolFromJson(item['enabled']))
+        .map((item) => navivoxOptionalStringFromJson(item['name']))
+        .whereType<String>()
+        .toList(growable: false);
+  }
+
   Future<List<HermesSession>> listSessions() async {
     final body = await _getJson(config.sessionsUri);
     return navivoxMapListFromJson(body['data'])
         .map(HermesSession.fromJson)
         .where((session) => session.id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<List<HermesJob>> listJobs() async {
+    final body = await _getJson(config.jobsUri);
+    final rawJobs = body['jobs'] ?? body['data'];
+    return navivoxMapListFromJson(rawJobs)
+        .map(HermesJob.fromJson)
+        .where((job) => job.id.isNotEmpty)
         .toList(growable: false);
   }
 
@@ -73,6 +117,38 @@ class HermesApiClient {
     return navivoxMapListFromJson(
       body['data'],
     ).map(HermesMessage.fromJson).toList(growable: false);
+  }
+
+  Future<HermesSession> updateSessionTitle(
+    String sessionId, {
+    required String title,
+  }) async {
+    final response = await _patchJson(config.sessionUri(sessionId), {
+      'title': title.trim(),
+    });
+    return HermesSession.fromJson(navivoxMapFieldFromJson(response, 'session'));
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    final trimmed = sessionId.trim();
+    final response = await _deleteJson(config.sessionUri(trimmed));
+    final id = navivoxOptionalStringFromJson(response['id']);
+    final deleted = navivoxBoolFromJson(response['deleted']);
+    if (id != trimmed || !deleted) {
+      throw StateError('Hermes session delete was not confirmed.');
+    }
+  }
+
+  Future<HermesSession> forkSession(
+    String sourceSessionId, {
+    required String id,
+    String? title,
+  }) async {
+    final response = await _postJson(config.sessionForkUri(sourceSessionId), {
+      'id': id.trim(),
+      ...navivoxTrimmedStringFields({'title': title}),
+    });
+    return HermesSession.fromJson(navivoxMapFieldFromJson(response, 'session'));
   }
 
   Stream<HermesStreamEvent> streamSessionChat(
@@ -136,6 +212,36 @@ class HermesApiClient {
       hermesApiContentTypeHeader: hermesApiJsonContentType,
     };
     return _decodeObject(await _post(uri, headers, jsonEncode(body)));
+  }
+
+  Future<Map<String, Object?>> _patchJson(
+    Uri uri,
+    Map<String, Object?> body,
+  ) async {
+    final headers = <String, String>{
+      ...config.headers,
+      hermesApiContentTypeHeader: hermesApiJsonContentType,
+    };
+    return _decodeObject(await _patch(uri, headers, jsonEncode(body)));
+  }
+
+  Future<Map<String, Object?>> _deleteJson(Uri uri) async {
+    return _decodeObject(await _delete(uri, config.headers));
+  }
+
+  List<String> _namedList(
+    Map<String, Object?> body,
+    List<String> candidateFields,
+  ) {
+    return navivoxMapListFromJson(body['data'])
+        .map(
+          (item) => candidateFields
+              .map((field) => navivoxOptionalStringFromJson(item[field]))
+              .whereType<String>()
+              .firstOrNull,
+        )
+        .whereType<String>()
+        .toList(growable: false);
   }
 
   Map<String, Object?> _decodeObject(String body) {

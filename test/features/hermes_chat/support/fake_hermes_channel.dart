@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:navivox/core/hermes/channel/hermes_channel.dart';
 import 'package:navivox/core/hermes/models/hermes_capabilities.dart';
 import 'package:navivox/core/hermes/models/hermes_chat_turn.dart';
+import 'package:navivox/core/hermes/models/hermes_health.dart';
+import 'package:navivox/core/hermes/models/hermes_job.dart';
 import 'package:navivox/core/hermes/models/hermes_session.dart';
 import 'package:navivox/core/protocol/voice/models/navivox_voice_run.dart';
 
@@ -25,13 +27,30 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     String sessionId = 'sess_1',
     String? errorMessage,
     HermesCapabilityDocument? capabilities,
+    HermesHealthStatus? detailedHealth,
+    List<String> models = const [],
+    List<String> skills = const [],
+    List<String> enabledToolsets = const [],
+    List<HermesJob> jobs = const [],
+    List<HermesSession>? sessions,
   }) : _state = status == HermesConnectionStatus.connected
            ? HermesChannelState(
                status: status,
                capabilities: capabilities,
-               sessions: [HermesSession(id: sessionId, source: 'fake')],
+               detailedHealth: detailedHealth,
+               models: models,
+               skills: skills,
+               enabledToolsets: enabledToolsets,
+               jobs: jobs,
+               sessions:
+                   sessions ?? [HermesSession(id: sessionId, source: 'fake')],
                activeSessionId: sessionId,
-               messages: {sessionId: const []},
+               messages: {
+                 for (final session
+                     in sessions ??
+                         [HermesSession(id: sessionId, source: 'fake')])
+                   session.id: const <HermesChatTurn>[],
+               },
              )
            : HermesChannelState(status: status, errorMessage: errorMessage);
 
@@ -40,6 +59,9 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
 
   final List<FakeHermesConnectCall> connectCalls = [];
   final List<String> sentVoiceTranscripts = [];
+  final List<Map<String, String>> renameSessionCalls = [];
+  final List<String> deleteSessionCalls = [];
+  final List<String> forkSessionCalls = [];
   final List<Map<String, Object?>> respondToApprovalCalls = [];
   int stopActiveTurnCalls = 0;
   final _approvalController =
@@ -91,6 +113,73 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
 
   @override
   Future<void> createSession({String? title}) async {}
+
+  @override
+  Future<void> renameSession({
+    required String sessionId,
+    required String title,
+  }) async {
+    renameSessionCalls.add({'sessionId': sessionId, 'title': title});
+    _setState(
+      _state.copyWith(
+        sessions: [
+          for (final session in _state.sessions)
+            if (session.id == sessionId)
+              HermesSession(
+                id: session.id,
+                source: session.source,
+                title: title,
+              )
+            else
+              session,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    deleteSessionCalls.add(sessionId);
+    final remaining = [
+      for (final session in _state.sessions)
+        if (session.id != sessionId) session,
+    ];
+    final nextActive = _state.activeSessionId == sessionId
+        ? remaining.firstOrNull?.id
+        : _state.activeSessionId;
+    final messages = Map<String, List<HermesChatTurn>>.from(_state.messages)
+      ..remove(sessionId);
+    _setState(
+      _state.copyWith(
+        sessions: remaining,
+        activeSessionId: nextActive,
+        clearActiveSessionId: nextActive == null,
+        messages: messages,
+      ),
+    );
+  }
+
+  @override
+  Future<void> forkSession(String sessionId, {String? title}) async {
+    forkSessionCalls.add(sessionId);
+    final forkId = 'fork-${_state.sessions.length}';
+    final fork = HermesSession(
+      id: forkId,
+      source: 'fake',
+      title: title ?? 'Forked session',
+      parentSessionId: sessionId,
+    );
+    _setState(
+      _state.copyWith(
+        sessions: [..._state.sessions, fork],
+        activeSessionId: forkId,
+        messages: {
+          ..._state.messages,
+          forkId: _state.messages[sessionId] ?? const [],
+        },
+      ),
+    );
+  }
 
   @override
   Future<void> sendText(String text) async {
