@@ -9,10 +9,12 @@ coverage/
 .idea/
 *.iml
 
-# Pi agent artifacts
+# Agent artifacts
 .pi/
 **/.pi/
 .understand-anything/**
+.claude/
+**/.claude/
 
 # Node / Playwright
 node_modules/
