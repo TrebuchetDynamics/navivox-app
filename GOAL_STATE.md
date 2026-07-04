@@ -544,10 +544,15 @@ readiness checklist and non-completion caveats.
 - Publish the platform workflow with a GitHub credential that has `workflow`
   scope, then collect successful native-host artifacts/receipts.
   Latest blocker recheck: attempting `flutter emulators --launch fractal_test`
-  exited `-6` during startup, `adb devices` still listed no attached Android
-  devices, `flutter devices` still listed only Linux desktop and Chrome web,
-  `gh auth status` still reported token scopes `gist`, `read:org`, and `repo`
-  without `workflow`, `gh workflow list` still showed only
+  exited `-6` during startup, but direct SDK emulator launch with
+  `-no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-window` brought
+  `emulator-5554` online long enough for `npm run android:live-mic-prep` to
+  build/install/launch/grant microphone permission; the emulator still logged
+  `pulseaudio: Failed to initialize PA context`, no spoken-audio/provider/TTS
+  receipt was captured, and after shutdown `adb devices` again listed no
+  attached Android devices while `flutter devices` listed only Linux desktop and
+  Chrome web. `gh auth status` still reported token scopes `gist`, `read:org`,
+  and `repo` without `workflow`, `gh workflow list` still showed only
   `pages-build-deployment`, and `npm run platform:workflow-smoke` exited 2
   because `Hermes platform smoke` is not visible remotely and the active token
   cannot publish workflow files.

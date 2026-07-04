@@ -31,12 +31,14 @@ npm run android:live-mic-prep
 The prep helper installs/launches Navivox and grants `RECORD_AUDIO`. It is not a
 pass receipt.
 
-Current prep receipt (2026-07-03): after a KVM-backed `fractal_test` emulator
-booted, `NAVIVOX_ANDROID_DEVICE_ID=<emulator> NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1
-NAVIVOX_ANDROID_SKIP_BUILD=1 NAVIVOX_ANDROID_HERMES_URL=http://10.0.2.2:8642
-npm run android:live-mic-prep` installed/launched/granted microphone permission.
-This is prep evidence only; it still does not prove spoken audio, provider
-reply, TTS, or re-arm.
+Current prep receipt (2026-07-04): `flutter emulators --launch fractal_test`
+crashed with exit `-6`, but directly launching the AVD with
+`/usr/lib/android-sdk/emulator/emulator -avd fractal_test -no-snapshot
+-no-boot-anim -gpu swiftshader_indirect -no-window` brought `emulator-5554`
+online long enough for `npm run android:live-mic-prep` to build, install,
+launch, and grant microphone permission. The emulator log also reported
+`pulseaudio: Failed to initialize PA context`; treat this as prep evidence only.
+It still does not prove physical spoken audio, provider reply, TTS, or re-arm.
 
 ## Pass evidence required
 
@@ -107,10 +109,14 @@ Record all of the following before closing the blocker:
 
 If the target flakes during install or launch, capture `adb devices`,
 `flutter devices`, and the prep helper output. Known unstable-emulator symptoms
-include `cmd: Failure calling service package: Broken pipe (32)` and `Unable to
-start the app on the device`; those are Android package-service failures, not
-microphone evidence. Do not mark the smoke failed or passed solely from a prep
-failure; first determine whether Android itself is online and audio-capable.
+include `cmd: Failure calling service package: Broken pipe (32)`, `Unable to
+start the app on the device`, Flutter emulator launcher exit `-6`, and emulator
+logs such as `pulseaudio: Failed to initialize PA context`; those are Android
+startup/audio-driver/package-service failures, not microphone evidence. When the
+Flutter launcher crashes but the SDK emulator is otherwise available, try the
+headless direct-launch form above to reach prep, then still require the manual
+physical-audio checklist. Do not mark the smoke failed or passed solely from a
+prep failure; first determine whether Android itself is online and audio-capable.
 
 ## Update triggers
 
