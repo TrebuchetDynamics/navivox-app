@@ -101,17 +101,37 @@ void main() {
     expect(field.controller?.text, isEmpty);
   });
 
-  testWidgets('shows the connect error message when connecting failed', (
+  testWidgets('shows auth recovery copy without echoing secrets', (
     tester,
   ) async {
     final channel = FakeHermesChannel(
       status: HermesConnectionStatus.error,
-      errorMessage: 'Hermes API rejected the request credentials',
+      errorMessage: '401 unauthorized for Bearer secret-api-key',
     );
     await tester.pumpWidget(_wrap(channel));
 
+    expect(find.text('Hermes API rejected the API key.'), findsOneWidget);
     expect(
-      find.text('Hermes API rejected the request credentials'),
+      find.text('Check the endpoint API key in Hermes and try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('secret-api-key'), findsNothing);
+  });
+
+  testWidgets('shows offline recovery copy for unreachable endpoints', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      status: HermesConnectionStatus.error,
+      errorMessage: 'SocketException: connection refused',
+    );
+    await tester.pumpWidget(_wrap(channel));
+
+    expect(find.text('Hermes endpoint is unreachable.'), findsOneWidget);
+    expect(
+      find.text(
+        'Check the base URL, network, VPN, and that Hermes API server is running.',
+      ),
       findsOneWidget,
     );
   });

@@ -150,95 +150,91 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     HermesChannelState state,
   ) {
     final connecting = state.status == HermesConnectionStatus.connecting;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Connect to Hermes Agent',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ActionChip(
-                    key: const ValueKey('hermes-preset-local'),
-                    label: const Text('Local Hermes'),
-                    onPressed: connecting
-                        ? null
-                        : () =>
-                              _baseUrlController.text = 'http://127.0.0.1:8642',
-                  ),
-                  ActionChip(
-                    key: const ValueKey('hermes-preset-android'),
-                    label: const Text('Android emulator'),
-                    onPressed: connecting
-                        ? null
-                        : () =>
-                              _baseUrlController.text = 'http://10.0.2.2:8642',
-                  ),
-                  ActionChip(
-                    key: const ValueKey('hermes-preset-remote'),
-                    label: const Text('Remote/LAN'),
-                    onPressed: connecting
-                        ? null
-                        : () => _baseUrlController.clear(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                key: const ValueKey('hermes-base-url-field'),
-                controller: _baseUrlController,
-                keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'Hermes API base URL',
-                  helperText: _hermesBaseUrlHint,
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Connect to Hermes Agent',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                key: const ValueKey('hermes-api-key-field'),
-                controller: _apiKeyController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'API key (optional)',
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (state.status == HermesConnectionStatus.error &&
-                  state.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    state.errorMessage!,
-                    key: const ValueKey('hermes-connect-error'),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ActionChip(
+                      key: const ValueKey('hermes-preset-local'),
+                      label: const Text('Local Hermes'),
+                      onPressed: connecting
+                          ? null
+                          : () => _baseUrlController.text =
+                                'http://127.0.0.1:8642',
                     ),
+                    ActionChip(
+                      key: const ValueKey('hermes-preset-android'),
+                      label: const Text('Android emulator'),
+                      onPressed: connecting
+                          ? null
+                          : () => _baseUrlController.text =
+                                'http://10.0.2.2:8642',
+                    ),
+                    ActionChip(
+                      key: const ValueKey('hermes-preset-remote'),
+                      label: const Text('Remote/LAN'),
+                      onPressed: connecting
+                          ? null
+                          : () => _baseUrlController.clear(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  key: const ValueKey('hermes-base-url-field'),
+                  controller: _baseUrlController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Hermes API base URL',
+                    helperText: _hermesBaseUrlHint,
                   ),
                 ),
-              ElevatedButton(
-                key: const ValueKey('hermes-connect-button'),
-                onPressed: connecting
-                    ? null
-                    : () => unawaited(_connect(channel)),
-                child: connecting
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Connect'),
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  key: const ValueKey('hermes-api-key-field'),
+                  controller: _apiKeyController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'API key (optional)',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (state.status == HermesConnectionStatus.error &&
+                    state.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _HermesConnectError(error: state.errorMessage!),
+                  ),
+                ElevatedButton(
+                  key: const ValueKey('hermes-connect-button'),
+                  onPressed: connecting
+                      ? null
+                      : () => unawaited(_connect(channel)),
+                  child: connecting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Connect'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -632,6 +628,47 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
           unawaited(_captureOnce(channel));
         }
       }),
+    );
+  }
+}
+
+class _HermesConnectError extends StatelessWidget {
+  const _HermesConnectError({required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    final lower = error.toLowerCase();
+    final (title, recovery) =
+        lower.contains('401') ||
+            lower.contains('403') ||
+            lower.contains('unauthorized') ||
+            lower.contains('forbidden')
+        ? (
+            'Hermes API rejected the API key.',
+            'Check the endpoint API key in Hermes and try again.',
+          )
+        : lower.contains('socketexception') ||
+              lower.contains('connection refused') ||
+              lower.contains('failed host lookup') ||
+              lower.contains('timed out')
+        ? (
+            'Hermes endpoint is unreachable.',
+            'Check the base URL, network, VPN, and that Hermes API server is running.',
+          )
+        : ('Could not connect to Hermes.', 'Check the endpoint and try again.');
+    return Column(
+      key: const ValueKey('hermes-connect-error'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+        const SizedBox(height: 4),
+        Text(recovery),
+      ],
     );
   }
 }
