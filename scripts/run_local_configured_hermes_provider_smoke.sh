@@ -43,8 +43,11 @@ base_url="http://${host}:${port}"
 hermes_log="${NAVIVOX_CONFIGURED_HERMES_LOG:-/tmp/navivox-configured-hermes.log}"
 hermes_pid=""
 cleanup() {
-  if [ -n "$hermes_pid" ]; then kill "$hermes_pid" 2>/dev/null || true; fi
-  if [ -n "$cloned_hermes_home" ]; then rm -rf "$cloned_hermes_home"; fi
+  if [ -n "$hermes_pid" ]; then
+    kill "$hermes_pid" 2>/dev/null || true
+    wait "$hermes_pid" 2>/dev/null || true
+  fi
+  if [ -n "$cloned_hermes_home" ]; then rm -rf "$cloned_hermes_home" 2>/dev/null || true; fi
 }
 trap cleanup EXIT INT TERM
 

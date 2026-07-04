@@ -22,4 +22,17 @@ void main() {
       isTrue,
     );
   });
+
+  test('macOS scaffold is present for host-runner validation', () {
+    expect(File('macos/Runner.xcodeproj/project.pbxproj').existsSync(), isTrue);
+    expect(File('macos/Runner/AppDelegate.swift').existsSync(), isTrue);
+    final debugEntitlements = File(
+      'macos/Runner/DebugProfile.entitlements',
+    ).readAsStringSync();
+    final releaseEntitlements = File(
+      'macos/Runner/Release.entitlements',
+    ).readAsStringSync();
+    expect(debugEntitlements, contains('com.apple.security.network.client'));
+    expect(releaseEntitlements, contains('com.apple.security.network.client'));
+  });
 }

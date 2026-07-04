@@ -4,12 +4,11 @@
 
 Navivox is a Flutter app for operating trusted local, LAN, VPN, or self-hosted Hermes Agent API servers. Fresh installs open on the native Hermes screen, connect to a Hermes endpoint, show sessions, stream assistant/tool progress, handle approvals, and can submit device-transcribed voice as normal Hermes text turns.
 
-The older Gormes `/v1/navivox/*` UI remains in this repo as legacy/preserved surfaces while `main` moves Hermes-first. The preserved Gormes-first app state lives on the `gormes` branch.
+The older Gormes `/v1/navivox/*` UI remains only as legacy/preserved code and is not part of active Hermes readiness. New mainline work is pure Hermes endpoint/session work.
 
 References:
 
 - Hermes Desktop reference: <https://github.com/fathah/hermes-desktop>
-- Gormes repository (legacy runtime): <https://github.com/TrebuchetDynamics/gormes-agent>
 
 ## Status
 
@@ -27,8 +26,9 @@ Implemented platform coverage includes Flutter web/Android/Linux plus generated 
 Still blocked without external hosts/devices/config:
 
 - Full Android microphone/continuous-voice loop with real spoken input on a responsive audio-capable Android device or emulator.
-- Windows/iOS host build receipts from native runners.
-- Full real Android saved durable reconnect against Gormes after app/server restart.
+- Windows/iOS/macOS host build receipts from native runners.
+- Published platform workflow and successful hosted artifacts once credentials have GitHub `workflow` scope.
+- Hermes realtime/server audio and deferred Desktop-parity surfaces listed in `docs/product/hermes-desktop-parity-roadmap.md`.
 
 ## Screenshots
 
@@ -75,7 +75,7 @@ The app gates run transport, tool progress, approvals, and stop behavior from `/
 
 ## Legacy Gormes Surfaces
 
-Legacy Gormes screens for gateways, profile contacts, config, memory, profile seed, voice profiles, run records, and pairing handoff remain available for transition and tests. They show deprecation notices that link back to Hermes. New mainline work should prefer Hermes endpoint/session language unless explicitly maintaining the legacy Gormes path.
+Legacy Gormes screens for gateways, profile contacts, config, memory, profile seed, voice profiles, run records, and pairing handoff are preserved only for history/tests. They are not active product blockers. New mainline work should use Hermes endpoint/session language.
 
 ## Repository Layout
 

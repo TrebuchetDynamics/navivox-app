@@ -26,8 +26,8 @@ Future<void> hermesAutoConnect(
   await channel.connect(baseUrl: saved.baseUrl, apiKey: saved.apiKey);
 }
 
-/// Native Hermes channel, kept separate from `navivoxChannelProvider`
-/// (Gormes) per docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
+/// Native Hermes channel; see
+/// docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
 final hermesChannelProvider = Provider<HermesChannel>((ref) {
   final store = ref.watch(hermesEndpointStoreProvider);
   final channel = HermesApiChannel();

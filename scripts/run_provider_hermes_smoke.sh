@@ -13,7 +13,7 @@ EOF
   exit 2
 fi
 
-for cmd in flutter node npx curl; do
+for cmd in flutter node npx curl python3; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "$cmd is required for the provider-backed Hermes smoke." >&2
     exit 1
@@ -21,6 +21,18 @@ for cmd in flutter node npx curl; do
 done
 
 base_url="${NAVIVOX_PROVIDER_HERMES_URL%/}"
+safe_receipt_base_url="$(python3 - "$base_url" <<'PY'
+from urllib.parse import urlsplit, urlunsplit
+import sys
+parts = urlsplit(sys.argv[1])
+host = parts.hostname or ''
+if ':' in host and not host.startswith('['):
+    host = f'[{host}]'
+if parts.port:
+    host = f'{host}:{parts.port}'
+print(urlunsplit((parts.scheme, host, parts.path.rstrip('/'), '', '')))
+PY
+)"
 web_log="${NAVIVOX_PROVIDER_WEB_LOG:-/tmp/navivox-provider-web.log}"
 headers=()
 if [ -n "${NAVIVOX_PROVIDER_HERMES_API_KEY:-}" ]; then
@@ -57,7 +69,29 @@ if [ "$web_ready" != 1 ]; then
   exit 1
 fi
 
-npx playwright test --config=playwright.config.mjs playwright/tests/regression/hermes-provider-chat.spec.mjs --reporter=list
+npx playwright test --config=playwright.config.mjs playwright/tests/regression/hermes-provider-chat.spec.mjs --reporter=list --retries=0
+
+receipt_path="${NAVIVOX_PROVIDER_SMOKE_RECEIPT:-build/receipts/hermes-provider-smoke.json}"
+mkdir -p "$(dirname "$receipt_path")"
+cat >"$receipt_path" <<EOF
+{
+  "kind": "hermes_provider_smoke",
+  "status": "passed",
+  "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "base_url": "${safe_receipt_base_url}",
+  "coverage": "typed text plus deterministic transcript voice",
+  "playwright_retries": 0,
+  "not_evidence_for": [
+    "physical Android microphone audio",
+    "Hermes realtime/server audio",
+    "native-host Windows/iOS/macOS receipts",
+    "platform workflow publication",
+    "deferred Hermes Desktop parity surfaces",
+    "whole-goal completion"
+  ]
+}
+EOF
+printf 'Provider smoke receipt: %s\n' "$receipt_path"
 
 cat <<'EOF'
 Provider-backed Hermes smoke passed for typed text plus deterministic transcript voice only.

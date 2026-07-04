@@ -45,7 +45,7 @@ input) as the reference. See ADR 0007.
   `docs/runbooks/android/live-mic-smoke.md`.
 - Linux release build is locally repeatable through `npm run linux:release-build`.
 - App-scoped Android native units pass with `cd android && ./gradlew :app:testDebugUnitTest`.
-- Windows/iOS remain native-host gated; the CI workflow path exists but no
+- Windows/iOS/macOS remain native-host gated; the CI workflow path exists but no
   successful host-runner receipt is present in this checkout.
 
 See `docs/runbooks/hermes-readiness-audit.md` for the current prompt-to-artifact
@@ -144,17 +144,17 @@ readiness checklist and non-completion caveats.
    `MemoryDashboardScreen`, and `ConfigScreen`. Purely additive — no Gormes
    functionality removed.
 15. **Platform scaffolds + smoke runbook/build receipts** — added generated
-   iOS and Windows platform folders (no overwrite of existing Android/web/
+   iOS, macOS, and Windows platform folders (no overwrite of existing Android/web/
    Linux code) plus iOS microphone/speech-recognition usage descriptions for
    continuous voice, covered by `test/platform/platform_scaffold_test.dart`.
    Added `docs/runbooks/hermes-platform-smoke.md`. Current build gates: web
    e2e build passes; Android debug APK builds; Linux desktop build is blocked
    in this container by missing `libsecret-1>=0.18.4` for
-   `flutter_secure_storage_linux`; Windows/iOS require host-platform runners.
+   `flutter_secure_storage_linux`; Windows/iOS/macOS require host-platform runners.
 16. **Host platform smoke runbook** — documented the unavailable-host gates:
    Ubuntu analyze/tests/web e2e build/Hermes browser smoke/Android debug APK/
-   Linux release build with `libsecret-1-dev`, plus Windows desktop and iOS
-   simulator builds on their own host runners. A GitHub Actions workflow draft
+   Linux release build with `libsecret-1-dev`, plus Windows desktop, iOS
+   simulator, and macOS desktop builds on their own host runners. A GitHub Actions workflow draft
    was prepared but not shipped because the current push credential lacks
    GitHub `workflow` scope; host CI remains an owner follow-up.
 17. **Hermes-first startup and README refresh** — fresh no-Gormes-server
@@ -319,15 +319,15 @@ readiness checklist and non-completion caveats.
    from README, docs index, and the platform smoke runbook. Added tooling
    contracts for package helper scripts, the host-runner workflow shape, the
    readiness audit helper, testing-plan smoke matrix, runbook topology, and
-   Android live mic/durable reconnect runbooks. In-app Hermes surface readiness now keeps deferred
+   Android live mic runbooks. In-app Hermes surface readiness now keeps deferred
    blockers honest, including separate rows for jobs/schedules inventory vs.
    admin and bounded diagnostics vs. raw diagnostics/log export. Validation:
    `flutter analyze`, focused Hermes regression (71 pass), full tooling/docs
    contract suite (27 pass), full `flutter test --concurrency=1` (1016 pass),
    `npm run hermes:provider-smoke:local` (1 Playwright pass), and
-   `git diff --check`. Strict readiness audit now reports 16 blockers because
+   `git diff --check`. Strict readiness audit now reports 15 blockers because
    full live provider-backed chat/voice smoke is an explicit closeout blocker,
-   Windows and iOS/macOS host receipts are split explicitly, and configured
+   Windows, iOS, and macOS host receipts are split explicitly, and configured
    Hermes home presence is informational only, not a provider-smoke receipt. External
    recheck still shows the platform workflow is not visible to `gh`; a later
    delivery push containing the workflow was rejected because the current OAuth
@@ -335,43 +335,200 @@ readiness checklist and non-completion caveats.
    ahead of `origin/main` and the workflow is still unpublished remotely. A later
    KVM-backed `fractal_test` launch became responsive long enough for
    `npm run android:voice-smoke`, `npm run android:hermes-voice-loop-smoke`,
-   `npm run android:durable-key-smoke`, and `npm run android:live-mic-prep` to
-   pass, refreshing recognizer/permission readiness, deterministic Android loop
-   mechanics, keypair readiness, and install/launch/mic-grant prep, then the
-   emulator was stopped. That remains readiness,
-   deterministic transcript/TTS loop, and key-storage evidence only; no real
-   spoken-audio/provider reply or real Android durable reconnect closeout has
+   and `npm run android:live-mic-prep` to pass, refreshing recognizer/permission
+   readiness, deterministic Android loop mechanics, and install/launch/mic-grant
+   prep, then the emulator was stopped. That remains readiness and deterministic
+   transcript/TTS loop evidence only; no real spoken-audio/provider reply has
    been captured. Latest local closeout rechecks after these receipts: full
    static analysis still passes with no issues, the E2E web release build still
    produces `build/web`, the Android debug APK still builds with SHA-256
    `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`,
    app-scoped Android native units still pass, the Linux release helper still
-   produces an executable `build/linux/x64/release/bundle/navivox`, durable
-   reconnect unit/readiness contracts and the two targeted fake-gateway
-   reconnect paths still pass, helper shell/JS syntax checks still pass, the
-   full Flutter suite still passes (1016 tests), focused Hermes tests still pass
+   produces an executable `build/linux/x64/release/bundle/navivox`, helper
+   shell/JS syntax checks still pass, the full Flutter suite still passes (1016 tests), focused Hermes tests still pass
    (71 tests), installed-Hermes live API smoke and configured provider smoke
    still pass with their non-mic/server-audio and not-whole-goal-completion
    caveats, focused browser
    regression passes (68 Chromium tests), strict readiness audit still reports
-   16 blockers including the explicit full live provider-backed chat/voice smoke
+   15 blockers including the explicit full live provider-backed chat/voice smoke
    closeout blocker and now prints `Completion verdict: NOT COMPLETE` plus an
    explicit warning not to promote proxy evidence (tests, APK hashes, configured
    Hermes home, workflow YAML, or dispatch-only output) to completion,
    `gh workflow list` still exposes only
    `pages-build-deployment`, and the latest `git push` was rejected for missing
    OAuth `workflow` scope while trying to publish `.github/workflows/hermes-platform-smoke.yml`,
-   so no hosted Windows/iOS/native-host receipt is available, direct native-host reprobes on this Linux host still fail
+   so no hosted Windows/iOS/macOS native-host receipt is available, direct native-host reprobes on this Linux host still fail
    (`flutter build windows --debug` exits 1 because Windows builds require a
    Windows host; `flutter build ios --simulator --debug` exits 64 because this
-   toolchain has no `--simulator` option), and a direct Android-target recheck
+   toolchain has no `--simulator` option; `flutter build macos` exits 64 because this
+   Linux toolchain lacks the macOS build subcommand), and a direct Android-target recheck
    shows `adb devices` has no attached Android devices while `flutter devices`
-   lists only Linux desktop and Chrome web. The Android live-mic and durable
-   reconnect runbooks, plus the Android voice-readiness, deterministic
-   voice-loop, durable-key, and live-mic-prep helpers, now require or point to
-   strict readiness audit after future Android receipts and explicitly warn not
-   to promote a single Android/reconnect/helper receipt or proxy evidence to
-   whole-goal completion while unrelated blockers remain.
+   lists only Linux desktop and Chrome web. The Android live-mic runbook, plus
+   the Android voice-readiness, deterministic voice-loop, and live-mic-prep
+   helpers, now require or point to strict readiness audit after future Android
+   receipts and explicitly warn not to promote a single Android helper receipt
+   or proxy evidence to whole-goal completion while unrelated blockers remain.
+29. **Hermes chat hardening** — improved multiple polish/hardening edges in the
+   native Hermes path: in-flight SSE streams are canceled on disposal,
+   disconnect or active-session switches, active-session deletion, and late deltas are ignored,
+   including stale callbacks that arrive after cancellation or after a pending
+   run submission resolves or fails, so a disconnected, switched, or deleted session cannot
+   be repopulated by stale events, failed reconnects clear stale endpoint session
+   data, unknown session selections and mutable session calls are rejected before
+   fetching history, calling mutation endpoints, or changing the active session,
+   and failed session-history loads leave the previous active session intact;
+   stale connect attempts cannot overwrite a newer
+   Hermes endpoint connection; pending session mutations cannot repopulate state
+   after disconnect/reconnect/stop, stale run submissions cannot attach old run ids,
+   late run-event streams, or late submission failures to a newer/stopped endpoint
+   connection, disconnect/connect/dispose clear stale pending-delete guards so
+   in-progress deletes cannot leak across endpoints, connect stays sessionless instead of attempting
+   unsupported session creation when Hermes has no sessions and no create endpoint, the
+   sessionless no-create UI explains the endpoint limitation instead of telling
+   users to create an unavailable session, and failed create/fork history loads
+   leave the previous session list and active session intact; invalid Hermes base URLs are rejected before any HTTP client/request is built;
+   broader network
+   failures (client/handshake/connection reset/ECONNRESET/ECONNREFUSED/broken pipe/no route to host/DNS resolution failures/connection aborts/network
+   unreachable/timeout) now resolve to offline recovery copy; expired/invalid API
+   key and token errors resolve to auth recovery copy without echoing secrets, and
+   channel-stored connect/send/stream/approval/voice errors redact bearer tokens,
+   URL userinfo, Basic authorization, cookie/X-API-Key/X-Auth-Token headers, auth/credential fields, password/passwd/pwd fields,
+   API keys, token values, and secret-looking values before reaching state; stream drops, `[DONE]` SSE sentinels, run
+   terminal success/failure/cancellation events (including `assistant.completed`
+   success and assistant-level failed/cancelled events), and run-submission/auth failures now complete the local waiter even
+   when the SSE stream stays open, mark
+   terminal failures/cancellations failed, mark run-event stream open failures
+   failed instead of leaving a streaming turn behind, direct chat streams and
+   run-event streams that close before a terminal event now reconcile from server
+   history when Hermes has already persisted a non-empty assistant reply, otherwise
+   fail the local assistant turn instead of being promoted to completion, surface bounded stream
+   recovery copy for those failures, recover dropped direct/run streams from server
+   history when Hermes has already persisted the current assistant reply, with
+   stale-history, duplicate-user-turn, later-turn assistant-reply, and recovery regression coverage for both
+   direct and run transports, including closed run streams, dropped direct streams, and dropped run streams, ignore
+   late deltas and stream errors after the terminal
+   run event, reconcile terminal success, keep the streamed assistant reply when
+   immediate server history is stale/incomplete, and avoid reconciling over local
+   failures; direct concurrent sends are rejected while a turn is streaming or
+   while run submission is still pending, stale stopped-run cleanup cannot clear a
+   newer active run/stop handle, terminal Hermes run events surface
+   bounded recovery copy, expose a
+   reconnect path for expired keys and stream/network drops, and expose a retry action for the last failed
+   user turn while hiding retry during another active streaming turn; composer follow-ups now queue
+   multiple messages in order during an active streaming turn, offer a manual
+   `Send now` retry, and re-queue the pending message if automatic send fails
+   instead of overwriting the previous pending follow-up; the mobile session sheet
+   is scroll-controlled and groups active, forked, and other sessions while
+   preserving clearable search across title/id/preview/fork-parent/last-active
+   fields plus active/forked/other group labels, showing filtered/total session counts,
+   sorting inactive groups by recent activity, showing fork origin and last
+   active metadata with redaction/bounds on last-active text, and hiding row action menus when Hermes does not advertise
+   any mutable session endpoints, showing bounded feedback when session
+   selection fails, bounding session mutation error details before SnackBar display,
+   hiding create-session actions when Hermes does not advertise
+   session creation, locally rejecting mutable session calls when Hermes does not
+   advertise create/update/delete/fork endpoints, and surfacing bounded feedback
+   when session creation fails, and redacting bearer tokens, API keys, token
+   values, and secret-looking values from bounded active-session titles,
+   bounded capability strip model/list/health details, bounded session sheet titles/previews/parent ids, bounded delete
+   confirmation copy, unsafe or overlong rename-dialog defaults, and bounded/redacted
+   no-result query echo; session search also uses redacted metadata with
+   placeholders stripped so raw secret-looking values and `[redacted]` placeholder
+   queries do not match hidden rows;
+   stale setup connect completions cannot overwrite the newly saved endpoint;
+   session create/select/rename/fork/delete failure SnackBars redact bearer tokens,
+   API keys, token values, and secret-looking values; Android live-mic receipts
+   strip Hermes URL userinfo, query strings, and fragments before writing JSON,
+   record current git `HEAD`, record Android device manufacturer/model/SDK/
+   fingerprint properties plus installed Navivox package/version/RECORD_AUDIO
+   grant details, and reject secret-looking or overlong spoken phrases/provider
+   reply excerpts;
+   composer, mic, continuous voice, and direct channel sends share the same
+   chat-transport policy, direct channel sends reject blank messages before HTTP,
+   and are disabled/rejected with bounded recovery copy
+   when Hermes advertises no supported chat transport; run SSE chat transport
+   no longer requires optional approval/tool-progress/stop capabilities,
+   `respondToApproval` rejects locally when Hermes does not advertise approval
+   response, `stopActiveTurn` stays local when Hermes does not advertise run
+   stop, and bounded diagnostics now report optional run stop/approval/tool-progress
+   support separately; retry actions hide when chat transport is unavailable; queued follow-up
+   banners are bounded for many long messages, redact secret-looking preview text
+   without altering the queued send payload, remain bound to their original
+   session across session changes and failed-send requeues, clear when that
+   original session is deleted, and stay queued with Send now disabled if chat
+   transport disappears before auto-send, explain whether a queued follow-up is waiting for its original session or a supported chat transport, offer an `Open session` action when the original session still exists, and keep the queue with bounded/redacted feedback if that session cannot be opened; approval requests now queue in order,
+   replayed duplicate approval requests are deduplicated, approval responses
+   completing after disconnect or after the active run is gone are ignored safely,
+   approval-response failures
+   keep the request queued for retry and surface specific bounded
+   approval-recovery copy instead of disappearing, approval prompts/risk/tool-call
+   context redact bearer tokens, API keys, token values, and secret-looking values
+   before display in the banner or review sheet, long approval banner prompt/risk
+   text is bounded while the review sheet remains scrollable, stale approval requests clear
+   when the user switches sessions or when a streaming turn is stopped or otherwise ends, and late approval-response
+   completion cannot remove a same-id approval that arrived in a new active session, approval decisions are
+   disabled with explanatory copy when Hermes does not advertise approval
+   responses, malformed approval requests without ids fail locally with bounded
+   recovery copy instead of presenting unanswerable decision buttons, direct blank
+   approval responses are rejected before POST, approval ids are trimmed before POST,
+   in-flight
+   approval responses show progress with disabled decision buttons, approval requests
+   without ids disable decision buttons before send and can be dismissed so queued
+   valid approvals are not blocked, replayed approvals
+   dedupe on trimmed ids/tool-call ids before display and response ids are trimmed
+   before send, and approvals
+   have a scroll-controlled/scrollable review sheet that
+   shows prompt, risk, pending-count context for queued approvals, tool-call
+   context, all decision scopes, and a close action that leaves the approval queued
+   without answering; disconnect clears transient approvals, queued follow-ups,
+   voice errors, stops in-flight TTS, clears the continuous-voice toggle, and
+   immediately marks locally stopped streaming replies failed/Stopped so the
+   spinner cannot hang after a stop; stale work cannot leak into a later connection; missing TTS plus capture and TTS failures now
+   pause continuous voice before
+   re-arm and show bounded recovery copy, with voice capture failure text bounded
+   and redacted before display, instead of silently continuing capture;
+   captured mic transcripts are discarded instead of submitted if the Hermes
+   session changes mid-capture, the live Android mic runbook now has a fail-closed
+   receipt recorder/audit path for observed physical mic → Hermes reply → TTS/re-arm
+   evidence and requires a distinct second spoken turn after re-arm, starting a new capture cancels any superseded
+   pending voice run before recording again, capture reports a bounded voice error if chat
+   transport disappears before submit, submitted voice turns fail locally without
+   adding transcript turns when the transcript is blank, no Hermes session is active, or Hermes has no
+   supported chat transport, submitted voice
+   turns fail instead of reporting
+   completed if Hermes produces no assistant reply, their session changes mid-turn,
+   or their assistant turn is stopped/failed,
+   cancelled voice runs ignore late transcript staging/resubmission and are not
+   overwritten by late send completion/failure, terminal voice runs ignore late
+   cancel/fail calls,
+   and continuous voice pauses instead of re-arming
+   if the session changes while TTS is speaking; stopping an active turn now also stops in-flight TTS. Active Hermes surface
+   readiness marks advertised-but-unwired server realtime voice/audio as blocked while keeping unadvertised server audio deferred, and diagnostics no longer include the superseded legacy durable
+   reconnect row, keeping the current Hermes blockers scoped to Hermes surfaces.
+   Validation: `flutter test test/features/hermes_chat test/core/hermes/channel/hermes_api_channel_test.dart test/core/hermes/hermes_api_test.dart test/platform test/tooling`
+   (245 pass), `flutter analyze`, `npm run hermes:provider-smoke:local` (passed
+   for typed text plus deterministic transcript voice; not physical mic evidence),
+   and `npm run hermes:readiness-audit` (now parses the provider-smoke receipt as
+   JSON and validates `status: passed`, typed-text/transcript-voice coverage,
+   `playwright_retries: 0`, timestamp, and explicit non-evidence caveats, while
+   future provider-smoke receipts now redact URL userinfo/query/fragment fields, and
+   reports when active `gh` scopes still lack `workflow`); `npm run
+   platform:workflow-smoke` now also reports the missing `workflow` scope before
+   exiting with the still-unpublished workflow; when a future watched workflow
+   succeeds it now writes `build/receipts/hermes-platform-workflow.json` for audit
+   validation of Windows/iOS/macOS artifact and job names/metadata and fails
+   closed if the watched run or any required native job did not reach
+   `completed`/`success`, if any required native artifact is
+   missing/expired/empty/lacks a download URL, or if the receipt `head_sha` does
+   not match the current git `HEAD`.
+   Android live-mic receipt audit now requires a
+   sanitized Hermes URL with no userinfo/query/fragment, matching receipt
+   `head_sha` to current git `HEAD`, non-empty Android device properties,
+   installed expected Navivox package/version metadata with RECORD_AUDIO granted,
+   provider reply excerpts that differ from both spoken phrases, and rejects
+   secret-looking or over-240-character manual evidence fields. Readiness remains
+   `Completion verdict: NOT COMPLETE` with 15 blockers when a current no-retry
+   provider receipt is present and no platform receipt exists).
 
 ## Remaining work
 
@@ -380,13 +537,20 @@ readiness checklist and non-completion caveats.
   text turn, enable continuous voice, and verify capture → reply/TTS → re-arm.
   Existing Android evidence is readiness plus deterministic transcript capture,
   not physical audio.
-- Windows and iOS/macOS host-platform builds/smokes still need successful native
+- Windows, iOS, and macOS host-platform builds/smokes still need successful native
   host-runner receipts. The workflow definition exists in
   `.github/workflows/hermes-platform-smoke.yml`, but this checkout has no
-  successful Windows/iOS run receipt.
-- Real Android + real Gormes durable reconnect still needs end-to-end validation
-  after app/server restart. Android keystore readiness and Dart fake-gateway
-  reconnect are proven separately, but not the full real-device protocol.
+  successful Windows/iOS/macOS run receipt.
+- Publish the platform workflow with a GitHub credential that has `workflow`
+  scope, then collect successful native-host artifacts/receipts.
+  Latest blocker recheck: attempting `flutter emulators --launch fractal_test`
+  exited `-6` during startup, `adb devices` still listed no attached Android
+  devices, `flutter devices` still listed only Linux desktop and Chrome web,
+  `gh auth status` still reported token scopes `gist`, `read:org`, and `repo`
+  without `workflow`, `gh workflow list` still showed only
+  `pages-build-deployment`, and `npm run platform:workflow-smoke` exited 2
+  because `Hermes platform smoke` is not visible remotely and the active token
+  cannot publish workflow files.
 - Hermes realtime/server audio, config editing/admin, Hermes memory UI,
   jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
   files/context folders, raw log export, and multi-endpoint/profile management

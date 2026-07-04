@@ -66,6 +66,18 @@ void main() {
     },
   );
 
+  test('rejects invalid Hermes API base URLs before requests', () {
+    expect(() => HermesApiConfig.fromBaseUrl('   '), throwsArgumentError);
+    expect(
+      () => HermesApiConfig.fromBaseUrl('127.0.0.1:8642'),
+      throwsArgumentError,
+    );
+    expect(
+      () => HermesApiConfig.fromBaseUrl('ws://127.0.0.1:8642'),
+      throwsArgumentError,
+    );
+  });
+
   test('rejects blank Hermes path identifiers before ambiguous calls', () {
     final config = HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642');
 
@@ -85,8 +97,29 @@ void main() {
       expect(capabilities.supportsFeature('session_chat_streaming'), isTrue);
       expect(policy.supportsSessionChatStream, isTrue);
       expect(policy.supportsRunsTransport, isTrue);
+      expect(policy.supportsRunStop, isTrue);
+      expect(policy.supportsRunApprovalResponse, isTrue);
+      expect(policy.supportsToolProgressEvents, isTrue);
+      expect(policy.supportsAnyChatTransport, isTrue);
+      final minimalRunPolicy = HermesTransportPolicy(
+        HermesCapabilityDocument.fromJson(
+          jsonDecode(_minimalRunCapabilitiesFixture) as Map<String, Object?>,
+        ),
+      );
+      expect(minimalRunPolicy.supportsRunsTransport, isTrue);
+      expect(minimalRunPolicy.supportsRunStop, isFalse);
+      expect(minimalRunPolicy.supportsRunApprovalResponse, isFalse);
+      expect(minimalRunPolicy.supportsToolProgressEvents, isFalse);
+      expect(minimalRunPolicy.supportsAnyChatTransport, isTrue);
       expect(policy.supportsConfigWrite, isFalse);
       expect(policy.supportsRealtimeVoice, isFalse);
+
+      final noChatPolicy = HermesTransportPolicy(
+        HermesCapabilityDocument.fromJson(
+          jsonDecode(_futureSurfaceCapabilitiesFixture) as Map<String, Object?>,
+        ),
+      );
+      expect(noChatPolicy.supportsAnyChatTransport, isFalse);
     },
   );
 
@@ -119,7 +152,6 @@ void main() {
           'Bounded diagnostics',
           'Raw diagnostics/log export',
           'Multi-endpoint/profile management',
-          'Legacy durable reconnect',
         ]),
       );
       expect(statuses['Chat transport'], HermesSurfaceStatus.blocked);
@@ -127,7 +159,7 @@ void main() {
       expect(statuses['Local voice-to-text'], HermesSurfaceStatus.available);
       expect(
         statuses['Server realtime voice/audio'],
-        HermesSurfaceStatus.deferred,
+        HermesSurfaceStatus.blocked,
       );
       expect(statuses['Config editing/admin'], HermesSurfaceStatus.deferred);
       expect(statuses['Memory UI'], HermesSurfaceStatus.deferred);
@@ -157,11 +189,7 @@ void main() {
         statuses['Multi-endpoint/profile management'],
         HermesSurfaceStatus.deferred,
       );
-      expect(statuses['Legacy durable reconnect'], HermesSurfaceStatus.blocked);
-      expect(
-        details['Legacy durable reconnect'],
-        contains('full Gormes issuance/auth/silent reconnect is not proven'),
-      );
+      expect(statuses.containsKey('Legacy durable reconnect'), isFalse);
     },
   );
 
@@ -431,14 +459,17 @@ void main() {
     expect(events.last.isDone, isTrue);
   });
 
-  test('keeps incomplete final SSE frame buffered until a separator arrives', () {
-    final decoder = HermesSseEventDecoder();
+  test(
+    'keeps incomplete final SSE frame buffered until a separator arrives',
+    () {
+      final decoder = HermesSseEventDecoder();
 
-    expect(
-      decoder.decode(['event: assistant.delta\ndata: {"delta":"partial"}']),
-      isEmpty,
-    );
-  });
+      expect(
+        decoder.decode(['event: assistant.delta\ndata: {"delta":"partial"}']),
+        isEmpty,
+      );
+    },
+  );
 
   test('ignores empty chunks and no-data CR-only control frames', () {
     final decoder = HermesSseEventDecoder();
@@ -497,6 +528,23 @@ const _capabilitiesFixture = '''
     "run_events": {"method": "GET", "path": "/v1/runs/{run_id}/events"},
     "run_approval": {"method": "POST", "path": "/v1/runs/{run_id}/approval"},
     "run_stop": {"method": "POST", "path": "/v1/runs/{run_id}/stop"}
+  }
+}
+''';
+
+const _minimalRunCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {
+    "run_submission": true,
+    "run_events_sse": true
+  },
+  "endpoints": {
+    "runs": {"method": "POST", "path": "/v1/runs"},
+    "run_events": {"method": "GET", "path": "/v1/runs/{run_id}/events"}
   }
 }
 ''';

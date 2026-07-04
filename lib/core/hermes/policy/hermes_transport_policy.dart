@@ -14,35 +14,42 @@ class HermesTransportPolicy {
         );
   }
 
+  bool get supportsAnyChatTransport =>
+      supportsSessionChatStream || supportsRunsTransport;
+
   bool get supportsRunsTransport {
     return capabilities.supportsFeature('run_submission') &&
-        capabilities.supportsFeature('run_status') &&
         capabilities.supportsFeature('run_events_sse') &&
-        capabilities.supportsFeature('run_stop') &&
-        capabilities.supportsFeature('run_approval_response') &&
-        capabilities.supportsFeature('tool_progress_events') &&
         capabilities.advertisesEndpoint('runs', 'POST', '/v1/runs') &&
-        capabilities.advertisesEndpoint(
-          'run_status',
-          'GET',
-          '/v1/runs/{run_id}',
-        ) &&
         capabilities.advertisesEndpoint(
           'run_events',
           'GET',
           '/v1/runs/{run_id}/events',
-        ) &&
-        capabilities.advertisesEndpoint(
-          'run_approval',
-          'POST',
-          '/v1/runs/{run_id}/approval',
-        ) &&
-        capabilities.advertisesEndpoint(
-          'run_stop',
-          'POST',
-          '/v1/runs/{run_id}/stop',
         );
   }
+
+  bool get supportsRunStatus =>
+      capabilities.supportsFeature('run_status') &&
+      capabilities.advertisesEndpoint('run_status', 'GET', '/v1/runs/{run_id}');
+
+  bool get supportsRunStop =>
+      capabilities.supportsFeature('run_stop') &&
+      capabilities.advertisesEndpoint(
+        'run_stop',
+        'POST',
+        '/v1/runs/{run_id}/stop',
+      );
+
+  bool get supportsRunApprovalResponse =>
+      capabilities.supportsFeature('run_approval_response') &&
+      capabilities.advertisesEndpoint(
+        'run_approval',
+        'POST',
+        '/v1/runs/{run_id}/approval',
+      );
+
+  bool get supportsToolProgressEvents =>
+      capabilities.supportsFeature('tool_progress_events');
 
   bool get supportsConfigWrite =>
       capabilities.supportsFeature('admin_config_rw');

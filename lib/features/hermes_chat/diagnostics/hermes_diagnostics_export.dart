@@ -39,6 +39,15 @@ String hermesDiagnosticsExport(HermesChannelState state) {
         'Run transport: ${policy.supportsRunsTransport ? 'available' : 'unavailable'}',
       )
       ..writeln(
+        'Run stop: ${policy.supportsRunStop ? 'available' : 'not advertised'}',
+      )
+      ..writeln(
+        'Run approval response: ${policy.supportsRunApprovalResponse ? 'available' : 'not advertised'}',
+      )
+      ..writeln(
+        'Tool progress events: ${policy.supportsToolProgressEvents ? 'advertised' : 'not advertised'}',
+      )
+      ..writeln(
         'Session stream: ${policy.supportsSessionChatStream ? 'available' : 'unavailable'}',
       )
       ..writeln(

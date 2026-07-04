@@ -50,11 +50,39 @@ Record all of the following before closing the blocker:
 5. Verify the turn receives a provider-backed Hermes reply.
 6. Enable continuous voice.
 7. Verify capture → Hermes reply → TTS → re-arm for at least one second spoken
-   turn.
+   turn. The second spoken phrase must be different from the first so the receipt
+   proves a distinct re-armed capture, not a replayed transcript.
 8. Verify no API key, pairing token, bearer token, transcript secret, raw tool
    payload, or private diagnostic data appears in routes, logs, notices,
    screenshots, or diagnostics export.
-9. Run strict readiness audit after recording the receipt:
+9. Record the manual receipt only after all observations above are true:
+
+   ```bash
+   NAVIVOX_ANDROID_DEVICE_ID=<device-id> \
+   NAVIVOX_ANDROID_HERMES_URL=<android-reachable-hermes-url> \
+   NAVIVOX_ANDROID_SPOKEN_PHRASE='<unique spoken phrase>' \
+   NAVIVOX_ANDROID_PROVIDER_REPLY='<observed provider reply excerpt>' \
+   NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE='<different second spoken phrase after re-arm>' \
+   NAVIVOX_ANDROID_TTS_OBSERVED=true \
+   NAVIVOX_ANDROID_REARM_OBSERVED=true \
+   NAVIVOX_ANDROID_NO_SECRET_LEAKS=true \
+   npm run android:live-mic-receipt
+   ```
+
+   This writes `build/receipts/android-live-mic-smoke.json`; the helper strips
+   URL userinfo, query strings, and fragments from the recorded Hermes URL,
+   records the current git `HEAD`, records Android device properties from
+   `adb shell getprop`, records installed Navivox package/version details from
+   `pm path` and `dumpsys package`, and rejects secret-looking or overlong spoken
+   phrases/provider reply excerpts; keep each manual evidence value to 240
+   characters or less. The helper and audit require the second spoken phrase to
+   differ from the first, require the provider reply excerpt to differ from both
+   spoken phrases, require the receipt `head_sha` to match the current git
+   `HEAD`, require non-empty manufacturer/model/SDK/fingerprint device
+   properties, require the expected Navivox package to be installed with version
+   metadata and `RECORD_AUDIO` granted, and validate the required fields/caveats
+   while still treating unrelated blockers as open.
+10. Run strict readiness audit after recording the receipt:
 
    ```bash
    NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit

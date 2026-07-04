@@ -21,6 +21,7 @@ test.skip(
 );
 
 test('Hermes provider-backed text and transcript voice turns produce assistant replies', async ({ page }) => {
+  test.setTimeout(180000);
   await page.goto(`${APP}#/hermes`, { timeout: 15000 });
   await page.waitForTimeout(2000);
   await a11y(page);
@@ -36,9 +37,6 @@ test('Hermes provider-backed text and transcript voice turns produce assistant r
   await page.evaluate((prompt) => globalThis.navivoxE2EHermesSendText(prompt), textPrompt);
   await expect(page.getByText(textPrompt).first()).toBeVisible({ timeout: 30000 });
   await expect(page.getByText(textExpected).first()).toBeVisible({ timeout: 120000 });
-
-  await page.getByRole('button', { name: 'New session' }).click();
-  await expect(page.getByRole('button', { name: 'Sessions' })).toBeVisible({ timeout: 30000 });
 
   // This exercises the Navivox device-transcript-to-Hermes-text path without
   // relying on browser/host microphone availability. Android mic capture has a

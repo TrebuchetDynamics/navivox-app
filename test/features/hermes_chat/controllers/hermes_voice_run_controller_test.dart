@@ -23,6 +23,25 @@ void main() {
     );
   });
 
+  test('startCapture cancels any superseded pending run', () {
+    final channel = FakeHermesChannel();
+    final controller = HermesVoiceRunController();
+
+    final first = controller.startCapture(channel);
+    final second = controller.startCapture(channel);
+
+    expect(controller.pendingVoiceRunId, second);
+    expect(
+      channel.state.voiceRuns[first]?.status,
+      NavivoxVoiceRunStatus.cancelled,
+    );
+    expect(channel.state.voiceRuns[first]?.reason, 'superseded by new capture');
+    expect(
+      channel.state.voiceRuns[second]?.status,
+      NavivoxVoiceRunStatus.recording,
+    );
+  });
+
   test('captureFailed maps timeout copy, fails run, and clears pending id', () {
     final channel = FakeHermesChannel();
     final controller = HermesVoiceRunController();

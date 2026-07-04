@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Hermes readiness audit helper names every external blocker', () {
+  test('Hermes readiness audit helper names pure-Hermes blockers', () {
     final script = File('scripts/audit_hermes_readiness.sh');
     final audit = File('docs/runbooks/hermes-readiness-audit.md');
     expect(script.existsSync(), isTrue);
@@ -18,6 +18,7 @@ void main() {
       'real spoken Android mic loop still requires manual audio/provider evidence',
       'Windows desktop native-host build receipt missing',
       'iOS simulator native-host build receipt missing',
+      'macOS desktop native-host build receipt missing',
       'full live provider-backed Hermes chat/voice smoke receipt missing',
       'Hermes realtime/server audio remains unimplemented',
       'Hermes config editing/admin remains deferred',
@@ -29,12 +30,51 @@ void main() {
       'Hermes files/context folders remain deferred',
       'Hermes raw diagnostics/log export remains deferred',
       'Hermes multi-endpoint/profile management remains deferred',
-      'full real Android + real Gormes durable reconnect after restart is not proven',
     ]) {
       expect(scriptText, contains(blocker), reason: blocker);
     }
 
     expect(scriptText, contains('npm run platform:workflow-smoke'));
+    expect(scriptText, contains('NAVIVOX_PLATFORM_WORKFLOW_RECEIPT'));
+    expect(
+      scriptText,
+      contains('platform workflow/native-host receipt present'),
+    );
+    expect(
+      scriptText,
+      contains('platform workflow receipt is present but incomplete'),
+    );
+    expect(scriptText, contains('missing_required_artifacts must be empty'));
+    expect(scriptText, contains('invalid_required_artifacts must be empty'));
+    expect(scriptText, contains('missing_required_jobs must be empty'));
+    expect(scriptText, contains('invalid_required_jobs must be empty'));
+    expect(scriptText, contains('artifact_details'));
+    expect(scriptText, contains('job_details'));
+    expect(scriptText, contains('size_in_bytes>0'));
+    expect(scriptText, contains('expired=false'));
+    expect(scriptText, contains('archive_download_url'));
+    expect(scriptText, contains('job_details:{job_name}:status=completed'));
+    expect(scriptText, contains('job_details:{job_name}:conclusion=success'));
+    expect(scriptText, contains('run_status=completed'));
+    expect(scriptText, contains('head_sha must match current git HEAD'));
+    expect(
+      scriptText,
+      contains('Windows desktop native-host build receipt recorded'),
+    );
+    expect(
+      scriptText,
+      contains('iOS simulator native-host build receipt recorded'),
+    );
+    expect(
+      scriptText,
+      contains('macOS desktop native-host build receipt recorded'),
+    );
+    expect(
+      scriptText,
+      contains(
+        'Hermes platform workflow publication is covered by the recorded successful workflow receipt',
+      ),
+    );
     expect(
       scriptText,
       contains('workflow dispatch without successful gh run view'),
@@ -47,9 +87,39 @@ void main() {
       scriptText,
       contains('workflow_list="\$(gh workflow list 2>&1 || true)"'),
     );
+    expect(
+      scriptText,
+      contains('gh_auth_status="\$(gh auth status 2>&1 || true)"'),
+    );
+    expect(
+      scriptText,
+      contains('active gh token scopes do not include workflow'),
+    );
+    expect(
+      scriptText,
+      contains(
+        'publishing .github/workflows/hermes-platform-smoke.yml will remain blocked',
+      ),
+    );
     expect(scriptText, contains('Visible workflows'));
     expect(scriptText, contains('not native-host receipt evidence'));
     expect(scriptText, contains('not a provider-smoke receipt'));
+    expect(scriptText, contains("receipt.get('status') != 'passed'"));
+    expect(
+      scriptText,
+      contains(
+        "receipt.get('coverage') != 'typed text plus deterministic transcript voice'",
+      ),
+    );
+    expect(scriptText, contains("receipt.get('playwright_retries') != 0"));
+    expect(scriptText, contains("not_evidence_for:{item}"));
+    expect(scriptText, contains("receipt.get('timestamp_utc')"));
+    expect(
+      scriptText,
+      contains(
+        'present but not a complete passing no-retry typed-text/transcript-voice receipt',
+      ),
+    );
     expect(scriptText, contains('npm run hermes:provider-smoke:local'));
     expect(scriptText, contains('configured model/provider credentials'));
     expect(
@@ -70,16 +140,52 @@ void main() {
     );
     expect(scriptText, contains('current voice path is local STT-to-text'));
     expect(scriptText, contains('Deferred Hermes surfaces: config admin'));
-    expect(scriptText, contains('real Gormes restart reconnect receipt'));
     expect(scriptText, contains('Android debug APK sha256'));
     expect(
       scriptText,
-      contains(
-        'artifact identity only; not live Android, mic, or reconnect evidence',
-      ),
+      contains('artifact identity only; not live Android or mic evidence'),
     );
     expect(scriptText, contains('docs/runbooks/android/live-mic-smoke.md'));
     expect(scriptText, contains('docs/runbooks/android/release-handoff.md'));
+    expect(scriptText, contains('scripts/record_android_live_mic_receipt.sh'));
+    expect(scriptText, contains('Android live microphone receipt present'));
+    expect(
+      scriptText,
+      contains('real spoken Android mic loop receipt recorded'),
+    );
+    expect(scriptText, contains('distinct_rearmed_turn_observed'));
+    expect(scriptText, contains('head_sha'));
+    expect(scriptText, contains('head_sha must match current git HEAD'));
+    expect(scriptText, contains('device_properties'));
+    expect(
+      scriptText,
+      contains("'manufacturer', 'model', 'sdk', 'fingerprint'"),
+    );
+    expect(scriptText, contains("device_properties.{key}"));
+    expect(scriptText, contains('package_info'));
+    expect(
+      scriptText,
+      contains('package_info.package_name=com.trebuchetdynamics.navivox'),
+    );
+    expect(scriptText, contains('package_info.installed=true'));
+    expect(scriptText, contains('package_info.record_audio_granted=true'));
+    expect(scriptText, contains("'version_name', 'version_code'"));
+    expect(scriptText, contains("package_info.{key}"));
+    expect(scriptText, contains('hermes_url_sanitized'));
+    expect(
+      scriptText,
+      contains('hermes_url must omit userinfo, query, and fragment'),
+    );
+    expect(scriptText, contains('provider_reply_observed'));
+    expect(scriptText, contains('must be 240 characters or less'));
+    expect(scriptText, contains('must not contain secret-looking values'));
+    expect(scriptText, contains('second_spoken_phrase must differ'));
+    expect(
+      scriptText,
+      contains('provider_reply_observed must differ from spoken phrases'),
+    );
+    expect(scriptText, contains('distinct second spoken turn after re-arm'));
+    expect(scriptText, contains('npm run android:live-mic-receipt'));
     expect(scriptText, contains('npm run android:live-mic-prep'));
     expect(scriptText, contains('Flutter connected devices'));
     expect(scriptText, contains('not Android/audio receipt evidence'));
@@ -88,22 +194,19 @@ void main() {
     expect(scriptText, contains('Android emulator acceleration check'));
     expect(scriptText, contains('not audio/live-mic evidence'));
     expect(scriptText, contains('-accel-check'));
-    expect(
-      scriptText,
-      contains('docs/runbooks/android/durable-keystore-smoke.md'),
-    );
+    expect(scriptText, isNot(contains('real Gormes')));
+    expect(scriptText, isNot(contains('durable reconnect')));
     expect(scriptText, contains('must not be used as a completion receipt'));
     expect(scriptText, contains('Completion verdict: NOT COMPLETE'));
     expect(
       scriptText,
-      contains(
-        'live provider/device/native-host/reconnect or deferred-surface blockers',
-      ),
+      contains('live provider/device/native-host or deferred-surface blockers'),
     );
     expect(scriptText, contains('Do not promote proxy evidence'));
     expect(scriptText, contains('tests, APK hashes, configured Hermes home'));
     expect(scriptText, contains('workflow YAML, or dispatch-only output'));
 
+    expect(auditText, contains('current pure-Hermes Navivox companion goal'));
     expect(auditText, contains('Current completion audit verdict'));
     expect(
       auditText,
@@ -111,7 +214,12 @@ void main() {
     );
     expect(auditText, contains('Objective item'));
     expect(auditText, contains('Concrete artifact/evidence inspected'));
-    expect(auditText, contains('Partial: provider text/transcript covered'));
+    expect(auditText, contains('Real Android spoken mic receipt'));
+    expect(auditText, contains('Windows/iOS/macOS host receipts'));
+    expect(auditText, contains('Publish platform workflow'));
+    expect(auditText, contains('Hermes realtime/server audio'));
+    expect(auditText, contains('Deferred Hermes Desktop parity'));
+    expect(auditText, contains('Polish/hardening'));
     expect(
       auditText,
       contains(
@@ -119,16 +227,9 @@ void main() {
       ),
     );
     expect(auditText, contains('Blocked: no native-host receipt'));
+    expect(auditText, contains('Blocked on credential scope'));
     expect(auditText, contains('Deferred/read-only by policy'));
-    expect(
-      auditText,
-      contains('workflow YAML, or dispatch-only workflow output'),
-    );
     expect(auditText, contains('not whole-goal completion evidence by itself'));
-    expect(
-      auditText,
-      contains('strict readiness audit before completion claims'),
-    );
     expect(auditText, contains('deterministic transcript voice only'));
     expect(auditText, contains('API connect/session rendering only'));
     expect(auditText, contains('not chat/voice provider smoke'));
@@ -136,38 +237,12 @@ void main() {
     expect(auditText, contains('recognizer/permission readiness only'));
     expect(auditText, contains('NAVIVOX_ANDROID_SKIP_BUILD=1'));
     expect(auditText, contains('installed/launched/granted mic permission'));
-    expect(
-      auditText,
-      contains(
-        'Android readiness/prep helpers now print that their receipts/prep',
-      ),
-    );
-    expect(auditText, contains('not provider-backed replies'));
-    expect(auditText, contains('not full Gormes durable reconnect'));
-    expect(auditText, contains('not whole-goal completion evidence by itself'));
     expect(auditText, contains('adb devices` had no attached Android devices'));
     expect(
       auditText,
       contains('`flutter devices` listed only Linux desktop and Chrome web'),
     );
     expect(auditText, contains('NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1'));
-    expect(auditText, contains('NAVIVOX_ANDROID_TEST_TIMEOUT_SECONDS=900'));
-    expect(
-      auditText,
-      contains('Key readiness covered; reconnect protocol not covered'),
-    );
-    expect(auditText, contains('passed on 2026-07-03 with 23 tests'));
-    expect(auditText, contains('--plain-name'));
-    expect(
-      auditText,
-      contains(
-        'falls back to device-bearer reconnect when stream reconnect exhausts',
-      ),
-    );
-    expect(
-      auditText,
-      contains('provider reconnects automatically from saved durable gateway'),
-    );
     expect(
       auditText,
       contains(
@@ -185,14 +260,11 @@ void main() {
       auditText,
       contains('build/native units and artifact identity only'),
     );
-    expect(
-      auditText,
-      contains(
-        'no live Android target, physical mic, or full durable reconnect receipt',
-      ),
-    );
     expect(auditText, contains('missing Windows host receipt'));
     expect(auditText, contains('missing iOS/macOS host receipt'));
+    expect(auditText, contains('macOS desktop build'));
+    expect(auditText, contains('flutter build macos` exits 64'));
+    expect(auditText, contains('Could not find a subcommand named'));
     expect(auditText, contains('flutter build windows --debug` exits 1'));
     expect(auditText, contains('only supported on Windows hosts'));
     expect(auditText, contains('flutter build ios --simulator --debug`'));
@@ -214,7 +286,7 @@ void main() {
     expect(auditText, contains('emulator -accel-check'));
     expect(
       auditText,
-      contains('not Android/audio\n  or live-mic receipt evidence'),
+      contains('not Android/audio or\n  live-mic receipt evidence'),
     );
     expect(auditText, contains('Provider-backed smoke receipt'));
     expect(auditText, contains('configured Hermes home presence is only'));
@@ -225,24 +297,25 @@ void main() {
     );
     expect(auditText, contains('Do not count as completion'));
     expect(auditText, contains('Android `live-mic-prep` by itself'));
-    expect(auditText, contains('visible workflows as blocker evidence'));
-    expect(auditText, contains('not native-host receipt evidence'));
     expect(auditText, contains('Workflow YAML by itself'));
     expect(auditText, contains('Workflow dispatch by itself'));
     expect(auditText, contains('NAVIVOX_WATCH_WORKFLOW=false'));
     expect(auditText, contains('missing visible run id or unwatched run'));
+    expect(auditText, contains('build/receipts/hermes-platform-workflow.json'));
+    expect(
+      auditText,
+      contains('watched successful run with required artifacts'),
+    );
     expect(auditText, contains('gh run view'));
     expect(
       auditText,
       contains('Installed-Hermes live connect smoke by itself'),
     );
     expect(auditText, contains('not provider/model\n  behavior'));
-    expect(
-      auditText,
-      contains('not provider/model\n  behavior, chat/voice provider smoke'),
-    );
     expect(auditText, contains('Provider transcript voice by itself'));
     expect(auditText, contains('Configured Hermes home presence by itself'));
     expect(auditText, contains('npm run hermes:provider-smoke:local'));
+    expect(auditText, isNot(contains('real Gormes')));
+    expect(auditText, isNot(contains('Gormes durable reconnect')));
   });
 }

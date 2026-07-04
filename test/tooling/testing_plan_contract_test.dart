@@ -26,7 +26,7 @@ void main() {
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Informational only; strict mode must fail while blockers remain.',
       'Completion verdict: NOT COMPLETE',
-      'live provider/device/native-host/reconnect or deferred-surface blockers',
+      'live provider/device/native-host or deferred-surface blockers',
       'must not promote proxy evidence',
       'tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output',
     ]) {

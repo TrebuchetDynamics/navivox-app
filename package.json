@@ -18,6 +18,7 @@
     "android:hermes-voice-loop-smoke": "./scripts/run_android_hermes_voice_loop_smoke.sh",
     "android:durable-key-smoke": "./scripts/run_android_durable_key_smoke.sh",
     "android:live-mic-prep": "./scripts/prepare_android_live_mic_smoke.sh",
+    "android:live-mic-receipt": "./scripts/record_android_live_mic_receipt.sh",
     "platform:workflow-smoke": "./scripts/run_hermes_platform_workflow.sh",
     "hermes:readiness-audit": "./scripts/audit_hermes_readiness.sh",
     "linux:release-build": "./scripts/run_linux_release_build.sh",

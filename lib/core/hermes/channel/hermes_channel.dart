@@ -42,7 +42,7 @@ abstract interface class HermesChannel implements Listenable {
   /// transport isn't in use.
   Stream<NavivoxApprovalRequest> get approvalRequests;
 
-  void respondToApproval({
+  Future<void> respondToApproval({
     required String approvalId,
     required HermesApprovalDecision decision,
   });

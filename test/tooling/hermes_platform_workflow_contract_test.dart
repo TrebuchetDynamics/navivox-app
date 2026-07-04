@@ -14,19 +14,54 @@ void main() {
         text,
         contains('workflow_list="\$(gh workflow list 2>&1 || true)"'),
       );
+      expect(
+        text,
+        contains('gh_auth_status="\$(gh auth status 2>&1 || true)"'),
+      );
+      expect(
+        text,
+        contains("Active gh token scopes do not include 'workflow'"),
+      );
+      expect(text, contains('with workflow scope before pushing/publishing'));
       expect(text, contains('Visible workflows:'));
       expect(
         text,
         contains('Publish .github/workflows/hermes-platform-smoke.yml'),
       );
       expect(text, contains('exit 2'));
+      expect(text, contains('NAVIVOX_PLATFORM_WORKFLOW_RECEIPT'));
+      expect(text, contains('Platform workflow receipt written'));
+      expect(text, contains('missing_required_artifacts'));
+      expect(text, contains('invalid_required_artifacts'));
+      expect(text, contains('artifact_details'));
+      expect(text, contains('job_details'));
+      expect(text, contains('required_native_jobs'));
+      expect(text, contains('missing_required_jobs'));
+      expect(text, contains('invalid_required_jobs'));
+      expect(text, contains('Windows desktop build'));
+      expect(text, contains('iOS simulator build'));
+      expect(text, contains('macOS desktop build'));
+      expect(text, contains('size_in_bytes'));
+      expect(text, contains('archive_download_url'));
+      expect(text, contains("run.get('status') == 'completed'"));
+      expect(text, contains('Missing required native artifacts'));
+      expect(text, contains('Invalid required native artifacts'));
+      expect(text, contains('Missing required native jobs'));
+      expect(text, contains('Invalid required native jobs'));
+      expect(text, contains('sys.exit(5)'));
+      expect(text, contains('navivox-windows-debug-bundle'));
+      expect(text, contains('navivox-ios-simulator-app'));
+      expect(text, contains('navivox-macos-debug-app'));
+      expect(text, contains('whole-goal completion'));
       expect(
         text,
         contains('NAVIVOX_WATCH_WORKFLOW=false did not wait for job results'),
       );
       expect(
         text,
-        contains('Collect successful Windows/iOS/Android/Linux job receipts'),
+        contains(
+          'Collect successful Windows/iOS/macOS/Android/Linux job receipts',
+        ),
       );
       expect(text, contains('no run id was visible yet'));
       expect(text, contains('This is not a platform receipt'));
@@ -70,5 +105,9 @@ void main() {
     expect(text, contains('runs-on: macos-latest'));
     expect(text, contains('flutter build ios --simulator --debug'));
     expect(text, contains('navivox-ios-simulator-app'));
+
+    expect(text, contains('macos-build:'));
+    expect(text, contains('flutter build macos --debug'));
+    expect(text, contains('navivox-macos-debug-app'));
   });
 }

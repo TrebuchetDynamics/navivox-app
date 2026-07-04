@@ -241,10 +241,10 @@ class _AndroidHermesVoiceSmokeChannel extends ChangeNotifier
   void stopActiveTurn() {}
 
   @override
-  void respondToApproval({
+  Future<void> respondToApproval({
     required String approvalId,
     required HermesApprovalDecision decision,
-  }) {}
+  }) async {}
 
   @override
   void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'}) {}

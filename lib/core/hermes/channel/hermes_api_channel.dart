@@ -36,7 +36,11 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   HermesApiClient? _client;
   HermesChannelState _state = const HermesChannelState();
   StreamSubscription<HermesStreamEvent>? _activeStream;
+  Completer<void>? _activeStreamCompleter;
   String? _activeRunId;
+  bool _activeTurnStopped = false;
+  int _streamGeneration = 0;
+  int _connectionGeneration = 0;
   final _approvalController =
       StreamController<NavivoxApprovalRequest>.broadcast();
   final _deletingSessionIds = <String>{};
@@ -50,6 +54,18 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
 
   @override
   void dispose() {
+    _client = null;
+    _connectionGeneration += 1;
+    _streamGeneration += 1;
+    _deletingSessionIds.clear();
+    unawaited(_activeStream?.cancel());
+    _activeStream = null;
+    _activeRunId = null;
+    final completer = _activeStreamCompleter;
+    _activeStreamCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
     _approvalController.close();
     super.dispose();
   }
@@ -61,18 +77,30 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
 
   @override
   Future<void> connect({required String baseUrl, String? apiKey}) async {
+    final generation = _connectionGeneration + 1;
+    _connectionGeneration = generation;
+    _streamGeneration += 1;
+    _deletingSessionIds.clear();
+    unawaited(_activeStream?.cancel());
+    _activeStream = null;
+    _activeRunId = null;
+    _client = null;
+    final activeCompleter = _activeStreamCompleter;
+    _activeStreamCompleter = null;
+    if (activeCompleter != null && !activeCompleter.isCompleted) {
+      activeCompleter.complete();
+    }
     _setState(
-      _state.copyWith(
-        status: HermesConnectionStatus.connecting,
-        clearErrorMessage: true,
-      ),
+      const HermesChannelState(status: HermesConnectionStatus.connecting),
     );
-    final client = _clientBuilder(
-      HermesApiConfig.fromBaseUrl(baseUrl, apiKey: apiKey),
-    );
-    _client = client;
+    HermesApiClient? client;
     try {
+      client = _clientBuilder(
+        HermesApiConfig.fromBaseUrl(baseUrl, apiKey: apiKey),
+      );
+      _client = client;
       await client.health();
+      if (!_isCurrentConnection(generation, client)) return;
       final capabilities = await client.capabilities();
       final detailedHealth = await _optionalHealth(
         capabilities.advertisesEndpoint(
@@ -98,16 +126,28 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         capabilities.advertisesEndpoint('jobs', 'GET', '/api/jobs'),
         client.listJobs,
       );
+      if (!_isCurrentConnection(generation, client)) return;
       var sessions = await client.listSessions();
-      String activeId;
+      if (!_isCurrentConnection(generation, client)) return;
+      String? activeId;
+      List<HermesChatTurn>? messages;
       if (sessions.isEmpty) {
-        final created = await client.createSession(id: _sessionIdFactory());
-        sessions = [created];
-        activeId = created.id;
+        if (capabilities.advertisesEndpoint(
+          'session_create',
+          'POST',
+          '/api/sessions',
+        )) {
+          final created = await client.createSession(id: _sessionIdFactory());
+          sessions = [created];
+          activeId = created.id;
+        }
       } else {
         activeId = sessions.first.id;
       }
-      final messages = await _fetchTurns(client, activeId);
+      if (activeId != null) {
+        messages = await _fetchTurns(client, activeId);
+      }
+      if (!_isCurrentConnection(generation, client)) return;
       _setState(
         _state.copyWith(
           status: HermesConnectionStatus.connected,
@@ -119,17 +159,33 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           jobs: jobs,
           sessions: sessions,
           activeSessionId: activeId,
-          messages: {...(_state.messages), activeId: messages},
+          clearActiveSessionId: activeId == null,
+          messages: activeId == null || messages == null
+              ? _state.messages
+              : {...(_state.messages), activeId: messages},
         ),
       );
     } catch (error) {
+      if (generation != _connectionGeneration ||
+          (client != null && !identical(_client, client))) {
+        return;
+      }
       _setState(
         _state.copyWith(
           status: HermesConnectionStatus.error,
-          errorMessage: error.toString(),
+          errorMessage: _safeHermesError(error),
         ),
       );
     }
+  }
+
+  bool _isCurrentConnection(int generation, HermesApiClient client) {
+    return generation == _connectionGeneration && identical(_client, client);
+  }
+
+  bool _isConnectedClient(HermesApiClient client) {
+    return identical(_client, client) &&
+        _state.status == HermesConnectionStatus.connected;
   }
 
   Future<HermesHealthStatus?> _optionalHealth(
@@ -192,6 +248,17 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   @override
   Future<void> disconnect() async {
     _client = null;
+    _connectionGeneration += 1;
+    _streamGeneration += 1;
+    _deletingSessionIds.clear();
+    unawaited(_activeStream?.cancel());
+    _activeStream = null;
+    _activeRunId = null;
+    final completer = _activeStreamCompleter;
+    _activeStreamCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
     _setState(const HermesChannelState());
   }
 
@@ -201,8 +268,16 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     if (client == null) {
       throw StateError('Hermes channel is not connected.');
     }
-    _setState(_state.copyWith(activeSessionId: sessionId));
-    _setTurns(sessionId, await _fetchTurns(client, sessionId));
+    _requireKnownSession(sessionId);
+    _finishActiveTurnLocally();
+    final turns = await _fetchTurns(client, sessionId);
+    if (!_isConnectedClient(client)) return;
+    _setState(
+      _state.copyWith(
+        activeSessionId: sessionId,
+        messages: {..._state.messages, sessionId: turns},
+      ),
+    );
   }
 
   @override
@@ -211,17 +286,27 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     if (client == null) {
       throw StateError('Hermes channel is not connected.');
     }
+    _requireAdvertisedEndpoint(
+      'session_create',
+      'POST',
+      '/api/sessions',
+      'create sessions',
+    );
     final created = await client.createSession(
       id: _sessionIdFactory(),
       title: title,
     );
+    if (!_isConnectedClient(client)) return;
+    final turns = await _fetchTurns(client, created.id);
+    if (!_isConnectedClient(client)) return;
+    _finishActiveTurnLocally();
     _setState(
       _state.copyWith(
         sessions: [..._state.sessions, created],
         activeSessionId: created.id,
+        messages: {..._state.messages, created.id: turns},
       ),
     );
-    _setTurns(created.id, await _fetchTurns(client, created.id));
   }
 
   @override
@@ -241,7 +326,15 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         'Session title cannot be empty.',
       );
     }
+    _requireAdvertisedEndpoint(
+      'session_update',
+      'PATCH',
+      '/api/sessions/{session_id}',
+      'rename sessions',
+    );
+    _requireKnownSession(sessionId);
     final updated = await client.updateSessionTitle(sessionId, title: trimmed);
+    if (!_isConnectedClient(client)) return;
     _setState(
       _state.copyWith(
         sessions: [
@@ -258,16 +351,27 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     if (client == null) {
       throw StateError('Hermes channel is not connected.');
     }
+    _requireAdvertisedEndpoint(
+      'session_delete',
+      'DELETE',
+      '/api/sessions/{session_id}',
+      'delete sessions',
+    );
+    _requireKnownSession(sessionId);
     if (!_deletingSessionIds.add(sessionId)) {
       throw StateError('Hermes session delete is already in progress.');
     }
+    final wasActive = _state.activeSessionId == sessionId;
+    if (wasActive) {
+      _finishActiveTurnLocally();
+    }
     try {
       await client.deleteSession(sessionId);
+      if (!_isConnectedClient(client)) return;
       final remaining = [
         for (final session in _state.sessions)
           if (session.id != sessionId) session,
       ];
-      final wasActive = _state.activeSessionId == sessionId;
       final nextActiveId = wasActive
           ? remaining.firstOrNull?.id
           : _state.activeSessionId;
@@ -301,29 +405,81 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     if (client == null) {
       throw StateError('Hermes channel is not connected.');
     }
+    _requireAdvertisedEndpoint(
+      'session_fork',
+      'POST',
+      '/api/sessions/{session_id}/fork',
+      'fork sessions',
+    );
+    _requireKnownSession(sessionId);
     final fork = await client.forkSession(
       sessionId,
       id: _sessionIdFactory(),
       title: title,
     );
+    if (!_isConnectedClient(client)) return;
+    final turns = await _fetchTurns(client, fork.id);
+    if (!_isConnectedClient(client)) return;
+    _finishActiveTurnLocally();
     _setState(
       _state.copyWith(
         sessions: [..._state.sessions, fork],
         activeSessionId: fork.id,
+        messages: {..._state.messages, fork.id: turns},
       ),
     );
-    _setTurns(fork.id, await _fetchTurns(client, fork.id));
+  }
+
+  void _requireAdvertisedEndpoint(
+    String name,
+    String method,
+    String path,
+    String action,
+  ) {
+    final capabilities = _state.capabilities;
+    if (capabilities != null &&
+        !capabilities.advertisesEndpoint(name, method, path)) {
+      throw StateError('Hermes did not advertise support to $action.');
+    }
+  }
+
+  void _requireKnownSession(String sessionId) {
+    if (!_state.sessions.any((session) => session.id == sessionId)) {
+      throw StateError('Hermes session is not in the current session list.');
+    }
   }
 
   @override
   Future<void> sendText(String text) async {
+    final message = text.trim();
+    if (message.isEmpty) {
+      throw ArgumentError.value(
+        text,
+        'text',
+        'Hermes message cannot be blank.',
+      );
+    }
     final client = _client;
     final sessionId = _state.activeSessionId;
     if (client == null || sessionId == null) {
       throw StateError('Hermes channel is not connected to a session.');
     }
+    final activeCompleter = _activeStreamCompleter;
+    if ((activeCompleter != null && !activeCompleter.isCompleted) ||
+        _state.activeMessages.lastOrNull?.status ==
+            HermesTurnStatus.streaming) {
+      throw StateError('Hermes turn is already streaming.');
+    }
+    final capabilities = _state.capabilities;
+    if (capabilities != null &&
+        !HermesTransportPolicy(capabilities).supportsAnyChatTransport) {
+      throw StateError(
+        'Hermes did not advertise a supported chat transport for this endpoint.',
+      );
+    }
 
     final turns = List<HermesChatTurn>.from(_state.activeMessages);
+    final preSendTurnCount = turns.length;
     final now = DateTime.now();
     turns.add(
       HermesChatTurn(
@@ -331,7 +487,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         sessionId: sessionId,
         author: HermesTurnAuthor.user,
         createdAt: now,
-        text: text,
+        text: message,
       ),
     );
     var assistantTurn = HermesChatTurn(
@@ -343,27 +499,81 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     );
     turns.add(assistantTurn);
     var assistantIndex = turns.length - 1;
-    _setTurns(sessionId, turns);
+    _setTurns(sessionId, turns, clearErrorMessage: true);
 
-    final capabilities = _state.capabilities;
     final useRunTransport =
         capabilities != null &&
         HermesTransportPolicy(capabilities).supportsRunsTransport;
 
-    final Stream<HermesStreamEvent> events;
-    if (useRunTransport) {
-      final run = await client.startRun(sessionId: sessionId, message: text);
-      _activeRunId = run.id;
-      events = client.runEvents(run.id);
-    } else {
-      events = client.streamSessionChat(sessionId, message: text);
+    final submissionGeneration = _streamGeneration;
+    Stream<HermesStreamEvent>? events;
+    String? runId;
+    try {
+      if (useRunTransport) {
+        final run = await client.startRun(
+          sessionId: sessionId,
+          message: message,
+        );
+        runId = run.id;
+      } else {
+        events = client.streamSessionChat(sessionId, message: message);
+      }
+    } catch (error) {
+      if (!identical(_client, client) ||
+          _state.status != HermesConnectionStatus.connected ||
+          _state.activeSessionId != sessionId ||
+          _streamGeneration != submissionGeneration) {
+        return;
+      }
+      assistantTurn = assistantTurn.copyWith(status: HermesTurnStatus.failed);
+      turns[assistantIndex] = assistantTurn;
+      _setTurns(sessionId, turns, errorMessage: _safeHermesError(error));
+      rethrow;
     }
 
+    if (!identical(_client, client) ||
+        _state.status != HermesConnectionStatus.connected ||
+        _state.activeSessionId != sessionId ||
+        _streamGeneration != submissionGeneration) {
+      return;
+    }
+
+    try {
+      events ??= client.runEvents(runId!);
+    } catch (error) {
+      if (!identical(_client, client) ||
+          _state.status != HermesConnectionStatus.connected ||
+          _state.activeSessionId != sessionId ||
+          _streamGeneration != submissionGeneration) {
+        return;
+      }
+      assistantTurn = assistantTurn.copyWith(status: HermesTurnStatus.failed);
+      turns[assistantIndex] = assistantTurn;
+      final message =
+          'Hermes run event stream failed to open: ${_safeHermesError(error)}';
+      _setTurns(sessionId, turns, errorMessage: message);
+      throw StateError(message);
+    }
+    _activeRunId = runId;
     final toolTurnIndexByCallId = <String, int>{};
     final completer = Completer<void>();
+    final streamGeneration = _streamGeneration + 1;
+    _streamGeneration = streamGeneration;
+    _activeStreamCompleter = completer;
+    _activeTurnStopped = false;
     var streamFailed = false;
+    var streamEndedBeforeTerminal = false;
+    var terminalRunEventReceived = false;
     _activeStream = events.listen(
       (event) {
+        if (streamGeneration != _streamGeneration || terminalRunEventReceived) {
+          return;
+        }
+        if (event.isDone) {
+          terminalRunEventReceived = true;
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
         final delta = event.delta;
         if (delta != null && delta.isNotEmpty) {
           assistantTurn = assistantTurn.appendDelta(delta);
@@ -384,47 +594,205 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           return;
         }
         if (event.name == 'approval.request') {
-          _approvalController.add(_approvalRequestFromEvent(event));
+          final request = _approvalRequestFromEvent(event);
+          if (request.id.isEmpty) {
+            terminalRunEventReceived = true;
+            streamFailed = true;
+            assistantTurn = assistantTurn.copyWith(
+              status: HermesTurnStatus.failed,
+            );
+            turns[assistantIndex] = assistantTurn;
+            _setTurns(
+              sessionId,
+              List.of(turns),
+              errorMessage:
+                  'Hermes approval request was missing an approval id.',
+            );
+            if (!completer.isCompleted) completer.complete();
+            return;
+          }
+          _approvalController.add(request);
           return;
         }
-        if (event.name == 'run.failed' || event.name == 'run.cancelled') {
+        if (_isSuccessfulTerminalRunEvent(event.name)) {
+          terminalRunEventReceived = true;
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
+        if (_isFailedTerminalRunEvent(event.name)) {
+          terminalRunEventReceived = true;
+          streamFailed = true;
           assistantTurn = assistantTurn.copyWith(
             status: HermesTurnStatus.failed,
           );
           turns[assistantIndex] = assistantTurn;
-          _setTurns(sessionId, List.of(turns));
+          _setTurns(
+            sessionId,
+            List.of(turns),
+            errorMessage: _isCancelledTerminalRunEvent(event.name)
+                ? 'Hermes run was cancelled.'
+                : 'Hermes run failed.',
+          );
+          if (!completer.isCompleted) completer.complete();
         }
       },
       onError: (Object error) {
+        if (streamGeneration != _streamGeneration || terminalRunEventReceived) {
+          return;
+        }
         streamFailed = true;
+        streamEndedBeforeTerminal = true;
         assistantTurn = assistantTurn.copyWith(status: HermesTurnStatus.failed);
         turns[assistantIndex] = assistantTurn;
-        _setTurns(sessionId, List.of(turns));
+        _setTurns(
+          sessionId,
+          List.of(turns),
+          errorMessage: _safeHermesError(error),
+        );
         if (!completer.isCompleted) completer.complete();
       },
       onDone: () {
+        if (streamGeneration != _streamGeneration) return;
+        if (!terminalRunEventReceived) {
+          streamFailed = true;
+          streamEndedBeforeTerminal = true;
+          assistantTurn = assistantTurn.copyWith(
+            status: HermesTurnStatus.failed,
+          );
+          turns[assistantIndex] = assistantTurn;
+          _setTurns(
+            sessionId,
+            List.of(turns),
+            errorMessage: 'Hermes stream closed before a terminal event.',
+          );
+        }
         if (!completer.isCompleted) completer.complete();
       },
       cancelOnError: true,
     );
     await completer.future;
+    if (streamGeneration != _streamGeneration) {
+      return;
+    }
+    if (terminalRunEventReceived) {
+      unawaited(_activeStream?.cancel() ?? Future<void>.value());
+    }
+    final stoppedLocally = _activeTurnStopped;
+    if (identical(_activeStreamCompleter, completer)) {
+      _activeStreamCompleter = null;
+      _activeTurnStopped = false;
+    }
     _activeStream = null;
     _activeRunId = null;
+    if (!identical(_client, client) ||
+        _state.status != HermesConnectionStatus.connected ||
+        _state.activeSessionId != sessionId) {
+      return;
+    }
     if (assistantTurn.status == HermesTurnStatus.streaming) {
-      assistantTurn = assistantTurn.copyWith(
-        status: HermesTurnStatus.completed,
-      );
+      assistantTurn = stoppedLocally
+          ? assistantTurn.copyWith(
+              status: HermesTurnStatus.failed,
+              text: assistantTurn.text.isEmpty
+                  ? 'Stopped.'
+                  : assistantTurn.text,
+            )
+          : assistantTurn.copyWith(status: HermesTurnStatus.completed);
       turns[assistantIndex] = assistantTurn;
       _setTurns(sessionId, List.of(turns));
     }
 
-    if (!streamFailed) {
+    if (streamFailed && streamEndedBeforeTerminal && !stoppedLocally) {
       try {
-        _setTurns(sessionId, await _fetchTurns(client, sessionId));
+        final serverTurns = await _fetchTurns(client, sessionId);
+        if (_serverHistoryHasAssistantReplyForCurrentTurn(
+          serverTurns,
+          message,
+          preSendTurnCount,
+        )) {
+          _setTurns(sessionId, serverTurns, clearErrorMessage: true);
+          return;
+        }
+      } catch (_) {
+        // Keep the local failed partial transcript; recovery is best-effort.
+      }
+    }
+
+    if (!streamFailed && !stoppedLocally) {
+      try {
+        final serverTurns = await _fetchTurns(client, sessionId);
+        if (!_serverHistoryDropsStreamedAssistant(
+          serverTurns,
+          assistantTurn,
+          message,
+          preSendTurnCount,
+        )) {
+          _setTurns(sessionId, serverTurns);
+        }
       } catch (_) {
         // Keep the locally streamed transcript; reconciliation is best-effort.
       }
     }
+  }
+
+  bool _serverHistoryDropsStreamedAssistant(
+    List<HermesChatTurn> serverTurns,
+    HermesChatTurn localAssistantTurn,
+    String sentMessage,
+    int preSendTurnCount,
+  ) {
+    if (localAssistantTurn.text.trim().isEmpty) return false;
+    return !_serverHistoryHasAssistantReplyForCurrentTurn(
+      serverTurns,
+      sentMessage,
+      preSendTurnCount,
+    );
+  }
+
+  bool _serverHistoryHasAssistantReplyForCurrentTurn(
+    List<HermesChatTurn> serverTurns,
+    String sentMessage,
+    int preSendTurnCount,
+  ) {
+    final normalizedMessage = sentMessage.trim();
+    if (normalizedMessage.isNotEmpty) {
+      for (var index = serverTurns.length - 1; index >= 0; index--) {
+        final turn = serverTurns[index];
+        if (turn.author != HermesTurnAuthor.user ||
+            turn.text.trim() != normalizedMessage ||
+            index < preSendTurnCount) {
+          continue;
+        }
+        return _hasAssistantReplyAfter(serverTurns, index);
+      }
+    }
+    if (serverTurns.length <= preSendTurnCount) return false;
+    return _hasAssistantReplyAfter(serverTurns, preSendTurnCount - 1);
+  }
+
+  bool _hasAssistantReplyAfter(List<HermesChatTurn> serverTurns, int index) {
+    for (final candidate in serverTurns.skip(index + 1)) {
+      if (candidate.author == HermesTurnAuthor.user) return false;
+      if (candidate.author == HermesTurnAuthor.assistant &&
+          candidate.text.trim().isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _isSuccessfulTerminalRunEvent(String name) {
+    return name == 'run.completed' || name == 'assistant.completed';
+  }
+
+  bool _isFailedTerminalRunEvent(String name) {
+    return name == 'run.failed' ||
+        name == 'assistant.failed' ||
+        _isCancelledTerminalRunEvent(name);
+  }
+
+  bool _isCancelledTerminalRunEvent(String name) {
+    return name == 'run.cancelled' || name == 'assistant.cancelled';
   }
 
   bool _isToolEvent(String name) {
@@ -503,45 +871,112 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     );
   }
 
-  void _setTurns(String sessionId, List<HermesChatTurn> turns) {
+  void _setTurns(
+    String sessionId,
+    List<HermesChatTurn> turns, {
+    String? errorMessage,
+    bool clearErrorMessage = false,
+  }) {
     _setState(
-      _state.copyWith(messages: {..._state.messages, sessionId: turns}),
+      _state.copyWith(
+        messages: {..._state.messages, sessionId: turns},
+        errorMessage: errorMessage,
+        clearErrorMessage: clearErrorMessage,
+      ),
     );
   }
 
   @override
   void cancelActiveTurn() {
-    _activeStream?.cancel();
-    _activeStream = null;
+    _finishActiveTurnLocally();
   }
 
   @override
   void stopActiveTurn() {
     final client = _client;
     final runId = _activeRunId;
-    _activeStream?.cancel();
-    _activeStream = null;
-    _activeRunId = null;
-    if (client != null && runId != null) {
+    _finishActiveTurnLocally();
+    final capabilities = _state.capabilities;
+    final canStopRun = capabilities == null
+        ? true
+        : HermesTransportPolicy(capabilities).supportsRunStop;
+    if (client != null && runId != null && canStopRun) {
       unawaited(client.stopRun(runId).catchError((_) {}));
     }
   }
 
+  void _finishActiveTurnLocally() {
+    _activeTurnStopped = true;
+    _streamGeneration += 1;
+    _markActiveStreamingTurnStopped();
+    unawaited(_activeStream?.cancel() ?? Future<void>.value());
+    _activeStream = null;
+    _activeRunId = null;
+    final completer = _activeStreamCompleter;
+    _activeStreamCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  void _markActiveStreamingTurnStopped() {
+    final sessionId = _state.activeSessionId;
+    if (sessionId == null) return;
+    final turns = List<HermesChatTurn>.from(_state.activeMessages);
+    final index = turns.lastIndexWhere(
+      (turn) => turn.status == HermesTurnStatus.streaming,
+    );
+    if (index == -1) return;
+    final turn = turns[index];
+    turns[index] = turn.copyWith(
+      status: HermesTurnStatus.failed,
+      text: turn.text.isEmpty ? 'Stopped.' : turn.text,
+    );
+    _setTurns(sessionId, turns);
+  }
+
   @override
-  void respondToApproval({
+  Future<void> respondToApproval({
     required String approvalId,
     required HermesApprovalDecision decision,
-  }) {
+  }) async {
     final client = _client;
     final runId = _activeRunId;
-    if (client == null || runId == null) return;
-    unawaited(
-      client.respondApproval(
+    if (client == null || runId == null) {
+      const message =
+          'Could not answer approval: active run is no longer available.';
+      _setState(_state.copyWith(errorMessage: message));
+      throw StateError(message);
+    }
+    final trimmedApprovalId = approvalId.trim();
+    if (trimmedApprovalId.isEmpty) {
+      const message = 'Could not answer approval: approval id is missing.';
+      _setState(_state.copyWith(errorMessage: message));
+      throw StateError(message);
+    }
+    final capabilities = _state.capabilities;
+    if (capabilities != null &&
+        !HermesTransportPolicy(capabilities).supportsRunApprovalResponse) {
+      const message =
+          'Could not answer approval: Hermes did not advertise approval responses for this run.';
+      _setState(_state.copyWith(errorMessage: message));
+      throw StateError(message);
+    }
+    try {
+      await client.respondApproval(
         runId: runId,
-        approvalId: approvalId,
+        approvalId: trimmedApprovalId,
         decision: decision.name,
-      ),
-    );
+      );
+    } catch (error) {
+      if (!identical(_client, client) || _activeRunId != runId) return;
+      _setState(
+        _state.copyWith(
+          errorMessage: 'Could not answer approval: ${_safeHermesError(error)}',
+        ),
+      );
+      rethrow;
+    }
   }
 
   @override
@@ -570,7 +1005,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     required double confidence,
   }) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(
       run.withDeviceTranscript(
         transcript: transcript,
@@ -585,22 +1020,66 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   void submitVoiceRun(String voiceRunId) {
     final run = _state.voiceRuns[voiceRunId];
     final transcript = run?.transcript;
-    if (run == null || transcript == null || transcript.isEmpty) return;
+    if (run == null || run.isTerminal || transcript == null) {
+      return;
+    }
+    final trimmedTranscript = transcript.trim();
+    if (trimmedTranscript.isEmpty) {
+      _updateVoiceRun(run.markFailed('Hermes voice transcript was empty.'));
+      return;
+    }
+    final submittedSessionId = _state.activeSessionId;
+    final capabilities = _state.capabilities;
+    if (submittedSessionId == null) {
+      _updateVoiceRun(
+        run.markFailed('Hermes channel is not connected to a session.'),
+      );
+      return;
+    }
+    if (capabilities != null &&
+        !HermesTransportPolicy(capabilities).supportsAnyChatTransport) {
+      _updateVoiceRun(
+        run.markFailed(
+          'Hermes did not advertise a supported chat transport for this endpoint.',
+        ),
+      );
+      return;
+    }
     _updateVoiceRun(
-      run.markSubmitted(
-        requestId: voiceRunId,
-        sessionId: _state.activeSessionId,
-      ),
+      run.markSubmitted(requestId: voiceRunId, sessionId: submittedSessionId),
     );
-    sendText(transcript)
+    sendText(trimmedTranscript)
         .then((_) {
           final current = _state.voiceRuns[voiceRunId];
-          if (current != null) _updateVoiceRun(current.markCompleted());
+          if (current == null || current.isTerminal) return;
+          if (current.sessionId != submittedSessionId ||
+              _state.activeSessionId != submittedSessionId) {
+            _updateVoiceRun(
+              current.markFailed(
+                'Hermes session changed before voice turn completed.',
+              ),
+            );
+            return;
+          }
+          final assistantTurns =
+              (_state.messages[submittedSessionId] ?? const []).where(
+                (turn) => turn.author == HermesTurnAuthor.assistant,
+              );
+          final assistantReply = assistantTurns.lastOrNull;
+          if (assistantReply == null ||
+              assistantReply.status == HermesTurnStatus.failed ||
+              assistantReply.text.trim().isEmpty) {
+            _updateVoiceRun(
+              current.markFailed('Hermes voice turn did not complete.'),
+            );
+            return;
+          }
+          _updateVoiceRun(current.markCompleted());
         })
         .catchError((Object error) {
           final current = _state.voiceRuns[voiceRunId];
-          if (current != null) {
-            _updateVoiceRun(current.markFailed(error.toString()));
+          if (current != null && !current.isTerminal) {
+            _updateVoiceRun(current.markFailed(_safeHermesError(error)));
           }
         });
   }
@@ -608,18 +1087,38 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   @override
   void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'}) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(run.markCancelled(reason));
   }
 
   @override
   void failVoiceRun(String voiceRunId, {required String reason}) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(run.markFailed(reason));
   }
 
   void _updateVoiceRun(NavivoxVoiceRun run) {
     _setState(_state.copyWith(voiceRuns: {..._state.voiceRuns, run.id: run}));
   }
+}
+
+String _safeHermesError(Object error) {
+  var text = error.toString();
+  text = text.replaceAllMapped(
+    RegExp(r'Bearer\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Bearer [redacted]',
+  );
+  text = text.replaceAllMapped(
+    RegExp(
+      r'(api[-_ ]?key|token|secret)(\s*(?:=|:)\s*)[^\s,;]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}${match[2]}[redacted]',
+  );
+  text = text.replaceAll(
+    RegExp(r'secret[-_a-z0-9.]*', caseSensitive: false),
+    '[redacted]',
+  );
+  return text;
 }

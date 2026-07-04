@@ -37,8 +37,7 @@ class HermesVoiceRunCancelResult {
 }
 
 /// Drives the continuous/push-to-talk voice-capture-to-Hermes-text-turn
-/// lifecycle. Same shape as `VoiceRunController` (Gormes/`NavivoxChannel`),
-/// but typed against the native `HermesChannel` per
+/// lifecycle against the native `HermesChannel`; see
 /// docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
 class HermesVoiceRunController {
   String? pendingVoiceRunId;
@@ -50,6 +49,10 @@ class HermesVoiceRunController {
   }
 
   String startCapture(HermesChannel channel) {
+    final previous = pendingVoiceRunId;
+    if (previous != null) {
+      channel.cancelVoiceRun(previous, reason: 'superseded by new capture');
+    }
     pendingVoiceRunId = channel.startVoiceRun();
     return pendingVoiceRunId!;
   }

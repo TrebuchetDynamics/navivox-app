@@ -7,6 +7,7 @@ import 'package:navivox/core/hermes/models/hermes_chat_turn.dart';
 import 'package:navivox/core/hermes/models/hermes_health.dart';
 import 'package:navivox/core/hermes/models/hermes_job.dart';
 import 'package:navivox/core/hermes/models/hermes_session.dart';
+import 'package:navivox/core/hermes/policy/hermes_transport_policy.dart';
 import 'package:navivox/core/protocol/voice/models/navivox_voice_run.dart';
 
 class FakeHermesConnectCall {
@@ -27,12 +28,18 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     String sessionId = 'sess_1',
     String? errorMessage,
     HermesCapabilityDocument? capabilities,
+    String? activeSessionId,
     HermesHealthStatus? detailedHealth,
     List<String> models = const [],
     List<String> skills = const [],
     List<String> enabledToolsets = const [],
     List<HermesJob> jobs = const [],
     List<HermesSession>? sessions,
+    this.createSessionFails = false,
+    this.selectSessionFails = false,
+    this.selectSessionFailureMessage = 'select failed',
+    this.approvalResponsesFail = false,
+    this.approvalResponseGate,
   }) : _state = status == HermesConnectionStatus.connected
            ? HermesChannelState(
                status: status,
@@ -42,9 +49,12 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
                skills: skills,
                enabledToolsets: enabledToolsets,
                jobs: jobs,
+               errorMessage: errorMessage,
                sessions:
                    sessions ?? [HermesSession(id: sessionId, source: 'fake')],
-               activeSessionId: sessionId,
+               activeSessionId:
+                   activeSessionId ??
+                   ((sessions != null && sessions.isEmpty) ? null : sessionId),
                messages: {
                  for (final session
                      in sessions ??
@@ -59,10 +69,17 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
 
   final List<FakeHermesConnectCall> connectCalls = [];
   final List<String> sentVoiceTranscripts = [];
+  final List<String?> createSessionCalls = [];
+  final List<String> selectSessionCalls = [];
   final List<Map<String, String>> renameSessionCalls = [];
   final List<String> deleteSessionCalls = [];
   final List<String> forkSessionCalls = [];
   final List<Map<String, Object?>> respondToApprovalCalls = [];
+  final bool createSessionFails;
+  bool selectSessionFails;
+  String selectSessionFailureMessage;
+  final bool approvalResponsesFail;
+  final Future<void> Function()? approvalResponseGate;
   int stopActiveTurnCalls = 0;
   final _approvalController =
       StreamController<NavivoxApprovalRequest>.broadcast();
@@ -108,11 +125,29 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
 
   @override
   Future<void> selectSession(String sessionId) async {
+    selectSessionCalls.add(sessionId);
+    if (selectSessionFails) {
+      throw StateError(selectSessionFailureMessage);
+    }
     _setState(_state.copyWith(activeSessionId: sessionId));
   }
 
   @override
-  Future<void> createSession({String? title}) async {}
+  Future<void> createSession({String? title}) async {
+    createSessionCalls.add(title);
+    if (createSessionFails) {
+      throw StateError('create failed');
+    }
+    final sessionId = 'sess_${_state.sessions.length + 1}';
+    final session = HermesSession(id: sessionId, source: 'fake', title: title);
+    _setState(
+      _state.copyWith(
+        sessions: [..._state.sessions, session],
+        activeSessionId: sessionId,
+        messages: {..._state.messages, sessionId: const <HermesChatTurn>[]},
+      ),
+    );
+  }
 
   @override
   Future<void> renameSession({
@@ -190,6 +225,10 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     _approvalController.add(request);
   }
 
+  void setCapabilities(HermesCapabilityDocument capabilities) {
+    _setState(_state.copyWith(capabilities: capabilities));
+  }
+
   /// Test-only helper: leaves an assistant turn `streaming` (as a real
   /// in-flight run would) so widget tests can exercise the stop control.
   void beginStreamingTurn(String userText) {
@@ -257,6 +296,40 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     );
   }
 
+  void addFailedExchange(
+    String text, {
+    String errorMessage = 'SocketException: stream dropped',
+  }) {
+    final sessionId = _state.activeSessionId;
+    if (sessionId == null) return;
+    final turns = List<HermesChatTurn>.from(_state.activeMessages);
+    final now = DateTime.now();
+    turns.add(
+      HermesChatTurn(
+        id: 'user-${turns.length}',
+        sessionId: sessionId,
+        author: HermesTurnAuthor.user,
+        createdAt: now,
+        text: text,
+      ),
+    );
+    turns.add(
+      HermesChatTurn(
+        id: 'assistant-${turns.length}',
+        sessionId: sessionId,
+        author: HermesTurnAuthor.assistant,
+        createdAt: now,
+        status: HermesTurnStatus.failed,
+      ),
+    );
+    _setState(
+      _state.copyWith(
+        messages: {..._state.messages, sessionId: turns},
+        errorMessage: errorMessage,
+      ),
+    );
+  }
+
   void _appendExchange(String text) {
     final sessionId = _state.activeSessionId;
     if (sessionId == null) return;
@@ -281,7 +354,10 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
       ),
     );
     _setState(
-      _state.copyWith(messages: {..._state.messages, sessionId: turns}),
+      _state.copyWith(
+        messages: {..._state.messages, sessionId: turns},
+        clearErrorMessage: true,
+      ),
     );
   }
 
@@ -291,17 +367,38 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   @override
   void stopActiveTurn() {
     stopActiveTurnCalls += 1;
+    final sessionId = _state.activeSessionId;
+    if (sessionId == null) return;
+    final turns = List<HermesChatTurn>.from(_state.activeMessages);
+    final index = turns.lastIndexWhere(
+      (turn) => turn.status == HermesTurnStatus.streaming,
+    );
+    if (index == -1) return;
+    final turn = turns[index];
+    turns[index] = turn.copyWith(
+      status: HermesTurnStatus.failed,
+      text: turn.text.isEmpty ? 'Stopped.' : turn.text,
+    );
+    _setState(
+      _state.copyWith(messages: {..._state.messages, sessionId: turns}),
+    );
   }
 
   @override
-  void respondToApproval({
+  Future<void> respondToApproval({
     required String approvalId,
     required HermesApprovalDecision decision,
-  }) {
+  }) async {
     respondToApprovalCalls.add({
       'approvalId': approvalId,
       'decision': decision,
     });
+    await approvalResponseGate?.call();
+    if (!approvalResponsesFail) return;
+    _setState(
+      _state.copyWith(errorMessage: 'Could not answer approval: fake failure'),
+    );
+    throw StateError('fake approval failure');
   }
 
   @override
@@ -330,7 +427,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     required double confidence,
   }) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(
       run.withDeviceTranscript(
         transcript: transcript,
@@ -345,7 +442,22 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   void submitVoiceRun(String voiceRunId) {
     final run = _state.voiceRuns[voiceRunId];
     final transcript = run?.transcript;
-    if (run == null || transcript == null || transcript.isEmpty) return;
+    if (run == null ||
+        run.isTerminal ||
+        transcript == null ||
+        transcript.isEmpty) {
+      return;
+    }
+    final capabilities = _state.capabilities;
+    if (capabilities != null &&
+        !HermesTransportPolicy(capabilities).supportsAnyChatTransport) {
+      _updateVoiceRun(
+        run.markFailed(
+          'Hermes did not advertise a supported chat transport for this endpoint.',
+        ),
+      );
+      return;
+    }
     _updateVoiceRun(
       run.markSubmitted(
         requestId: voiceRunId,
@@ -360,14 +472,14 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   @override
   void cancelVoiceRun(String voiceRunId, {String reason = 'cancelled'}) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(run.markCancelled(reason));
   }
 
   @override
   void failVoiceRun(String voiceRunId, {required String reason}) {
     final run = _state.voiceRuns[voiceRunId];
-    if (run == null) return;
+    if (run == null || run.isTerminal) return;
     _updateVoiceRun(run.markFailed(reason));
   }
 

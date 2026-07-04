@@ -1,8 +1,8 @@
 # Hermes platform smoke checklist
 
-Use this checklist while moving Navivox from the legacy Gormes UI toward the
-native Hermes Agent UI. It separates build-only gates from live-device gates so
-we do not claim mobile/desktop parity from widget tests alone.
+Use this checklist for the native Hermes Agent UI. It separates build-only gates
+from live-device gates so we do not claim mobile/desktop parity from widget tests
+alone.
 
 ## Build gates
 
@@ -21,7 +21,7 @@ Current local receipts (refreshed through 2026-07-03):
 - `flutter analyze` — pass.
 - `flutter test --concurrency=1` — pass, 1016 tests.
 - `flutter build web --release -t lib/main_e2e.dart` — pass.
-- `flutter build apk --debug` — pass, artifact at `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a` (artifact identity only; not live Android, mic, or reconnect evidence).
+- `flutter build apk --debug` — pass, artifact at `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a` (artifact identity only; not live Android or mic evidence).
 - `cd android && ./gradlew :app:testDebugUnitTest` — pass for Navivox app native Android unit tests. The broader `./gradlew testDebugUnitTest` runs third-party plugin tests too and currently fails in `image_picker_android`'s `ImagePickerDelegateTest` in this environment.
 - `npm run linux:release-build` — pass, artifact at
   `build/linux/x64/release/bundle/navivox`. This container has no passwordless
@@ -63,11 +63,15 @@ Current local receipts (refreshed through 2026-07-03):
   not expose usable iOS simulator build options (`flutter build ios --simulator
   --debug` exits 64 with `Could not find an option named "--simulator".`);
   validate on macOS/Xcode.
+- `flutter build macos` — blocked here because this Linux Flutter toolchain does
+  not expose a macOS build subcommand (`flutter build macos` exits 64 with
+  `Could not find a subcommand named "macos" for "flutter build".`); validate
+  on `macos-latest` or a local Mac.
 
-Windows and iOS platform folders are present. The iOS `Info.plist` includes
-microphone and speech-recognition usage descriptions for the Hermes
-voice-to-text path. Windows and iOS builds must run on their host platforms/CI
-runners; they are not validated from this Linux container.
+Windows, iOS, and macOS platform folders are present. The iOS `Info.plist`
+includes microphone and speech-recognition usage descriptions for the Hermes
+voice-to-text path. Windows, iOS, and macOS builds must run on their host
+platforms/CI runners; they are not validated from this Linux container.
 
 Host-runner CI is defined in `.github/workflows/hermes-platform-smoke.yml` with
 bounded job timeouts so unavailable hosts/emulators fail with actionable logs
@@ -77,8 +81,8 @@ instead of hanging:
   debug APK build, Linux release build, and uploaded Android/Linux artifacts.
 - Windows: Flutter Windows debug build on `windows-latest` plus uploaded debug
   bundle artifact.
-- macOS: Flutter iOS simulator debug build on `macos-latest` plus uploaded
-  simulator app artifact.
+- macOS/iOS: Flutter iOS simulator debug build and Flutter macOS desktop debug
+  build on `macos-latest`, with uploaded simulator and macOS app artifacts.
 - Manual `workflow_dispatch`: optional provider-backed Hermes web smoke when
   `run_provider_smoke` is enabled and `provider_url` is supplied. Store the API
   key in the `NAVIVOX_PROVIDER_HERMES_API_KEY` repository secret.
@@ -94,7 +98,7 @@ A local YAML file is not enough: as of 2026-07-03,
 and prints visible workflows (`pages-build-deployment` only). A later delivery
 push containing `.github/workflows/hermes-platform-smoke.yml` was rejected by
 GitHub because the current OAuth app token lacks `workflow` scope, so the
-workflow still is not published remotely and no native-host Windows/iOS/hosted
+workflow still is not published remotely and no native-host Windows/iOS/macOS/hosted
 Android receipt is present yet.
 
 Once the workflow file is published to the remote branch, dispatch and watch the
@@ -104,11 +108,20 @@ host-runner receipt path with:
 npm run platform:workflow-smoke
 ```
 
-If `NAVIVOX_WATCH_WORKFLOW=false` is used, the helper only proves dispatch; it
-does not wait for job results. If dispatch succeeds but no run id is visible,
-the helper exits 4 and still does not count as a platform receipt. Collect
-successful Windows/iOS/Android/Linux job receipts from `gh run view`/artifact
-logs before claiming platform readiness.
+When `NAVIVOX_WATCH_WORKFLOW=true` (default) and the watched run succeeds, the
+helper writes `build/receipts/hermes-platform-workflow.json` with the GitHub run
+URL, conclusion, commit, required native artifact names, artifact metadata, and
+native job metadata. If a required native artifact is missing, expired, empty,
+or lacks a download URL, or if a required Windows/iOS/macOS native job is not
+`completed`/`success`, the helper exits 5 and the receipt is marked failed. The
+readiness audit validates that receipt, including `run_status: completed`,
+non-expired/non-empty artifact metadata, successful native job metadata, and
+matching the receipt `head_sha` to the current git `HEAD`, before treating
+Windows/iOS/macOS native-host artifacts as recorded. If `NAVIVOX_WATCH_WORKFLOW=false` is used, the helper only proves
+dispatch; it does not wait for job results and writes no receipt. If dispatch
+succeeds but no run id is visible, the helper exits 4 and still does not count as
+a platform receipt. Collect successful Windows/iOS/macOS/Android/Linux job
+receipts from `gh run view`/artifact logs before claiming platform readiness.
 
 Before any completion claim, run the readiness audit in strict mode:
 
@@ -338,50 +351,9 @@ operator must still record the manual evidence:
 4. Confirm no API key or transcript secret appears in routes, logs, notices, or
    diagnostics export.
 
-## Android durable-key smoke
+## Legacy durable-key smoke
 
-For the legacy Gormes durable reconnect blocker, Android keypair readiness can
-be checked separately from the full reconnect protocol:
-
-```bash
-npm run android:durable-key-smoke
-```
-
-or, for a specific target:
-
-```bash
-NAVIVOX_ANDROID_DEVICE_ID=<device-id> npm run android:durable-key-smoke
-```
-
-This runs `integration_test/durable_key_store_android_smoke_test.dart` on an
-Android target and verifies both the native keystore MethodChannel and the Dart
-`MethodChannelDurableCredentialKeyStore` adapter can create an ES256 keypair,
-export only the public JWK coordinates, sign a payload, delete the key, and
-reject unsafe aliases. It does not prove Gormes durable credential issuance or
-reconnect end to end.
-
-Current receipt (refreshed 2026-07-03): after KVM-backed `fractal_test`
-emulator boot stabilized, `NAVIVOX_ANDROID_DEVICE_ID=<emulator>
-NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1 NAVIVOX_ANDROID_TEST_TIMEOUT_SECONDS=900
-npm run android:durable-key-smoke` passed. This verifies keypair readiness only;
-full real Gormes durable credential issuance plus silent reconnect remain
-unproven on Android. It is not whole-goal completion evidence by itself; the
-helper points operators back to strict readiness audit before any completion
-claim.
-
-Dart-side durable reconnect evidence was refreshed on 2026-07-03:
-
-```bash
-flutter test test/core/session/reconnect test/core/session/credentials \
-  test/core/gateway/capabilities/durable_reconnect_readiness_contract_test.dart \
-  test/core/session/readiness/reconnect_readiness_test.dart
-flutter test test/core/channel/gateway/runtime/channel_test.dart \
-  --plain-name 'falls back to device-bearer reconnect when stream reconnect exhausts'
-flutter test test/core/channel/gateway/runtime/channel_test.dart \
-  --plain-name 'provider reconnects automatically from saved durable gateway'
-```
-
-Those tests passed, covering in-memory durable credential issuance/readiness and
-fake-gateway reconnect fallback/provider startup reconnect. They still do not
-prove a physical Android saved credential reconnect against real Gormes after an
-app/server restart.
+`npm run android:durable-key-smoke` remains available for preserved legacy code,
+but it is not part of the active pure-Hermes readiness gate. Do not treat legacy
+keypair or reconnect tests as blockers for the Hermes companion release. The
+active Android blocker is the real spoken microphone loop described above.

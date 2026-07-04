@@ -26,12 +26,14 @@ Implemented in `main`:
 Current readiness blockers:
 
 - Real Android spoken microphone receipt.
-- Windows/iOS native host receipts and published platform workflow.
-- Full real Android + real Gormes durable reconnect proof.
+- Windows/iOS/macOS native host receipts and published platform workflow.
 - Hermes realtime/server audio unimplemented.
 - Deferred Desktop-like surfaces: config/admin editing, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL editing, attachments/media,
   files/context folders, raw logs export, and multi-endpoint/profile management.
+- Polish/hardening: SSE reconnect/drop edge cases, offline/auth-expired UX,
+  session search/grouping, queued follow-ups, and mobile approval/error/session
+  sheet polish.
 
 ## Roadmap rules
 
@@ -60,13 +62,12 @@ Work:
   macOS/iOS simulator, and optional hosted Android emulator jobs.
 - Run provider-backed smoke with configured model/provider credentials.
 - Run Android live-mic manual checklist on an audio-capable target.
-- Run full real Android + real Gormes durable reconnect after app/server restart.
 
 Acceptance gate:
 
 - `NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit` has no external
-  receipt blockers for provider smoke, Android mic, native hosts, or durable
-  reconnect.
+  receipt blockers for provider smoke, Android mic, native hosts, or platform
+  workflow publication.
 - The runbooks contain concrete command/job/artifact receipts, not just planned
   commands.
 

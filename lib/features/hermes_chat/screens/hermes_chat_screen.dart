@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import '../../../core/hermes/models/hermes_health.dart';
 import '../../../core/hermes/models/hermes_session.dart';
 import '../../../core/hermes/policy/hermes_surface_readiness.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
+import '../../../core/protocol/voice/models/navivox_voice_run.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
 import '../../chat/voice/controllers/transcript_voice_capture_flow.dart';
@@ -20,8 +22,7 @@ import '../controllers/hermes_voice_run_controller.dart';
 import '../diagnostics/hermes_diagnostics_export.dart';
 import '../providers/hermes_channel_provider.dart';
 
-/// Voice-capture/TTS services for the Hermes chat screen, separate from the
-/// Gormes `chat` feature's providers of the same shape.
+/// Voice-capture/TTS services for the Hermes chat screen.
 final hermesVoiceCaptureServiceProvider = Provider<VoiceCaptureService?>(
   (_) => createDefaultVoiceCaptureService(),
 );
@@ -37,8 +38,7 @@ const _hermesBaseUrlHint =
 
 /// Native Hermes Agent chat/session screen: manual connect, session list,
 /// streamed transcript, text composer, and continuous voice. See
-/// docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md — this
-/// does not reuse or relabel the Gormes-era chat screen.
+/// docs/adr/0007-native-hermes-channel-not-navivox-channel-adapter.md.
 class HermesChatScreen extends ConsumerStatefulWidget {
   const HermesChatScreen({
     this.voiceCaptureServiceOverride,
@@ -67,9 +67,13 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   bool _continuousVoiceEnabled = false;
   bool _capturing = false;
   String? _voiceError;
-  String? _queuedFollowUp;
+  final Queue<_QueuedFollowUp> _queuedFollowUps = Queue<_QueuedFollowUp>();
+  final Queue<NavivoxApprovalRequest> _pendingApprovals = Queue();
+  String? _answeringApprovalId;
+  String? _approvalSessionId;
   String? _lastSpokenTurnId;
-  NavivoxApprovalRequest? _pendingApproval;
+  bool _hadActiveTurn = false;
+  int _connectAttemptId = 0;
 
   @override
   void dispose() {
@@ -83,7 +87,34 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
 
   void _onChannelChanged() {
     final channel = _subscribed;
-    if (channel != null) _sendQueuedFollowUpIfIdle(channel);
+    if (channel != null) {
+      final turnActive = _isTurnActive(channel.state);
+      if (channel.state.isConnected) {
+        final activeSessionId = channel.state.activeSessionId;
+        if (_approvalSessionId != null &&
+            _approvalSessionId != activeSessionId) {
+          _pendingApprovals.clear();
+          _answeringApprovalId = null;
+        }
+        _approvalSessionId = activeSessionId;
+        _dropQueuedFollowUpsForMissingSessions(channel.state);
+        if (_hadActiveTurn && !turnActive) {
+          _pendingApprovals.clear();
+          _answeringApprovalId = null;
+        }
+        _hadActiveTurn = turnActive;
+        _sendQueuedFollowUpIfIdle(channel);
+      } else {
+        _queuedFollowUps.clear();
+        _pendingApprovals.clear();
+        _answeringApprovalId = null;
+        _approvalSessionId = null;
+        _hadActiveTurn = false;
+        _continuousVoiceEnabled = false;
+        _voiceError = null;
+        _stopSpeaking();
+      }
+    }
     if (mounted) setState(() {});
   }
 
@@ -94,9 +125,13 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
       _subscribed?.removeListener(_onChannelChanged);
       channel.addListener(_onChannelChanged);
       _subscribed = channel;
+      _pendingApprovals.clear();
+      _answeringApprovalId = null;
+      _approvalSessionId = channel.state.activeSessionId;
+      _hadActiveTurn = false;
       unawaited(_approvalSubscription?.cancel());
       _approvalSubscription = channel.approvalRequests.listen((request) {
-        if (mounted) setState(() => _pendingApproval = request);
+        if (mounted) setState(() => _enqueueApprovalRequest(request));
       });
     }
     final state = channel.state;
@@ -108,7 +143,9 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(activeSession?.title ?? 'Hermes'),
+        title: Text(
+          _safeHermesUiPreview(activeSession?.title ?? 'Hermes', maxLength: 96),
+        ),
         actions: [
           if (state.isConnected) ...[
             IconButton(
@@ -117,12 +154,13 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               icon: const Icon(Icons.view_list_outlined),
               onPressed: () => _showSessionsPanel(context, channel),
             ),
-            IconButton(
-              key: const ValueKey('hermes-new-session'),
-              tooltip: 'New session',
-              icon: const Icon(Icons.add_comment_outlined),
-              onPressed: () => unawaited(channel.createSession()),
-            ),
+            if (_canCreateSession(state))
+              IconButton(
+                key: const ValueKey('hermes-new-session'),
+                tooltip: 'New session',
+                icon: const Icon(Icons.add_comment_outlined),
+                onPressed: () => unawaited(_createSession(context, channel)),
+              ),
             IconButton(
               key: const ValueKey('hermes-diagnostics-button'),
               tooltip: 'Diagnostics',
@@ -246,15 +284,25 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     HermesChannel channel,
     HermesChannelState state,
   ) {
-    final pendingApproval = _pendingApproval;
+    final pendingApproval = _pendingApprovals.isEmpty
+        ? null
+        : _pendingApprovals.first;
+    final pendingApprovalCount = _pendingApprovals.length;
     final hasActiveSession = state.activeSessionId != null;
+    final canSendTurns = _canSendTurns(state);
+    final canRespondToApprovals = _canRespondToApprovals(state);
     final isTurnActive = _isTurnActive(state);
     return Column(
       children: [
         if (pendingApproval != null)
           _ApprovalBanner(
             request: pendingApproval,
-            onDecide: (decision) => _resolveApproval(channel, decision),
+            pendingCount: pendingApprovalCount,
+            responding: pendingApproval.id.trim() == _answeringApprovalId,
+            canRespond: canRespondToApprovals,
+            onDecide: (decision) =>
+                unawaited(_resolveApproval(channel, decision)),
+            onDismissMalformed: _dismissCurrentApproval,
           ),
         if (state.capabilities != null)
           _HermesCapabilityStrip(
@@ -265,11 +313,30 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
             enabledToolsets: state.enabledToolsets,
             jobs: state.jobs.map((job) => job.displayName).toList(),
           ),
+        if (hasActiveSession && !canSendTurns)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Card(
+              key: ValueKey('hermes-chat-transport-unavailable'),
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'Hermes did not advertise a supported chat transport for this endpoint.',
+                ),
+              ),
+            ),
+          ),
         Expanded(
           child: state.activeSessionId == null
-              ? const Center(
-                  child: Text(
-                    'No Hermes sessions. Create a new session to start chatting.',
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _canCreateSession(state)
+                          ? 'No Hermes sessions. Create a new session to start chatting.'
+                          : 'No Hermes sessions are available, and this endpoint did not advertise session creation.',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
               : ListView.builder(
@@ -280,6 +347,20 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                       _TurnBubble(turn: state.activeMessages[index]),
                 ),
         ),
+        if (state.errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: _HermesChatError(
+              error: state.errorMessage!,
+              onRetry:
+                  !canSendTurns ||
+                      isTurnActive ||
+                      _retryableFailedUserText(state) == null
+                  ? null
+                  : () => _retryLastFailedTurn(channel),
+              onReconnect: () => unawaited(_disconnect(channel)),
+            ),
+          ),
         if (_voiceError != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -289,17 +370,31 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
-        if (_queuedFollowUp != null)
+        if (_queuedFollowUps.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: MaterialBanner(
               key: const ValueKey('hermes-queued-follow-up'),
-              content: Text('Queued after current reply: $_queuedFollowUp'),
+              content: Text(_queuedFollowUpSummary(state)),
               actions: [
+                if (_canOpenQueuedFollowUpSession(state))
+                  TextButton(
+                    key: const ValueKey('hermes-queued-follow-up-open-session'),
+                    onPressed: () =>
+                        unawaited(_openQueuedFollowUpSession(context, channel)),
+                    child: const Text('Open session'),
+                  ),
+                TextButton(
+                  key: const ValueKey('hermes-queued-follow-up-send-now'),
+                  onPressed: _canSendQueuedFollowUp(state)
+                      ? () => _sendQueuedFollowUpIfIdle(channel)
+                      : null,
+                  child: const Text('Send now'),
+                ),
                 TextButton(
                   key: const ValueKey('hermes-queued-follow-up-cancel'),
-                  onPressed: () => setState(() => _queuedFollowUp = null),
-                  child: const Text('Cancel'),
+                  onPressed: () => setState(_queuedFollowUps.clear),
+                  child: const Text('Cancel all'),
                 ),
               ],
             ),
@@ -313,18 +408,26 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                 Switch(
                   key: const ValueKey('hermes-continuous-voice-switch'),
                   value: _continuousVoiceEnabled,
-                  onChanged: (value) {
-                    setState(() => _continuousVoiceEnabled = value);
-                    if (value) unawaited(_captureOnce(channel));
-                  },
+                  onChanged: canSendTurns
+                      ? (value) {
+                          setState(() => _continuousVoiceEnabled = value);
+                          if (value) {
+                            unawaited(_captureOnce(channel));
+                          } else {
+                            _stopSpeaking();
+                          }
+                        }
+                      : null,
                 ),
                 Expanded(
                   child: TextField(
                     key: const ValueKey('hermes-composer-field'),
                     controller: _composerController,
-                    enabled: hasActiveSession,
-                    decoration: const InputDecoration(
-                      hintText: 'Message Hermes…',
+                    enabled: canSendTurns,
+                    decoration: InputDecoration(
+                      hintText: canSendTurns
+                          ? 'Message Hermes…'
+                          : 'Chat transport unavailable',
                     ),
                     onSubmitted: (_) => _sendComposerText(channel),
                   ),
@@ -334,7 +437,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                     key: const ValueKey('hermes-stop-button'),
                     tooltip: 'Stop',
                     icon: const Icon(Icons.stop_circle_outlined),
-                    onPressed: () => channel.stopActiveTurn(),
+                    onPressed: () => _stopActiveTurn(channel),
                   ),
                 IconButton(
                   key: const ValueKey('hermes-mic-button'),
@@ -346,7 +449,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.mic_none_outlined),
-                  onPressed: _capturing || !hasActiveSession
+                  onPressed: _capturing || !canSendTurns
                       ? null
                       : () => unawaited(_captureOnce(channel)),
                 ),
@@ -354,7 +457,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                   key: const ValueKey('hermes-send-button'),
                   tooltip: 'Send',
                   icon: const Icon(Icons.send_outlined),
-                  onPressed: hasActiveSession
+                  onPressed: canSendTurns
                       ? () => _sendComposerText(channel)
                       : null,
                 ),
@@ -366,24 +469,72 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     );
   }
 
-  void _resolveApproval(
+  void _stopActiveTurn(HermesChannel channel) {
+    channel.stopActiveTurn();
+    setState(() => _continuousVoiceEnabled = false);
+    _stopSpeaking();
+  }
+
+  Future<void> _resolveApproval(
     HermesChannel channel,
     HermesApprovalDecision decision,
-  ) {
-    final request = _pendingApproval;
-    if (request == null) return;
-    channel.respondToApproval(approvalId: request.id, decision: decision);
-    setState(() => _pendingApproval = null);
+  ) async {
+    if (_pendingApprovals.isEmpty || _answeringApprovalId != null) return;
+    final request = _pendingApprovals.first;
+    final approvalId = request.id.trim();
+    if (approvalId.isEmpty) return;
+    final approvalSessionId = _approvalSessionId;
+    setState(() => _answeringApprovalId = approvalId);
+    try {
+      await channel.respondToApproval(
+        approvalId: approvalId,
+        decision: decision,
+      );
+      if (!mounted) return;
+      setState(() {
+        final stillSameSession = _approvalSessionId == approvalSessionId;
+        if (stillSameSession &&
+            _pendingApprovals.isNotEmpty &&
+            _approvalRequestKey(_pendingApprovals.first) ==
+                _approvalRequestKey(request)) {
+          _pendingApprovals.removeFirst();
+        }
+        if (_answeringApprovalId == approvalId) {
+          _answeringApprovalId = null;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (_answeringApprovalId == approvalId) {
+          _answeringApprovalId = null;
+        }
+      });
+    }
+  }
+
+  void _dismissCurrentApproval() {
+    if (_pendingApprovals.isEmpty) return;
+    setState(() {
+      _pendingApprovals.removeFirst();
+      _answeringApprovalId = null;
+    });
   }
 
   Future<void> _connect(HermesChannel channel) async {
+    final attemptId = ++_connectAttemptId;
     final baseUrl = _baseUrlController.text.trim();
     final apiKey = _apiKeyController.text.trim();
     await channel.connect(
       baseUrl: baseUrl,
       apiKey: apiKey.isEmpty ? null : apiKey,
     );
-    if (channel.state.status != HermesConnectionStatus.connected) return;
+    if (attemptId != _connectAttemptId ||
+        _baseUrlController.text.trim() != baseUrl ||
+        _apiKeyController.text.trim() != apiKey ||
+        channel.state.status != HermesConnectionStatus.connected) {
+      return;
+    }
     await ref
         .read(hermesEndpointStoreProvider)
         .save(baseUrl: baseUrl, apiKey: apiKey.isEmpty ? null : apiKey);
@@ -433,15 +584,17 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) => _HermesSessionsPanel(
         state: channel.state,
+        canCreate: _canCreateSession(channel.state),
         onCreate: () {
           Navigator.of(sheetContext).pop();
-          unawaited(channel.createSession());
+          unawaited(_createSession(context, channel));
         },
         onSelect: (session) {
           Navigator.of(sheetContext).pop();
-          unawaited(channel.selectSession(session.id));
+          unawaited(_selectSession(context, channel, session));
         },
         onRename: (session) {
           Navigator.of(sheetContext).pop();
@@ -459,12 +612,48 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     );
   }
 
+  Future<void> _createSession(
+    BuildContext context,
+    HermesChannel channel,
+  ) async {
+    try {
+      await channel.createSession();
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not create session: ${_safeHermesUiError(error)}',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectSession(
+    BuildContext context,
+    HermesChannel channel,
+    HermesSession session,
+  ) async {
+    try {
+      await channel.selectSession(session.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open session: ${_safeHermesUiError(error)}'),
+        ),
+      );
+    }
+  }
+
   Future<void> _renameSession(
     BuildContext context,
     HermesChannel channel,
     HermesSession session,
   ) async {
-    var draftTitle = session.title ?? '';
+    final currentTitle = session.title ?? '';
+    var draftTitle = _safeHermesRenameDefault(currentTitle);
     final nextTitle = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -491,13 +680,17 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
       ),
     );
     final title = nextTitle?.trim();
-    if (title == null || title.isEmpty || title == session.title) return;
+    if (title == null || title.isEmpty || title == currentTitle) return;
     try {
       await channel.renameSession(sessionId: session.id, title: title);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not rename session: $error')),
+        SnackBar(
+          content: Text(
+            'Could not rename session: ${_safeHermesUiError(error)}',
+          ),
+        ),
       );
     }
   }
@@ -511,9 +704,11 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
       await channel.forkSession(session.id);
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not fork session: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not fork session: ${_safeHermesUiError(error)}'),
+        ),
+      );
     }
   }
 
@@ -526,7 +721,9 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete session?'),
-        content: Text('Delete "${session.title ?? session.id}" from Hermes?'),
+        content: Text(
+          'Delete "${_safeHermesUiPreview(session.title ?? session.id, maxLength: 96)}" from Hermes?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -546,9 +743,33 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not delete session: $error')),
+        SnackBar(
+          content: Text(
+            'Could not delete session: ${_safeHermesUiError(error)}',
+          ),
+        ),
       );
     }
+  }
+
+  void _enqueueApprovalRequest(NavivoxApprovalRequest request) {
+    final requestKey = _approvalRequestKey(request);
+    final duplicate = _pendingApprovals.any(
+      (pending) => _approvalRequestKey(pending) == requestKey,
+    );
+    if (duplicate || _answeringApprovalId == request.id.trim()) return;
+    _approvalSessionId = _subscribed?.state.activeSessionId;
+    _pendingApprovals.addLast(request);
+  }
+
+  String _approvalRequestKey(NavivoxApprovalRequest request) {
+    final id = request.id.trim();
+    if (id.isNotEmpty) return 'id:$id';
+    final toolCallId = request.toolCallId.trim();
+    if (toolCallId.isNotEmpty) {
+      return 'tool:$toolCallId';
+    }
+    return 'prompt:${request.prompt}';
   }
 
   void _sendComposerText(HermesChannel channel) {
@@ -556,28 +777,166 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     if (text.isEmpty) return;
     _composerController.clear();
     if (_isTurnActive(channel.state)) {
-      setState(() => _queuedFollowUp = text);
+      setState(
+        () => _queuedFollowUps.addLast(
+          _QueuedFollowUp(text, channel.state.activeSessionId),
+        ),
+      );
       return;
     }
-    unawaited(channel.sendText(text));
+    _sendText(channel, text);
   }
 
   bool _isTurnActive(HermesChannelState state) =>
       state.activeMessages.isNotEmpty &&
       state.activeMessages.last.status == HermesTurnStatus.streaming;
 
-  void _sendQueuedFollowUpIfIdle(HermesChannel channel) {
-    final text = _queuedFollowUp;
-    if (text == null || _isTurnActive(channel.state)) return;
-    _queuedFollowUp = null;
-    unawaited(channel.sendText(text));
+  bool _canSendTurns(HermesChannelState state) {
+    if (state.activeSessionId == null) return false;
+    final capabilities = state.capabilities;
+    if (capabilities == null) return true;
+    return HermesTransportPolicy(capabilities).supportsAnyChatTransport;
   }
+
+  bool _canRespondToApprovals(HermesChannelState state) {
+    final capabilities = state.capabilities;
+    if (capabilities == null) return true;
+    return HermesTransportPolicy(capabilities).supportsRunApprovalResponse;
+  }
+
+  bool _canCreateSession(HermesChannelState state) =>
+      state.capabilities?.advertisesEndpoint(
+        'session_create',
+        'POST',
+        '/api/sessions',
+      ) ??
+      false;
+
+  void _sendQueuedFollowUpIfIdle(HermesChannel channel) {
+    if (!_canSendQueuedFollowUp(channel.state)) return;
+    final queued = _queuedFollowUps.removeFirst();
+    _sendText(
+      channel,
+      queued.text,
+      requeueOnFailure: true,
+      requeueSessionId: queued.sessionId,
+    );
+  }
+
+  void _dropQueuedFollowUpsForMissingSessions(HermesChannelState state) {
+    final sessionIds = state.sessions.map((session) => session.id).toSet();
+    _queuedFollowUps.removeWhere(
+      (queued) =>
+          queued.sessionId != null && !sessionIds.contains(queued.sessionId),
+    );
+  }
+
+  bool _canSendQueuedFollowUp(HermesChannelState state) {
+    if (_queuedFollowUps.isEmpty ||
+        _isTurnActive(state) ||
+        !_canSendTurns(state)) {
+      return false;
+    }
+    return _queuedFollowUps.first.sessionId == state.activeSessionId;
+  }
+
+  bool _canOpenQueuedFollowUpSession(HermesChannelState state) {
+    if (_queuedFollowUps.isEmpty) return false;
+    final sessionId = _queuedFollowUps.first.sessionId;
+    if (sessionId == null || sessionId == state.activeSessionId) return false;
+    return state.sessions.any((session) => session.id == sessionId);
+  }
+
+  Future<void> _openQueuedFollowUpSession(
+    BuildContext context,
+    HermesChannel channel,
+  ) async {
+    if (!_canOpenQueuedFollowUpSession(channel.state)) return;
+    final sessionId = _queuedFollowUps.first.sessionId;
+    if (sessionId == null) return;
+    try {
+      await channel.selectSession(sessionId);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not open queued follow-up session: ${_safeHermesUiError(error)}',
+          ),
+        ),
+      );
+    }
+  }
+
+  void _retryLastFailedTurn(HermesChannel channel) {
+    if (!_canSendTurns(channel.state)) return;
+    final text = _retryableFailedUserText(channel.state);
+    if (text == null) return;
+    _sendText(channel, text);
+  }
+
+  void _sendText(
+    HermesChannel channel,
+    String text, {
+    bool requeueOnFailure = false,
+    String? requeueSessionId,
+  }) {
+    final sessionId = requeueSessionId ?? channel.state.activeSessionId;
+    unawaited(
+      channel.sendText(text).catchError((_) {
+        if (!mounted || !requeueOnFailure || !channel.state.isConnected) return;
+        setState(
+          () => _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId)),
+        );
+      }),
+    );
+  }
+
+  String? _retryableFailedUserText(HermesChannelState state) {
+    final turns = state.activeMessages;
+    for (var index = turns.length - 1; index > 0; index--) {
+      final turn = turns[index];
+      if (turn.author != HermesTurnAuthor.assistant ||
+          turn.status != HermesTurnStatus.failed) {
+        continue;
+      }
+      for (var userIndex = index - 1; userIndex >= 0; userIndex--) {
+        final userTurn = turns[userIndex];
+        if (userTurn.author == HermesTurnAuthor.user &&
+            userTurn.text.trim().isNotEmpty) {
+          return userTurn.text.trim();
+        }
+      }
+    }
+    return null;
+  }
+
+  String _queuedFollowUpSummary(HermesChannelState state) {
+    final count = _queuedFollowUps.length;
+    final label = count == 1 ? 'follow-up' : 'follow-ups';
+    final preview = _queuedFollowUps
+        .take(2)
+        .map((queued) => _queuedFollowUpPreview(queued.text))
+        .join(' • ');
+    final remaining = count - 2;
+    final suffix = remaining > 0 ? ' • +$remaining more' : '';
+    final waiting = !_canSendTurns(state)
+        ? ' Waiting for a supported Hermes chat transport.'
+        : _queuedFollowUps.first.sessionId != state.activeSessionId
+        ? ' Waiting for the original session.'
+        : '';
+    return 'Queued $count $label after current reply: $preview$suffix$waiting';
+  }
+
+  String _queuedFollowUpPreview(String text) =>
+      _safeHermesUiPreview(text, maxLength: 48);
 
   Future<void> _captureOnce(HermesChannel channel) async {
     if (_capturing) return;
     final service =
         widget.voiceCaptureServiceOverride ??
         ref.read(hermesVoiceCaptureServiceProvider);
+    final captureSessionId = channel.state.activeSessionId;
     setState(() {
       _capturing = true;
       _voiceError = null;
@@ -588,13 +947,20 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     );
     if (!mounted) return;
     setState(() => _capturing = false);
+    if (!channel.state.isConnected ||
+        channel.state.activeSessionId != captureSessionId) {
+      _setVoiceFailure(
+        'Voice capture was discarded because the Hermes session changed.',
+      );
+      return;
+    }
 
     switch (outcome.status) {
       case TranscriptVoiceCaptureStatus.unavailable:
-        setState(() => _voiceError = 'Voice input is not available here.');
+        _setVoiceFailure('Voice input is not available here.');
         return;
       case TranscriptVoiceCaptureStatus.failed:
-        setState(() => _voiceError = outcome.errorMessage);
+        _setVoiceFailure(outcome.errorMessage ?? 'Voice capture failed.');
         return;
       case TranscriptVoiceCaptureStatus.captured:
         final result = _voiceRunController.captureSucceeded(
@@ -604,9 +970,36 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
         );
         final voiceRunId = result.scheduleAutoSendFor;
         if (voiceRunId != null) {
-          _voiceRunController.autoSendIfPending(channel, voiceRunId);
+          final sent = _voiceRunController.autoSendIfPending(
+            channel,
+            voiceRunId,
+          );
+          final run = channel.state.voiceRuns[voiceRunId];
+          if (sent.submitted && run?.status == NavivoxVoiceRunStatus.failed) {
+            _setVoiceFailure(run?.reason ?? 'Voice turn could not be sent.');
+          }
         }
     }
+  }
+
+  void _setVoiceFailure(String message) {
+    final safeMessage = _safeHermesUiPreview(message, maxLength: 160);
+    setState(() {
+      if (_continuousVoiceEnabled) {
+        _continuousVoiceEnabled = false;
+        _voiceError = '$safeMessage Continuous voice paused.';
+      } else {
+        _voiceError = safeMessage;
+      }
+    });
+  }
+
+  void _stopSpeaking() {
+    final tts =
+        widget.textToSpeechServiceOverride ??
+        ref.read(hermesTextToSpeechServiceProvider);
+    if (tts == null) return;
+    unawaited(tts.stop().catchError((_) {}));
   }
 
   void _maybeContinueVoiceLoop(HermesChannel channel) {
@@ -621,15 +1014,245 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     final tts =
         widget.textToSpeechServiceOverride ??
         ref.read(hermesTextToSpeechServiceProvider);
-    final speakFuture = tts?.speak(reply.text) ?? Future<void>.value();
+    if (tts == null) {
+      setState(() {
+        _continuousVoiceEnabled = false;
+        _voiceError =
+            'Text-to-speech is not available here. Continuous voice paused.';
+      });
+      return;
+    }
     unawaited(
-      speakFuture.whenComplete(() {
-        if (mounted && _continuousVoiceEnabled) {
-          unawaited(_captureOnce(channel));
-        }
-      }),
+      tts
+          .speak(reply.text)
+          .then((_) {
+            if (!mounted || !_continuousVoiceEnabled) return;
+            if (!channel.state.isConnected ||
+                channel.state.activeSessionId != reply.sessionId) {
+              setState(() {
+                _continuousVoiceEnabled = false;
+                _voiceError =
+                    'Hermes session changed before voice could re-arm. Continuous voice paused.';
+              });
+              return;
+            }
+            unawaited(_captureOnce(channel));
+          })
+          .catchError((Object error) {
+            if (!mounted) return;
+            setState(() {
+              _continuousVoiceEnabled = false;
+              _voiceError =
+                  'Could not speak Hermes reply. Continuous voice paused.';
+            });
+          }),
     );
   }
+}
+
+class _QueuedFollowUp {
+  const _QueuedFollowUp(this.text, this.sessionId);
+
+  final String text;
+  final String? sessionId;
+}
+
+class _HermesChatError extends StatelessWidget {
+  const _HermesChatError({required this.error, this.onRetry, this.onReconnect});
+
+  final String error;
+  final VoidCallback? onRetry;
+  final VoidCallback? onReconnect;
+
+  @override
+  Widget build(BuildContext context) {
+    final lower = error.toLowerCase();
+    final authRejected = _isHermesAuthError(lower);
+    final approvalResponseFailed = lower.contains('could not answer approval');
+    final malformedApprovalRequest = lower.contains(
+      'approval request was missing an approval id',
+    );
+    final unsupportedChatTransport = lower.contains(
+      'did not advertise a supported chat transport',
+    );
+    final streamOrNetworkFailure =
+        _isHermesNetworkError(lower) || lower.contains('stream');
+    final runCancelled = lower.contains('hermes run was cancelled');
+    final runFailed = lower.contains('hermes run failed');
+    final (title, recovery) = authRejected
+        ? (
+            'Hermes API rejected the saved API key.',
+            'Reconnect with a fresh Hermes API key, then retry this message.',
+          )
+        : approvalResponseFailed
+        ? (
+            'Hermes could not record the approval decision.',
+            'Review the request, check that the run is still active, then try the decision again.',
+          )
+        : malformedApprovalRequest
+        ? (
+            'Hermes sent an incomplete approval request.',
+            'Retry when Hermes can provide an approval id for this run.',
+          )
+        : unsupportedChatTransport
+        ? (
+            'Hermes endpoint does not support chat turns.',
+            'Connect to a Hermes API server that advertises session chat streaming or run events.',
+          )
+        : runCancelled
+        ? ('Hermes run was cancelled.', 'Start a new turn when you are ready.')
+        : runFailed
+        ? (
+            'Hermes run failed.',
+            'Check Hermes, then retry this message when the run is recoverable.',
+          )
+        : streamOrNetworkFailure
+        ? (
+            'Hermes stream dropped.',
+            'Check the endpoint/network and send again when Hermes is reachable.',
+          )
+        : ('Hermes could not finish the turn.', 'Retry when Hermes is ready.');
+    return Card(
+      key: const ValueKey('hermes-chat-error'),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title),
+            const SizedBox(height: 4),
+            Text(recovery),
+            if (onRetry != null ||
+                ((authRejected || streamOrNetworkFailure) &&
+                    onReconnect != null)) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if ((authRejected || streamOrNetworkFailure) &&
+                        onReconnect != null)
+                      OutlinedButton.icon(
+                        key: const ValueKey('hermes-chat-error-reconnect'),
+                        onPressed: onReconnect,
+                        icon: const Icon(Icons.key_outlined),
+                        label: const Text('Reconnect'),
+                      ),
+                    if (onRetry != null)
+                      FilledButton.icon(
+                        key: const ValueKey('hermes-chat-error-retry'),
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry last message'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _safeHermesUiText(String text) {
+  var safe = text;
+  safe = safe.replaceAllMapped(
+    RegExp(
+      r'(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s,;]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'Bearer\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Bearer [redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'Basic\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Basic [redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(
+      r'((?:Cookie|Set-Cookie|X-API-Key|X-Auth-Token)\s*:\s*)[^\n\r,;]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'([a-z][a-z0-9+.-]*://)([^/\s@]+@)', caseSensitive: false),
+    (match) => '${match[1]}[redacted]@',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(
+      r'(api[-_ ]?key|token|secret|password|passwd|pwd|credential|credentials|auth)(\s*(?:=|:)\s*)[^\s,;]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}${match[2]}[redacted]',
+  );
+  return safe.replaceAll(
+    RegExp(r'secret[-_a-z0-9.]*', caseSensitive: false),
+    '[redacted]',
+  );
+}
+
+String _safeHermesUiPreview(String text, {int maxLength = 80}) {
+  final safe = _safeHermesUiText(text);
+  if (safe.length <= maxLength) return safe;
+  return '${safe.substring(0, maxLength).trimRight()}…';
+}
+
+String _safeHermesRenameDefault(String text) {
+  final safe = _safeHermesUiText(text);
+  if (safe != text || safe.length > 96) return '';
+  return safe;
+}
+
+String _safeHermesSessionSearchText(String text) {
+  final safe = _safeHermesUiText(text);
+  if (safe == text) return safe;
+  return safe.replaceAll('[redacted]', '').trim();
+}
+
+String _safeHermesUiError(Object error) =>
+    _safeHermesUiPreview(error.toString(), maxLength: 160);
+
+bool _isHermesAuthError(String lowerCaseError) {
+  return lowerCaseError.contains('401') ||
+      lowerCaseError.contains('403') ||
+      lowerCaseError.contains('419') ||
+      lowerCaseError.contains('unauthorized') ||
+      lowerCaseError.contains('forbidden') ||
+      lowerCaseError.contains('expired') ||
+      lowerCaseError.contains('invalid api key') ||
+      lowerCaseError.contains('invalid token');
+}
+
+bool _isHermesNetworkError(String lowerCaseError) {
+  return lowerCaseError.contains('socketexception') ||
+      lowerCaseError.contains('clientexception') ||
+      lowerCaseError.contains('handshakeexception') ||
+      lowerCaseError.contains('connection refused') ||
+      lowerCaseError.contains('connection reset') ||
+      lowerCaseError.contains('connection aborted') ||
+      lowerCaseError.contains('connection closed') ||
+      lowerCaseError.contains('software caused connection abort') ||
+      lowerCaseError.contains('econnrefused') ||
+      lowerCaseError.contains('econnreset') ||
+      lowerCaseError.contains('broken pipe') ||
+      lowerCaseError.contains('failed host lookup') ||
+      lowerCaseError.contains('host lookup failed') ||
+      lowerCaseError.contains('temporary failure in name resolution') ||
+      lowerCaseError.contains('name or service not known') ||
+      lowerCaseError.contains('no route to host') ||
+      lowerCaseError.contains('network is unreachable') ||
+      lowerCaseError.contains('network unreachable') ||
+      lowerCaseError.contains('timed out') ||
+      lowerCaseError.contains('timeout');
 }
 
 class _HermesConnectError extends StatelessWidget {
@@ -640,19 +1263,12 @@ class _HermesConnectError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lower = error.toLowerCase();
-    final (title, recovery) =
-        lower.contains('401') ||
-            lower.contains('403') ||
-            lower.contains('unauthorized') ||
-            lower.contains('forbidden')
+    final (title, recovery) = _isHermesAuthError(lower)
         ? (
             'Hermes API rejected the API key.',
             'Check the endpoint API key in Hermes and try again.',
           )
-        : lower.contains('socketexception') ||
-              lower.contains('connection refused') ||
-              lower.contains('failed host lookup') ||
-              lower.contains('timed out')
+        : _isHermesNetworkError(lower)
         ? (
             'Hermes endpoint is unreachable.',
             'Check the base URL, network, VPN, and that Hermes API server is running.',
@@ -676,6 +1292,7 @@ class _HermesConnectError extends StatelessWidget {
 class _HermesSessionsPanel extends StatefulWidget {
   const _HermesSessionsPanel({
     required this.state,
+    required this.canCreate,
     required this.onCreate,
     required this.onSelect,
     required this.onRename,
@@ -684,6 +1301,7 @@ class _HermesSessionsPanel extends StatefulWidget {
   });
 
   final HermesChannelState state;
+  final bool canCreate;
   final VoidCallback onCreate;
   final ValueChanged<HermesSession> onSelect;
   final ValueChanged<HermesSession> onRename;
@@ -695,7 +1313,14 @@ class _HermesSessionsPanel extends StatefulWidget {
 }
 
 class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
+  final _searchController = TextEditingController();
   var _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   bool get _canRename =>
       widget.state.capabilities?.advertisesEndpoint(
@@ -729,14 +1354,16 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
         ? allSessions
         : allSessions
               .where(
-                (session) => [session.title, session.id, session.preview]
-                    .whereType<String>()
-                    .any((value) => value.toLowerCase().contains(query)),
+                (session) => _sessionMatchesQuery(
+                  session,
+                  query,
+                  widget.state.activeSessionId,
+                ),
               )
               .toList(growable: false);
     return SafeArea(
       child: SizedBox(
-        height: 420,
+        height: MediaQuery.sizeOf(context).height * 0.8,
         child: Column(
           children: [
             ListTile(
@@ -744,25 +1371,55 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
                 'Hermes sessions',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              trailing: FilledButton.icon(
-                key: const ValueKey('hermes-sessions-new'),
-                onPressed: widget.onCreate,
-                icon: const Icon(Icons.add_comment_outlined),
-                label: const Text('New'),
-              ),
+              trailing: widget.canCreate
+                  ? FilledButton.icon(
+                      key: const ValueKey('hermes-sessions-new'),
+                      onPressed: widget.onCreate,
+                      icon: const Icon(Icons.add_comment_outlined),
+                      label: const Text('New'),
+                    )
+                  : null,
             ),
-            if (allSessions.isNotEmpty)
+            if (allSessions.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: TextField(
                   key: const ValueKey('hermes-session-search-field'),
-                  decoration: const InputDecoration(
+                  controller: _searchController,
+                  decoration: InputDecoration(
                     labelText: 'Search sessions',
-                    prefixIcon: Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            key: const ValueKey('hermes-session-search-clear'),
+                            tooltip: 'Clear search',
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
                   ),
                   onChanged: (value) => setState(() => _query = value),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _sessionCountSummary(
+                      visibleCount: sessions.length,
+                      totalCount: allSessions.length,
+                      query: _query,
+                    ),
+                    key: const ValueKey('hermes-session-count-summary'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ),
+            ],
             if (allSessions.isEmpty)
               const Expanded(
                 child: Center(child: Text('No Hermes sessions yet.')),
@@ -770,75 +1427,207 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
             else if (sessions.isEmpty)
               Expanded(
                 child: Center(
-                  child: Text('No Hermes sessions match “${_query.trim()}”.'),
+                  child: Text(
+                    'No Hermes sessions match “${_safeHermesUiPreview(_query.trim(), maxLength: 64)}”.',
+                  ),
                 ),
               )
             else
               Expanded(
-                child: ListView.builder(
+                child: ListView(
                   key: const ValueKey('hermes-sessions-list'),
-                  itemCount: sessions.length,
-                  itemBuilder: (context, index) {
-                    final session = sessions[index];
-                    final active = session.id == widget.state.activeSessionId;
-                    return ListTile(
-                      key: ValueKey('hermes-session-row-${session.id}'),
-                      selected: active,
-                      leading: active
-                          ? const Icon(Icons.check_circle_outline)
-                          : const Icon(Icons.chat_bubble_outline),
-                      title: Text(
-                        session.title ?? session.id,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  children: [
+                    for (final group in _sessionGroups(
+                      sessions,
+                      widget.state.activeSessionId,
+                    )) ...[
+                      Padding(
+                        key: ValueKey('hermes-session-group-${group.key}'),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        child: Text(
+                          group.label,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
                       ),
-                      subtitle: Text(
-                        [
-                          '${session.messageCount} messages',
-                          if (session.preview != null) session.preview!,
-                        ].join(' • '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () => widget.onSelect(session),
-                      trailing: PopupMenuButton<String>(
-                        key: ValueKey('hermes-session-menu-${session.id}'),
-                        tooltip: 'Session actions',
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'rename':
-                              widget.onRename(session);
-                            case 'fork':
-                              widget.onFork(session);
-                            case 'delete':
-                              widget.onDelete(session);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          if (_canRename)
-                            const PopupMenuItem(
-                              value: 'rename',
-                              child: Text('Rename'),
-                            ),
-                          if (_canFork)
-                            const PopupMenuItem(
-                              value: 'fork',
-                              child: Text('Fork'),
-                            ),
-                          if (_canDelete)
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Text('Delete'),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
+                      for (final session in group.sessions)
+                        _HermesSessionTile(
+                          session: session,
+                          active: session.id == widget.state.activeSessionId,
+                          canRename: _canRename,
+                          canFork: _canFork,
+                          canDelete: _canDelete,
+                          onSelect: widget.onSelect,
+                          onRename: widget.onRename,
+                          onFork: widget.onFork,
+                          onDelete: widget.onDelete,
+                        ),
+                    ],
+                  ],
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+String _sessionCountSummary({
+  required int visibleCount,
+  required int totalCount,
+  required String query,
+}) {
+  final totalLabel = totalCount == 1 ? 'session' : 'sessions';
+  if (query.trim().isEmpty) return '$totalCount $totalLabel';
+  return 'Showing $visibleCount of $totalCount $totalLabel';
+}
+
+bool _sessionMatchesQuery(
+  HermesSession session,
+  String query,
+  String? activeSessionId,
+) {
+  final groupTokens = session.id == activeSessionId
+      ? const ['active', 'active session']
+      : session.parentSessionId != null
+      ? const ['forked', 'forked session', 'forked sessions']
+      : const ['other', 'other session', 'other sessions'];
+  return [
+    session.title,
+    session.id,
+    session.preview,
+    session.parentSessionId,
+    session.lastActive,
+    ...groupTokens,
+  ].whereType<String>().any(
+    (value) =>
+        _safeHermesSessionSearchText(value).toLowerCase().contains(query),
+  );
+}
+
+List<_HermesSessionGroup> _sessionGroups(
+  List<HermesSession> sessions,
+  String? activeSessionId,
+) {
+  final active = <HermesSession>[];
+  final forked = <HermesSession>[];
+  final other = <HermesSession>[];
+  for (final session in sessions) {
+    if (session.id == activeSessionId) {
+      active.add(session);
+    } else if (session.parentSessionId != null) {
+      forked.add(session);
+    } else {
+      other.add(session);
+    }
+  }
+  return [
+    if (active.isNotEmpty)
+      _HermesSessionGroup('active', 'Active session', active),
+    if (forked.isNotEmpty)
+      _HermesSessionGroup('forked', 'Forked sessions', _recentFirst(forked)),
+    if (other.isNotEmpty)
+      _HermesSessionGroup('other', 'Other sessions', _recentFirst(other)),
+  ];
+}
+
+List<HermesSession> _recentFirst(List<HermesSession> sessions) {
+  final sorted = List<HermesSession>.of(sessions);
+  sorted.sort((a, b) {
+    final recency = _sessionTimestamp(b).compareTo(_sessionTimestamp(a));
+    if (recency != 0) return recency;
+    return (a.title ?? a.id).compareTo(b.title ?? b.id);
+  });
+  return sorted;
+}
+
+int _sessionTimestamp(HermesSession session) {
+  final parsed = DateTime.tryParse(session.lastActive ?? '');
+  return parsed?.millisecondsSinceEpoch ?? 0;
+}
+
+class _HermesSessionGroup {
+  const _HermesSessionGroup(this.key, this.label, this.sessions);
+
+  final String key;
+  final String label;
+  final List<HermesSession> sessions;
+}
+
+class _HermesSessionTile extends StatelessWidget {
+  const _HermesSessionTile({
+    required this.session,
+    required this.active,
+    required this.canRename,
+    required this.canFork,
+    required this.canDelete,
+    required this.onSelect,
+    required this.onRename,
+    required this.onFork,
+    required this.onDelete,
+  });
+
+  final HermesSession session;
+  final bool active;
+  final bool canRename;
+  final bool canFork;
+  final bool canDelete;
+  final ValueChanged<HermesSession> onSelect;
+  final ValueChanged<HermesSession> onRename;
+  final ValueChanged<HermesSession> onFork;
+  final ValueChanged<HermesSession> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      key: ValueKey('hermes-session-row-${session.id}'),
+      selected: active,
+      leading: active
+          ? const Icon(Icons.check_circle_outline)
+          : const Icon(Icons.chat_bubble_outline),
+      title: Text(
+        _safeHermesUiPreview(session.title ?? session.id, maxLength: 96),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        [
+          '${session.messageCount} messages',
+          if (session.parentSessionId != null)
+            'Forked from ${_safeHermesUiPreview(session.parentSessionId!, maxLength: 80)}',
+          if (session.lastActive != null)
+            'Last active ${_safeHermesUiPreview(session.lastActive!, maxLength: 80)}',
+          if (session.preview != null)
+            _safeHermesUiPreview(session.preview!, maxLength: 160),
+        ].join(' • '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      onTap: () => onSelect(session),
+      trailing: canRename || canFork || canDelete
+          ? PopupMenuButton<String>(
+              key: ValueKey('hermes-session-menu-${session.id}'),
+              tooltip: 'Session actions',
+              onSelected: (value) {
+                switch (value) {
+                  case 'rename':
+                    onRename(session);
+                  case 'fork':
+                    onFork(session);
+                  case 'delete':
+                    onDelete(session);
+                }
+              },
+              itemBuilder: (context) => [
+                if (canRename)
+                  const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                if (canFork)
+                  const PopupMenuItem(value: 'fork', child: Text('Fork')),
+                if (canDelete)
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+            )
+          : null,
     );
   }
 }
@@ -869,7 +1658,16 @@ class _HermesCapabilityStrip extends StatelessWidget {
           width: double.maxFinite,
           child: ListView(
             shrinkWrap: true,
-            children: [for (final item in items) ListTile(title: Text(item))],
+            children: [
+              for (final item in items)
+                ListTile(
+                  title: Text(
+                    _safeHermesUiPreview(item, maxLength: 96),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
           ),
         ),
         actions: [
@@ -924,7 +1722,7 @@ class _HermesCapabilityStrip extends StatelessWidget {
         .length;
     final chips = <Widget>[
       if (policy.supportsRunsTransport)
-        const Chip(label: Text('Runs/tool progress enabled')),
+        const Chip(label: Text('Runs SSE enabled')),
       if (!policy.supportsRunsTransport && policy.supportsSessionChatStream)
         const Chip(label: Text('Session chat streaming enabled')),
       if (policy.supportsRealtimeVoice)
@@ -932,15 +1730,25 @@ class _HermesCapabilityStrip extends StatelessWidget {
       else
         const Chip(label: Text('Voice uses device speech-to-text')),
       if (detailedHealth?.version case final version?)
-        Chip(label: Text('Version: $version')),
+        Chip(
+          label: Text(
+            'Version: ${_safeHermesUiPreview(version, maxLength: 48)}',
+          ),
+        ),
       if (detailedHealth?.gatewayState case final gatewayState?)
-        Chip(label: Text('Gateway: $gatewayState')),
+        Chip(
+          label: Text(
+            'Gateway: ${_safeHermesUiPreview(gatewayState, maxLength: 48)}',
+          ),
+        ),
       if (detailedHealth != null)
         Chip(label: Text('Active agents: ${detailedHealth!.activeAgents}')),
       if (models.isNotEmpty)
         ActionChip(
           key: const ValueKey('hermes-models-chip'),
-          label: Text('Models: ${models.take(2).join(', ')}'),
+          label: Text(
+            'Models: ${models.take(2).map((model) => _safeHermesUiPreview(model, maxLength: 48)).join(', ')}',
+          ),
           onPressed: () => _showList(context, 'Hermes models', models),
         ),
       if (skills.isNotEmpty)
@@ -977,7 +1785,9 @@ class _HermesCapabilityStrip extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Hermes Agent ${capabilities.model}'),
+              Text(
+                'Hermes Agent ${_safeHermesUiPreview(capabilities.model, maxLength: 96)}',
+              ),
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, children: chips),
             ],
@@ -989,14 +1799,27 @@ class _HermesCapabilityStrip extends StatelessWidget {
 }
 
 class _ApprovalBanner extends StatelessWidget {
-  const _ApprovalBanner({required this.request, required this.onDecide});
+  const _ApprovalBanner({
+    required this.request,
+    required this.pendingCount,
+    required this.responding,
+    required this.canRespond,
+    required this.onDecide,
+    required this.onDismissMalformed,
+  });
 
   final NavivoxApprovalRequest request;
+  final int pendingCount;
+  final bool responding;
+  final bool canRespond;
   final ValueChanged<HermesApprovalDecision> onDecide;
+  final VoidCallback onDismissMalformed;
 
   @override
   Widget build(BuildContext context) {
     final risk = request.risk;
+    final hasApprovalId = request.id.trim().isNotEmpty;
+    final canAnswer = canRespond && hasApprovalId;
     return Material(
       key: const ValueKey('hermes-approval-banner'),
       color: Theme.of(context).colorScheme.errorContainer,
@@ -1005,31 +1828,80 @@ class _ApprovalBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(request.prompt),
-            if (risk != null) Text('Risk: $risk'),
+            if (pendingCount > 1)
+              Text(
+                '$pendingCount pending approvals',
+                key: const ValueKey('hermes-approval-pending-count'),
+              ),
+            Text(_safeHermesUiPreview(request.prompt, maxLength: 240)),
+            if (risk != null)
+              Text('Risk: ${_safeHermesUiPreview(risk, maxLength: 120)}'),
+            if (!canRespond) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Hermes did not advertise approval responses for this run.',
+                key: ValueKey('hermes-approval-response-unavailable'),
+              ),
+            ] else if (!hasApprovalId) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Hermes sent this approval without an approval id, so it cannot be answered.',
+                key: ValueKey('hermes-approval-id-missing'),
+              ),
+            ],
+            if (responding) ...[
+              const SizedBox(height: 8),
+              const LinearProgressIndicator(
+                key: ValueKey('hermes-approval-responding'),
+              ),
+              const SizedBox(height: 4),
+              const Text('Answering Hermes approval…'),
+            ],
             const SizedBox(height: 8),
             Wrap(
               alignment: WrapAlignment.end,
               spacing: 8,
               children: [
+                OutlinedButton.icon(
+                  key: const ValueKey('hermes-approval-review'),
+                  onPressed: responding
+                      ? null
+                      : () => _showApprovalSheet(context),
+                  icon: const Icon(Icons.security_outlined),
+                  label: const Text('Review'),
+                ),
+                if (!hasApprovalId)
+                  TextButton(
+                    key: const ValueKey('hermes-approval-dismiss-malformed'),
+                    onPressed: responding ? null : onDismissMalformed,
+                    child: const Text('Dismiss'),
+                  ),
                 TextButton(
                   key: const ValueKey('hermes-approval-deny'),
-                  onPressed: () => onDecide(HermesApprovalDecision.deny),
+                  onPressed: responding || !canAnswer
+                      ? null
+                      : () => onDecide(HermesApprovalDecision.deny),
                   child: const Text('Deny'),
                 ),
                 OutlinedButton(
                   key: const ValueKey('hermes-approval-session'),
-                  onPressed: () => onDecide(HermesApprovalDecision.session),
+                  onPressed: responding || !canAnswer
+                      ? null
+                      : () => onDecide(HermesApprovalDecision.session),
                   child: const Text('Allow for session'),
                 ),
                 OutlinedButton(
                   key: const ValueKey('hermes-approval-always'),
-                  onPressed: () => onDecide(HermesApprovalDecision.always),
+                  onPressed: responding || !canAnswer
+                      ? null
+                      : () => onDecide(HermesApprovalDecision.always),
                   child: const Text('Always allow'),
                 ),
                 FilledButton(
                   key: const ValueKey('hermes-approval-once'),
-                  onPressed: () => onDecide(HermesApprovalDecision.once),
+                  onPressed: responding || !canAnswer
+                      ? null
+                      : () => onDecide(HermesApprovalDecision.once),
                   child: const Text('Approve once'),
                 ),
               ],
@@ -1037,6 +1909,131 @@ class _ApprovalBanner extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showApprovalSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final risk = request.risk;
+        final hasApprovalId = request.id.trim().isNotEmpty;
+        final canAnswer = canRespond && hasApprovalId;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              key: const ValueKey('hermes-approval-sheet-scroll'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Review Hermes approval',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  if (pendingCount > 1) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Reviewing 1 of $pendingCount pending approvals',
+                      key: const ValueKey(
+                        'hermes-approval-sheet-pending-count',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  SelectableText(_safeHermesUiText(request.prompt)),
+                  if (risk != null) ...[
+                    const SizedBox(height: 8),
+                    Text('Risk: ${_safeHermesUiText(risk)}'),
+                  ],
+                  if (request.toolCallId.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text('Tool call: ${_safeHermesUiText(request.toolCallId)}'),
+                  ],
+                  if (!canRespond) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Decision buttons are disabled because Hermes did not advertise /v1/runs/{run_id}/approval.',
+                    ),
+                  ] else if (!hasApprovalId) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Decision buttons are disabled because Hermes did not include an approval id.',
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
+                        key: const ValueKey('hermes-approval-sheet-close'),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: const Text('Close'),
+                      ),
+                      if (!hasApprovalId)
+                        TextButton(
+                          key: const ValueKey(
+                            'hermes-approval-sheet-dismiss-malformed',
+                          ),
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            onDismissMalformed();
+                          },
+                          child: const Text('Dismiss'),
+                        ),
+                      TextButton(
+                        key: const ValueKey('hermes-approval-sheet-deny'),
+                        onPressed: canAnswer
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                onDecide(HermesApprovalDecision.deny);
+                              }
+                            : null,
+                        child: const Text('Deny'),
+                      ),
+                      OutlinedButton(
+                        key: const ValueKey('hermes-approval-sheet-session'),
+                        onPressed: canAnswer
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                onDecide(HermesApprovalDecision.session);
+                              }
+                            : null,
+                        child: const Text('Allow for session'),
+                      ),
+                      OutlinedButton(
+                        key: const ValueKey('hermes-approval-sheet-always'),
+                        onPressed: canAnswer
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                onDecide(HermesApprovalDecision.always);
+                              }
+                            : null,
+                        child: const Text('Always allow'),
+                      ),
+                      FilledButton(
+                        key: const ValueKey('hermes-approval-sheet-once'),
+                        onPressed: canAnswer
+                            ? () {
+                                Navigator.of(sheetContext).pop();
+                                onDecide(HermesApprovalDecision.once);
+                              }
+                            : null,
+                        child: const Text('Approve once'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

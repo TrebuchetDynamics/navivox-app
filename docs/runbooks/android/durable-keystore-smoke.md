@@ -1,12 +1,17 @@
-# Android Durable Keystore Smoke
+# Android Durable Keystore Smoke (legacy)
 
-Validate durable reconnect key storage on Android before release. This runbook
-separates keypair readiness from full Gormes durable reconnect so the two are not
-confused.
+Status: preserved legacy check. This runbook is **not** part of the active
+pure-Hermes Navivox readiness gate.
+
+The active Hermes app connects to Hermes Agent API endpoints and stores the
+Hermes API key through secure storage. Real release readiness is tracked in
+[Hermes companion readiness audit](../hermes-readiness-audit.md) and the active
+Android closeout is [Android live microphone Hermes smoke](live-mic-smoke.md).
 
 ## Automated key readiness
 
-Run on a connected Android device/emulator:
+Run on a connected Android device/emulator only when maintaining preserved
+legacy durable-key code:
 
 ```bash
 npm run android:durable-key-smoke
@@ -31,37 +36,17 @@ verifies:
 - the Dart `MethodChannelDurableCredentialKeyStore` adapter exercises the same
   create/sign/delete path.
 
-This is key storage readiness only. It does **not** prove durable credential
-issuance, authentication, or silent reconnect.
+This is legacy key storage readiness only. It does **not** prove active Hermes
+chat, voice, provider, platform, or realtime/server-audio readiness, and it is
+not a blocker for the pure-Hermes companion goal.
 
-## Full durable reconnect closeout still required
+Before any active Hermes completion claim, run strict readiness audit instead:
 
-Use a trusted Android device and a Gormes gateway that advertises durable
-reconnect.
+```bash
+NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit
+```
 
-1. Install Navivox on the Android device.
-2. Pair with the Gormes gateway.
-3. Confirm the gateway advertises durable reconnect as available.
-4. Confirm Navivox issues/registers a non-secret public key and no pairing token is stored; only durable reconnect credential/metadata may persist.
-5. Stop/restart the Gormes gateway or otherwise invalidate the original pairing
-   token while keeping the durable device credential valid.
-6. Kill/restart Navivox.
-7. Verify Navivox silently reconnects with the saved device credential, without a
-   QR scan or pairing token.
-8. Verify reconnect readiness remains available and shows saved/available after reconnect.
-9. Verify no pairing token, device secret, private key material, or bearer token
-   appears in UI, logs, routes, screenshots, diagnostics, or shared prefs.
-10. Run strict readiness audit after recording the reconnect receipt:
-
-    ```bash
-    NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit
-    ```
-
-    If unrelated blockers remain, the expected result is exit 3 with
-    `Completion verdict: NOT COMPLETE`; do not promote this reconnect receipt,
-    key smoke, passing tests, APK hashes, configured Hermes home, workflow YAML,
-    or dispatch-only output to whole-goal completion.
-
-Until steps 1-10 are recorded on Android against real Gormes, the legacy durable
-reconnect blocker remains open even if `npm run android:durable-key-smoke`
-passes.
+If unrelated blockers remain, the expected result is exit 3 with
+`Completion verdict: NOT COMPLETE`; do not promote this legacy key smoke,
+passing tests, APK hashes, configured Hermes home, workflow YAML, or
+dispatch-only output to whole-goal completion.

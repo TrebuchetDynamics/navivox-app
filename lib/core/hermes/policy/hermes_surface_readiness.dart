@@ -52,11 +52,11 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
   return [
     HermesSurfaceReadiness(
       title: 'Chat transport',
-      status: policy.supportsRunsTransport || policy.supportsSessionChatStream
+      status: policy.supportsAnyChatTransport
           ? HermesSurfaceStatus.available
           : HermesSurfaceStatus.blocked,
       detail: policy.supportsRunsTransport
-          ? 'Runs SSE transport with tool progress, approvals, and stop.'
+          ? 'Runs SSE transport; approval, tool progress, and stop controls are capability-gated separately.'
           : policy.supportsSessionChatStream
           ? 'Session chat streaming fallback.'
           : 'No supported Hermes chat stream endpoint advertised.',
@@ -77,7 +77,9 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
     ),
     HermesSurfaceReadiness(
       title: 'Server realtime voice/audio',
-      status: HermesSurfaceStatus.deferred,
+      status: policy.supportsRealtimeVoice
+          ? HermesSurfaceStatus.blocked
+          : HermesSurfaceStatus.deferred,
       detail: policy.supportsRealtimeVoice
           ? 'Hermes realtime voice is advertised, but Navivox has not wired server audio; local STT remains the voice path.'
           : 'Hermes realtime/server audio is not advertised; local STT remains the voice path.',
@@ -150,12 +152,6 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
       title: 'Multi-endpoint/profile management',
       status: HermesSurfaceStatus.deferred,
       detail: 'Current Hermes MVP targets one saved endpoint.',
-    ),
-    const HermesSurfaceReadiness(
-      title: 'Legacy durable reconnect',
-      status: HermesSurfaceStatus.blocked,
-      detail:
-          'Android keypair readiness exists; full Gormes issuance/auth/silent reconnect is not proven.',
     ),
   ];
 }

@@ -5,7 +5,24 @@ class HermesApiConfig {
   const HermesApiConfig({required this.baseUri, this.apiKey});
 
   factory HermesApiConfig.fromBaseUrl(String baseUrl, {String? apiKey}) {
-    return HermesApiConfig(baseUri: Uri.parse(baseUrl), apiKey: apiKey);
+    final trimmed = hermesApiRequiredTrimmedValue(baseUrl, 'baseUrl');
+    final Uri uri;
+    try {
+      uri = Uri.parse(trimmed);
+    } on FormatException catch (error) {
+      throw ArgumentError.value(baseUrl, 'baseUrl', error.message);
+    }
+    if (!uri.hasScheme || uri.host.isEmpty) {
+      throw ArgumentError.value(
+        baseUrl,
+        'baseUrl',
+        'must include an http(s) scheme and host',
+      );
+    }
+    if (uri.scheme != 'http' && uri.scheme != 'https') {
+      throw ArgumentError.value(baseUrl, 'baseUrl', 'must use http or https');
+    }
+    return HermesApiConfig(baseUri: uri, apiKey: apiKey);
   }
 
   final Uri baseUri;

@@ -104,8 +104,9 @@ run_flutter_test_with_install_retry
 cat <<'EOF'
 
 Android durable key-store smoke passed.
-This verifies non-exportable ES256 key creation/sign/delete plumbing, not full
-Gormes durable reconnect issuance/authentication end to end.
+This verifies preserved legacy non-exportable ES256 key creation/sign/delete
+plumbing only. It is not part of active pure-Hermes readiness and does not prove
+Hermes chat, voice, provider, platform, or realtime/server-audio readiness.
 It is not whole-goal completion evidence by itself; run
 NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit before any completion claim.
 EOF
