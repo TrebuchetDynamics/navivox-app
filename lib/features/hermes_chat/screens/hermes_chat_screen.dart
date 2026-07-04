@@ -1809,6 +1809,9 @@ class _HermesCapabilityStrip extends StatelessWidget {
   }
 
   void _showJobs(BuildContext context) {
+    final jobsAdminAdvertised =
+        capabilities.supportsFeature('jobs_admin') &&
+        capabilities.advertisesEndpoint('jobs', 'GET', '/api/jobs');
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1818,6 +1821,15 @@ class _HermesCapabilityStrip extends StatelessWidget {
           child: ListView(
             shrinkWrap: true,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  jobsAdminAdvertised
+                      ? 'Read-only inventory. Hermes advertises jobs admin, but Navivox has not enabled mobile create/edit/delete scheduling.'
+                      : 'Read-only inventory. Mobile create/edit/delete scheduling is not available.',
+                  key: const ValueKey('hermes-jobs-read-only-note'),
+                ),
+              ),
               for (final job in jobs)
                 ListTile(
                   title: Text(

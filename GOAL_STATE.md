@@ -579,7 +579,9 @@ readiness checklist and non-completion caveats.
   Hermes origin and the readiness audit rejects copied route/path state. Run
   approval events accept `approval_id`, `approvalId`, or `id` plus
   `tool_call_id`/`toolCallId` aliases so mobile approval prompts do not fail
-  when Hermes event casing differs.
+  when Hermes event casing differs. The Hermes jobs sheet now labels itself as
+  read-only even when `jobs_admin` is advertised, avoiding implied mobile
+  create/edit/delete scheduling support.
 
 ## Honest caveat
 

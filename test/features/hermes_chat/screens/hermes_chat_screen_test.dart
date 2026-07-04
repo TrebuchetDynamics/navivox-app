@@ -509,6 +509,12 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('hermes-jobs-chip')));
       await tester.pumpAndSettle();
       expect(find.text('Hermes jobs'), findsOneWidget);
+      expect(
+        find.text(
+          'Read-only inventory. Mobile create/edit/delete scheduling is not available.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Morning check'), findsOneWidget);
       expect(
         find.textContaining('Schedule: Every day at 09:00'),
@@ -519,6 +525,41 @@ void main() {
       expect(find.textContaining('secret-job-token'), findsNothing);
     },
   );
+
+  testWidgets('jobs dialog stays read-only when jobs admin is advertised', (
+    tester,
+  ) async {
+    const jobsAdminCapabilities = HermesCapabilityDocument(
+      object: 'hermes.api_server.capabilities',
+      platform: 'hermes-agent',
+      model: 'hermes-agent',
+      auth: HermesAuthCapability(type: 'bearer', required: true),
+      features: {'jobs_admin': true},
+      endpoints: {
+        'jobs': HermesEndpointCapability(method: 'GET', path: '/api/jobs'),
+      },
+    );
+    final channel = FakeHermesChannel(
+      capabilities: jobsAdminCapabilities,
+      jobs: const [HermesJob(id: 'job_1', name: 'Morning check')],
+    );
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.tap(find.byKey(const ValueKey('hermes-jobs-chip')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hermes jobs'), findsOneWidget);
+    expect(
+      find.text(
+        'Read-only inventory. Hermes advertises jobs admin, but Navivox has not enabled mobile create/edit/delete scheduling.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Morning check'), findsOneWidget);
+    expect(find.text('Create'), findsNothing);
+    expect(find.text('Edit'), findsNothing);
+    expect(find.text('Delete'), findsNothing);
+  });
 
   testWidgets('capability detail lists redact secret-looking values', (
     tester,
