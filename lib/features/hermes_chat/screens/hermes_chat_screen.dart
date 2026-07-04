@@ -67,6 +67,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   bool _continuousVoiceEnabled = false;
   bool _capturing = false;
   String? _voiceError;
+  String? _queuedFollowUp;
   String? _lastSpokenTurnId;
   NavivoxApprovalRequest? _pendingApproval;
 
@@ -81,6 +82,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   }
 
   void _onChannelChanged() {
+    final channel = _subscribed;
+    if (channel != null) _sendQueuedFollowUpIfIdle(channel);
     if (mounted) setState(() {});
   }
 
@@ -249,9 +252,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   ) {
     final pendingApproval = _pendingApproval;
     final hasActiveSession = state.activeSessionId != null;
-    final isTurnActive =
-        state.activeMessages.isNotEmpty &&
-        state.activeMessages.last.status == HermesTurnStatus.streaming;
+    final isTurnActive = _isTurnActive(state);
     return Column(
       children: [
         if (pendingApproval != null)
@@ -290,6 +291,21 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               _voiceError!,
               key: const ValueKey('hermes-voice-error'),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        if (_queuedFollowUp != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: MaterialBanner(
+              key: const ValueKey('hermes-queued-follow-up'),
+              content: Text('Queued after current reply: $_queuedFollowUp'),
+              actions: [
+                TextButton(
+                  key: const ValueKey('hermes-queued-follow-up-cancel'),
+                  onPressed: () => setState(() => _queuedFollowUp = null),
+                  child: const Text('Cancel'),
+                ),
+              ],
             ),
           ),
         SafeArea(
@@ -543,6 +559,21 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     final text = _composerController.text.trim();
     if (text.isEmpty) return;
     _composerController.clear();
+    if (_isTurnActive(channel.state)) {
+      setState(() => _queuedFollowUp = text);
+      return;
+    }
+    unawaited(channel.sendText(text));
+  }
+
+  bool _isTurnActive(HermesChannelState state) =>
+      state.activeMessages.isNotEmpty &&
+      state.activeMessages.last.status == HermesTurnStatus.streaming;
+
+  void _sendQueuedFollowUpIfIdle(HermesChannel channel) {
+    final text = _queuedFollowUp;
+    if (text == null || _isTurnActive(channel.state)) return;
+    _queuedFollowUp = null;
     unawaited(channel.sendText(text));
   }
 

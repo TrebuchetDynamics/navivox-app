@@ -469,6 +469,61 @@ void main() {
     expect(field.controller!.text, isEmpty);
   });
 
+  testWidgets('queues composer text while a Hermes turn is streaming', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('current');
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      'follow up',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-queued-follow-up')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('follow up'), findsOneWidget);
+    expect(find.text('echo: follow up'), findsNothing);
+
+    channel.completeStreamingTurn();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('hermes-queued-follow-up')), findsNothing);
+    expect(find.text('follow up'), findsOneWidget);
+    expect(find.text('echo: follow up'), findsOneWidget);
+  });
+
+  testWidgets(
+    'cancels queued composer text before the current turn completes',
+    (tester) async {
+      final channel = FakeHermesChannel();
+      channel.beginStreamingTurn('current');
+      await tester.pumpWidget(_wrap(channel));
+
+      await tester.enterText(
+        find.byKey(const ValueKey('hermes-composer-field')),
+        'never mind',
+      );
+      await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('hermes-queued-follow-up-cancel')),
+      );
+      await tester.pump();
+
+      channel.completeStreamingTurn();
+      await tester.pumpAndSettle();
+
+      expect(find.text('never mind'), findsNothing);
+      expect(find.text('echo: never mind'), findsNothing);
+    },
+  );
+
   testWidgets(
     'tapping the mic button captures and submits a voice transcript',
     (tester) async {
