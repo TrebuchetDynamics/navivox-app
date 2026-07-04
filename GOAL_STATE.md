@@ -581,7 +581,8 @@ readiness checklist and non-completion caveats.
   `tool_call_id`/`toolCallId` aliases so mobile approval prompts do not fail
   when Hermes event casing differs. The Hermes jobs sheet now labels itself as
   read-only even when `jobs_admin` is advertised, avoiding implied mobile
-  create/edit/delete scheduling support.
+  create/edit/delete scheduling support. Queued follow-up auto-send failures now
+  keep the message queued while showing bounded/redacted recovery copy.
 
 ## Honest caveat
 

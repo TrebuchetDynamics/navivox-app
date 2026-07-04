@@ -2033,8 +2033,52 @@ void main() {
       find.byKey(const ValueKey('hermes-queued-follow-up')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('hermes-queued-follow-up-error')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        'Could not send queued follow-up: Bad state: stream dropped',
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('retry later'), findsOneWidget);
     expect(find.text('echo: retry later'), findsNothing);
+  });
+
+  testWidgets('queued follow-up send failures are redacted and bounded', (
+    tester,
+  ) async {
+    final channel = _FailingSendHermesChannel(
+      failureMessage:
+          'stream dropped for Bearer secret-queued-send-token ${List.filled(20, 'verbose detail').join(' ')} tail-marker',
+    );
+    channel.beginStreamingTurn('current');
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      'retry with secret-safe error',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump();
+
+    channel.completeStreamingTurn();
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-queued-follow-up-error')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Bearer [redacted]'), findsOneWidget);
+    expect(find.textContaining('secret-queued-send-token'), findsNothing);
+    expect(find.textContaining('tail-marker'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('hermes-queued-follow-up')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('failed queued send remains bound to original session', (
@@ -3350,12 +3394,15 @@ class _GatedTextToSpeechService implements TextToSpeechService {
 }
 
 class _FailingSendHermesChannel extends FakeHermesChannel {
+  _FailingSendHermesChannel({this.failureMessage = 'stream dropped'});
+
+  final String failureMessage;
   final List<String> sendAttempts = [];
 
   @override
   Future<void> sendText(String text) async {
     sendAttempts.add(text);
-    throw StateError('stream dropped');
+    throw StateError(failureMessage);
   }
 }
 

@@ -959,9 +959,11 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   }) {
     final sessionId = requeueSessionId ?? channel.state.activeSessionId;
     unawaited(
-      channel.sendText(text).catchError((_) {
+      channel.sendText(text).catchError((Object error) {
         if (!mounted || !requeueOnFailure || !channel.state.isConnected) return;
         setState(() {
+          _queuedFollowUpError =
+              'Could not send queued follow-up: ${_safeHermesUiError(error)}';
           if (_queuedFollowUps.length < _maxQueuedFollowUps) {
             _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId));
           }
