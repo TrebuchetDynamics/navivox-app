@@ -1,9 +1,9 @@
 # Hermes Desktop Reference For Navivox
 
-Status: superseded for runtime direction by [ADR 0006](../adr/0006-hermes-agent-first-runtime.md), amended by [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md), and replaced operationally by the [Hermes Agent interface plan](hermes-agent-interface-plan.md). Still useful as historical UX reference. Current mainline Hermes implementation lives in the native channel and `/hermes` UI (`lib/core/hermes/channel/hermes_api_channel.dart:19`, `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`), with deferred/read-only surface honesty centralized in `lib/core/hermes/policy/hermes_surface_readiness.dart:27`.
+Status: superseded for runtime direction by [ADR 0006](../adr/0006-hermes-agent-first-runtime.md), amended by [ADR 0007](../adr/0007-native-hermes-channel-not-navivox-channel-adapter.md), and replaced operationally by the [Hermes Agent interface plan](hermes-agent-interface-plan.md). Still useful as historical UX reference. Current mainline Hermes implementation lives in the native channel and `/hermes` UI (`lib/core/hermes/channel/hermes_api_channel.dart:19`, `lib/features/hermes_chat/screens/hermes_chat_screen.dart:42`), with deferred/read-only surface honesty centralized in `lib/core/hermes/policy/hermes_surface_readiness.dart:27`. For the current source-backed Desktop architecture/technology/feature study, use [Hermes Desktop architecture and feature research](../research/hermes-desktop-architecture-research.md).
 
 Former status: accepted reference direction
-Reference: `fathah/hermes-desktop` cloned at `/tmp/hermes-desktop` during the 2026-06-03 planning session
+Historical reference: `fathah/hermes-desktop` cloned at `/tmp/hermes-desktop` during the 2026-06-03 planning session. Current checked-in reference research records the later local `hermes-desktop/` study at commit `4ce086c`.
 
 ## Historical decision
 

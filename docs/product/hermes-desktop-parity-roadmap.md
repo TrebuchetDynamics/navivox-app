@@ -6,6 +6,7 @@ MVP.
 
 Source docs:
 
+- [Hermes Desktop architecture and feature research](../research/hermes-desktop-architecture-research.md)
 - [Hermes Agent interface plan](hermes-agent-interface-plan.md)
 - [Hermes companion readiness audit](../runbooks/hermes-readiness-audit.md)
 - [Hermes platform smoke checklist](../runbooks/hermes-platform-smoke.md)

@@ -22,6 +22,7 @@ Start with `../CONTEXT.md` for stable product language, then use this index to f
 ## Research
 
 - [Analyst summary](research/analyst-summary.md)
+- [Hermes Desktop architecture and feature research](research/hermes-desktop-architecture-research.md)
 - [Chat UI research](research/chat-ui-research.md)
 - [Library research](research/library-research.md)
 
