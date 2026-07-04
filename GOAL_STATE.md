@@ -569,7 +569,8 @@ readiness checklist and non-completion caveats.
   mobile review. Server-audio honesty now treats either advertised `audio_api` or
   `realtime_voice` as blocked until Navivox wires real server audio. Bounded
   diagnostics now redacts dynamic metadata fields such as active session title,
-  health strings, capability model/features/endpoints, and model names.
+  health strings, capability model/features/endpoints, and model names. Tool
+  progress cards redact and bound tool names/results before rendering.
 
 ## Honest caveat
 

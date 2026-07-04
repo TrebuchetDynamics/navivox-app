@@ -3226,14 +3226,18 @@ void main() {
     expect(find.text('Stopped.'), findsOneWidget);
   });
 
-  testWidgets('renders a tool-call turn as a status card, not plain text', (
+  testWidgets('renders a tool-call turn as a redacted status card', (
     tester,
   ) async {
     final channel = FakeHermesChannel();
     await tester.pumpWidget(_wrap(channel));
 
     channel.addToolCallTurn(
-      const HermesToolCall(name: 'bash', status: 'running', preview: 'ls -la'),
+      const HermesToolCall(
+        name: 'bash secret-tool-name',
+        status: 'running',
+        preview: 'ls -la api_key=secret-tool-preview',
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -3241,8 +3245,10 @@ void main() {
       find.byKey(const ValueKey('hermes-tool-turn-tool-0')),
       findsOneWidget,
     );
-    expect(find.text('bash'), findsOneWidget);
-    expect(find.text('ls -la'), findsOneWidget);
+    expect(find.text('bash [redacted]'), findsOneWidget);
+    expect(find.textContaining('api_key=[redacted]'), findsOneWidget);
+    expect(find.textContaining('secret-tool-name'), findsNothing);
+    expect(find.textContaining('secret-tool-preview'), findsNothing);
     // Not rendered as a plain chat bubble alongside user/assistant text.
     expect(find.text('tool.started: bash'), findsNothing);
   });

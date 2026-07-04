@@ -2258,8 +2258,18 @@ class _ToolCallCard extends StatelessWidget {
       child: ListTile(
         dense: true,
         leading: Icon(icon),
-        title: Text(toolCall.name),
-        subtitle: detail != null ? Text(detail) : null,
+        title: Text(
+          _safeHermesUiPreview(toolCall.name, maxLength: 80),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: detail != null
+            ? Text(
+                _safeHermesUiPreview(detail, maxLength: 160),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
       ),
     );
   }
