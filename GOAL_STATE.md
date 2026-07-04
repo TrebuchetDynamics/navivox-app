@@ -562,7 +562,9 @@ readiness checklist and non-completion caveats.
   policy. Multi-endpoint/profile management is now available locally through
   saved Hermes endpoint profile chips with per-profile API keys kept in secure
   storage. The Hermes jobs chip also now opens a read-only schedule detail sheet
-  with enabled/state/schedule/next/last/error fields redacted and bounded.
+  with enabled/state/schedule/next/last/error fields redacted and bounded. Queued
+  follow-ups are capped while a turn is streaming so the composer keeps overflow
+  text instead of silently growing an unbounded queue.
 
 ## Honest caveat
 

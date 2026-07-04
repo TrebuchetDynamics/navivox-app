@@ -1533,6 +1533,45 @@ void main() {
     expect(find.text('echo: follow up'), findsOneWidget);
   });
 
+  testWidgets('queued follow-ups are bounded while streaming', (tester) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('current');
+    await tester.pumpWidget(_wrap(channel));
+
+    for (var index = 1; index <= 5; index++) {
+      await tester.enterText(
+        find.byKey(const ValueKey('hermes-composer-field')),
+        'follow up $index',
+      );
+      await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+      await tester.pump();
+    }
+
+    expect(find.textContaining('Queued 5 follow-ups'), findsOneWidget);
+    expect(find.textContaining('+3 more'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      'follow up 6',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-queued-follow-up-error')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Queued follow-ups are full (5)'),
+      findsOneWidget,
+    );
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('hermes-composer-field')),
+    );
+    expect(field.controller!.text, 'follow up 6');
+    expect(find.text('echo: follow up 6'), findsNothing);
+  });
+
   testWidgets('queued follow-up banner redacts secret-looking text', (
     tester,
   ) async {

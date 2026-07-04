@@ -37,6 +37,7 @@ const _hermesBaseUrlHint =
     'Local desktop/Linux/Windows/iOS simulator: http://127.0.0.1:8642\n'
     'Android emulator: http://10.0.2.2:8642\n'
     'Physical device: LAN/VPN/Tailscale URL';
+const _maxQueuedFollowUps = 5;
 
 /// Native Hermes Agent chat/session screen: manual connect, session list,
 /// streamed transcript, text composer, and continuous voice. See
@@ -69,6 +70,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   bool _continuousVoiceEnabled = false;
   bool _capturing = false;
   String? _voiceError;
+  String? _queuedFollowUpError;
   final Queue<_QueuedFollowUp> _queuedFollowUps = Queue<_QueuedFollowUp>();
   final Queue<NavivoxApprovalRequest> _pendingApprovals = Queue();
   String? _answeringApprovalId;
@@ -125,6 +127,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
         _sendQueuedFollowUpIfIdle(channel);
       } else {
         _queuedFollowUps.clear();
+        _queuedFollowUpError = null;
         _pendingApprovals.clear();
         _answeringApprovalId = null;
         _approvalSessionId = null;
@@ -423,10 +426,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                 ),
                 TextButton(
                   key: const ValueKey('hermes-queued-follow-up-cancel'),
-                  onPressed: () => setState(_queuedFollowUps.clear),
+                  onPressed: () => setState(() {
+                    _queuedFollowUps.clear();
+                    _queuedFollowUpError = null;
+                  }),
                   child: const Text('Cancel all'),
                 ),
               ],
+            ),
+          ),
+        if (_queuedFollowUpError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              _queuedFollowUpError!,
+              key: const ValueKey('hermes-queued-follow-up-error'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         SafeArea(
@@ -823,14 +838,26 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   void _sendComposerText(HermesChannel channel) {
     final text = _composerController.text.trim();
     if (text.isEmpty) return;
-    _composerController.clear();
     if (_isTurnActive(channel.state)) {
-      setState(
-        () => _queuedFollowUps.addLast(
+      if (_queuedFollowUps.length >= _maxQueuedFollowUps) {
+        setState(() {
+          _queuedFollowUpError =
+              'Queued follow-ups are full ($_maxQueuedFollowUps). Wait for Hermes to finish before adding more.';
+        });
+        return;
+      }
+      _composerController.clear();
+      setState(() {
+        _queuedFollowUpError = null;
+        _queuedFollowUps.addLast(
           _QueuedFollowUp(text, channel.state.activeSessionId),
-        ),
-      );
+        );
+      });
       return;
+    }
+    _composerController.clear();
+    if (_queuedFollowUpError != null) {
+      setState(() => _queuedFollowUpError = null);
     }
     _sendText(channel, text);
   }
@@ -863,6 +890,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   void _sendQueuedFollowUpIfIdle(HermesChannel channel) {
     if (!_canSendQueuedFollowUp(channel.state)) return;
     final queued = _queuedFollowUps.removeFirst();
+    _queuedFollowUpError = null;
     _sendText(
       channel,
       queued.text,
@@ -933,9 +961,11 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     unawaited(
       channel.sendText(text).catchError((_) {
         if (!mounted || !requeueOnFailure || !channel.state.isConnected) return;
-        setState(
-          () => _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId)),
-        );
+        setState(() {
+          if (_queuedFollowUps.length < _maxQueuedFollowUps) {
+            _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId));
+          }
+        });
       }),
     );
   }
