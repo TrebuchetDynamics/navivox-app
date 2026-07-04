@@ -564,7 +564,9 @@ readiness checklist and non-completion caveats.
   storage. The Hermes jobs chip also now opens a read-only schedule detail sheet
   with enabled/state/schedule/next/last/error fields redacted and bounded. Queued
   follow-ups are capped while a turn is streaming so the composer keeps overflow
-  text instead of silently growing an unbounded queue.
+  text instead of silently growing an unbounded queue. Approval review sheets now
+  use bounded/redacted prompt and risk previews with explicit truncation copy for
+  mobile review.
 
 ## Honest caveat
 

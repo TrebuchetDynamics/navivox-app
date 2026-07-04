@@ -2705,6 +2705,28 @@ void main() {
     expect(find.textContaining('prompt-tail'), findsNothing);
     expect(find.textContaining('risk-tail'), findsNothing);
     expect(find.textContaining('…'), findsAtLeastNWidgets(1));
+
+    await tester.tap(find.byKey(const ValueKey('hermes-approval-review')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-approval-sheet-prompt')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-approval-sheet-prompt-truncated')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-approval-sheet-risk')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-approval-sheet-risk-truncated')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('prompt-tail'), findsNothing);
+    expect(find.textContaining('risk-tail'), findsNothing);
   });
 
   testWidgets('approval prompts redact secret-looking values', (tester) async {

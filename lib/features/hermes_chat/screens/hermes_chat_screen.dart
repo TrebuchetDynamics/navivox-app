@@ -2098,6 +2098,11 @@ class _ApprovalBanner extends StatelessWidget {
         final risk = request.risk;
         final hasApprovalId = request.id.trim().isNotEmpty;
         final canAnswer = canRespond && hasApprovalId;
+        final safePrompt = _safeHermesUiText(request.prompt);
+        final promptTruncated = safePrompt.length > 600;
+        final safeRisk = risk == null ? null : _safeHermesUiText(risk);
+        final riskTruncated = (safeRisk?.length ?? 0) > 240;
+        final safeToolCallId = _safeHermesUiText(request.toolCallId);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -2121,14 +2126,32 @@ class _ApprovalBanner extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  SelectableText(_safeHermesUiText(request.prompt)),
-                  if (risk != null) ...[
+                  SelectableText(
+                    _safeHermesUiPreview(safePrompt, maxLength: 600),
+                    key: const ValueKey('hermes-approval-sheet-prompt'),
+                  ),
+                  if (promptTruncated)
+                    const Text(
+                      'Prompt preview truncated for mobile review.',
+                      key: ValueKey('hermes-approval-sheet-prompt-truncated'),
+                    ),
+                  if (safeRisk != null) ...[
                     const SizedBox(height: 8),
-                    Text('Risk: ${_safeHermesUiText(risk)}'),
+                    Text(
+                      'Risk: ${_safeHermesUiPreview(safeRisk, maxLength: 240)}',
+                      key: const ValueKey('hermes-approval-sheet-risk'),
+                    ),
+                    if (riskTruncated)
+                      const Text(
+                        'Risk preview truncated for mobile review.',
+                        key: ValueKey('hermes-approval-sheet-risk-truncated'),
+                      ),
                   ],
                   if (request.toolCallId.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text('Tool call: ${_safeHermesUiText(request.toolCallId)}'),
+                    Text(
+                      'Tool call: ${_safeHermesUiPreview(safeToolCallId, maxLength: 160)}',
+                    ),
                   ],
                   if (!canRespond) ...[
                     const SizedBox(height: 8),
