@@ -828,7 +828,13 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         navivoxOptionalStringFromJson(event.payload['result_text']) ??
         navivoxOptionalStringFromJson(event.payload['output']) ??
         navivoxOptionalStringFromJson(event.payload['result']);
-    final callId = '$_activeRunId:$toolName';
+    final eventCallId =
+        navivoxOptionalStringFromJson(event.payload['tool_call_id']) ??
+        navivoxOptionalStringFromJson(event.payload['call_id']) ??
+        navivoxOptionalStringFromJson(event.payload['id']);
+    final callId = eventCallId == null || eventCallId.trim().isEmpty
+        ? '$_activeRunId:$toolName'
+        : '$_activeRunId:${eventCallId.trim()}';
 
     final existingIndex = toolTurnIndexByCallId[callId];
     if (existingIndex != null) {

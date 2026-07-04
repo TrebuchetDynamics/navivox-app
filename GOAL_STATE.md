@@ -570,7 +570,9 @@ readiness checklist and non-completion caveats.
   `realtime_voice` as blocked until Navivox wires real server audio. Bounded
   diagnostics now redacts dynamic metadata fields such as active session title,
   health strings, capability model/features/endpoints, and model names. Tool
-  progress cards redact and bound tool names/results before rendering.
+  progress cards redact and bound tool names/results before rendering, and run
+  transport now uses Hermes tool-call ids when present so parallel same-name tool
+  calls do not collapse into one card.
 
 ## Honest caveat
 

@@ -3225,6 +3225,67 @@ void main() {
   );
 
   test(
+    'sendText via run transport keeps same-name tool calls separate by event call id',
+    () async {
+      var messagesRequests = 0;
+      final states = <HermesChannelState>[];
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' =>
+                (messagesRequests++ == 0)
+                    ? _messagesFixture
+                    : _reconciledMessagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          post: (uri, headers, body) async {
+            return switch (uri.path) {
+              '/v1/runs' =>
+                '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+              _ => '{}',
+            };
+          },
+          getStream: (uri, headers) => Stream.fromIterable([
+            'event: tool.started\ndata: {"tool":"bash","tool_call_id":"call_a","preview":"ls"}\n\n',
+            'event: tool.started\ndata: {"tool":"bash","tool_call_id":"call_b","preview":"pwd"}\n\n',
+            'event: tool.completed\ndata: {"tool":"bash","tool_call_id":"call_a","result_text":"file1"}\n\n',
+            'event: tool.completed\ndata: {"tool":"bash","tool_call_id":"call_b","result_text":"/tmp"}\n\n',
+            'event: message.delta\ndata: {"delta":"done"}\n\ndata: [DONE]\n\n',
+          ]),
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+      channel.addListener(() => states.add(channel.state));
+
+      await channel.sendText('run two commands');
+
+      final duringRun = states.lastWhere(
+        (s) =>
+            s.activeMessages
+                .where((t) => t.kind == HermesTurnKind.toolCall)
+                .length ==
+            2,
+      );
+      final toolTurns = duringRun.activeMessages
+          .where((t) => t.kind == HermesTurnKind.toolCall)
+          .toList(growable: false);
+      expect(toolTurns, hasLength(2));
+      expect(toolTurns.map((turn) => turn.toolCall?.name), ['bash', 'bash']);
+      expect(toolTurns.map((turn) => turn.toolCall?.status), [
+        'completed',
+        'completed',
+      ]);
+      expect(toolTurns.map((turn) => turn.toolCall?.result), ['file1', '/tmp']);
+    },
+  );
+
+  test(
     'respondToApproval rejects locally when approval endpoint is absent',
     () async {
       final posts = <String>[];
