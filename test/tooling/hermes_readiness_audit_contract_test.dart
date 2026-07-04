@@ -183,6 +183,9 @@ void main() {
     expect(scriptText, contains('provider_reply_observed'));
     expect(scriptText, contains('must be 240 characters or less'));
     expect(scriptText, contains('must not contain secret-looking values'));
+    expect(scriptText, contains('basic\\s+\\S+'));
+    expect(scriptText, contains('cookie|set-cookie'));
+    expect(scriptText, contains('://[^/\\s@]+@'));
     expect(scriptText, contains('gh[pousr]_'));
     expect(scriptText, contains('xox[abprs]-'));
     expect(scriptText, contains('eyJ[a-z0-9_-]'));

@@ -136,6 +136,9 @@ void main() {
       contains("urlunsplit((parts.scheme, netloc, '', '', ''))"),
     );
     expect(androidLiveMicReceipt, contains('SECRET_PATTERN'));
+    expect(androidLiveMicReceipt, contains('basic\\s+\\S+'));
+    expect(androidLiveMicReceipt, contains('cookie|set-cookie'));
+    expect(androidLiveMicReceipt, contains('://[^/\\s@]+@'));
     expect(androidLiveMicReceipt, contains('gh[pousr]_'));
     expect(androidLiveMicReceipt, contains('xox[abprs]-'));
     expect(androidLiveMicReceipt, contains('eyJ[a-z0-9_-]'));

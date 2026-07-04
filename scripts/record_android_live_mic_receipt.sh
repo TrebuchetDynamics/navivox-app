@@ -61,7 +61,7 @@ import datetime, json, os, re, subprocess, sys
 from urllib.parse import urlsplit, urlunsplit
 
 SECRET_PATTERN = re.compile(
-    r'(bearer\s+\S+|(?:api[-_ ]?key|token|secret)\s*(?:=|:)\s*\S+|secret[-_a-z0-9.]{4,}|sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9_]{20,}|xox[abprs]-[a-z0-9-]{20,}|eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}\.[a-z0-9_-]{8,})',
+    r'(bearer\s+\S+|basic\s+\S+|(?:authorization|cookie|set-cookie|x-api-key|x-auth-token)\s*[:=]\s*\S+|[a-z][a-z0-9+.-]*://[^/\s@]+@|(?:api[-_ ]?key|auth[-_ ]?token|token|secret|password|passwd|pwd|credential|credentials|auth)\s*(?:=|:)\s*\S+|secret[-_a-z0-9.]{4,}|sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9_]{20,}|xox[abprs]-[a-z0-9-]{20,}|eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}\.[a-z0-9_-]{8,})',
     re.IGNORECASE,
 )
 
