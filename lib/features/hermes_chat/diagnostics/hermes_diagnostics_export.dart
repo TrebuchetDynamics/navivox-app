@@ -13,17 +13,19 @@ String hermesDiagnosticsExport(HermesChannelState state) {
     ..writeln('Connection: ${state.status.name}')
     ..writeln('Sessions: ${state.sessions.length}')
     ..writeln(
-      'Active session: ${state.activeSession?.title ?? state.activeSessionId ?? 'none'}',
+      'Active session: ${_safeDiagnosticsText(state.activeSession?.title ?? state.activeSessionId ?? 'none')}',
     )
     ..writeln('Active messages: ${state.activeMessages.length}');
 
   final health = state.detailedHealth;
   if (health != null) {
     buffer
-      ..writeln('Health status: ${health.status}')
-      ..writeln('Platform: ${health.platform}')
-      ..writeln('Version: ${health.version ?? 'unknown'}')
-      ..writeln('Gateway state: ${health.gatewayState ?? 'unknown'}')
+      ..writeln('Health status: ${_safeDiagnosticsText(health.status)}')
+      ..writeln('Platform: ${_safeDiagnosticsText(health.platform)}')
+      ..writeln('Version: ${_safeDiagnosticsText(health.version ?? 'unknown')}')
+      ..writeln(
+        'Gateway state: ${_safeDiagnosticsText(health.gatewayState ?? 'unknown')}',
+      )
       ..writeln('Active agents: ${health.activeAgents}');
   }
 
@@ -33,7 +35,7 @@ String hermesDiagnosticsExport(HermesChannelState state) {
     final featureNames = capabilities.features.keys.toList()..sort();
     final endpointNames = capabilities.endpoints.keys.toList()..sort();
     buffer
-      ..writeln('Capability model: ${capabilities.model}')
+      ..writeln('Capability model: ${_safeDiagnosticsText(capabilities.model)}')
       ..writeln('Auth required: ${capabilities.auth.required}')
       ..writeln(
         'Run transport: ${policy.supportsRunsTransport ? 'available' : 'unavailable'}',
@@ -62,26 +64,65 @@ String hermesDiagnosticsExport(HermesChannelState state) {
       ..writeln(
         'Memory write: ${policy.supportsMemoryWrite ? 'advertised' : 'not advertised'}',
       )
-      ..writeln(
-        'Features: ${featureNames.isEmpty ? 'none' : featureNames.join(', ')}',
-      )
-      ..writeln(
-        'Endpoints: ${endpointNames.isEmpty ? 'none' : endpointNames.join(', ')}',
-      )
+      ..writeln('Features: ${_safeDiagnosticsList(featureNames)}')
+      ..writeln('Endpoints: ${_safeDiagnosticsList(endpointNames)}')
       ..writeln('Surface readiness:');
     for (final item in hermesSurfaceReadiness(capabilities)) {
-      buffer.writeln('- ${item.title}: ${item.status.label} — ${item.detail}');
+      buffer.writeln(
+        '- ${_safeDiagnosticsText(item.title)}: ${item.status.label} — ${_safeDiagnosticsText(item.detail, maxLength: 240)}',
+      );
     }
   }
 
   buffer
-    ..writeln(
-      'Models: ${state.models.isEmpty ? 'none' : state.models.join(', ')}',
-    )
+    ..writeln('Models: ${_safeDiagnosticsList(state.models)}')
     ..writeln('Skills: ${state.skills.length}')
     ..writeln('Enabled toolsets: ${state.enabledToolsets.length}')
     ..writeln('Jobs: ${state.jobs.length}')
     ..writeln('Secrets: excluded');
 
   return buffer.toString().trimRight();
+}
+
+String _safeDiagnosticsList(List<String> values) {
+  if (values.isEmpty) return 'none';
+  final safe = values
+      .take(12)
+      .map((value) => _safeDiagnosticsText(value, maxLength: 80))
+      .join(', ');
+  final remaining = values.length - 12;
+  return remaining > 0 ? '$safe, +$remaining more' : safe;
+}
+
+String _safeDiagnosticsText(String text, {int maxLength = 120}) {
+  var safe = text.replaceAll(
+    RegExp(r'bearer\s+\S+', caseSensitive: false),
+    'Bearer [redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'(authorization\s*[:=]\s*basic\s+)\S+', caseSensitive: false),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'(authorization\s*[:=]\s*)\S+', caseSensitive: false),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(
+      r'((?:api[-_ ]?key|auth[-_ ]?token|token|secret|password|passwd|pwd|credential)\s*[:=]\s*)\S+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe
+      .replaceAll(
+        RegExp(r'sk-[a-z0-9_-]{12,}', caseSensitive: false),
+        'sk-[redacted]',
+      )
+      .replaceAll(
+        RegExp(r'secret[-_a-z0-9.]*', caseSensitive: false),
+        '[redacted]',
+      );
+  if (safe.length <= maxLength) return safe;
+  return '${safe.substring(0, maxLength).trimRight()}…';
 }

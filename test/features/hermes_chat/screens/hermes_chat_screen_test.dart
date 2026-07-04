@@ -764,6 +764,53 @@ void main() {
     expect(export, isNot(contains('raw_tool_payload')));
   });
 
+  test('Hermes diagnostics redacts dynamic metadata fields', () {
+    final export = hermesDiagnosticsExport(
+      HermesChannelState(
+        status: HermesConnectionStatus.connected,
+        capabilities: const HermesCapabilityDocument(
+          object: 'hermes.api_server.capabilities',
+          platform: 'hermes-agent',
+          model: 'secret-model-token',
+          auth: HermesAuthCapability(type: 'bearer', required: true),
+          features: {
+            'session_chat_streaming': true,
+            'api_key=secret-feature-key': true,
+          },
+          endpoints: {
+            'Authorization: Bearer secret-endpoint-token':
+                HermesEndpointCapability(method: 'GET', path: '/safe'),
+          },
+        ),
+        detailedHealth: const HermesHealthStatus(
+          status: 'ok token=secret-status-token',
+          platform: 'platform-secret-platform-token',
+          version: 'sk-1234567890abcdef',
+          gatewayState: 'Authorization: Bearer secret-gateway-token',
+          activeAgents: 1,
+        ),
+        models: const ['model-secret-model-token'],
+        sessions: const [
+          HermesSession(
+            id: 'sess_1',
+            source: 'fake',
+            title: 'Ops secret-session-token',
+          ),
+        ],
+        activeSessionId: 'sess_1',
+      ),
+    );
+
+    expect(export, contains('[redacted]'));
+    expect(export, contains('sk-[redacted]'));
+    expect(export, isNot(contains('secret-model-token')));
+    expect(export, isNot(contains('secret-feature-key')));
+    expect(export, isNot(contains('secret-endpoint-token')));
+    expect(export, isNot(contains('secret-status-token')));
+    expect(export, isNot(contains('secret-gateway-token')));
+    expect(export, isNot(contains('secret-session-token')));
+  });
+
   testWidgets('opens bounded Hermes diagnostics from the app bar', (
     tester,
   ) async {

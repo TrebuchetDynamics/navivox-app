@@ -567,7 +567,9 @@ readiness checklist and non-completion caveats.
   text instead of silently growing an unbounded queue. Approval review sheets now
   use bounded/redacted prompt and risk previews with explicit truncation copy for
   mobile review. Server-audio honesty now treats either advertised `audio_api` or
-  `realtime_voice` as blocked until Navivox wires real server audio.
+  `realtime_voice` as blocked until Navivox wires real server audio. Bounded
+  diagnostics now redacts dynamic metadata fields such as active session title,
+  health strings, capability model/features/endpoints, and model names.
 
 ## Honest caveat
 
