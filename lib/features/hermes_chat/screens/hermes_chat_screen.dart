@@ -9,6 +9,7 @@ import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/models/hermes_capabilities.dart';
 import '../../../core/hermes/models/hermes_chat_turn.dart';
 import '../../../core/hermes/models/hermes_health.dart';
+import '../../../core/hermes/models/hermes_job.dart';
 import '../../../core/hermes/models/hermes_session.dart';
 import '../../../core/hermes/policy/hermes_surface_readiness.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
@@ -340,7 +341,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
             models: state.models,
             skills: state.skills,
             enabledToolsets: state.enabledToolsets,
-            jobs: state.jobs.map((job) => job.displayName).toList(),
+            jobs: state.jobs,
           ),
         if (hasActiveSession && !canSendTurns)
           const Padding(
@@ -1744,7 +1745,7 @@ class _HermesCapabilityStrip extends StatelessWidget {
   final List<String> models;
   final List<String> skills;
   final List<String> enabledToolsets;
-  final List<String> jobs;
+  final List<HermesJob> jobs;
 
   void _showList(BuildContext context, String title, List<String> items) {
     showDialog<void>(
@@ -1775,6 +1776,55 @@ class _HermesCapabilityStrip extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showJobs(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hermes jobs'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (final job in jobs)
+                ListTile(
+                  title: Text(
+                    _safeHermesUiPreview(job.displayName, maxLength: 96),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(_jobSummary(job)),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _jobSummary(HermesJob job) {
+    final parts = <String>[
+      job.enabled ? 'Enabled' : 'Disabled',
+      if (job.state?.trim().isNotEmpty ?? false)
+        'State: ${_safeHermesUiPreview(job.state!, maxLength: 48)}',
+      if (job.scheduleDisplay?.trim().isNotEmpty ?? false)
+        'Schedule: ${_safeHermesUiPreview(job.scheduleDisplay!, maxLength: 80)}',
+      if (job.nextRunAt?.trim().isNotEmpty ?? false)
+        'Next: ${_safeHermesUiPreview(job.nextRunAt!, maxLength: 48)}',
+      if (job.lastRunAt?.trim().isNotEmpty ?? false)
+        'Last: ${_safeHermesUiPreview(job.lastRunAt!, maxLength: 48)}',
+      if (job.lastError?.trim().isNotEmpty ?? false)
+        'Last error: ${_safeHermesUiPreview(job.lastError!, maxLength: 96)}',
+    ];
+    return parts.join(' • ');
   }
 
   void _showSurfaceReadiness(BuildContext context) {
@@ -1865,7 +1915,7 @@ class _HermesCapabilityStrip extends StatelessWidget {
         ActionChip(
           key: const ValueKey('hermes-jobs-chip'),
           label: Text('Jobs: ${jobs.length}'),
-          onPressed: () => _showList(context, 'Hermes jobs', jobs),
+          onPressed: () => _showJobs(context),
         ),
       ActionChip(
         key: const ValueKey('hermes-surfaces-chip'),

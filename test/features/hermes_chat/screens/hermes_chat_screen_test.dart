@@ -445,7 +445,17 @@ void main() {
         models: const ['hermes-agent'],
         skills: const ['github', 'ascii-art'],
         enabledToolsets: const ['default'],
-        jobs: const [HermesJob(id: 'job_1', name: 'Morning check')],
+        jobs: const [
+          HermesJob(
+            id: 'job_1',
+            name: 'Morning check',
+            enabled: true,
+            state: 'idle',
+            scheduleDisplay: 'Every day at 09:00',
+            nextRunAt: '2026-07-05T09:00:00Z',
+            lastError: 'token=secret-job-token',
+          ),
+        ],
       );
       await tester.pumpWidget(_wrap(channel));
 
@@ -493,6 +503,20 @@ void main() {
       expect(find.text('Hermes skills'), findsOneWidget);
       expect(find.text('github'), findsOneWidget);
       expect(find.text('ascii-art'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('hermes-jobs-chip')));
+      await tester.pumpAndSettle();
+      expect(find.text('Hermes jobs'), findsOneWidget);
+      expect(find.text('Morning check'), findsOneWidget);
+      expect(
+        find.textContaining('Schedule: Every day at 09:00'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Next: 2026-07-05T09:00:00Z'), findsOneWidget);
+      expect(find.textContaining('token=[redacted]'), findsOneWidget);
+      expect(find.textContaining('secret-job-token'), findsNothing);
     },
   );
 

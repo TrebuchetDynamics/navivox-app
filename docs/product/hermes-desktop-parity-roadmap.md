@@ -136,7 +136,7 @@ Candidate surfaces:
 
 - Models/providers: current selected model/provider and capability health.
 - Skills/toolsets: enabled inventory from Hermes API.
-- Jobs/schedules: read-only job inventory already started; expand details only.
+- Jobs/schedules: read-only job inventory includes enabled/state/schedule/next/last/error details with secret redaction; admin remains deferred.
 - Health/capabilities: clearer endpoint readiness and version details.
 - Bounded diagnostics: richer counts/statuses, still no raw logs or payloads.
 
