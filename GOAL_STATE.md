@@ -573,8 +573,9 @@ readiness checklist and non-completion caveats.
   progress cards redact and bound tool names/results before rendering, and run
   transport now uses Hermes tool-call ids when present so parallel same-name tool
   calls do not collapse into one card. Hermes endpoint setup now strips URL
-  userinfo, query strings, fragments, and route paths before connecting or
-  persisting profile metadata, keeping API keys out of shared preferences.
+  userinfo, query strings, fragments, and route paths before connecting,
+  loading, or persisting profile metadata, keeping API keys out of shared
+  preferences.
 
 ## Honest caveat
 

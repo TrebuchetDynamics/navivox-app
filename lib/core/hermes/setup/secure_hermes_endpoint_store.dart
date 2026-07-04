@@ -151,9 +151,10 @@ class SecureHermesEndpointStore implements HermesEndpointStore {
     final apiKey = await _secureStorage.read(
       key: _legacyApiKeySecureStorageKey,
     );
+    final publicBaseUrl = hermesPublicEndpointBaseUrl(baseUrl);
     return HermesEndpointConfig(
-      id: _profileIdForBaseUrl(baseUrl),
-      baseUrl: baseUrl,
+      id: _profileIdForBaseUrl(publicBaseUrl),
+      baseUrl: publicBaseUrl,
       apiKey: apiKey,
     );
   }
@@ -171,6 +172,7 @@ class SecureHermesEndpointStore implements HermesEndpointStore {
     }
     if (decoded is! List) return const [];
     final profiles = <HermesEndpointConfig>[];
+    final seenBaseUrls = <String>{};
     for (final item in decoded) {
       if (item is! Map) continue;
       final id = item['id']?.toString();
@@ -178,12 +180,14 @@ class SecureHermesEndpointStore implements HermesEndpointStore {
       if (id == null || id.isEmpty || baseUrl == null || baseUrl.isEmpty) {
         continue;
       }
+      final publicBaseUrl = hermesPublicEndpointBaseUrl(baseUrl);
+      if (publicBaseUrl.isEmpty || !seenBaseUrls.add(publicBaseUrl)) continue;
       final apiKey = await _secureStorage.read(key: _apiKeyKey(id));
       profiles.add(
         HermesEndpointConfig(
           id: id,
           label: item['label']?.toString(),
-          baseUrl: baseUrl,
+          baseUrl: publicBaseUrl,
           apiKey: apiKey,
         ),
       );
