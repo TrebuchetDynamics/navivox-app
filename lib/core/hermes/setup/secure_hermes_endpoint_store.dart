@@ -52,7 +52,7 @@ class SecureHermesEndpointStore implements HermesEndpointStore {
     String? profileId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final normalizedBaseUrl = baseUrl.trim();
+    final normalizedBaseUrl = hermesPublicEndpointBaseUrl(baseUrl);
     final profiles = await _loadProfiles(prefs);
     final fallbackId = _profileIdForBaseUrl(normalizedBaseUrl);
     final existingIds = profiles

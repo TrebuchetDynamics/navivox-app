@@ -584,14 +584,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
 
   Future<void> _connect(HermesChannel channel) async {
     final attemptId = ++_connectAttemptId;
-    final baseUrl = _baseUrlController.text.trim();
+    final baseUrl = hermesPublicEndpointBaseUrl(_baseUrlController.text);
     final apiKey = _apiKeyController.text.trim();
     await channel.connect(
       baseUrl: baseUrl,
       apiKey: apiKey.isEmpty ? null : apiKey,
     );
     if (attemptId != _connectAttemptId ||
-        _baseUrlController.text.trim() != baseUrl ||
+        hermesPublicEndpointBaseUrl(_baseUrlController.text) != baseUrl ||
         _apiKeyController.text.trim() != apiKey ||
         channel.state.status != HermesConnectionStatus.connected) {
       return;

@@ -572,7 +572,9 @@ readiness checklist and non-completion caveats.
   health strings, capability model/features/endpoints, and model names. Tool
   progress cards redact and bound tool names/results before rendering, and run
   transport now uses Hermes tool-call ids when present so parallel same-name tool
-  calls do not collapse into one card.
+  calls do not collapse into one card. Hermes endpoint setup now strips URL
+  userinfo, query strings, fragments, and route paths before connecting or
+  persisting profile metadata, keeping API keys out of shared preferences.
 
 ## Honest caveat
 

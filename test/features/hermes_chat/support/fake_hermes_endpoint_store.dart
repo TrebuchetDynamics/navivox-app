@@ -28,14 +28,16 @@ class FakeHermesEndpointStore implements HermesEndpointStore {
     String? label,
     String? profileId,
   }) async {
+    final publicBaseUrl = hermesPublicEndpointBaseUrl(baseUrl);
     _config = HermesEndpointConfig(
-      id: profileId ?? baseUrl,
+      id: profileId ?? publicBaseUrl,
       label: label,
-      baseUrl: baseUrl,
+      baseUrl: publicBaseUrl,
       apiKey: apiKey,
     );
     _profiles.removeWhere(
-      (profile) => profile.id == _config!.id || profile.baseUrl == baseUrl,
+      (profile) =>
+          profile.id == _config!.id || profile.baseUrl == publicBaseUrl,
     );
     _profiles.insert(0, _config!);
     saveCalls.add(_config!);

@@ -2444,6 +2444,29 @@ void main() {
     expect(find.text('Emulator Hermes'), findsOneWidget);
   });
 
+  testWidgets('connect strips URL secret material before connect and save', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore();
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-base-url-field')),
+      'http://user:secret-user@example.com:8642/path?api_key=secret-query#frag',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-api-key-field')),
+      'secret-header',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-connect-button')));
+    await tester.pumpAndSettle();
+
+    expect(channel.connectCalls.single.baseUrl, 'http://example.com:8642');
+    expect(store.saveCalls.single.baseUrl, 'http://example.com:8642');
+    expect(store.saveCalls.single.apiKey, 'secret-header');
+  });
+
   testWidgets('stale connect completion does not overwrite saved endpoint', (
     tester,
   ) async {

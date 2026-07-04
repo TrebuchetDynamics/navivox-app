@@ -1,3 +1,18 @@
+/// Returns the non-secret Hermes API origin suitable for display/persistence.
+///
+/// API keys sometimes arrive in copied setup URLs as userinfo, query strings, or
+/// fragments. Keep those out of shared preferences, logs, and diagnostics.
+String hermesPublicEndpointBaseUrl(String baseUrl) {
+  final trimmed = baseUrl.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) return trimmed;
+  return Uri(
+    scheme: uri.scheme,
+    host: uri.host,
+    port: uri.hasPort ? uri.port : null,
+  ).toString();
+}
+
 /// A saved Hermes endpoint: base URL (non-secret) plus an optional bearer
 /// API key (secret). [id] and [label] are non-secret profile metadata used by
 /// the Hermes connect form to switch between multiple saved endpoints.
