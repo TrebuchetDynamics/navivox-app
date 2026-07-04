@@ -171,6 +171,7 @@ void main() {
     expect(scriptText, contains('package_info.record_audio_granted=true'));
     expect(scriptText, contains("'version_name', 'version_code'"));
     expect(scriptText, contains("package_info.{key}"));
+    expect(scriptText, contains('physical_mic_observed'));
     expect(scriptText, contains('hermes_url_sanitized'));
     expect(
       scriptText,

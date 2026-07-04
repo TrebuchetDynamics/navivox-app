@@ -65,6 +65,7 @@ Record all of the following before closing the blocker:
    NAVIVOX_ANDROID_SPOKEN_PHRASE='<unique spoken phrase>' \
    NAVIVOX_ANDROID_PROVIDER_REPLY='<observed provider reply excerpt>' \
    NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE='<different second spoken phrase after re-arm>' \
+   NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true \
    NAVIVOX_ANDROID_TTS_OBSERVED=true \
    NAVIVOX_ANDROID_REARM_OBSERVED=true \
    NAVIVOX_ANDROID_NO_SECRET_LEAKS=true \
@@ -77,7 +78,8 @@ Record all of the following before closing the blocker:
    `adb shell getprop`, records installed Navivox package/version details from
    `pm path` and `dumpsys package`, and rejects secret-looking or overlong spoken
    phrases/provider reply excerpts; keep each manual evidence value to 240
-   characters or less. The helper and audit require the second spoken phrase to
+   characters or less. The helper and audit require an explicit physical-mic
+   manual observation gate, require the second spoken phrase to
    differ from the first, require the provider reply excerpt to differ from both
    spoken phrases, require the receipt `head_sha` to match the current git
    `HEAD`, require non-empty manufacturer/model/SDK/fingerprint device

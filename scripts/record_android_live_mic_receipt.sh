@@ -30,8 +30,10 @@ require_env NAVIVOX_ANDROID_HERMES_URL
 require_env NAVIVOX_ANDROID_SPOKEN_PHRASE
 require_env NAVIVOX_ANDROID_PROVIDER_REPLY
 require_env NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE
-# Required manual-observation gates: NAVIVOX_ANDROID_TTS_OBSERVED=true,
-# NAVIVOX_ANDROID_REARM_OBSERVED=true, NAVIVOX_ANDROID_NO_SECRET_LEAKS=true.
+# Required manual-observation gates: NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true,
+# NAVIVOX_ANDROID_TTS_OBSERVED=true, NAVIVOX_ANDROID_REARM_OBSERVED=true,
+# NAVIVOX_ANDROID_NO_SECRET_LEAKS=true.
+require_true NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED
 require_true NAVIVOX_ANDROID_TTS_OBSERVED
 require_true NAVIVOX_ANDROID_REARM_OBSERVED
 require_true NAVIVOX_ANDROID_NO_SECRET_LEAKS
@@ -158,6 +160,7 @@ receipt = {
     'spoken_phrase': spoken_phrase,
     'provider_reply_observed': provider_reply,
     'second_spoken_phrase': second_spoken_phrase,
+    'physical_mic_observed': os.environ['NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED'] == 'true',
     'tts_observed': os.environ['NAVIVOX_ANDROID_TTS_OBSERVED'] == 'true',
     'rearm_observed': os.environ['NAVIVOX_ANDROID_REARM_OBSERVED'] == 'true',
     'no_secret_leaks_observed': os.environ['NAVIVOX_ANDROID_NO_SECRET_LEAKS'] == 'true',

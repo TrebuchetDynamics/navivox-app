@@ -588,7 +588,8 @@ readiness checklist and non-completion caveats.
   diagnostic cookie headers, bare Basic credentials, and URL userinfo. Hermes
   channel stored error messages now share the broader redaction set and are
   bounded before entering channel state. Android live-mic receipt validators now
-  also reject Basic credentials, credential headers, and URL userinfo in spoken
+  also require an explicit `NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true` gate and
+  reject Basic credentials, credential headers, and URL userinfo in spoken
   phrase/provider reply excerpts.
 
 ## Honest caveat

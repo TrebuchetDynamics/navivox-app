@@ -84,7 +84,7 @@ for key in ['version_name', 'version_code']:
         missing.append(f'package_info.{key}')
 if not package_info.get('paths'):
     missing.append('package_info.paths')
-for key in ['tts_observed', 'rearm_observed', 'no_secret_leaks_observed', 'distinct_rearmed_turn_observed', 'hermes_url_sanitized']:
+for key in ['physical_mic_observed', 'tts_observed', 'rearm_observed', 'no_secret_leaks_observed', 'distinct_rearmed_turn_observed', 'hermes_url_sanitized']:
     if receipt.get(key) is not True:
         missing.append(f'{key}=true')
 hermes_url = str(receipt.get('hermes_url', ''))

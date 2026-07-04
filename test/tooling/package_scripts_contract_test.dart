@@ -91,6 +91,11 @@ void main() {
     );
     expect(
       androidLiveMicReceipt,
+      contains('NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true'),
+    );
+    expect(androidLiveMicReceipt, contains('physical_mic_observed'));
+    expect(
+      androidLiveMicReceipt,
       contains('NAVIVOX_ANDROID_TTS_OBSERVED=true'),
     );
     expect(
