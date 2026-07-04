@@ -537,11 +537,13 @@ readiness checklist and non-completion caveats.
   text turn, enable continuous voice, and verify capture → reply/TTS → re-arm.
   Existing Android evidence is readiness plus deterministic transcript capture,
   not physical audio.
-- Windows, iOS, and macOS host-platform build artifacts now exist on failed
-  workflow run `28714769601`, but the checkout still needs a successful whole
-  platform workflow receipt after the browser-smoke fix lands.
-- The platform workflow is now published and visible remotely as `Hermes platform
-  smoke`; collect a successful watched run receipt with native-host artifacts.
+- Windows, iOS, and macOS host-platform runner evidence is now captured by
+  successful watched workflow run `28715230991` and
+  `build/receipts/hermes-platform-workflow.json`: Windows desktop, iOS simulator,
+  and macOS desktop jobs completed successfully and uploaded non-expired,
+  non-empty native artifacts.
+- The platform workflow is published and visible remotely as `Hermes platform
+  smoke`; the latest watched run completed successfully on `main`.
   Latest blocker recheck: attempting `flutter emulators --launch fractal_test`
   exited `-6` during startup, but direct SDK emulator launch with
   `-no-snapshot -no-boot-anim -gpu swiftshader_indirect -no-window` brought
@@ -551,10 +553,10 @@ readiness checklist and non-completion caveats.
   receipt was captured, and after shutdown `adb devices` again listed no
   attached Android devices while `flutter devices` listed only Linux desktop and
   Chrome web. `gh workflow list` now shows `Hermes platform smoke`; watched run
-  `28714769601` proved the Windows, iOS simulator, and macOS jobs could build and
-  upload non-expired artifacts, but the overall run failed because the Hermes
-  browser smoke still expected the old `Runs/tool progress enabled` capability
-  label instead of the current `Runs SSE enabled` chip.
+  `28715230991` completed successfully at head
+  `be9f79744ddb44b3bdbeecc36147ba4915149a09`, and the platform receipt records
+  successful Windows desktop, iOS simulator, and macOS desktop jobs plus valid
+  native artifacts.
 - Hermes realtime/server audio, config editing/admin, Hermes memory UI,
   jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
   files/context folders, raw log export, and multi-endpoint/profile management
