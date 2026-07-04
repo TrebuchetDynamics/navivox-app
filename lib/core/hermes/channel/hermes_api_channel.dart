@@ -801,12 +801,11 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         name == 'tool.failed';
   }
 
-  /// Tracks tool progress by a `${runId}:${toolName}` call id (matching
-  /// hermes-desktop's `chatToolEventFromRunEvent` synthesis, since Hermes run
-  /// events don't carry a guaranteed-stable per-call id): the first event for
-  /// a call id inserts a new turn just before the assistant reply; later
-  /// events for the same call id update that turn in place instead of
-  /// duplicating it.
+  /// Tracks tool progress by a `${runId}:${eventCallId}` call id when Hermes
+  /// supplies one, falling back to `${runId}:${toolName}` for older events: the
+  /// first event for a call id inserts a new turn just before the assistant
+  /// reply; later events for the same call id update that turn in place instead
+  /// of duplicating it.
   void _applyToolEvent({
     required String sessionId,
     required HermesStreamEvent event,
@@ -867,9 +866,15 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
 
   NavivoxApprovalRequest _approvalRequestFromEvent(HermesStreamEvent event) {
     return NavivoxApprovalRequest(
-      id: navivoxOptionalStringFromJson(event.payload['approval_id']) ?? '',
+      id:
+          navivoxOptionalStringFromJson(event.payload['approval_id']) ??
+          navivoxOptionalStringFromJson(event.payload['approvalId']) ??
+          navivoxOptionalStringFromJson(event.payload['id']) ??
+          '',
       toolCallId:
-          navivoxOptionalStringFromJson(event.payload['tool_call_id']) ?? '',
+          navivoxOptionalStringFromJson(event.payload['tool_call_id']) ??
+          navivoxOptionalStringFromJson(event.payload['toolCallId']) ??
+          '',
       prompt:
           navivoxOptionalStringFromJson(event.payload['prompt']) ??
           'Approval requested',

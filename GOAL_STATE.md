@@ -576,7 +576,10 @@ readiness checklist and non-completion caveats.
   userinfo, query strings, fragments, and route paths before connecting,
   loading, or persisting profile metadata, keeping API keys out of shared
   preferences. Android live-mic receipts now also record only the sanitized
-  Hermes origin and the readiness audit rejects copied route/path state.
+  Hermes origin and the readiness audit rejects copied route/path state. Run
+  approval events accept `approval_id`, `approvalId`, or `id` plus
+  `tool_call_id`/`toolCallId` aliases so mobile approval prompts do not fail
+  when Hermes event casing differs.
 
 ## Honest caveat
 
