@@ -202,6 +202,41 @@ void main() {
   );
 
   test(
+    'sendText keeps the partial assistant turn failed when the stream drops',
+    () async {
+      var messagesRequests = 0;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _capabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' =>
+                (messagesRequests++ == 0) ? _messagesFixture : _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          postStream: (uri, headers, body) async* {
+            yield 'event: assistant.delta\ndata: {"delta":"partial"}\n\n';
+            throw StateError('stream dropped');
+          },
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.sendText('Hello again');
+
+      expect(messagesRequests, 1);
+      final turns = channel.state.activeMessages;
+      expect(turns.map((t) => t.text), ['Hello', 'Hello again', 'partial']);
+      expect(turns.last.author, HermesTurnAuthor.assistant);
+      expect(turns.last.status, HermesTurnStatus.failed);
+    },
+  );
+
+  test(
     'selectSession switches the active session and loads its messages',
     () async {
       final channel = HermesApiChannel(
@@ -715,6 +750,49 @@ void main() {
       'decision': 'always',
     });
   });
+
+  test(
+    'stopActiveTurn swallows server stop failure after clearing the active run',
+    () async {
+      final stopRequests = <String>[];
+      final openRunEvents = StreamController<String>();
+      addTearDown(openRunEvents.close);
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          post: (uri, headers, body) async {
+            return switch (uri.path) {
+              '/v1/runs' =>
+                '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+              '/v1/runs/run_1/stop' => throw StateError(
+                (stopRequests..add(uri.path)).join(','),
+              ),
+              _ => '{}',
+            };
+          },
+          getStream: (uri, headers) => openRunEvents.stream,
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+      unawaited(channel.sendText('keep going forever'));
+      await pumpEventQueue();
+
+      channel.stopActiveTurn();
+      channel.stopActiveTurn();
+      await pumpEventQueue();
+
+      expect(stopRequests, ['/v1/runs/run_1/stop']);
+    },
+  );
 
   test('stopActiveTurn stops the active run on the server', () async {
     final posts = <String, Map<String, Object?>>{};

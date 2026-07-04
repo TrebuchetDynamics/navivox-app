@@ -361,6 +361,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
 
     final toolTurnIndexByCallId = <String, int>{};
     final completer = Completer<void>();
+    var streamFailed = false;
     _activeStream = events.listen(
       (event) {
         final delta = event.delta;
@@ -395,6 +396,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         }
       },
       onError: (Object error) {
+        streamFailed = true;
         assistantTurn = assistantTurn.copyWith(status: HermesTurnStatus.failed);
         turns[assistantIndex] = assistantTurn;
         _setTurns(sessionId, List.of(turns));
@@ -416,10 +418,12 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
       _setTurns(sessionId, List.of(turns));
     }
 
-    try {
-      _setTurns(sessionId, await _fetchTurns(client, sessionId));
-    } catch (_) {
-      // Keep the locally streamed transcript; reconciliation is best-effort.
+    if (!streamFailed) {
+      try {
+        _setTurns(sessionId, await _fetchTurns(client, sessionId));
+      } catch (_) {
+        // Keep the locally streamed transcript; reconciliation is best-effort.
+      }
     }
   }
 
@@ -519,7 +523,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     _activeStream = null;
     _activeRunId = null;
     if (client != null && runId != null) {
-      unawaited(client.stopRun(runId));
+      unawaited(client.stopRun(runId).catchError((_) {}));
     }
   }
 
