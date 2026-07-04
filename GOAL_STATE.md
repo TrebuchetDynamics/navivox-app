@@ -566,7 +566,8 @@ readiness checklist and non-completion caveats.
   follow-ups are capped while a turn is streaming so the composer keeps overflow
   text instead of silently growing an unbounded queue. Approval review sheets now
   use bounded/redacted prompt and risk previews with explicit truncation copy for
-  mobile review.
+  mobile review. Server-audio honesty now treats either advertised `audio_api` or
+  `realtime_voice` as blocked until Navivox wires real server audio.
 
 ## Honest caveat
 

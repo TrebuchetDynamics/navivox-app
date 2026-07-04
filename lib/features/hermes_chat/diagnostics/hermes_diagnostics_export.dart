@@ -54,6 +54,9 @@ String hermesDiagnosticsExport(HermesChannelState state) {
         'Realtime voice: ${policy.supportsRealtimeVoice ? 'advertised' : 'not advertised'}',
       )
       ..writeln(
+        'Audio API: ${policy.supportsAudioApi ? 'advertised' : 'not advertised'}',
+      )
+      ..writeln(
         'Config write: ${policy.supportsConfigWrite ? 'advertised' : 'not advertised'}',
       )
       ..writeln(

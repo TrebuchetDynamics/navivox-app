@@ -652,7 +652,7 @@ void main() {
       await tester.pumpWidget(_wrap(channel));
 
       expect(
-        find.text('Server voice advertised; using device STT'),
+        find.text('Server audio advertised; using device STT'),
         findsOneWidget,
       );
       expect(find.text('Server realtime voice advertised'), findsNothing);
@@ -660,6 +660,37 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('hermes-surfaces-chip')));
       await tester.pumpAndSettle();
       expect(find.text('Server realtime voice/audio'), findsOneWidget);
+      expect(find.text('Blocked'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'advertised generic audio API is blocked until server audio is wired',
+    (tester) async {
+      final channel = FakeHermesChannel(
+        capabilities: const HermesCapabilityDocument(
+          object: 'hermes.api_server.capabilities',
+          platform: 'hermes-agent',
+          model: 'hermes-agent',
+          auth: HermesAuthCapability(type: 'bearer', required: true),
+          features: {'audio_api': true},
+          endpoints: {},
+        ),
+      );
+      await tester.pumpWidget(_wrap(channel));
+
+      expect(
+        find.text('Server audio advertised; using device STT'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('hermes-surfaces-chip')));
+      await tester.pumpAndSettle();
+      expect(find.text('Server realtime voice/audio'), findsOneWidget);
+      expect(
+        find.textContaining('server audio/realtime voice is advertised'),
+        findsOneWidget,
+      );
       expect(find.text('Blocked'), findsWidgets);
     },
   );
@@ -719,6 +750,7 @@ void main() {
     expect(export, contains('Run approval response: available'));
     expect(export, contains('Tool progress events: advertised'));
     expect(export, contains('Realtime voice: not advertised'));
+    expect(export, contains('Audio API: not advertised'));
     expect(export, contains('Config write: not advertised'));
     expect(export, contains('Memory write: not advertised'));
     expect(export, contains('Surface readiness:'));

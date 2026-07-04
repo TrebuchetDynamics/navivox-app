@@ -48,6 +48,8 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
   final supportsAttachments =
       capabilities.supportsFeature('attachments_api') ||
       capabilities.supportsFeature('multimodal_chat');
+  final advertisedServerAudio =
+      policy.supportsRealtimeVoice || policy.supportsAudioApi;
 
   return [
     HermesSurfaceReadiness(
@@ -77,11 +79,11 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
     ),
     HermesSurfaceReadiness(
       title: 'Server realtime voice/audio',
-      status: policy.supportsRealtimeVoice
+      status: advertisedServerAudio
           ? HermesSurfaceStatus.blocked
           : HermesSurfaceStatus.deferred,
-      detail: policy.supportsRealtimeVoice
-          ? 'Hermes realtime voice is advertised, but Navivox has not wired server audio; local STT remains the voice path.'
+      detail: advertisedServerAudio
+          ? 'Hermes server audio/realtime voice is advertised, but Navivox has not wired server audio; local STT remains the voice path.'
           : 'Hermes realtime/server audio is not advertised; local STT remains the voice path.',
     ),
     HermesSurfaceReadiness(

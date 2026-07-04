@@ -197,6 +197,25 @@ void main() {
     },
   );
 
+  test('audio API advertisement is blocked until server audio is wired', () {
+    final readiness = hermesSurfaceReadiness(
+      const HermesCapabilityDocument(
+        object: 'hermes.api_server.capabilities',
+        platform: 'hermes-agent',
+        model: 'hermes-agent',
+        auth: HermesAuthCapability(type: 'bearer', required: true),
+        features: {'audio_api': true},
+        endpoints: {},
+      ),
+    );
+    final item = readiness.firstWhere(
+      (item) => item.title == 'Server realtime voice/audio',
+    );
+
+    expect(item.status, HermesSurfaceStatus.blocked);
+    expect(item.detail, contains('server audio/realtime voice is advertised'));
+  });
+
   test(
     'client parses health, catalog, sessions, created sessions, and messages',
     () async {

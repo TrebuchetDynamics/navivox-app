@@ -66,7 +66,7 @@ the explicit objective as follows:
 | Real Android spoken mic receipt | `adb devices` currently has no attached Android device; earlier `fractal_test` receipts are readiness/prep/deterministic only. | Blocked: no current Android target for manual spoken-audio closeout. |
 | Windows/iOS/macOS host receipts | `build/receipts/hermes-platform-workflow.json` validates successful watched native-host jobs and artifacts for the current checkout. | Covered. |
 | Publish platform workflow | `gh workflow list` exposes `Hermes platform smoke`, and `npm run platform:workflow-smoke` produced a successful watched receipt. | Covered. |
-| Hermes realtime/server audio | `hermesSurfaceReadiness()` marks server realtime voice/audio as deferred; voice remains local STT-to-text. | Deferred/unimplemented by policy. |
+| Hermes realtime/server audio | `hermesSurfaceReadiness()` marks advertised `realtime_voice` or `audio_api` as blocked until server audio is wired, and unadvertised server audio as deferred; voice remains local STT-to-text. | Deferred/unimplemented by policy. |
 | Deferred Hermes Desktop parity | Multi-endpoint/profile management is available locally; jobs inventory and bounded diagnostics are read-only; config/admin, memory UI, jobs admin, gateways, persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log export are deferred. | Partially covered; remaining surfaces deferred/read-only by policy. |
 | Polish/hardening | Existing tests cover the implemented happy paths and selected edge cases, but the roadmap still calls out SSE reconnect/drop, offline/auth-expired UX, session search/grouping, queued follow-ups, and mobile approval/error/session sheet polish. | Not complete. |
 
