@@ -186,13 +186,17 @@ Rollback/hide behavior:
 
 ## Phase 5 — multi-endpoint/profile management
 
-Goal: move from one saved Hermes endpoint to multiple endpoint/profile contexts.
+Status: local profile management implemented for the Hermes connect flow.
+`SecureHermesEndpointStore` stores non-secret endpoint profile metadata/base URLs
+in shared preferences and keeps per-profile API keys in secure storage. The
+connect form renders saved profile chips that can select or forget an endpoint.
 
-Work:
+Remaining work:
 
-- Define endpoint identity, labels, API key storage aliases, and forget/revoke
-  behavior.
-- Add endpoint switcher and per-endpoint session cache boundaries.
+- Remote revoke/status reporting if Hermes adds a revoke API.
+- Optional explicit label editing beyond the current saved-profile metadata.
+- Per-endpoint session cache boundaries if Navivox later caches server sessions
+  locally.
 - Keep old Gormes Profile contacts out of Hermes terminology.
 
 Acceptance gate:
@@ -205,7 +209,8 @@ Acceptance gate:
 
 Rollback/hide behavior:
 
-- If endpoint identity is ambiguous, keep one-endpoint MVP and show setup copy.
+- If endpoint identity is ambiguous, keep profile chips hidden and show setup
+  copy.
 
 ## Phase 6 — Desktop parity review gate
 

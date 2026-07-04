@@ -2243,6 +2243,65 @@ void main() {
     expect(store.saveCalls.single.apiKey, 'secret');
   });
 
+  testWidgets('saved endpoint profiles can be selected and removed', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'lan',
+          label: 'LAN Hermes',
+          baseUrl: 'http://lan.example:8642',
+          apiKey: 'lan-secret',
+        ),
+        HermesEndpointConfig(
+          id: 'emu',
+          label: 'Emulator Hermes',
+          baseUrl: 'http://10.0.2.2:8642',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved Hermes profiles'), findsOneWidget);
+    expect(find.text('LAN Hermes'), findsOneWidget);
+    expect(find.text('Emulator Hermes'), findsOneWidget);
+
+    await tester.tap(find.text('LAN Hermes'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-base-url-field')),
+          )
+          .controller!
+          .text,
+      'http://lan.example:8642',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('hermes-api-key-field')))
+          .controller!
+          .text,
+      'lan-secret',
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('hermes-endpoint-profile-lan')),
+        matching: find.byIcon(Icons.close),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.deleteProfileCalls, ['lan']);
+    expect(find.text('LAN Hermes'), findsNothing);
+    expect(find.text('Emulator Hermes'), findsOneWidget);
+  });
+
   testWidgets('stale connect completion does not overwrite saved endpoint', (
     tester,
   ) async {

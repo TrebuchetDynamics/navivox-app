@@ -12,6 +12,7 @@ import '../../../core/hermes/models/hermes_health.dart';
 import '../../../core/hermes/models/hermes_session.dart';
 import '../../../core/hermes/policy/hermes_surface_readiness.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
+import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../core/protocol/voice/models/navivox_voice_run.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
@@ -74,6 +75,13 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   String? _lastSpokenTurnId;
   bool _hadActiveTurn = false;
   int _connectAttemptId = 0;
+  late Future<List<HermesEndpointConfig>> _endpointProfilesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _endpointProfilesFuture = _loadEndpointProfiles();
+  }
 
   @override
   void dispose() {
@@ -83,6 +91,16 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     _apiKeyController.dispose();
     _composerController.dispose();
     super.dispose();
+  }
+
+  Future<List<HermesEndpointConfig>> _loadEndpointProfiles() =>
+      ref.read(hermesEndpointStoreProvider).loadProfiles();
+
+  void _refreshEndpointProfiles() {
+    if (!mounted) return;
+    setState(() {
+      _endpointProfilesFuture = _loadEndpointProfiles();
+    });
   }
 
   void _onChannelChanged() {
@@ -203,6 +221,17 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
+                FutureBuilder<List<HermesEndpointConfig>>(
+                  future: _endpointProfilesFuture,
+                  builder: (context, snapshot) => _EndpointProfileChips(
+                    profiles: snapshot.data ?? const [],
+                    connecting: connecting,
+                    onSelect: _selectEndpointProfile,
+                    onDelete: (profile) =>
+                        unawaited(_deleteEndpointProfile(profile)),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -521,6 +550,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     });
   }
 
+  void _selectEndpointProfile(HermesEndpointConfig profile) {
+    _baseUrlController.text = profile.baseUrl;
+    _apiKeyController.text = profile.apiKey ?? '';
+  }
+
+  Future<void> _deleteEndpointProfile(HermesEndpointConfig profile) async {
+    final id = profile.id;
+    if (id == null || id.trim().isEmpty) return;
+    await ref.read(hermesEndpointStoreProvider).deleteProfile(id);
+    if (_baseUrlController.text.trim() == profile.baseUrl) {
+      _baseUrlController.clear();
+      _apiKeyController.clear();
+    }
+    _refreshEndpointProfiles();
+  }
+
   Future<void> _connect(HermesChannel channel) async {
     final attemptId = ++_connectAttemptId;
     final baseUrl = _baseUrlController.text.trim();
@@ -538,11 +583,13 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     await ref
         .read(hermesEndpointStoreProvider)
         .save(baseUrl: baseUrl, apiKey: apiKey.isEmpty ? null : apiKey);
+    _refreshEndpointProfiles();
   }
 
   Future<void> _disconnect(HermesChannel channel) async {
     await channel.disconnect();
     await ref.read(hermesEndpointStoreProvider).clear();
+    _refreshEndpointProfiles();
   }
 
   void _showDiagnosticsDialog(BuildContext context, HermesChannelState state) {
@@ -1204,6 +1251,56 @@ String _safeHermesUiPreview(String text, {int maxLength = 80}) {
   final safe = _safeHermesUiText(text);
   if (safe.length <= maxLength) return safe;
   return '${safe.substring(0, maxLength).trimRight()}…';
+}
+
+class _EndpointProfileChips extends StatelessWidget {
+  const _EndpointProfileChips({
+    required this.profiles,
+    required this.connecting,
+    required this.onSelect,
+    required this.onDelete,
+  });
+
+  final List<HermesEndpointConfig> profiles;
+  final bool connecting;
+  final ValueChanged<HermesEndpointConfig> onSelect;
+  final ValueChanged<HermesEndpointConfig> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    if (profiles.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Saved Hermes profiles',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final profile in profiles)
+              InputChip(
+                key: ValueKey(
+                  'hermes-endpoint-profile-${profile.id ?? profile.baseUrl}',
+                ),
+                label: Text(
+                  _safeHermesUiPreview(profile.displayLabel, maxLength: 48),
+                ),
+                onPressed: connecting ? null : () => onSelect(profile),
+                onDeleted: connecting || profile.id == null
+                    ? null
+                    : () => onDelete(profile),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                tooltip: _safeHermesUiPreview(profile.baseUrl, maxLength: 96),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 String _safeHermesRenameDefault(String text) {

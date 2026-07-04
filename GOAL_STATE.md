@@ -554,11 +554,14 @@ readiness checklist and non-completion caveats.
   Chrome web. `gh workflow list` now shows `Hermes platform smoke`; the current
   platform workflow receipt records a watched successful run for the current
   checkout plus successful Windows desktop, iOS simulator, and macOS desktop jobs
-  with valid native artifacts.
+  with valid native artifacts. After adding Hermes endpoint profile management,
+  `npm run hermes:readiness-audit` reports 10 remaining blockers.
 - Hermes realtime/server audio, config editing/admin, Hermes memory UI,
   jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
-  files/context folders, raw log export, and multi-endpoint/profile management
-  remain deferred or read-only by policy.
+  files/context folders, and raw log export remain deferred or read-only by
+  policy. Multi-endpoint/profile management is now available locally through
+  saved Hermes endpoint profile chips with per-profile API keys kept in secure
+  storage.
 
 ## Honest caveat
 
@@ -569,9 +572,9 @@ capture or Hermes realtime/server audio: Navivox voice remains local device STT
 (or deterministic transcript capture in tests) submitted as normal Hermes text.
 The Android emulator receipts were collected on a headless/software emulator,
 including one launched with `-no-audio`, so they are not real spoken-audio
-receipts. The concrete `SecureHermesEndpointStore` has no dedicated direct test,
-matching the existing convention for `SecureStorageDurableCredentialStore`; both
-are thin platform-plugin glue exercised through higher-level tests instead.
+receipts. `SecureHermesEndpointStore` now keeps multi-endpoint profile metadata
+in shared preferences while per-profile API keys remain in platform secure
+storage.
 
 ## Loose ends
 

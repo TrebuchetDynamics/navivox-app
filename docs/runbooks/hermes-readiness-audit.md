@@ -18,23 +18,23 @@ explicit external or deferred blocker but is not a completion receipt.
 | Android continuous voice loop | `NAVIVOX_ANDROID_DEVICE_ID=<emulator> NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1 npm run android:hermes-voice-loop-smoke` passed on a KVM-backed `fractal_test` emulator on 2026-07-03. It runs `HermesChatScreen` with deterministic capture, fake Hermes channel, and fake TTS for two loop turns. | Deterministic loop covered; physical mic/provider loop not covered. |
 | Android debug APK build | `flutter build apk --debug` passed on 2026-07-03 and produced `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; no live Android physical mic receipt. |
 | Linux release build | `npm run linux:release-build` passed on 2026-07-03 and produced executable `build/linux/x64/release/bundle/navivox`. | Covered locally. |
-| Windows build | `.github/workflows/hermes-platform-smoke.yml` defines a `windows-latest` Flutter Windows build and artifact upload. | CI path exists; no native-host receipt yet. |
-| iOS simulator build | `.github/workflows/hermes-platform-smoke.yml` defines a `macos-latest` iOS simulator build and artifact upload. | CI path exists; no native-host receipt yet. |
-| macOS desktop build | The macOS runner scaffold exists under `macos/`, and `.github/workflows/hermes-platform-smoke.yml` defines a `macos-latest` Flutter macOS debug build and artifact upload. | CI path exists; no native-host receipt yet. |
+| Windows build | `build/receipts/hermes-platform-workflow.json` records watched run `28715961684`/later current-head reruns with a successful `Windows desktop build` job and non-expired `navivox-windows-debug-bundle` artifact. | Covered by hosted native-runner receipt. |
+| iOS simulator build | `build/receipts/hermes-platform-workflow.json` records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact. | Covered by hosted native-runner receipt. |
+| macOS desktop build | `build/receipts/hermes-platform-workflow.json` records a successful `macOS desktop build` job and non-expired `navivox-macos-debug-app` artifact. | Covered by hosted native-runner receipt. |
 | Browser fake Hermes smoke | Focused Playwright regression rerun of `navivox-e2e.spec.mjs` plus `hermes-smoke.spec.mjs` passed on 2026-07-03 against `node serve_web.mjs` with 68 Chromium tests after a longer-timeout rerun; the focused Hermes smoke itself passed 2 Chromium tests and covers fake Hermes health/capabilities/sessions/runs/events/approvals/tool progress/stop. | Covered for fake server. |
 | Installed Hermes API connect smoke | `npm run hermes:live-smoke` passed on 2026-07-03 against installed local Hermes with isolated temp home and no provider credentials; Playwright reported 1 pass. The helper caveat says this is API connect/session rendering only, not provider/model evidence, not chat/voice provider smoke, not physical microphone evidence, and not whole-goal completion evidence by itself. | Covered for live connect/session surface. |
-| Deferred server realtime audio honesty | `lib/core/hermes/policy/hermes_surface_readiness.dart` marks server realtime voice/audio as `deferred` even when advertised; README states voice is local-first. | Covered by code/docs. |
+| Deferred server realtime audio honesty | `lib/core/hermes/policy/hermes_surface_readiness.dart` marks advertised-but-unwired server realtime voice/audio as blocked and unadvertised server audio as deferred; README states voice is local-first. | Covered by code/docs. |
 | Deferred config admin honesty | Surface readiness marks config editing/admin as `deferred`. | Covered by code/docs. |
 | Deferred memory UI honesty | Hermes surface readiness marks Memory UI as `deferred`. | Covered by code/docs. |
 | Jobs/schedules | `GET /api/jobs` is implemented as read-only inventory; surface readiness separates jobs/schedules inventory (`readOnly`) from jobs/schedules admin (`deferred`). | Read-only inventory covered; admin deferred. |
 | Messaging gateways, persona/SOUL, attachments, files/context folders | Surface readiness marks each as deferred with explicit copy. | Covered as deferred, not implemented. |
 | Diagnostics/log export | Bounded diagnostics export exists and excludes secrets/raw logs; surface readiness separately marks raw diagnostics/log export as `deferred`. The diagnostics test seeds transcript and raw tool-payload content and asserts the export reports only counts/statuses. | Bounded diagnostics covered; raw logs/payloads deferred. |
-| Multi-endpoint/profile management | Surface readiness says current Hermes MVP targets one saved endpoint. | Deferred. |
+| Multi-endpoint/profile management | `HermesEndpointStore`/`SecureHermesEndpointStore` now support saved endpoint profiles; the connect form renders selectable/deletable profile chips and keeps per-profile API keys in secure storage. | Covered locally. |
 | Secret hygiene for Hermes diagnostics | `test/features/hermes_chat/screens/hermes_chat_screen_test.dart` asserts diagnostics include `Secrets: excluded` and omit `Authorization`, fake transcript tokens, and raw tool payload markers. | Covered for diagnostics export. |
 | Overall Dart/widget regression | `flutter test --concurrency=1` passed on 2026-07-03 with 1016 tests after the latest diagnostics, workflow, docs, and readiness-guard changes. | Covered locally, but does not replace device/host receipts. |
 | Static analysis | `flutter analyze` passed with no issues after the readiness audit/docs/test guard changes and again after the closeout status refreshes. | Covered locally. |
 | E2E web release build | `flutter build web --release -t lib/main_e2e.dart` passed after the closeout status refreshes and produced `build/web`. | Covered locally for web build only. |
-| CI receipt path robustness | `.github/workflows/hermes-platform-smoke.yml` has quoted `"on"`, artifact uploads, optional provider/Android emulator jobs, bounded job timeouts, and a watched-run receipt path at `build/receipts/hermes-platform-workflow.json`. `NAVIVOX_WATCH_WORKFLOW=false npm run platform:workflow-smoke` still exits 2 because `Hermes platform smoke` is not visible to `gh`; a direct `gh workflow list` recheck still shows only `pages-build-deployment`. A later `git push` containing the workflow was rejected because the current OAuth app token lacks `workflow` scope, so the workflow remains unpublished remotely. | CI path improved locally; no published workflow or successful run receipt yet. |
+| CI receipt path robustness | `.github/workflows/hermes-platform-smoke.yml` is published and visible as `Hermes platform smoke`. `npm run platform:workflow-smoke` dispatches, watches, and writes `build/receipts/hermes-platform-workflow.json`; the receipt validates current `HEAD`, successful run conclusion, required native jobs, and non-empty non-expired native artifacts. | Covered for platform/native-host receipt. |
 
 ## Open blockers
 
@@ -45,25 +45,14 @@ explicit external or deferred blocker but is not a completion receipt.
    proves recognizer/permission readiness only, not spoken audio, provider reply,
    TTS, or continuous re-arm. A later target recheck found no attached Android
    device in `adb devices`; Flutter listed only Linux desktop and Chrome web.
-2. **Windows, iOS, and macOS host receipts** — workflow/job definitions exist,
-   but the repository currently has no successful native-host GitHub Actions or
-   manual runner receipts. Direct Linux probes confirm this host cannot produce
-   those artifacts: `flutter build windows --debug` exits 1 with `"build windows"
-   only supported on Windows hosts.`, `flutter build ios --simulator --debug`
-   exits 64 with `Could not find an option named "--simulator"`, and
-   `flutter build macos` exits 64 with `Could not find a subcommand named
-   "macos" for "flutter build".` on this Linux toolchain.
-3. **Platform workflow publication** — the local workflow exists but is not
-   visible to `gh` because the current push credential lacks GitHub `workflow`
-   scope. Native-host receipts require the workflow to be published and run, or
-   equivalent manual native-runner receipts.
-4. **Hermes server realtime audio** — not implemented in Navivox; voice remains
+2. **Hermes server realtime audio** — not implemented in Navivox; voice remains
    local STT-to-text.
-5. **Deferred product surfaces** — config editing/admin, Hermes memory UI,
+3. **Deferred product surfaces** — config editing/admin, Hermes memory UI,
    jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
-   files/context folders, raw log export, and multi-endpoint/profile management
-   remain outside the implemented Hermes mobile MVP.
-6. **Polish/hardening** — SSE reconnect/drop edge cases, offline/auth-expired UX,
+   files/context folders, and raw log export remain outside the implemented
+   Hermes mobile MVP. Multi-endpoint/profile management is now implemented
+   locally.
+4. **Polish/hardening** — SSE reconnect/drop edge cases, offline/auth-expired UX,
    session search/grouping, queued follow-ups, and mobile approval/error/session
    sheet polish remain improvement work after the core receipt blockers.
 
@@ -75,10 +64,10 @@ the explicit objective as follows:
 | Objective item | Concrete artifact/evidence inspected | Verdict |
 | --- | --- | --- |
 | Real Android spoken mic receipt | `adb devices` currently has no attached Android device; earlier `fractal_test` receipts are readiness/prep/deterministic only. | Blocked: no current Android target for manual spoken-audio closeout. |
-| Windows/iOS/macOS host receipts | `.github/workflows/hermes-platform-smoke.yml` exists locally, but `gh workflow list` exposes only `pages-build-deployment`; no successful `gh run view` jobs/artifacts exist. | Blocked: no native-host receipt. |
-| Publish platform workflow | Latest push was rejected for missing OAuth `workflow` scope. | Blocked on credential scope. |
+| Windows/iOS/macOS host receipts | `build/receipts/hermes-platform-workflow.json` validates successful watched native-host jobs and artifacts for the current checkout. | Covered. |
+| Publish platform workflow | `gh workflow list` exposes `Hermes platform smoke`, and `npm run platform:workflow-smoke` produced a successful watched receipt. | Covered. |
 | Hermes realtime/server audio | `hermesSurfaceReadiness()` marks server realtime voice/audio as deferred; voice remains local STT-to-text. | Deferred/unimplemented by policy. |
-| Deferred Hermes Desktop parity | Jobs inventory and bounded diagnostics are read-only; config/admin, memory UI, jobs admin, gateways, persona/SOUL, attachments/media, files/context folders, raw diagnostics/log export, and multi-endpoint/profile management are deferred. | Deferred/read-only by policy. |
+| Deferred Hermes Desktop parity | Multi-endpoint/profile management is available locally; jobs inventory and bounded diagnostics are read-only; config/admin, memory UI, jobs admin, gateways, persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log export are deferred. | Partially covered; remaining surfaces deferred/read-only by policy. |
 | Polish/hardening | Existing tests cover the implemented happy paths and selected edge cases, but the roadmap still calls out SSE reconnect/drop, offline/auth-expired UX, session search/grouping, queued follow-ups, and mobile approval/error/session sheet polish. | Not complete. |
 
 Do not promote this audit, green tests, APK hashes, configured Hermes home
@@ -95,9 +84,9 @@ non-overlapping categories:
   `npm run hermes:provider-smoke:local` receipt with configured model/provider
   credentials, and deterministic transcript voice still is not physical
   microphone or Hermes server-audio evidence.
-- Native/host receipts: workflow not visible remotely because the current push
-  credential lacks GitHub `workflow` scope, missing Windows host receipt,
-  missing iOS/macOS host receipt, and no online Android target. When Android is
+- Native/host receipts: platform workflow publication and Windows/iOS/macOS
+  hosted receipts are covered by `build/receipts/hermes-platform-workflow.json`;
+  no online Android target remains the external device blocker. When Android is
   missing, the helper prints `flutter devices`, `flutter emulators`, and
   `emulator -accel-check` output as blocker context only, not Android/audio or
   live-mic receipt evidence.
@@ -105,7 +94,8 @@ non-overlapping categories:
   realtime/server audio not implemented, so voice remains local STT-to-text.
 - Deferred Hermes surfaces: config editing/admin, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
-  folders, raw diagnostics/log export, and multi-endpoint/profile management.
+  folders, and raw diagnostics/log export. Multi-endpoint/profile management is
+  implemented locally with secure per-profile API-key storage.
 - Polish/hardening: SSE reconnect/drop edge cases, offline/auth-expired UX,
   session search/grouping, queued follow-ups, and mobile approval/error/session
   sheet polish.

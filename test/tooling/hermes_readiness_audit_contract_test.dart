@@ -29,7 +29,7 @@ void main() {
       'Hermes attachments/media remain deferred',
       'Hermes files/context folders remain deferred',
       'Hermes raw diagnostics/log export remains deferred',
-      'Hermes multi-endpoint/profile management remains deferred',
+      'Hermes multi-endpoint/profile management available locally',
     ]) {
       expect(scriptText, contains(blocker), reason: blocker);
     }
@@ -226,9 +226,8 @@ void main() {
         'Blocked: no current Android target for manual spoken-audio closeout',
       ),
     );
-    expect(auditText, contains('Blocked: no native-host receipt'));
-    expect(auditText, contains('Blocked on credential scope'));
-    expect(auditText, contains('Deferred/read-only by policy'));
+    expect(auditText, contains('Covered.'));
+    expect(auditText, contains('Partially covered; remaining surfaces deferred/read-only by policy'));
     expect(auditText, contains('not whole-goal completion evidence by itself'));
     expect(auditText, contains('deterministic transcript voice only'));
     expect(auditText, contains('API connect/session rendering only'));
@@ -260,25 +259,22 @@ void main() {
       auditText,
       contains('build/native units and artifact identity only'),
     );
-    expect(auditText, contains('missing Windows host receipt'));
-    expect(auditText, contains('missing iOS/macOS host receipt'));
+    expect(auditText, contains('hosted receipts are covered'));
+    expect(auditText, contains('Windows desktop build'));
+    expect(auditText, contains('iOS simulator build'));
     expect(auditText, contains('macOS desktop build'));
-    expect(auditText, contains('flutter build macos` exits 64'));
-    expect(auditText, contains('Could not find a subcommand named'));
-    expect(auditText, contains('flutter build windows --debug` exits 1'));
-    expect(auditText, contains('only supported on Windows hosts'));
-    expect(auditText, contains('flutter build ios --simulator --debug`'));
-    expect(auditText, contains('Could not find an option named'));
+    expect(auditText, contains('non-expired `navivox-windows-debug-bundle`'));
+    expect(auditText, contains('non-expired `navivox-ios-simulator-app`'));
+    expect(auditText, contains('non-expired `navivox-macos-debug-app`'));
     expect(auditText, contains('68 Chromium tests'));
     expect(
       auditText,
       contains('flutter build web --release -t lib/main_e2e.dart'),
     );
     expect(auditText, contains('produced `build/web`'));
-    expect(auditText, contains('gh workflow list` recheck still shows only'));
-    expect(auditText, contains('pages-build-deployment'));
-    expect(auditText, contains('OAuth app token lacks `workflow` scope'));
-    expect(auditText, contains('workflow remains unpublished remotely'));
+    expect(auditText, contains('published and visible as `Hermes platform smoke`'));
+    expect(auditText, contains('build/receipts/hermes-platform-workflow.json'));
+    expect(auditText, contains('successful watched receipt'));
     expect(
       auditText,
       contains('prints `flutter devices`, `flutter emulators`,'),

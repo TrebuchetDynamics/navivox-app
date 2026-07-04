@@ -150,8 +150,9 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
     ),
     const HermesSurfaceReadiness(
       title: 'Multi-endpoint/profile management',
-      status: HermesSurfaceStatus.deferred,
-      detail: 'Current Hermes MVP targets one saved endpoint.',
+      status: HermesSurfaceStatus.available,
+      detail:
+          'Saved Hermes endpoint profiles can be selected or removed without storing API keys outside secure storage.',
     ),
   ];
 }

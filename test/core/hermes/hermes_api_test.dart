@@ -187,7 +187,11 @@ void main() {
       );
       expect(
         statuses['Multi-endpoint/profile management'],
-        HermesSurfaceStatus.deferred,
+        HermesSurfaceStatus.available,
+      );
+      expect(
+        details['Multi-endpoint/profile management'],
+        contains('secure storage'),
       );
       expect(statuses.containsKey('Legacy durable reconnect'), isFalse);
     },

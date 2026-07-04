@@ -45,7 +45,7 @@ info 'provider-backed Hermes chat/voice: requires configured model/provider cred
 info 'Android microphone + continuous voice: requires responsive audio-capable Android target and manual docs/runbooks/android/live-mic-smoke.md receipt'
 info 'Windows, iOS, and macOS builds: require successful native-host runner jobs/artifacts or native host receipts'
 info 'Hermes realtime/server audio: unimplemented; current voice path is local STT-to-text'
-info 'Deferred Hermes surfaces: config admin, memory UI, jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media, files/context folders, raw diagnostics/log export, and multi-endpoint/profile management'
+info 'Deferred Hermes surfaces: config admin, memory UI, jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log export; multi-endpoint/profile management is implemented locally'
 
 android_live_mic_receipt="${NAVIVOX_ANDROID_LIVE_MIC_RECEIPT:-build/receipts/android-live-mic-smoke.json}"
 android_live_mic_receipt_valid=0
@@ -361,7 +361,7 @@ block 'Hermes persona/SOUL editing remains deferred by policy'
 block 'Hermes attachments/media remain deferred by policy'
 block 'Hermes files/context folders remain deferred by policy'
 block 'Hermes raw diagnostics/log export remains deferred; bounded diagnostics only'
-block 'Hermes multi-endpoint/profile management remains deferred; one saved endpoint MVP only'
+ok 'Hermes multi-endpoint/profile management available locally with secure per-profile API-key storage'
 printf '\nSummary: %s blocker(s), %s warning state.\n' "$blockers" "$status"
 if [ "$blockers" -gt 0 ]; then
   printf 'Completion verdict: NOT COMPLETE; live provider/device/native-host or deferred-surface blockers remain.\n'
