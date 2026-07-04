@@ -186,12 +186,21 @@ void main() {
     expect(channel.state.errorMessage, contains('offline'));
   });
 
-  test('connect redacts bearer and secret values from stored errors', () async {
+  test('connect redacts and bounds secret-looking stored errors', () async {
     final channel = HermesApiChannel(
       clientBuilder: (config) => HermesApiClient(
         config: config,
         get: (uri, headers) async => throw StateError(
-          '401 unauthorized for Bearer secret-api-key token=secret-token',
+          '401 unauthorized for Bearer secret-api-key token=secret-token '
+          'Basic secret-basic Cookie: sid=secret-cookie; '
+          'https://user:secret-pass@example.test/path '
+          'sk-1234567890abcdef '
+          'ghp_'
+          'abcdefghijklmnopqrstuvwxyz123456 '
+          'xoxb-'
+          '123456789012-abcdefabcdefabcdef '
+          'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturevalue '
+          '${List.filled(30, 'verbose').join(' ')} tail-marker',
         ),
       ),
     );
@@ -201,8 +210,20 @@ void main() {
     expect(channel.state.status, HermesConnectionStatus.error);
     expect(channel.state.errorMessage, contains('401 unauthorized'));
     expect(channel.state.errorMessage, contains('Bearer [redacted]'));
+    expect(channel.state.errorMessage, contains('Basic [redacted]'));
+    expect(channel.state.errorMessage, contains('Cookie: [redacted]'));
+    expect(channel.state.errorMessage, contains('https://[redacted]@'));
+    expect(channel.state.errorMessage, contains('sk-[redacted]'));
+    expect(channel.state.errorMessage, contains('ghp_[redacted]'));
+    expect(channel.state.errorMessage, contains('xox-[redacted]'));
+    expect(channel.state.errorMessage, contains('[redacted-jwt]'));
     expect(channel.state.errorMessage, isNot(contains('secret-api-key')));
     expect(channel.state.errorMessage, isNot(contains('secret-token')));
+    expect(channel.state.errorMessage, isNot(contains('secret-basic')));
+    expect(channel.state.errorMessage, isNot(contains('secret-cookie')));
+    expect(channel.state.errorMessage, isNot(contains('secret-pass')));
+    expect(channel.state.errorMessage, isNot(contains('tail-marker')));
+    expect(channel.state.errorMessage!.length, lessThanOrEqualTo(241));
   });
 
   test('connect reports invalid Hermes base URLs without HTTP', () async {

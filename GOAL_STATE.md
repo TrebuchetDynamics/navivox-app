@@ -585,7 +585,9 @@ readiness checklist and non-completion caveats.
   keep the message queued while showing bounded/redacted recovery copy. UI,
   diagnostics, and Android live-mic receipt gates redact/reject additional
   token shapes such as GitHub tokens, Slack tokens, JWT-like strings,
-  diagnostic cookie headers, bare Basic credentials, and URL userinfo.
+  diagnostic cookie headers, bare Basic credentials, and URL userinfo. Hermes
+  channel stored error messages now share the broader redaction set and are
+  bounded before entering channel state.
 
 ## Honest caveat
 
