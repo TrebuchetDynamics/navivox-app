@@ -55,7 +55,7 @@ if [ -f "$android_live_mic_receipt" ]; then
 import json, re, sys
 from urllib.parse import urlsplit
 SECRET_PATTERN = re.compile(
-    r'(bearer\s+\S+|(?:api[-_ ]?key|token|secret)\s*(?:=|:)\s*\S+|secret[-_a-z0-9.]{4,}|sk-[a-z0-9_-]{12,})',
+    r'(bearer\s+\S+|(?:api[-_ ]?key|token|secret)\s*(?:=|:)\s*\S+|secret[-_a-z0-9.]{4,}|sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9_]{20,}|xox[abprs]-[a-z0-9-]{20,}|eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}\.[a-z0-9_-]{8,})',
     re.IGNORECASE,
 )
 receipt = json.load(open(sys.argv[1], encoding='utf-8'))

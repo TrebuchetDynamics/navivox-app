@@ -183,6 +183,9 @@ void main() {
     expect(scriptText, contains('provider_reply_observed'));
     expect(scriptText, contains('must be 240 characters or less'));
     expect(scriptText, contains('must not contain secret-looking values'));
+    expect(scriptText, contains('gh[pousr]_'));
+    expect(scriptText, contains('xox[abprs]-'));
+    expect(scriptText, contains('eyJ[a-z0-9_-]'));
     expect(scriptText, contains('second_spoken_phrase must differ'));
     expect(
       scriptText,

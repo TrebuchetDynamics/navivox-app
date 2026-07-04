@@ -568,6 +568,8 @@ void main() {
       capabilities: _capabilitiesFixture,
       models: const [
         'Bearer secret-model-token verbose model details verbose model details verbose model details model-tail',
+        'ghp_'
+            'abcdefghijklmnopqrstuvwxyz123456',
       ],
       skills: const [
         'github',
@@ -587,7 +589,15 @@ void main() {
     await tester.pumpWidget(_wrap(channel));
 
     expect(find.textContaining('Bearer [redacted]'), findsOneWidget);
+    expect(find.textContaining('ghp_[redacted]'), findsOneWidget);
     expect(find.textContaining('secret-model-token'), findsNothing);
+    expect(
+      find.textContaining(
+        'ghp_'
+        'abcdefghijklmnopqrstuvwxyz123456',
+      ),
+      findsNothing,
+    );
     expect(find.textContaining('model-tail'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('hermes-skills-chip')));
@@ -817,14 +827,24 @@ void main() {
           features: {
             'session_chat_streaming': true,
             'api_key=secret-feature-key': true,
+            'ghp_'
+                    'abcdefghijklmnopqrstuvwxyz123456':
+                true,
           },
           endpoints: {
             'Authorization: Bearer secret-endpoint-token':
                 HermesEndpointCapability(method: 'GET', path: '/safe'),
+            'xoxb-'
+                '123456789012-abcdefabcdefabcdef': HermesEndpointCapability(
+              method: 'GET',
+              path: '/slack',
+            ),
           },
         ),
         detailedHealth: const HermesHealthStatus(
-          status: 'ok token=secret-status-token',
+          status:
+              'ok token=secret-status-token eyJhbGciOiJIUzI1NiJ9.'
+              'eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturevalue',
           platform: 'platform-secret-platform-token',
           version: 'sk-1234567890abcdef',
           gatewayState: 'Authorization: Bearer secret-gateway-token',
@@ -848,6 +868,25 @@ void main() {
     expect(export, isNot(contains('secret-feature-key')));
     expect(export, isNot(contains('secret-endpoint-token')));
     expect(export, isNot(contains('secret-status-token')));
+    expect(
+      export,
+      isNot(
+        contains(
+          'ghp_'
+          'abcdefghijklmnopqrstuvwxyz123456',
+        ),
+      ),
+    );
+    expect(
+      export,
+      isNot(
+        contains(
+          'xoxb-'
+          '123456789012-abcdefabcdefabcdef',
+        ),
+      ),
+    );
+    expect(export, isNot(contains('eyJhbGciOiJIUzI1NiJ9')));
     expect(export, isNot(contains('secret-gateway-token')));
     expect(export, isNot(contains('secret-session-token')));
   });

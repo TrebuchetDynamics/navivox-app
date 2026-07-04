@@ -582,7 +582,9 @@ readiness checklist and non-completion caveats.
   when Hermes event casing differs. The Hermes jobs sheet now labels itself as
   read-only even when `jobs_admin` is advertised, avoiding implied mobile
   create/edit/delete scheduling support. Queued follow-up auto-send failures now
-  keep the message queued while showing bounded/redacted recovery copy.
+  keep the message queued while showing bounded/redacted recovery copy. UI,
+  diagnostics, and Android live-mic receipt gates redact/reject additional
+  token shapes such as GitHub tokens, Slack tokens, and JWT-like strings.
 
 ## Honest caveat
 

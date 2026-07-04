@@ -136,6 +136,9 @@ void main() {
       contains("urlunsplit((parts.scheme, netloc, '', '', ''))"),
     );
     expect(androidLiveMicReceipt, contains('SECRET_PATTERN'));
+    expect(androidLiveMicReceipt, contains('gh[pousr]_'));
+    expect(androidLiveMicReceipt, contains('xox[abprs]-'));
+    expect(androidLiveMicReceipt, contains('eyJ[a-z0-9_-]'));
     expect(androidLiveMicReceipt, contains('len(value) > 240'));
     expect(androidLiveMicReceipt, contains('short non-sensitive excerpt'));
     expect(androidLiveMicReceipt, contains('record a non-sensitive excerpt'));

@@ -120,6 +120,21 @@ String _safeDiagnosticsText(String text, {int maxLength = 120}) {
         'sk-[redacted]',
       )
       .replaceAll(
+        RegExp(r'gh[pousr]_[a-z0-9_]{20,}', caseSensitive: false),
+        'ghp_[redacted]',
+      )
+      .replaceAll(
+        RegExp(r'xox[abprs]-[a-z0-9-]{20,}', caseSensitive: false),
+        'xox-[redacted]',
+      )
+      .replaceAll(
+        RegExp(
+          r'eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}',
+          caseSensitive: false,
+        ),
+        '[redacted-jwt]',
+      )
+      .replaceAll(
         RegExp(r'secret[-_a-z0-9.]*', caseSensitive: false),
         '[redacted]',
       );
