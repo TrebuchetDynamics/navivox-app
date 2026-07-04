@@ -108,6 +108,21 @@ String _safeDiagnosticsText(String text, {int maxLength = 120}) {
     (match) => '${match[1]}[redacted]',
   );
   safe = safe.replaceAllMapped(
+    RegExp(r'Basic\s+[^\s,;]+', caseSensitive: false),
+    (_) => 'Basic [redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(
+      r'((?:Cookie|Set-Cookie|X-API-Key|X-Auth-Token)\s*[:=]\s*)[^\n\r,;]+',
+      caseSensitive: false,
+    ),
+    (match) => '${match[1]}[redacted]',
+  );
+  safe = safe.replaceAllMapped(
+    RegExp(r'([a-z][a-z0-9+.-]*://)([^/\s@]+@)', caseSensitive: false),
+    (match) => '${match[1]}[redacted]@',
+  );
+  safe = safe.replaceAllMapped(
     RegExp(
       r'((?:api[-_ ]?key|auth[-_ ]?token|token|secret|password|passwd|pwd|credential)\s*[:=]\s*)\S+',
       caseSensitive: false,

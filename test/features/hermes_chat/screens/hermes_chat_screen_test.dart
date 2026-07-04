@@ -827,6 +827,7 @@ void main() {
           features: {
             'session_chat_streaming': true,
             'api_key=secret-feature-key': true,
+            'Set-Cookie: session=secret-cookie-token': true,
             'ghp_'
                     'abcdefghijklmnopqrstuvwxyz123456':
                 true,
@@ -845,9 +846,10 @@ void main() {
           status:
               'ok token=secret-status-token eyJhbGciOiJIUzI1NiJ9.'
               'eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturevalue',
-          platform: 'platform-secret-platform-token',
+          platform: 'https://user:secret-url-pass@example.test/api',
           version: 'sk-1234567890abcdef',
-          gatewayState: 'Authorization: Bearer secret-gateway-token',
+          gatewayState:
+              'Authorization: Bearer secret-gateway-token Cookie: sid=secret-cookie-token Basic secret-basic-token',
           activeAgents: 1,
         ),
         models: const ['model-secret-model-token'],
@@ -866,6 +868,9 @@ void main() {
     expect(export, contains('sk-[redacted]'));
     expect(export, isNot(contains('secret-model-token')));
     expect(export, isNot(contains('secret-feature-key')));
+    expect(export, isNot(contains('secret-cookie-token')));
+    expect(export, isNot(contains('secret-url-pass')));
+    expect(export, isNot(contains('secret-basic-token')));
     expect(export, isNot(contains('secret-endpoint-token')));
     expect(export, isNot(contains('secret-status-token')));
     expect(
