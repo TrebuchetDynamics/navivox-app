@@ -1243,7 +1243,7 @@ String _safeHermesUiText(String text) {
   var safe = text;
   safe = safe.replaceAllMapped(
     RegExp(
-      r'(Authorization\s*:\s*(?:Bearer|Basic)\s+)[^\s,;]+',
+      r'(Authorization\s*[:=]\s*(?:Bearer|Basic)\s+)[^\s,;]+',
       caseSensitive: false,
     ),
     (match) => '${match[1]}[redacted]',
@@ -1258,7 +1258,7 @@ String _safeHermesUiText(String text) {
   );
   safe = safe.replaceAllMapped(
     RegExp(
-      r'((?:Cookie|Set-Cookie|X-API-Key|X-Auth-Token)\s*:\s*)[^\n\r,;]+',
+      r'((?:Cookie|Set-Cookie|X-API-Key|X-Auth-Token)\s*[:=]\s*)[^\n\r,;]+',
       caseSensitive: false,
     ),
     (match) => '${match[1]}[redacted]',

@@ -2969,24 +2969,37 @@ void main() {
         id: 'appr_1',
         toolCallId: 'tool-secret-call',
         prompt:
-            'Run with Bearer secret-approval-token and api_key=secret-api-key?',
-        risk: 'secret-risk-token',
+            'Run with Bearer secret-approval-token and api_key=secret-api-key Cookie=sid=secret-cookie-token?',
+        risk:
+            'secret-risk-token https://user:secret-pass@example.test/path Authorization=Basic secret-basic-token',
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Bearer [redacted]'), findsOneWidget);
     expect(find.textContaining('api_key=[redacted]'), findsOneWidget);
+    expect(find.textContaining('Cookie=[redacted]'), findsOneWidget);
     expect(find.textContaining('secret-approval-token'), findsNothing);
     expect(find.textContaining('secret-api-key'), findsNothing);
+    expect(find.textContaining('secret-cookie-token'), findsNothing);
     expect(find.textContaining('secret-risk-token'), findsNothing);
+    expect(find.textContaining('secret-pass'), findsNothing);
+    expect(find.textContaining('secret-basic-token'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('hermes-approval-review')));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Bearer [redacted]'), findsAtLeastNWidgets(2));
+    expect(find.textContaining('Cookie=[redacted]'), findsAtLeastNWidgets(2));
+    expect(find.textContaining('https://[redacted]@'), findsAtLeastNWidgets(1));
+    expect(
+      find.textContaining('Authorization=Basic [redacted]'),
+      findsAtLeastNWidgets(1),
+    );
     expect(find.textContaining('Tool call: tool-[redacted]'), findsOneWidget);
     expect(find.textContaining('tool-secret-call'), findsNothing);
+    expect(find.textContaining('secret-pass'), findsNothing);
+    expect(find.textContaining('secret-basic-token'), findsNothing);
   });
 
   testWidgets('shows approval response progress while Hermes answers', (

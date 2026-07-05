@@ -587,7 +587,9 @@ readiness checklist and non-completion caveats.
   token shapes such as GitHub tokens, Slack tokens, JWT-like strings,
   diagnostic cookie headers, bare Basic credentials, and URL userinfo. Hermes
   channel stored error messages now share the broader redaction set and are
-  bounded before entering channel state. Android live-mic receipt validators now
+  bounded before entering channel state. Mobile approval review redaction now
+  also handles equals-style Authorization/Cookie headers. Android live-mic
+  receipt validators now
   also require an explicit `NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true` gate and
   reject Basic credentials, credential headers, and URL userinfo in spoken
   phrase/provider reply excerpts.
