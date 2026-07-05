@@ -1,6 +1,6 @@
 # Hermes companion readiness audit
 
-Last updated: 2026-07-04.
+Last updated: 2026-07-05.
 
 This audit maps the current pure-Hermes Navivox companion goal to concrete
 evidence and remaining blockers. It is intentionally conservative: a passing
@@ -12,8 +12,8 @@ explicit external or deferred blocker but is not a completion receipt.
 
 | Requirement | Current evidence | Status |
 | --- | --- | --- |
-| Provider-backed Hermes chat smoke with real model/provider credentials | `npm run hermes:provider-smoke:local` passed on 2026-07-03 with a configured local Hermes home; Playwright reported 1 pass. The smoke connects to a configured local Hermes API, sends a typed prompt, and verifies the model reply. The helper says this receipt is not whole-goal completion evidence by itself and points to strict readiness audit before completion claims. | Covered for configured local Hermes text. |
-| Provider-backed Hermes voice smoke | Same provider smoke submits a deterministic device transcript via `navivoxE2EHermesSubmitVoice` and verifies a model reply. The helper caveat says this is deterministic transcript voice only, not physical microphone evidence or Hermes realtime/server audio. | Covered for transcript voice only; not physical mic or server audio. |
+| Provider-backed Hermes chat smoke with real model/provider credentials | `npm run hermes:provider-smoke:local` writes `build/receipts/hermes-provider-smoke.json` after a no-retry Playwright pass against a configured local Hermes home. The receipt is bound to the current `head_sha`, records a sanitized origin-only `base_url`, includes `evidence_for` entries for `provider-backed Hermes typed text turn` and `deterministic transcript voice turn`, and includes `not_evidence_for` caveats for physical Android mic, Hermes realtime/server audio, native-host receipts, platform workflow publication, deferred parity, and whole-goal completion. | Covered for configured local Hermes text. |
+| Provider-backed Hermes voice smoke | Same provider smoke submits a deterministic device transcript via `navivoxE2EHermesSubmitVoice` and verifies a model reply. The helper caveat says this is deterministic transcript voice only, not physical microphone evidence or Hermes realtime/server audio, and the readiness audit rejects stale/malformed provider receipts. | Covered for transcript voice only; not physical mic or server audio. |
 | Android speech/mic readiness | `npm run android:voice-smoke` passed on a KVM-backed `fractal_test` emulator on 2026-07-03, verifying speech recognizer availability and granted mic permission. `NAVIVOX_ANDROID_SKIP_BUILD=1 NAVIVOX_ANDROID_HERMES_URL=http://10.0.2.2:8642 npm run android:live-mic-prep` also installed/launched/granted mic permission on `fractal_test`. A later direct target recheck showed `adb devices` had no attached Android devices while `flutter devices` listed only Linux desktop and Chrome web. The canonical manual physical-audio checklist is `docs/runbooks/android/live-mic-smoke.md`. | Readiness/prep covered; real spoken audio not covered. |
 | Android continuous voice loop | `NAVIVOX_ANDROID_DEVICE_ID=<emulator> NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1 npm run android:hermes-voice-loop-smoke` passed on a KVM-backed `fractal_test` emulator on 2026-07-03. It runs `HermesChatScreen` with deterministic capture, fake Hermes channel, and fake TTS for two loop turns. | Deterministic loop covered; physical mic/provider loop not covered. |
 | Android debug APK build | `flutter build apk --debug` passed on 2026-07-03 and produced `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; no live Android physical mic receipt. |
@@ -80,10 +80,15 @@ The read-only helper currently expands the remaining blockers into these
 non-overlapping categories:
 
 - Provider-backed smoke receipt: configured Hermes home presence is only
-  informational. Strict closeout still requires a current
+  informational. Strict closeout requires a current
   `npm run hermes:provider-smoke:local` receipt with configured model/provider
-  credentials, and deterministic transcript voice still is not physical
-  microphone or Hermes server-audio evidence.
+  credentials. The readiness audit now requires the provider receipt to match
+  current `HEAD`, carry a sanitized origin-only `base_url`, report zero
+  Playwright retries, include explicit `evidence_for` labels for typed text and
+  deterministic transcript voice, and include `not_evidence_for` caveats for
+  Android physical mic, Hermes server audio, native hosts, platform workflow,
+  deferred parity, and whole-goal completion. Deterministic transcript voice
+  still is not physical microphone or Hermes server-audio evidence.
 - Native/host receipts: platform workflow publication and Windows/iOS/macOS
   hosted receipts are covered by `build/receipts/hermes-platform-workflow.json`;
   no online Android target remains the external device blocker. When Android is

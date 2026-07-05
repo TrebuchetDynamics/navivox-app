@@ -324,8 +324,11 @@ void main() {
     expect(auditText, contains('configured model/provider\n  credentials'));
     expect(
       auditText,
-      contains('not physical\n  microphone or Hermes server-audio evidence'),
+      contains('not physical microphone or Hermes server-audio evidence'),
     );
+    expect(auditText, contains('current `HEAD`'));
+    expect(auditText, contains('sanitized origin-only `base_url`'));
+    expect(auditText, contains('explicit `evidence_for` labels'));
     expect(auditText, contains('Do not count as completion'));
     expect(auditText, contains('Android `live-mic-prep` by itself'));
     expect(auditText, contains('Workflow YAML by itself'));
