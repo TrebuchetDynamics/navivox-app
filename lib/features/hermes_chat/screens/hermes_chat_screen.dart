@@ -417,6 +417,27 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                         unawaited(_openQueuedFollowUpSession(context, channel)),
                     child: const Text('Open session'),
                   ),
+                TextButton.icon(
+                  key: const ValueKey('hermes-queued-follow-up-copy'),
+                  onPressed: () {
+                    unawaited(
+                      Clipboard.setData(
+                        ClipboardData(
+                          text: _queuedFollowUpDetailsSummary(state),
+                        ),
+                      ),
+                    );
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Copied redacted Hermes queued follow-ups.',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_outlined),
+                  label: const Text('Copy'),
+                ),
                 TextButton(
                   key: const ValueKey('hermes-queued-follow-up-send-now'),
                   onPressed: _canSendQueuedFollowUp(state)
@@ -1013,6 +1034,28 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
 
   String _queuedFollowUpPreview(String text) =>
       _safeHermesUiPreview(text, maxLength: 48);
+
+  String _queuedFollowUpDetailsSummary(HermesChannelState state) {
+    final buffer = StringBuffer()
+      ..writeln('Hermes queued follow-ups')
+      ..writeln('Queued: ${_queuedFollowUps.length}')
+      ..writeln(
+        'Active session: ${_safeHermesUiPreview(state.activeSessionId ?? 'none', maxLength: 80)}',
+      )
+      ..writeln(
+        'Next session: ${_safeHermesUiPreview(_queuedFollowUps.first.sessionId ?? 'none', maxLength: 80)}',
+      )
+      ..writeln('Can send now: ${_canSendQueuedFollowUp(state)}');
+    var index = 1;
+    for (final queued in _queuedFollowUps.take(_maxQueuedFollowUps)) {
+      buffer.writeln(
+        '$index. ${_safeHermesUiPreview(queued.text, maxLength: 160)}',
+      );
+      index += 1;
+    }
+    buffer.write('Secrets: redacted');
+    return buffer.toString();
+  }
 
   Future<void> _captureOnce(HermesChannel channel) async {
     if (_capturing) return;

@@ -1938,6 +1938,54 @@ void main() {
     );
   });
 
+  testWidgets('queued follow-up copy details are bounded and redacted', (
+    tester,
+  ) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('current');
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      'use Bearer secret-queued-token and api_key=secret-queued-key',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-queued-follow-up-copy')),
+    );
+    await tester.pump();
+
+    expect(copiedText, contains('Hermes queued follow-ups'));
+    expect(copiedText, contains('Queued: 1'));
+    expect(copiedText, contains('Bearer [redacted]'));
+    expect(copiedText, contains('api_key=[redacted]'));
+    expect(copiedText, isNot(contains('secret-queued-token')));
+    expect(copiedText, isNot(contains('secret-queued-key')));
+    expect(
+      find.text('Copied redacted Hermes queued follow-ups.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('queued follow-up waits for its original session', (
     tester,
   ) async {
