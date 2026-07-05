@@ -1856,31 +1856,67 @@ class _HermesSessionTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: () => onSelect(session),
-      trailing: canRename || canFork || canDelete
-          ? PopupMenuButton<String>(
-              key: ValueKey('hermes-session-menu-${session.id}'),
-              tooltip: 'Session actions',
-              onSelected: (value) {
-                switch (value) {
-                  case 'rename':
-                    onRename(session);
-                  case 'fork':
-                    onFork(session);
-                  case 'delete':
-                    onDelete(session);
-                }
-              },
-              itemBuilder: (context) => [
-                if (canRename)
-                  const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                if (canFork)
-                  const PopupMenuItem(value: 'fork', child: Text('Fork')),
-                if (canDelete)
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
-              ],
-            )
-          : null,
+      trailing: PopupMenuButton<String>(
+        key: ValueKey('hermes-session-menu-${session.id}'),
+        tooltip: 'Session actions',
+        onSelected: (value) {
+          switch (value) {
+            case 'copy':
+              unawaited(
+                Clipboard.setData(
+                  ClipboardData(text: _sessionDetailsSummary(session, active)),
+                ),
+              );
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                const SnackBar(
+                  content: Text('Copied redacted Hermes session details.'),
+                ),
+              );
+            case 'rename':
+              onRename(session);
+            case 'fork':
+              onFork(session);
+            case 'delete':
+              onDelete(session);
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(value: 'copy', child: Text('Copy details')),
+          if (canRename)
+            const PopupMenuItem(value: 'rename', child: Text('Rename')),
+          if (canFork) const PopupMenuItem(value: 'fork', child: Text('Fork')),
+          if (canDelete)
+            const PopupMenuItem(value: 'delete', child: Text('Delete')),
+        ],
+      ),
     );
+  }
+
+  String _sessionDetailsSummary(HermesSession session, bool active) {
+    final buffer = StringBuffer()
+      ..writeln('Hermes session')
+      ..writeln(
+        'Title: ${_safeHermesUiPreview(session.title ?? session.id, maxLength: 96)}',
+      )
+      ..writeln('ID: ${_safeHermesUiPreview(session.id, maxLength: 120)}')
+      ..writeln('Active: $active')
+      ..writeln('Messages: ${session.messageCount}');
+    if (session.parentSessionId != null) {
+      buffer.writeln(
+        'Forked from: ${_safeHermesUiPreview(session.parentSessionId!, maxLength: 120)}',
+      );
+    }
+    if (session.lastActive != null) {
+      buffer.writeln(
+        'Last active: ${_safeHermesUiPreview(session.lastActive!, maxLength: 120)}',
+      );
+    }
+    if (session.preview != null) {
+      buffer.write(
+        'Preview: ${_safeHermesUiPreview(session.preview!, maxLength: 240)}',
+      );
+    }
+    return buffer.toString().trimRight();
   }
 }
 

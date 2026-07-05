@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/hermes/channel/hermes_channel.dart';
@@ -1515,11 +1516,35 @@ void main() {
     expect(find.textContaining('Could not create session:'), findsOneWidget);
   });
 
-  testWidgets('sessions panel hides row action menus when not advertised', (
+  testWidgets('sessions panel keeps copy details while mutation actions hide', (
     tester,
   ) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     final channel = FakeHermesChannel(
-      sessions: const [HermesSession(id: 'sess_1', source: 'fake')],
+      sessions: const [
+        HermesSession(
+          id: 'sess_1',
+          source: 'fake',
+          title: 'Secret session token=hidden-token',
+          preview: 'Preview with Bearer secret-session-token',
+        ),
+      ],
     );
     await tester.pumpWidget(_wrap(channel));
 
@@ -1530,10 +1555,27 @@ void main() {
       find.byKey(const ValueKey('hermes-session-row-sess_1')),
       findsOneWidget,
     );
+    await tester.tap(find.byKey(const ValueKey('hermes-session-menu-sess_1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy details'), findsOneWidget);
+    expect(find.text('Rename'), findsNothing);
+    expect(find.text('Fork'), findsNothing);
+    expect(find.text('Delete'), findsNothing);
+
+    await tester.tap(find.text('Copy details'));
+    await tester.pumpAndSettle();
+
     expect(
-      find.byKey(const ValueKey('hermes-session-menu-sess_1')),
-      findsNothing,
+      find.text('Copied redacted Hermes session details.'),
+      findsOneWidget,
     );
+    expect(copiedText, isNotNull);
+    expect(copiedText, contains('Hermes session'));
+    expect(copiedText, contains('token=[redacted]'));
+    expect(copiedText, contains('Bearer [redacted]'));
+    expect(copiedText, isNot(contains('hidden-token')));
+    expect(copiedText, isNot(contains('secret-session-token')));
   });
 
   testWidgets('sessions panel clears a filtered search', (tester) async {

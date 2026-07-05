@@ -430,6 +430,8 @@ readiness checklist and non-completion caveats.
    active metadata with redaction/bounds on last-active text, and hiding row action menus when Hermes does not advertise
    any mutable session endpoints, showing bounded feedback when session
    selection fails, bounding session mutation error details before SnackBar display,
+   keeping a copy action for bounded/redacted session details while hiding mutation
+   actions when Hermes does not advertise them,
    hiding create-session actions when Hermes does not advertise
    session creation, locally rejecting mutable session calls when Hermes does not
    advertise create/update/delete/fork endpoints, and surfacing bounded feedback
