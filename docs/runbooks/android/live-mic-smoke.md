@@ -57,10 +57,12 @@ Record all of the following before claiming the required physical-mic evidence:
 7. Verify capture → Hermes reply → TTS → re-arm for at least one second spoken
    turn. The second spoken phrase must be different from the first so the receipt
    proves a distinct re-armed capture, not a replayed transcript.
-8. Verify no API key, pairing token, bearer token, transcript secret, raw tool
+8. Verify the audio was spoken aloud into the Android microphone path, not
+   injected through synthetic/generated transcript or host playback tooling.
+9. Verify no API key, pairing token, bearer token, transcript secret, raw tool
    payload, or private diagnostic data appears in routes, logs, notices,
    screenshots, or diagnostics export.
-9. Record the manual receipt only after all observations above are true:
+10. Record the manual receipt only after all observations above are true:
 
    ```bash
    NAVIVOX_ANDROID_DEVICE_ID=<device-id> \
@@ -72,6 +74,7 @@ Record all of the following before claiming the required physical-mic evidence:
    NAVIVOX_ANDROID_TTS_OBSERVED=true \
    NAVIVOX_ANDROID_REARM_OBSERVED=true \
    NAVIVOX_ANDROID_NO_SECRET_LEAKS=true \
+   NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false \
    npm run android:live-mic-receipt
    ```
 
@@ -82,14 +85,15 @@ Record all of the following before claiming the required physical-mic evidence:
    `pm path` and `dumpsys package`, and rejects secret-looking or overlong spoken
    phrases/provider reply excerpts; keep each manual evidence value to 240
    characters or less. The helper and audit require an explicit physical-mic
-   manual observation gate, require the second spoken phrase to
-   differ from the first, require the provider reply excerpt to differ from both
-   spoken phrases, require the receipt `head_sha` to match the current git
-   `HEAD`, require non-empty manufacturer/model/SDK/fingerprint device
-   properties, require the expected Navivox package to be installed with version
-   metadata and `RECORD_AUDIO` granted, and validate the required fields/caveats
-   while still treating unrelated blockers as open.
-10. Run strict readiness audit after recording the receipt:
+   manual observation gate, require `NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false`,
+   require the second spoken phrase to differ from the first, require the
+   provider reply excerpt to differ from both spoken phrases, require the receipt
+   `head_sha` to match the current git `HEAD`, require non-empty
+   manufacturer/model/SDK/fingerprint device properties, require the expected
+   Navivox package to be installed with version metadata and `RECORD_AUDIO`
+   granted, and validate the required fields/caveats while still treating
+   unrelated blockers as open.
+11. Run strict readiness audit after recording the receipt:
 
    ```bash
    NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit

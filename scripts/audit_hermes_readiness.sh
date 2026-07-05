@@ -160,6 +160,8 @@ if not package_info.get('paths'):
 for key in ['physical_mic_observed', 'tts_observed', 'rearm_observed', 'no_secret_leaks_observed', 'distinct_rearmed_turn_observed', 'hermes_url_sanitized']:
     if receipt.get(key) is not True:
         missing.append(f'{key}=true')
+if receipt.get('synthetic_audio_used') is not False:
+    missing.append('synthetic_audio_used=false')
 hermes_url = str(receipt.get('hermes_url', ''))
 parsed_hermes_url = urlsplit(hermes_url)
 if parsed_hermes_url.username or parsed_hermes_url.password or parsed_hermes_url.query or parsed_hermes_url.fragment:

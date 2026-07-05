@@ -108,6 +108,11 @@ void main() {
     );
     expect(
       androidLiveMicReceipt,
+      contains('NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false'),
+    );
+    expect(androidLiveMicReceipt, contains('synthetic_audio_used'));
+    expect(
+      androidLiveMicReceipt,
       contains('NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE must be a different'),
     );
     expect(

@@ -214,6 +214,7 @@ void main() {
     expect(scriptText, contains("'version_name', 'version_code'"));
     expect(scriptText, contains("package_info.{key}"));
     expect(scriptText, contains('physical_mic_observed'));
+    expect(scriptText, contains('synthetic_audio_used=false'));
     expect(scriptText, contains('hermes_url_sanitized'));
     expect(
       scriptText,

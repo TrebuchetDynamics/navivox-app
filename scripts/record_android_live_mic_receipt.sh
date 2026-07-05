@@ -26,17 +26,27 @@ require_true() {
   fi
 }
 
+require_false() {
+  local name="$1"
+  local value="${!name:-}"
+  if [ "$value" != "false" ]; then
+    echo "$name=false is required; synthetic/generated audio cannot be recorded as a physical mic receipt." >&2
+    exit 2
+  fi
+}
+
 require_env NAVIVOX_ANDROID_HERMES_URL
 require_env NAVIVOX_ANDROID_SPOKEN_PHRASE
 require_env NAVIVOX_ANDROID_PROVIDER_REPLY
 require_env NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE
 # Required manual-observation gates: NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true,
 # NAVIVOX_ANDROID_TTS_OBSERVED=true, NAVIVOX_ANDROID_REARM_OBSERVED=true,
-# NAVIVOX_ANDROID_NO_SECRET_LEAKS=true.
+# NAVIVOX_ANDROID_NO_SECRET_LEAKS=true, and NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false.
 require_true NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED
 require_true NAVIVOX_ANDROID_TTS_OBSERVED
 require_true NAVIVOX_ANDROID_REARM_OBSERVED
 require_true NAVIVOX_ANDROID_NO_SECRET_LEAKS
+require_false NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED
 
 package_name="${NAVIVOX_ANDROID_PACKAGE:-com.trebuchetdynamics.navivox}"
 
@@ -164,6 +174,7 @@ receipt = {
     'tts_observed': os.environ['NAVIVOX_ANDROID_TTS_OBSERVED'] == 'true',
     'rearm_observed': os.environ['NAVIVOX_ANDROID_REARM_OBSERVED'] == 'true',
     'no_secret_leaks_observed': os.environ['NAVIVOX_ANDROID_NO_SECRET_LEAKS'] == 'true',
+    'synthetic_audio_used': os.environ['NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED'] == 'true',
     'distinct_rearmed_turn_observed': True,
     'evidence_for': [
         'physical Android microphone audio to local STT',
