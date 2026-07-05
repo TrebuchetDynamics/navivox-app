@@ -20,7 +20,7 @@ void main() {
       'iOS simulator native-host build receipt missing',
       'macOS desktop native-host build receipt missing',
       'full live provider-backed Hermes chat/voice smoke receipt missing',
-      'Hermes realtime/server audio remains unimplemented',
+      'Hermes realtime/server audio receipt missing',
       'Hermes config editing/admin remains deferred',
       'Hermes memory UI remains deferred',
       'Hermes jobs/schedules admin remains deferred',
@@ -34,6 +34,23 @@ void main() {
       expect(scriptText, contains(blocker), reason: blocker);
     }
 
+    expect(scriptText, contains('NAVIVOX_HERMES_SERVER_AUDIO_RECEIPT'));
+    expect(
+      scriptText,
+      contains('build/receipts/hermes-server-audio-smoke.json'),
+    );
+    expect(scriptText, contains("kind=hermes_server_audio_smoke"));
+    expect(scriptText, contains('hermes_realtime_or_audio_api'));
+    expect(scriptText, contains('client_audio_to_hermes_server_audio'));
+    expect(scriptText, contains('hermes_server_audio_to_client_playback'));
+    expect(scriptText, contains('provider_reply_observed'));
+    expect(scriptText, contains('server_audio_playback_observed'));
+    expect(scriptText, contains('round_trip_observed'));
+    expect(
+      scriptText,
+      contains('Hermes realtime/server audio receipt present'),
+    );
+    expect(scriptText, contains('not Android physical mic'));
     expect(scriptText, contains('npm run platform:workflow-smoke'));
     expect(scriptText, contains('NAVIVOX_PLATFORM_WORKFLOW_RECEIPT'));
     expect(

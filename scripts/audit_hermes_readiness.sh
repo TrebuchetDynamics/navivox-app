@@ -469,7 +469,78 @@ else
   block_receipt 'full live provider-backed Hermes chat/voice smoke receipt missing from this audit; run npm run hermes:provider-smoke:local with configured model/provider credentials; deterministic transcript voice is not physical microphone/server audio evidence'
 fi
 
-block_server_audio 'Hermes realtime/server audio remains unimplemented; device STT -> Hermes text only'
+server_audio_receipt="${NAVIVOX_HERMES_SERVER_AUDIO_RECEIPT:-build/receipts/hermes-server-audio-smoke.json}"
+if [ -f "$server_audio_receipt" ]; then
+  current_head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+  if python3 - "$server_audio_receipt" "$current_head_sha" <<'PY'
+import json, re, sys
+receipt = json.load(open(sys.argv[1], encoding='utf-8'))
+current_head_sha = sys.argv[2]
+missing = []
+SECRET_PATTERN = re.compile(
+    r'(bearer\s+\S+|basic\s+\S+|(?:authorization|cookie|set-cookie|x-api-key|x-auth-token)\s*[:=]\s*\S+|[a-z][a-z0-9+.-]*://[^/\s@]+@|(?:api[-_ ]?key|auth[-_ ]?token|token|secret|password|passwd|pwd|credential|credentials|auth)\s*(?:=|:)\s*\S+|secret[-_a-z0-9.]{4,}|sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9_]{20,}|xox[abprs]-[a-z0-9-]{20,}|eyJ[a-z0-9_-]{8,}\.[a-z0-9_-]{8,}\.[a-z0-9_-]{8,})',
+    re.IGNORECASE,
+)
+if receipt.get('kind') != 'hermes_server_audio_smoke':
+    missing.append('kind=hermes_server_audio_smoke')
+if receipt.get('status') != 'passed':
+    missing.append('status=passed')
+for key in ['timestamp_utc', 'head_sha', 'server_audio_transport', 'input_audio_path', 'response_audio_path']:
+    if not receipt.get(key):
+        missing.append(key)
+if current_head_sha and receipt.get('head_sha') != current_head_sha:
+    missing.append('head_sha must match current git HEAD')
+expected_paths = {
+    'server_audio_transport': 'hermes_realtime_or_audio_api',
+    'input_audio_path': 'client_audio_to_hermes_server_audio',
+    'response_audio_path': 'hermes_server_audio_to_client_playback',
+}
+for key, expected in expected_paths.items():
+    if receipt.get(key) != expected:
+        missing.append(f'{key}={expected}')
+for key in ['provider_reply_observed', 'server_audio_playback_observed', 'round_trip_observed', 'no_secret_leaks_observed']:
+    if receipt.get(key) is not True:
+        missing.append(f'{key}=true')
+for key in ['prompt_excerpt', 'provider_reply_excerpt']:
+    value = str(receipt.get(key, ''))
+    if not value:
+        missing.append(key)
+    if len(value) > 240:
+        missing.append(f'{key} must be 240 characters or less')
+    if SECRET_PATTERN.search(value):
+        missing.append(f'{key} must not contain secret-looking values')
+evidence = set(receipt.get('evidence_for') or [])
+for item in [
+    'Hermes realtime/server audio input',
+    'server-side audio turn',
+    'provider-backed reply',
+    'server audio playback',
+]:
+    if item not in evidence:
+        missing.append(f'evidence_for:{item}')
+not_evidence = set(receipt.get('not_evidence_for') or [])
+for item in [
+    'physical Android microphone audio',
+    'Windows/iOS/macOS native-host receipts',
+    'platform workflow publication',
+    'deferred Hermes Desktop parity surfaces',
+    'whole-goal completion',
+]:
+    if item not in not_evidence:
+        missing.append(f'not_evidence_for:{item}')
+if missing:
+    print('; '.join(missing))
+    sys.exit(1)
+PY
+  then
+    ok "Hermes realtime/server audio receipt present ($server_audio_receipt)"
+    info 'Hermes server-audio receipt is not Android physical mic, native-host, platform-workflow, deferred-surface, or whole-goal evidence'
+  else
+    block_server_audio "Hermes realtime/server audio receipt is present but incomplete ($server_audio_receipt); keep device STT -> Hermes text as the only verified voice path"
+  fi
+else
+  block_server_audio 'Hermes realtime/server audio receipt missing; current verified voice path is device STT -> Hermes text only'
+fi
 block_deferred_surface 'Hermes config editing/admin remains deferred by policy'
 block_deferred_surface 'Hermes memory UI remains deferred by policy'
 block_deferred_surface 'Hermes jobs/schedules admin remains deferred; current jobs support is read-only inventory only'

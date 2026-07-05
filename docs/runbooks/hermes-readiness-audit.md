@@ -66,7 +66,7 @@ the explicit objective as follows:
 | Android automated voice-loop receipt | `build/receipts/android-hermes-voice-loop-smoke.json` validates the Android `HermesChatScreen` deterministic transcript capture, fake Hermes replies, fake TTS callback, and continuous re-arm for a distinct second turn. | Covered for no-human Android voice-loop mechanics; not physical-mic/provider/server-audio evidence. |
 | Windows/iOS/macOS host receipts | `build/receipts/hermes-platform-workflow.json` validates successful watched native-host jobs and artifacts for the current checkout. | Covered. |
 | Publish platform workflow | `gh workflow list` exposes `Hermes platform smoke`, and `npm run platform:workflow-smoke` produced a successful watched receipt. | Covered. |
-| Hermes realtime/server audio | `hermesSurfaceReadiness()` marks advertised `realtime_voice` or `audio_api` as blocked until server audio is wired, and unadvertised server audio as deferred; voice remains device STT -> Hermes text. | Deferred/unimplemented by policy. |
+| Hermes realtime/server audio | `build/receipts/hermes-server-audio-smoke.json` must validate a current-head Hermes realtime/audio API round trip. Until that exists, `hermesSurfaceReadiness()` marks advertised `realtime_voice` or `audio_api` as blocked and unadvertised server audio as deferred; voice remains device STT -> Hermes text. | Not covered; missing server-audio receipt keeps this blocked. |
 | Deferred Hermes Desktop parity | Multi-endpoint/profile management is available locally; jobs inventory and bounded diagnostics are read-only; config/admin, memory UI, jobs admin, gateways, persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log export are deferred. | Partially covered; remaining surfaces deferred/read-only by policy. |
 | Polish/hardening | Existing tests cover SSE reconnect/drop recovery, offline/auth-expired copy, session search/grouping, queued follow-ups, and mobile approval/error/session sheet behaviors for the implemented Hermes surfaces. Future regressions or newly wired surfaces still need focused coverage. | Covered for current implemented surfaces; not evidence for Android physical mic or server audio. |
 
@@ -107,7 +107,13 @@ non-overlapping categories:
 - Voice/audio: automated Android voice-loop mechanics are covered only as a
   no-human regression gate; real spoken Android physical-mic evidence remains a
   blocker until recorded. Hermes realtime/server audio is not implemented, so
-  voice remains device STT -> Hermes text.
+  voice remains device STT -> Hermes text. The future server-audio closeout
+  receipt is `build/receipts/hermes-server-audio-smoke.json`; it must match
+  current `HEAD`, prove `hermes_realtime_or_audio_api`,
+  `client_audio_to_hermes_server_audio`,
+  `hermes_server_audio_to_client_playback`, provider reply, playback, round trip,
+  safe short prompt/reply excerpts, no secret leaks, and explicit
+  `not_evidence_for` caveats before it can clear only the server-audio blocker.
 - Deferred Hermes surfaces: config editing/admin, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
   folders, and raw diagnostics/log export. Multi-endpoint/profile management is
