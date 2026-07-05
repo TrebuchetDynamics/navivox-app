@@ -1042,6 +1042,10 @@ void main() {
     expect(export, isNot(contains('Legacy durable reconnect')));
     expect(export, contains('Jobs: 1'));
     expect(export, contains('Secrets: excluded'));
+    expect(export, contains('Raw logs: excluded'));
+    expect(export, contains('Tool payloads: excluded'));
+    expect(export, contains('Transcripts: excluded'));
+    expect(export, contains('Local paths: excluded'));
     expect(export, isNot(contains('Authorization')));
     expect(export, isNot(contains('secret')));
     expect(export, isNot(contains('NAVIVOX_DO_NOT_EXPORT_TOKEN')));

@@ -613,9 +613,10 @@ readiness checklist and non-completion caveats.
   use bounded/redacted prompt and risk previews with explicit truncation copy for
   mobile review plus a copy action for bounded/redacted approval details. Server-audio honesty now treats either advertised `audio_api` or
   `realtime_voice` as blocked until Navivox wires real server audio. Bounded
-  diagnostics now redacts dynamic metadata fields such as active session title,
-  health strings, capability model/features/endpoints, and model names. Tool
-  progress cards redact and bound tool names/results before rendering, and run
+  diagnostics now explicitly labels secrets, raw logs, tool payloads,
+  transcripts, and local paths as excluded, and redacts dynamic metadata fields
+  such as active session title, health strings, capability
+  model/features/endpoints, and model names. Tool progress cards redact and bound tool names/results before rendering, and run
   transport now uses Hermes tool-call ids when present so parallel same-name tool
   calls do not collapse into one card. Hermes endpoint setup now strips URL
   userinfo, query strings, fragments, and route paths before connecting,
