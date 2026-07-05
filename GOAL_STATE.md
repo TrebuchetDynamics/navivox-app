@@ -593,7 +593,9 @@ readiness checklist and non-completion caveats.
   also require an explicit `NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true` gate,
   document that copied route/path state is stripped from recorded Hermes URLs,
   and reject Basic credentials, credential headers, and URL userinfo in spoken
-  phrase/provider reply excerpts.
+  phrase/provider reply excerpts. Provider-smoke receipts are now audited for a
+  current `head_sha`, sanitized origin-only `base_url`, and explicit
+  non-evidence caveats for platform workflow/deferred parity.
 
 ## Honest caveat
 

@@ -322,6 +322,7 @@ if [ -f "$provider_receipt" ]; then
   current_head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
   if python3 - "$provider_receipt" "$current_head_sha" <<'PY'
 import json, sys
+from urllib.parse import urlsplit
 receipt = json.load(open(sys.argv[1], encoding='utf-8'))
 current_head_sha = sys.argv[2]
 missing = []
@@ -335,11 +336,23 @@ if not receipt.get('head_sha'):
     missing.append('head_sha')
 elif current_head_sha and receipt.get('head_sha') != current_head_sha:
     missing.append('head_sha must match current git HEAD')
+base_url = str(receipt.get('base_url', ''))
+parsed_base_url = urlsplit(base_url)
+if not base_url:
+    missing.append('base_url')
+elif not parsed_base_url.scheme or not parsed_base_url.netloc:
+    missing.append('base_url must include scheme and host')
+if parsed_base_url.username or parsed_base_url.password or parsed_base_url.query or parsed_base_url.fragment:
+    missing.append('base_url must omit userinfo, query, and fragment')
+if parsed_base_url.path not in ('', '/'):
+    missing.append('base_url must be an origin without copied route/path state')
 not_evidence = set(receipt.get('not_evidence_for') or [])
 for item in [
     'physical Android microphone audio',
     'Hermes realtime/server audio',
     'native-host Windows/iOS/macOS receipts',
+    'platform workflow publication',
+    'deferred Hermes Desktop parity surfaces',
     'whole-goal completion',
 ]:
     if item not in not_evidence:

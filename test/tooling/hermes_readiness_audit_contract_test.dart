@@ -114,6 +114,17 @@ void main() {
     expect(scriptText, contains("receipt.get('playwright_retries') != 0"));
     expect(scriptText, contains("missing.append('head_sha')"));
     expect(scriptText, contains('head_sha must match current git HEAD'));
+    expect(scriptText, contains("missing.append('base_url')"));
+    expect(
+      scriptText,
+      contains('base_url must omit userinfo, query, and fragment'),
+    );
+    expect(
+      scriptText,
+      contains('base_url must be an origin without copied route/path state'),
+    );
+    expect(scriptText, contains("'platform workflow publication'"));
+    expect(scriptText, contains("'deferred Hermes Desktop parity surfaces'"));
     expect(scriptText, contains("not_evidence_for:{item}"));
     expect(scriptText, contains("receipt.get('timestamp_utc')"));
     expect(
