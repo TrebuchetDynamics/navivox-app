@@ -158,6 +158,8 @@ class HermesApiClient {
     final headers = <String, String>{
       ...config.headers,
       hermesApiContentTypeHeader: hermesApiJsonContentType,
+      hermesApiAcceptHeader: hermesApiEventStreamContentType,
+      hermesApiCacheControlHeader: hermesApiNoCache,
     };
     final body = jsonEncode({'message': message});
     final chunks = _postStream(
@@ -180,7 +182,12 @@ class HermesApiClient {
   }
 
   Stream<HermesStreamEvent> runEvents(String runId) {
-    final chunks = _getStream(config.runEventsUri(runId), config.headers);
+    final headers = <String, String>{
+      ...config.headers,
+      hermesApiAcceptHeader: hermesApiEventStreamContentType,
+      hermesApiCacheControlHeader: hermesApiNoCache,
+    };
+    final chunks = _getStream(config.runEventsUri(runId), headers);
     return const HermesSseEventDecoder().decodeJsonEventStream(chunks);
   }
 

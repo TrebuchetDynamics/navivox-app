@@ -454,8 +454,11 @@ readiness checklist and non-completion caveats.
    composer, mic, continuous voice, and direct channel sends share the same
    chat-transport policy, direct channel sends reject blank messages before HTTP,
    and are disabled/rejected with bounded recovery copy
-   when Hermes advertises no supported chat transport; run SSE chat transport
-   no longer requires optional approval/tool-progress/stop capabilities,
+   when Hermes advertises no supported chat transport; session-chat and run-event
+   SSE streams now send explicit `Accept: text/event-stream` and `Cache-Control:
+   no-cache` headers so intermediaries and Hermes hosts do not downgrade or reuse
+   stale stream responses; run SSE chat transport no longer requires optional
+   approval/tool-progress/stop capabilities,
    `respondToApproval` rejects locally when Hermes does not advertise approval
    response, `stopActiveTurn` stays local when Hermes does not advertise run
    stop, and bounded diagnostics now report optional run stop/approval/tool-progress

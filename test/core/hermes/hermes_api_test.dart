@@ -398,6 +398,8 @@ void main() {
           expect(uri.path, '/api/sessions/sess_1/chat/stream');
           expect(headers['Authorization'], 'Bearer api-key');
           expect(headers['Content-Type'], 'application/json');
+          expect(headers['Accept'], 'text/event-stream');
+          expect(headers['Cache-Control'], 'no-cache');
           posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
           return Stream.fromIterable([
             'event: run.started\ndata: {"run_id":"run_1"}\n\n',
@@ -441,6 +443,8 @@ void main() {
         getStream: (uri, headers) {
           getStreamRequests.add(uri.path);
           expect(headers['Authorization'], 'Bearer api-key');
+          expect(headers['Accept'], 'text/event-stream');
+          expect(headers['Cache-Control'], 'no-cache');
           return Stream.fromIterable([
             'event: message.delta\ndata: {"delta":"Hi"}\n\n',
             'event: approval.request\ndata: {"approval_id":"appr_1"}\n\ndata: [DONE]\n\n',

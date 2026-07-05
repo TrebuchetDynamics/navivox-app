@@ -1,7 +1,11 @@
 /// Hermes API HTTP header names, values, and status helpers.
 const hermesApiAuthorizationHeader = 'Authorization';
 const hermesApiContentTypeHeader = 'Content-Type';
+const hermesApiAcceptHeader = 'Accept';
+const hermesApiCacheControlHeader = 'Cache-Control';
 const hermesApiJsonContentType = 'application/json';
+const hermesApiEventStreamContentType = 'text/event-stream';
+const hermesApiNoCache = 'no-cache';
 
 String hermesApiBearerAuthorization(String apiKey) {
   final trimmed = apiKey.trim();
