@@ -22,18 +22,22 @@ Implemented in `main`:
 - Local STT transcript submission as Hermes text voice.
 - Approvals, stop, tool-progress UI, read-only jobs inventory, bounded diagnostics.
 - Fake/live/provider browser smoke helpers.
+- Published `Hermes platform smoke` workflow with watched current-head
+  Windows/iOS/macOS native-host job and artifact receipts.
+- Multi-endpoint/profile management with non-secret profile metadata/base URLs in
+  shared preferences and per-profile API keys in secure storage.
 
 Current readiness blockers:
 
 - Real Android spoken microphone receipt.
-- Windows/iOS/macOS native host receipts and published platform workflow.
 - Hermes realtime/server audio unimplemented.
 - Deferred Desktop-like surfaces: config/admin editing, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL editing, attachments/media,
-  files/context folders, raw logs export, and multi-endpoint/profile management.
-- Polish/hardening: SSE reconnect/drop edge cases, offline/auth-expired UX,
-  session search/grouping, queued follow-ups, and mobile approval/error/session
-  sheet polish.
+  files/context folders, and raw logs export.
+- Remaining polish/hardening needs only when new regressions or uncovered edge
+  cases are found; current SSE/drop, offline/auth-expired, session
+  search/grouping, queued follow-up, and mobile approval/error/session sheet
+  paths have focused coverage.
 
 ## Roadmap rules
 
@@ -56,11 +60,12 @@ scope.
 
 Work:
 
-- Resolve GitHub credential `workflow` scope and publish
-  `.github/workflows/hermes-platform-smoke.yml`.
-- Collect successful `gh run view` job/artifact receipts for Ubuntu, Windows,
-  macOS/iOS simulator, and optional hosted Android emulator jobs.
-- Run provider-backed smoke with configured model/provider credentials.
+- Keep `.github/workflows/hermes-platform-smoke.yml` published as
+  `Hermes platform smoke`.
+- Keep `build/receipts/hermes-platform-workflow.json` refreshed from a watched
+  current-head run with successful Windows, macOS, and iOS simulator
+  job/artifact receipts.
+- Keep provider-backed smoke current with configured model/provider credentials.
 - Run Android live-mic manual checklist on an audio-capable target.
 
 Acceptance gate:
@@ -69,7 +74,9 @@ Acceptance gate:
   receipt blockers for provider smoke, Android mic, native hosts, or platform
   workflow publication.
 - The runbooks contain concrete command/job/artifact receipts, not just planned
-  commands.
+  commands. As of this update, provider smoke plus platform workflow/native-host
+  receipts are covered; Android physical mic remains the external receipt
+  blocker.
 
 Rollback/hide behavior:
 

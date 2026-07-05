@@ -21,14 +21,13 @@ Current Hermes path:
 5. Render assistant deltas, tool progress cards, approval prompts, stop controls, capability/health status, read-only model/skill/toolset/job catalog counts/details, surface-readiness notes, and bounded copyable diagnostics.
 6. Use local device speech capture/continuous voice to submit transcripts as Hermes text turns.
 
-Implemented platform coverage includes Flutter web/Android/Linux plus generated iOS and Windows scaffolds. Local validation covers Dart/widget tests, focused web e2e smoke against a fake Hermes HTTP/SSE server, live connect smoke against the installed local Hermes Agent API server, provider-backed text plus transcript-voice smoke when a configured Hermes home is available, Android speech/key readiness smokes, deterministic Android continuous-voice loop smoke, Android debug APK build, Linux release build, and documented host-runner gates for Windows and iOS in `docs/runbooks/hermes-platform-smoke.md`.
+Implemented platform coverage includes Flutter web/Android/Linux plus generated iOS and Windows scaffolds. Local validation covers Dart/widget tests, focused web e2e smoke against a fake Hermes HTTP/SSE server, live connect smoke against the installed local Hermes Agent API server, provider-backed text plus transcript-voice smoke when a configured Hermes home is available, Android speech/key readiness smokes, deterministic Android continuous-voice loop smoke, Android debug APK build, Linux release build, and a published `Hermes platform smoke` workflow with watched Windows/iOS/macOS native-host job and artifact receipts in `build/receipts/hermes-platform-workflow.json`.
 
-Still blocked without external hosts/devices/config:
+Still blocked without external devices or new Hermes API contracts:
 
 - Full Android microphone/continuous-voice loop with real spoken input on a responsive audio-capable Android device or emulator.
-- Windows/iOS/macOS host build receipts from native runners.
-- Published platform workflow and successful hosted artifacts once credentials have GitHub `workflow` scope.
-- Hermes realtime/server audio and deferred Desktop-parity surfaces listed in `docs/product/hermes-desktop-parity-roadmap.md`.
+- Hermes realtime/server audio.
+- Deferred Desktop-parity surfaces listed in `docs/product/hermes-desktop-parity-roadmap.md`.
 
 ## Screenshots
 

@@ -59,10 +59,12 @@ Active Hermes UI elements:
   transcripts as Hermes text turns.
 - Approval, stop, tool-progress, read-only catalog/jobs, and bounded diagnostics
   surfaces when advertised.
+- Saved endpoint profile chips for multi-endpoint/profile management, with API
+  keys kept in secure storage.
 - Deferred/read-only labels for server realtime audio, config admin, memory UI,
   jobs admin, messaging gateways, persona/SOUL, attachments/media, files/context
-  folders, raw diagnostics/log export, and multi-endpoint/profile management via
-  `hermesSurfaceReadiness()` (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
+  folders, and raw diagnostics/log export via `hermesSurfaceReadiness()`
+  (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
 
 ### 2.2 Launch Routing
 

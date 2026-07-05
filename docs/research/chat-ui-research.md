@@ -70,7 +70,7 @@ their behavior in product contracts without that evidence.
 
 Telegram pattern | Active Hermes translation | Preserved Gormes translation
 ---|---|---
-Chat list with avatars, last message, unread/status/time | Hermes sessions panel; one saved endpoint MVP, multi-endpoint/profile management deferred | Flat profile contact list keyed by `server_id + profile_id`, with server label, latest sanitized preview, health, attention count, mic affordance
+Chat list with avatars, last message, unread/status/time | Hermes sessions panel plus saved endpoint profile chips; per-profile API keys stay in secure storage | Flat profile contact list keyed by `server_id + profile_id`, with server label, latest sanitized preview, health, attention count, mic affordance
 Message bubbles | User/assistant/system/tool turns backed by `HermesChannel` | User/assistant/system bubbles backed by `GatewayNavivoxChannel`
 Read ticks | Local queued/streaming/done/error state, not server read receipts | Local send/queued/streaming/done/error state, not server read receipts
 Voice message | Local STT transcript submitted as Hermes text; server realtime audio deferred | Device transcript bubble with auto-send grace; audio playback only after Voice run lifecycle state exists

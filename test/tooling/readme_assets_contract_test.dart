@@ -41,6 +41,12 @@ void main() {
     expect(readme, contains('npm run platform:workflow-smoke'));
     expect(readme, contains('published as `Hermes platform smoke`'));
     expect(readme, contains('build/receipts/hermes-platform-workflow.json'));
+    expect(
+      readme,
+      contains(
+        'watched Windows/iOS/macOS native-host job and artifact receipts',
+      ),
+    );
     expect(readme, contains('current `head_sha`'));
     expect(readme, contains('non-empty non-expired native artifacts'));
     expect(
@@ -49,6 +55,8 @@ void main() {
         'dispatch-only output is\nstill not native-host readiness evidence',
       ),
     );
+    expect(readme, isNot(contains('credentials have GitHub `workflow` scope')));
+    expect(readme, isNot(contains('host build receipts from native runners')));
     expect(readme, contains('npm run android:live-mic-prep'));
     expect(
       readme,

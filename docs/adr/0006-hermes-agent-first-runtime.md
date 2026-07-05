@@ -52,13 +52,13 @@ instead of adapting Hermes to `NavivoxChannel` (`lib/core/hermes/channel/hermes_
 
 Readiness remains intentionally incomplete. `hermesSurfaceReadiness()` keeps
 server realtime audio, config admin, memory UI, jobs admin, messaging gateways,
-persona/SOUL, attachments/media, files/context folders, raw diagnostics/log
-export, and multi-endpoint/profile management deferred/read-only until a later
-source-backed implementation lands (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
-The platform workflow exists locally, but publishing it is blocked until a
-GitHub credential with `workflow` scope can push
-`.github/workflows/hermes-platform-smoke.yml`; native-host receipts still require
-successful `gh run view` jobs/artifacts.
+persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log
+export deferred/read-only until a later source-backed implementation lands
+(`lib/core/hermes/policy/hermes_surface_readiness.dart:27`). Multi-endpoint
+profile management is implemented locally with API keys in secure storage. The
+platform workflow is published as `Hermes platform smoke`; native-host readiness
+requires a current watched workflow receipt with successful Windows/iOS/macOS
+jobs and artifacts in `build/receipts/hermes-platform-workflow.json`.
 
 ## Consequences
 
