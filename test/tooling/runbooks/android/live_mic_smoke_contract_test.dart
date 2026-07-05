@@ -41,7 +41,7 @@ void main() {
       'NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE',
       'NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true',
       'build/receipts/android-live-mic-smoke.json',
-      'strips\n   URL userinfo, query strings, and fragments from the recorded Hermes URL',
+      'strips\n   URL userinfo, query strings, fragments, and copied route/path state from the',
       'records the current git `HEAD`',
       'records Android device properties from\n   `adb shell getprop`',
       'records installed Navivox package/version details from\n   `pm path` and `dumpsys package`',

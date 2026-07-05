@@ -73,8 +73,8 @@ Record all of the following before closing the blocker:
    ```
 
    This writes `build/receipts/android-live-mic-smoke.json`; the helper strips
-   URL userinfo, query strings, and fragments from the recorded Hermes URL,
-   records the current git `HEAD`, records Android device properties from
+   URL userinfo, query strings, fragments, and copied route/path state from the
+   recorded Hermes URL, records the current git `HEAD`, records Android device properties from
    `adb shell getprop`, records installed Navivox package/version details from
    `pm path` and `dumpsys package`, and rejects secret-looking or overlong spoken
    phrases/provider reply excerpts; keep each manual evidence value to 240

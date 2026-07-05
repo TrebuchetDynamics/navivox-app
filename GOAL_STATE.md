@@ -590,8 +590,9 @@ readiness checklist and non-completion caveats.
   bounded before entering channel state. Mobile approval review redaction now
   also handles equals-style Authorization/Cookie headers. Android live-mic
   receipt validators now
-  also require an explicit `NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true` gate and
-  reject Basic credentials, credential headers, and URL userinfo in spoken
+  also require an explicit `NAVIVOX_ANDROID_PHYSICAL_MIC_OBSERVED=true` gate,
+  document that copied route/path state is stripped from recorded Hermes URLs,
+  and reject Basic credentials, credential headers, and URL userinfo in spoken
   phrase/provider reply excerpts.
 
 ## Honest caveat
