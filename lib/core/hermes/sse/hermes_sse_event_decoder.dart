@@ -107,6 +107,10 @@ class HermesSseEventDecoder {
         yield event;
       }
     }
+    final remaining = buffer.toString();
+    if (remaining.isEmpty) return;
+    final event = _parseFrame(remaining);
+    if (event != null) yield event;
   }
 
   /// Same as [decodeJsonEvents], but over a live [Stream] via [decodeStream].

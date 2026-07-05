@@ -529,6 +529,26 @@ void main() {
     expect(decoder.decode(['', '\r', 'id: 9\revent: ping\r\r']), isEmpty);
   });
 
+  test(
+    'live SSE decoder flushes final data frame when the stream closes',
+    () async {
+      final decoder = HermesSseEventDecoder();
+
+      final events = await decoder
+          .decodeJsonEventStream(
+            Stream.fromIterable([
+              'event: assistant.delta\n',
+              'data: {"delta":"final chunk"}',
+            ]),
+          )
+          .toList();
+
+      expect(events, hasLength(1));
+      expect(events.single.name, 'assistant.delta');
+      expect(events.single.delta, 'final chunk');
+    },
+  );
+
   test('decodes Hermes JSON SSE payloads and skips malformed events', () {
     final decoder = HermesSseEventDecoder();
 
