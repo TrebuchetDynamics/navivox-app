@@ -174,6 +174,8 @@ void main() {
       reason: 'provider smoke must not be mistaken for physical mic evidence',
     );
     expect(providerSmoke, contains('not physical microphone evidence'));
+    expect(providerSmoke, contains('provider-backed Hermes typed text turn'));
+    expect(providerSmoke, contains('deterministic transcript voice turn'));
     expect(providerSmoke, contains('safe_receipt_base_url'));
     expect(providerSmoke, contains('urlsplit'));
     expect(

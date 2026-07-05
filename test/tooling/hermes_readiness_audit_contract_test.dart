@@ -125,6 +125,9 @@ void main() {
     );
     expect(scriptText, contains("'platform workflow publication'"));
     expect(scriptText, contains("'deferred Hermes Desktop parity surfaces'"));
+    expect(scriptText, contains("'provider-backed Hermes typed text turn'"));
+    expect(scriptText, contains("'deterministic transcript voice turn'"));
+    expect(scriptText, contains("evidence_for:{item}"));
     expect(scriptText, contains("not_evidence_for:{item}"));
     expect(scriptText, contains("receipt.get('timestamp_utc')"));
     expect(

@@ -346,6 +346,13 @@ if parsed_base_url.username or parsed_base_url.password or parsed_base_url.query
     missing.append('base_url must omit userinfo, query, and fragment')
 if parsed_base_url.path not in ('', '/'):
     missing.append('base_url must be an origin without copied route/path state')
+evidence = set(receipt.get('evidence_for') or [])
+for item in [
+    'provider-backed Hermes typed text turn',
+    'deterministic transcript voice turn',
+]:
+    if item not in evidence:
+        missing.append(f'evidence_for:{item}')
 not_evidence = set(receipt.get('not_evidence_for') or [])
 for item in [
     'physical Android microphone audio',

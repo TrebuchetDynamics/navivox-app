@@ -83,6 +83,10 @@ cat >"$receipt_path" <<EOF
   "base_url": "${safe_receipt_base_url}",
   "coverage": "typed text plus deterministic transcript voice",
   "playwright_retries": 0,
+  "evidence_for": [
+    "provider-backed Hermes typed text turn",
+    "deterministic transcript voice turn"
+  ],
   "not_evidence_for": [
     "physical Android microphone audio",
     "Hermes realtime/server audio",

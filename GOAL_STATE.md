@@ -595,7 +595,9 @@ readiness checklist and non-completion caveats.
   and reject Basic credentials, credential headers, and URL userinfo in spoken
   phrase/provider reply excerpts. Provider-smoke receipts are now audited for a
   current `head_sha`, sanitized origin-only `base_url`, and explicit
-  non-evidence caveats for platform workflow/deferred parity.
+  non-evidence caveats for platform workflow/deferred parity. Provider-smoke
+  receipts now also carry explicit evidence items for provider-backed typed text
+  and deterministic transcript voice only.
 
 ## Honest caveat
 
