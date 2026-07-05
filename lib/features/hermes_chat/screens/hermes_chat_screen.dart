@@ -231,6 +231,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                     profiles: snapshot.data ?? const [],
                     connecting: connecting,
                     onSelect: _selectEndpointProfile,
+                    onRename: (profile) =>
+                        unawaited(_renameEndpointProfile(context, profile)),
                     onDelete: (profile) =>
                         unawaited(_deleteEndpointProfile(profile)),
                   ),
@@ -646,6 +648,80 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   void _selectEndpointProfile(HermesEndpointConfig profile) {
     _baseUrlController.text = profile.baseUrl;
     _apiKeyController.text = profile.apiKey ?? '';
+  }
+
+  Future<void> _renameEndpointProfile(
+    BuildContext context,
+    HermesEndpointConfig profile,
+  ) async {
+    final id = profile.id;
+    if (id == null || id.trim().isEmpty) return;
+    var draftLabel = _safeHermesRenameDefault(profile.label ?? '');
+    final nextLabel = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('hermes-endpoint-profile-rename-dialog'),
+        title: const Text('Rename Hermes profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Profile for ${_safeHermesUiPreview(profile.baseUrl, maxLength: 120)}. '
+              'Stored API keys remain in secure storage.',
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const ValueKey('hermes-endpoint-profile-rename-field'),
+              initialValue: draftLabel,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Profile label',
+                helperText: 'Leave blank to show the endpoint URL.',
+              ),
+              onChanged: (value) => draftLabel = value,
+              onFieldSubmitted: (value) =>
+                  Navigator.of(dialogContext).pop(value.trim()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('hermes-endpoint-profile-rename-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-endpoint-profile-rename-save'),
+            onPressed: () => Navigator.of(dialogContext).pop(draftLabel.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (nextLabel == null) return;
+    final label = nextLabel.trim();
+    if (label == (profile.label ?? '').trim()) return;
+    try {
+      await ref
+          .read(hermesEndpointStoreProvider)
+          .save(
+            baseUrl: profile.baseUrl,
+            apiKey: profile.apiKey,
+            label: label.isEmpty ? null : label,
+            profileId: id,
+          );
+      _refreshEndpointProfiles();
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not rename Hermes profile: ${_safeHermesUiError(error)}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteEndpointProfile(HermesEndpointConfig profile) async {
@@ -1573,12 +1649,14 @@ class _EndpointProfileChips extends StatelessWidget {
     required this.profiles,
     required this.connecting,
     required this.onSelect,
+    required this.onRename,
     required this.onDelete,
   });
 
   final List<HermesEndpointConfig> profiles;
   final bool connecting;
   final ValueChanged<HermesEndpointConfig> onSelect;
+  final ValueChanged<HermesEndpointConfig> onRename;
   final ValueChanged<HermesEndpointConfig> onDelete;
 
   @override
@@ -1597,19 +1675,39 @@ class _EndpointProfileChips extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final profile in profiles)
-              InputChip(
-                key: ValueKey(
-                  'hermes-endpoint-profile-${profile.id ?? profile.baseUrl}',
-                ),
-                label: Text(
-                  _safeHermesUiPreview(profile.displayLabel, maxLength: 48),
-                ),
-                onPressed: connecting ? null : () => onSelect(profile),
-                onDeleted: connecting || profile.id == null
-                    ? null
-                    : () => unawaited(_confirmDeleteProfile(context, profile)),
-                deleteIcon: const Icon(Icons.close, size: 18),
-                tooltip: _safeHermesUiPreview(profile.baseUrl, maxLength: 96),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InputChip(
+                    key: ValueKey(
+                      'hermes-endpoint-profile-${profile.id ?? profile.baseUrl}',
+                    ),
+                    label: Text(
+                      _safeHermesUiPreview(profile.displayLabel, maxLength: 48),
+                    ),
+                    onPressed: connecting ? null : () => onSelect(profile),
+                    onDeleted: connecting || profile.id == null
+                        ? null
+                        : () => unawaited(
+                            _confirmDeleteProfile(context, profile),
+                          ),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    tooltip: _safeHermesUiPreview(
+                      profile.baseUrl,
+                      maxLength: 96,
+                    ),
+                  ),
+                  IconButton(
+                    key: ValueKey(
+                      'hermes-endpoint-profile-rename-${profile.id ?? profile.baseUrl}',
+                    ),
+                    tooltip: 'Rename Hermes profile',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: connecting || profile.id == null
+                        ? null
+                        : () => onRename(profile),
+                  ),
+                ],
               ),
           ],
         ),

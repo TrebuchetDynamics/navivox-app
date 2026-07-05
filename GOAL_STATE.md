@@ -600,8 +600,9 @@ readiness checklist and non-completion caveats.
   jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
   files/context folders, and raw log export remain deferred or read-only by
   policy. Multi-endpoint/profile management is now available locally through
-  saved Hermes endpoint profile chips with per-profile API keys kept in secure
-  storage. The Hermes jobs chip also now opens a read-only schedule detail sheet
+  saved Hermes endpoint profile chips with safe select/rename/remove controls
+  and per-profile API keys kept in secure storage. The Hermes jobs chip also now
+  opens a read-only schedule detail sheet
   with enabled/state/schedule/next/last/error fields redacted and bounded plus a
   copy action for bounded/redacted job details. Queued
   follow-ups are capped while a turn is streaming so the composer keeps overflow
@@ -653,7 +654,8 @@ The Android emulator receipts were collected on a headless/software emulator,
 including one launched with `-no-audio`, so they are not real spoken-audio
 receipts. `SecureHermesEndpointStore` now keeps multi-endpoint profile metadata
 in shared preferences while per-profile API keys remain in platform secure
-storage.
+storage, and profile rename UI preserves those keys without echoing them into
+shared storage or dialog copy.
 
 ## Loose ends
 

@@ -2916,6 +2916,94 @@ void main() {
     expect(find.text('Emulator Hermes'), findsOneWidget);
   });
 
+  testWidgets('saved endpoint profiles can be renamed safely', (tester) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'lan',
+          label: 'LAN Hermes',
+          baseUrl: 'http://lan.example:8642',
+          apiKey: 'lan-secret',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-lan')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-dialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('lan-secret'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-field')),
+      'Workstation Hermes',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-save')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.saveCalls, hasLength(1));
+    expect(store.saveCalls.single.id, 'lan');
+    expect(store.saveCalls.single.label, 'Workstation Hermes');
+    expect(store.saveCalls.single.baseUrl, 'http://lan.example:8642');
+    expect(store.saveCalls.single.apiKey, 'lan-secret');
+    expect(find.text('Workstation Hermes'), findsOneWidget);
+    expect(find.text('LAN Hermes'), findsNothing);
+  });
+
+  testWidgets('saved endpoint profile rename dialog redacts secrets', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'secret-profile',
+          label: 'Bearer secret-profile-token',
+          baseUrl: 'http://user:secret-url-token@example.com:8642',
+          apiKey: 'secret-api-key',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(
+        const ValueKey('hermes-endpoint-profile-rename-secret-profile'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-dialog')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('http://[redacted]@example.com:8642'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('secret-profile-token'), findsNothing);
+    expect(find.textContaining('secret-url-token'), findsNothing);
+    expect(find.textContaining('secret-api-key'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-endpoint-profile-rename-cancel')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.saveCalls, isEmpty);
+  });
+
   testWidgets('saved endpoint profile delete dialog redacts secrets', (
     tester,
   ) async {
