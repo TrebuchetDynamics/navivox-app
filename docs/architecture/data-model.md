@@ -33,7 +33,8 @@ legacy Gormes gateway/contact model:
 | `HermesChatTurn` | `lib/core/hermes/models/hermes_chat_turn.dart` | Renderable user/assistant/system/tool turn derived from Hermes session messages and streamed SSE events. |
 | `HermesChannelState` | `lib/core/hermes/channel/hermes_channel_state.dart` | UI snapshot for connection status, active session, messages, voice runs, approvals, capabilities, detailed health, catalog lists, and read-only jobs. |
 | `HermesJob` | `lib/core/hermes/models/hermes_job.dart` | Read-only job/schedule inventory item; jobs admin remains deferred. |
-| `HermesSurfaceReadiness` | `lib/core/hermes/policy/hermes_surface_readiness.dart:27` | Explicit available/read-only/deferred/blocked surface matrix so config admin, memory UI, server audio, attachments, raw diagnostics, and multi-endpoint management are not accidentally claimed. |
+| `HermesSurfaceReadiness` | `lib/core/hermes/policy/hermes_surface_readiness.dart:27` | Explicit available/read-only/deferred/blocked surface matrix so config admin, memory UI, server audio, attachments, and raw diagnostics are not accidentally claimed. |
+| `HermesEndpointStore` / `SecureHermesEndpointStore` | `lib/core/hermes/setup/hermes_endpoint_store.dart`; `lib/core/hermes/setup/secure_hermes_endpoint_store.dart` | Local multi-endpoint/profile management: non-secret profile metadata/base URLs live in shared preferences while per-profile API keys stay in secure storage. |
 
 Hermes API keys are saved only through the endpoint store's secure-key path;
 operator diagnostics intentionally export counts/status/capability names, not

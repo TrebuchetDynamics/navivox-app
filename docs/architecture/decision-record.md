@@ -35,8 +35,10 @@ Scope for the active Hermes activation loop:
   transcript input. Phone numbers, campaigns, retries, scheduling, circuit
   breakers, human handoff, server realtime audio, config admin, memory UI, jobs
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
-  folders, raw diagnostics/log export, and multi-endpoint management stay out of
-  the current MVP unless a later source-backed decision changes that.
+  folders, and raw diagnostics/log export stay out of the current MVP unless a
+  later source-backed decision changes that. Multi-endpoint/profile management
+  is in the Hermes connect MVP as local saved endpoint profiles with per-profile
+  API keys kept in secure storage.
 
 Scope for the preserved Gormes activation loop:
 
