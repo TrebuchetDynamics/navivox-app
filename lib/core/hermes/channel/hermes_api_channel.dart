@@ -574,7 +574,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           if (!completer.isCompleted) completer.complete();
           return;
         }
-        final delta = event.delta;
+        final delta = _streamDelta(event);
         if (delta != null && delta.isNotEmpty) {
           assistantTurn = assistantTurn.appendDelta(delta);
           turns[assistantIndex] = assistantTurn;
@@ -748,6 +748,24 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         // Keep the locally streamed transcript; reconciliation is best-effort.
       }
     }
+  }
+
+  String? _streamDelta(HermesStreamEvent event) {
+    if (!_isDeltaEvent(event.name)) return null;
+    return _rawStreamText(event.payload['delta']) ??
+        _rawStreamText(event.payload['content']) ??
+        _rawStreamText(event.payload['text']);
+  }
+
+  String? _rawStreamText(Object? value) {
+    if (value is String) return value.isEmpty ? null : value;
+    return navivoxOptionalStringFromJson(value);
+  }
+
+  bool _isDeltaEvent(String name) {
+    return name == 'message' ||
+        name == 'message.delta' ||
+        name == 'assistant.delta';
   }
 
   bool _serverHistoryDropsStreamedAssistant(

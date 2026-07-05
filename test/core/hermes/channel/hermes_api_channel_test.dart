@@ -357,6 +357,41 @@ void main() {
     },
   );
 
+  test('sendText accepts text/content delta aliases on delta events', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        postStream: (uri, headers, body) => Stream.fromIterable([
+          'event: assistant.delta\ndata: {"content":"Hi"}\n\n',
+          'event: assistant.delta\ndata: {"text":" there"}\n\n',
+          'event: done\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('alias test');
+
+    expect(channel.state.activeMessages.map((turn) => turn.text), [
+      'Hello',
+      'alias test',
+      'Hi there',
+    ]);
+    expect(
+      channel.state.activeMessages.last.status,
+      HermesTurnStatus.completed,
+    );
+  });
+
   test(
     'sendText completes and reconciles when done sentinel arrives without stream close',
     () async {
