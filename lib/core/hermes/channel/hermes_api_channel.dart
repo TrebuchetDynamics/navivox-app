@@ -614,6 +614,21 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           _approvalController.add(request);
           return;
         }
+        if (_isStreamErrorEvent(event.name)) {
+          terminalRunEventReceived = true;
+          streamFailed = true;
+          assistantTurn = assistantTurn.copyWith(
+            status: HermesTurnStatus.failed,
+          );
+          turns[assistantIndex] = assistantTurn;
+          _setTurns(
+            sessionId,
+            List.of(turns),
+            errorMessage: _streamErrorMessage(event),
+          );
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
         if (_isSuccessfulTerminalRunEvent(event.name)) {
           terminalRunEventReceived = true;
           if (!completer.isCompleted) completer.complete();
@@ -779,6 +794,24 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
       }
     }
     return false;
+  }
+
+  bool _isStreamErrorEvent(String name) {
+    return name == 'error' ||
+        name == 'stream.error' ||
+        name == 'run.error' ||
+        name == 'assistant.error';
+  }
+
+  String _streamErrorMessage(HermesStreamEvent event) {
+    final detail =
+        navivoxOptionalStringFromJson(event.payload['message']) ??
+        navivoxOptionalStringFromJson(event.payload['error']) ??
+        navivoxOptionalStringFromJson(event.payload['detail']);
+    if (detail == null || detail.trim().isEmpty) {
+      return 'Hermes stream reported an error.';
+    }
+    return 'Hermes stream reported an error: ${_safeHermesError(detail)}';
   }
 
   bool _isSuccessfulTerminalRunEvent(String name) {
