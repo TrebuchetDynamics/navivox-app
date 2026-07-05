@@ -450,19 +450,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                Switch(
-                  key: const ValueKey('hermes-continuous-voice-switch'),
-                  value: _continuousVoiceEnabled,
-                  onChanged: canSendTurns
-                      ? (value) {
-                          setState(() => _continuousVoiceEnabled = value);
-                          if (value) {
-                            unawaited(_captureOnce(channel));
-                          } else {
-                            _stopSpeaking();
+                Semantics(
+                  label: 'Continuous voice — device STT to Hermes text',
+                  child: Switch(
+                    key: const ValueKey('hermes-continuous-voice-switch'),
+                    value: _continuousVoiceEnabled,
+                    onChanged: canSendTurns
+                        ? (value) {
+                            setState(() => _continuousVoiceEnabled = value);
+                            if (value) {
+                              unawaited(_captureOnce(channel));
+                            } else {
+                              _stopSpeaking();
+                            }
                           }
-                        }
-                      : null,
+                        : null,
+                  ),
                 ),
                 Expanded(
                   child: TextField(

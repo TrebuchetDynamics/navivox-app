@@ -466,6 +466,10 @@ void main() {
       expect(find.text('Hermes Agent hermes-agent'), findsOneWidget);
       expect(find.text('Runs SSE enabled'), findsOneWidget);
       expect(find.text('Voice: device STT -> Hermes text'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Continuous voice — device STT to Hermes text'),
+        findsOneWidget,
+      );
       expect(find.text('Version: 0.16.0'), findsOneWidget);
       expect(find.text('Gateway: running'), findsOneWidget);
       expect(find.text('Active agents: 0'), findsOneWidget);
