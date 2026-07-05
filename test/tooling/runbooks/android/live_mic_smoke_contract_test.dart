@@ -19,7 +19,8 @@ void main() {
     expectRunbookContainsAll(text, [
       '# Android Live Microphone Hermes Smoke',
       'physical-audio receipt',
-      'not the no-human strict',
+      'Required manual smoke',
+      'strict goal closeout must keep the Android physical-mic blocker open',
       'npm run android:live-mic-prep',
       'NAVIVOX_ANDROID_DEVICE_ID=<device-id>',
       'NAVIVOX_ANDROID_HERMES_URL=<android-reachable-hermes-url>',

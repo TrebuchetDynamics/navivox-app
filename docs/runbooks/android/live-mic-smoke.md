@@ -1,11 +1,11 @@
 # Android Live Microphone Hermes Smoke
 
-Optional manual smoke for Android physical microphone + continuous voice evidence.
-This is the physical-audio receipt that deterministic transcript tests and
-`android:voice-smoke` cannot provide, but it is not the no-human strict
-readiness gate. Strict readiness uses the automated
-`android:hermes-voice-loop-smoke` receipt and must not describe that automated
-receipt as physical microphone evidence.
+Required manual smoke for Android physical microphone + continuous voice evidence.
+This is the physical-audio receipt that deterministic transcript tests,
+`android:voice-smoke`, and `android:hermes-voice-loop-smoke` cannot provide.
+The automated Hermes voice-loop receipt remains a useful no-human regression
+gate, but strict goal closeout must keep the Android physical-mic blocker open
+until this real spoken-audio/provider/TTS/re-arm receipt is captured.
 
 ## Start here
 

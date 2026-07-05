@@ -78,8 +78,10 @@ Acceptance gate:
   native hosts, or platform workflow publication.
 - The runbooks contain concrete command/job/artifact receipts, not just planned
   commands. As of this update, provider smoke plus platform workflow/native-host
-  receipts are covered; automated Android voice-loop receipt replaces the former
-  manual physical-mic ship gate and still does not claim physical mic coverage.
+  receipts are covered; automated Android voice-loop receipt covers only
+  deterministic no-human UI loop mechanics and still does not claim physical mic
+  coverage. The manual physical-mic ship gate remains open until the real
+  spoken-audio/provider/TTS/re-arm receipt is captured.
 
 Rollback/hide behavior:
 
