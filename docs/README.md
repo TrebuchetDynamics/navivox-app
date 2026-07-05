@@ -42,11 +42,12 @@ NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit
 While external/deferred blockers remain, the expected result is exit 3 with
 `Completion verdict: NOT COMPLETE`; do not treat proxy evidence such as passing
 tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output
-as completion. Current delivery note: the local
-`.github/workflows/hermes-platform-smoke.yml` push was rejected because the
-current OAuth app token lacks GitHub `workflow` scope, so host-runner workflow
-receipts are still unavailable until that file is published with proper scope
-and successful `gh run view` jobs/artifacts exist.
+as completion. Current delivery note: `.github/workflows/hermes-platform-smoke.yml`
+is published as `Hermes platform smoke`. `npm run platform:workflow-smoke`
+dispatches and watches the workflow, then writes
+`build/receipts/hermes-platform-workflow.json` with current-head
+Windows/iOS/macOS native-host job and artifact evidence. Workflow YAML or
+dispatch-only output remains insufficient without that watched receipt.
 
 - [Hermes platform smoke checklist](runbooks/hermes-platform-smoke.md)
 - [Hermes companion readiness audit](runbooks/hermes-readiness-audit.md)

@@ -1,7 +1,7 @@
 # Navivox Product Requirements
 
 Status: historical Gormes PRD plus active Hermes-first addendum
-Updated: 2026-07-03
+Updated: 2026-07-05
 Scope: Flutter Navivox app, active Hermes Agent companion surface, and preserved legacy Gormes `navivox` HTTP/WebSocket channel
 
 ## 1. Summary
@@ -26,10 +26,11 @@ The active Hermes transport is the Hermes Agent API server:
 - `POST /api/sessions/{session_id}/chat/stream` streams the MVP chat path.
 - `/v1/runs`, `/v1/runs/{run_id}/events`, `/approval`, and `/stop` are used
   when capabilities advertise safe run transport.
-- Read-only health/catalog/jobs diagnostics are shown when advertised; config
-  admin, memory UI, jobs admin, messaging gateways, persona/SOUL, attachments,
-  files/context folders, raw diagnostics/log export, and multi-endpoint/profile
-  management remain deferred/read-only per `hermesSurfaceReadiness()`
+- Read-only health/catalog/jobs diagnostics are shown when advertised;
+  multi-endpoint/profile management is available locally with API keys kept in
+  secure storage; config admin, memory UI, jobs admin, messaging gateways,
+  persona/SOUL, attachments, files/context folders, and raw diagnostics/log
+  export remain deferred/read-only per `hermesSurfaceReadiness()`
   (`lib/core/hermes/policy/hermes_surface_readiness.dart:27`).
 
 The preserved legacy transport is the Gormes Navivox gateway:
@@ -77,13 +78,11 @@ retries, circuit breakers, phone numbers, or human handoff.
   dispatch-only workflow output as completion/readiness proof.
 - Hermes realtime/server audio in the current MVP; voice is local STT -> text.
 - Hermes config editing/admin, memory UI, jobs/schedules admin, messaging
-  gateways, persona/SOUL, attachments/media, files/context folders, raw
-  diagnostics/log export, or multi-endpoint/profile management in the current
-  MVP.
-- Native Windows/iOS readiness without successful native-host job/artifact
-  receipts. The platform workflow exists locally, but publishing remains blocked
-  until a GitHub credential with `workflow` scope can push
-  `.github/workflows/hermes-platform-smoke.yml`.
+  gateways, persona/SOUL, attachments/media, files/context folders, or raw
+  diagnostics/log export in the current MVP.
+- Native Windows/iOS/macOS readiness without successful native-host job/artifact
+  receipts from the watched `Hermes platform smoke` workflow recorded in
+  `build/receipts/hermes-platform-workflow.json`.
 - Telephony setup in the first activation loop.
 - Campaign management, retries, scheduling, circuit breakers, or human handoff.
 - Direct editing of local config files from the app.

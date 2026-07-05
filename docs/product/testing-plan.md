@@ -1,7 +1,7 @@
 # Navivox Testing Plan
 
 Status: historical Gormes-first planning draft; current Hermes-first smoke gates live in [Hermes platform smoke checklist](../runbooks/hermes-platform-smoke.md) and [Hermes companion readiness audit](../runbooks/hermes-readiness-audit.md).
-Updated: 2026-07-03
+Updated: 2026-07-05
 
 ## Current Hermes smoke matrix
 
@@ -16,7 +16,7 @@ historical Gormes-first plan:
 | Provider-backed text + transcript voice | `npm run hermes:provider-smoke:local` or `npm run hermes:provider-smoke` | Requires configured provider/model credentials; transcript voice only. |
 | Android readiness/prep | `npm run android:voice-smoke`; `npm run android:hermes-voice-loop-smoke`; `npm run android:live-mic-prep` | Prep/readiness/deterministic loop only; physical audio requires `../runbooks/android/live-mic-smoke.md`. Not whole-goal completion evidence by itself; run strict readiness audit before completion claims. |
 | Legacy durable key readiness | `npm run android:durable-key-smoke` | Preserved legacy code check only; not part of active pure-Hermes readiness. |
-| Native host builds | `npm run platform:workflow-smoke` after workflow is visible remotely | Windows/iOS/macOS/hosted Android receipts require native runners. Current local workflow YAML is not a receipt: the latest push was rejected because the OAuth app token lacks GitHub `workflow` scope, so successful `gh run view` jobs/artifacts are still required. |
+| Native host builds | `npm run platform:workflow-smoke` | Dispatches and watches the published `Hermes platform smoke` workflow, then writes `build/receipts/hermes-platform-workflow.json` with current-head Windows/iOS/macOS native-host job and artifact evidence. Workflow YAML or dispatch-only output is not a receipt without the watched run/artifact JSON. |
 | Completion blocker audit | `npm run hermes:readiness-audit`; `NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit` | Informational only; strict mode must fail while blockers remain. The helper must print `Completion verdict: NOT COMPLETE` while live provider/device/native-host or deferred-surface blockers remain, and must not promote proxy evidence such as tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output. |
 
 ## 1. Strategy

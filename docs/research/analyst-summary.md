@@ -3,12 +3,12 @@
 Status: historical 2026-05 Gormes Playwright analyst note. Current Hermes-first
 browser/readiness status lives in [Hermes platform smoke checklist](../runbooks/hermes-platform-smoke.md)
 and [Hermes companion readiness audit](../runbooks/hermes-readiness-audit.md).
-As of 2026-07-03, the current usable browser receipt is the focused Playwright
-rerun of `navivox-e2e.spec.mjs` plus `hermes-smoke.spec.mjs` (68 Chromium tests),
-while broad platform readiness still depends on provider credentials, Android
-physical-audio receipts, native-host Windows/iOS jobs, and a published workflow
-(the local workflow push is blocked until credentials include GitHub `workflow`
-scope).
+As of 2026-07-05, browser/provider receipts and the published platform workflow
+are covered separately: `npm run hermes:provider-smoke:local` writes the
+current-head provider text/transcript-voice receipt, and
+`npm run platform:workflow-smoke` writes the current-head Windows/iOS/macOS
+native-host workflow receipt. Broad platform readiness still depends on a real
+Android physical-audio receipt and deferred Hermes parity/server-audio decisions.
 
 ## Session metadata
 - APP_URL = http://127.0.0.1:8767/
