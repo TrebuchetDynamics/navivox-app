@@ -1138,7 +1138,7 @@ void main() {
         },
         getStream: (uri, headers) => Stream<String>.fromIterable(const [
           'event: message.delta\ndata: {"delta":"partial"}\n\n',
-          'event: error\ndata: {"message":"token=secret-stream-error"}\n\n',
+          'event: error\ndata: {"error":{"code":"upstream","message":"token=secret-stream-error"}}\n\n',
         ]),
       ),
     );
@@ -1150,7 +1150,7 @@ void main() {
       channel.state.errorMessage,
       contains('Hermes stream reported an error'),
     );
-    expect(channel.state.errorMessage, contains('token=[redacted]'));
+    expect(channel.state.errorMessage, contains('upstream: token=[redacted]'));
     expect(channel.state.errorMessage, isNot(contains('secret-stream-error')));
     expect(channel.state.activeMessages.map((turn) => turn.text), [
       'Hello',

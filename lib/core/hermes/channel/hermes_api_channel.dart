@@ -804,14 +804,28 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   }
 
   String _streamErrorMessage(HermesStreamEvent event) {
-    final detail =
-        navivoxOptionalStringFromJson(event.payload['message']) ??
-        navivoxOptionalStringFromJson(event.payload['error']) ??
-        navivoxOptionalStringFromJson(event.payload['detail']);
+    final detail = _streamErrorDetail(event.payload);
     if (detail == null || detail.trim().isEmpty) {
       return 'Hermes stream reported an error.';
     }
     return 'Hermes stream reported an error: ${_safeHermesError(detail)}';
+  }
+
+  String? _streamErrorDetail(Map<String, Object?> payload) {
+    final topLevel =
+        navivoxOptionalStringFromJson(payload['message']) ??
+        navivoxOptionalStringFromJson(payload['detail']);
+    if (topLevel != null) return topLevel;
+    final nested = navivoxMapFromJson(payload['error']);
+    if (nested.isNotEmpty) {
+      final code = navivoxOptionalStringFromJson(nested['code']);
+      final message =
+          navivoxOptionalStringFromJson(nested['message']) ??
+          navivoxOptionalStringFromJson(nested['detail']);
+      if (code != null && message != null) return '$code: $message';
+      return message ?? code;
+    }
+    return navivoxOptionalStringFromJson(payload['error']);
   }
 
   bool _isSuccessfulTerminalRunEvent(String name) {
