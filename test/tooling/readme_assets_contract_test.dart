@@ -39,9 +39,16 @@ void main() {
     expect(readme, contains('tests, APK hashes, configured Hermes home'));
     expect(readme, contains('workflow YAML, or dispatch-only output'));
     expect(readme, contains('npm run platform:workflow-smoke'));
-    expect(readme, contains('latest push was rejected'));
-    expect(readme, contains('lacks GitHub `workflow` scope'));
-    expect(readme, contains('successful `gh run view` job/artifact receipts'));
+    expect(readme, contains('published as `Hermes platform smoke`'));
+    expect(readme, contains('build/receipts/hermes-platform-workflow.json'));
+    expect(readme, contains('current `head_sha`'));
+    expect(readme, contains('non-empty non-expired native artifacts'));
+    expect(
+      readme,
+      contains(
+        'dispatch-only output is\nstill not native-host readiness evidence',
+      ),
+    );
     expect(readme, contains('npm run android:live-mic-prep'));
     expect(
       readme,
@@ -49,6 +56,15 @@ void main() {
     );
     expect(readme, contains('not\nwhole-goal completion evidence by itself'));
     expect(readme, contains('docs/runbooks/android/live-mic-smoke.md'));
+    expect(readme, contains('build/receipts/hermes-provider-smoke.json'));
+    expect(readme, contains('sanitized\norigin-only `base_url`'));
+    expect(readme, contains('`evidence_for`/`not_evidence_for` labels'));
+    expect(
+      readme,
+      contains(
+        'not\nphysical microphone or Hermes realtime/server-audio evidence',
+      ),
+    );
     expect(readme, contains('npm run android:durable-key-smoke'));
     expect(readme, contains('readiness/deterministic/key-storage evidence'));
     expect(

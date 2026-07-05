@@ -597,7 +597,9 @@ readiness checklist and non-completion caveats.
   current `head_sha`, sanitized origin-only `base_url`, and explicit
   non-evidence caveats for platform workflow/deferred parity. Provider-smoke
   receipts now also carry explicit evidence items for provider-backed typed text
-  and deterministic transcript voice only.
+  and deterministic transcript voice only. README platform/provider smoke copy is
+  refreshed to describe the published workflow receipt and current provider
+  receipt audit fields instead of the old workflow-scope push blocker.
 
 ## Honest caveat
 

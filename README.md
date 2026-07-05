@@ -165,6 +165,12 @@ Or start the installed local Hermes server from an already configured Hermes hom
 NAVIVOX_CONFIGURED_HERMES_HOME=$HOME/.hermes npm run hermes:provider-smoke:local
 ```
 
+This writes `build/receipts/hermes-provider-smoke.json`. The readiness audit
+requires that receipt to match the current `head_sha`, use a sanitized
+origin-only `base_url`, report zero Playwright retries, and include explicit
+`evidence_for`/`not_evidence_for` labels. It is still transcript voice only, not
+physical microphone or Hermes realtime/server-audio evidence.
+
 For Android speech-recognition readiness on a connected device/emulator, run:
 
 ```bash
@@ -212,11 +218,12 @@ the remote branch, run:
 npm run platform:workflow-smoke
 ```
 
-Current delivery note: `.github/workflows/hermes-platform-smoke.yml` exists
-locally, but the latest push was rejected because the current OAuth app token
-lacks GitHub `workflow` scope. Until a credential with workflow scope publishes
-that file and successful `gh run view` job/artifact receipts exist, workflow YAML
-and dispatch attempts are not native-host readiness evidence.
+Current delivery note: `.github/workflows/hermes-platform-smoke.yml` is
+published as `Hermes platform smoke`. `npm run platform:workflow-smoke` dispatches
+and watches it, then writes `build/receipts/hermes-platform-workflow.json` with
+the current `head_sha`, successful Windows/iOS/macOS native-host jobs, and
+non-empty non-expired native artifacts. Workflow YAML or dispatch-only output is
+still not native-host readiness evidence without that watched receipt.
 
 For a real spoken Android microphone closeout, prepare an audio-capable target
 and launch the app with:
