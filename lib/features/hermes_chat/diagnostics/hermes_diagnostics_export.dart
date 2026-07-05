@@ -146,6 +146,15 @@ String _safeDiagnosticsText(String text, {int maxLength = 120}) {
     RegExp(r'([a-z][a-z0-9+.-]*://)([^/\s@]+@)', caseSensitive: false),
     (match) => '${match[1]}[redacted]@',
   );
+  safe = safe.replaceAll(
+    RegExp(r'\b[A-Z]:\\[^\s,;]+', caseSensitive: false),
+    '[redacted-path]',
+  );
+  safe = safe.replaceAll(RegExp(r'\\\\[^\s,;]+'), '[redacted-path]');
+  safe = safe.replaceAll(
+    RegExp(r'/(?:home|Users|var|tmp|private|mnt|Volumes)/[^\s,;]+'),
+    '[redacted-path]',
+  );
   safe = safe.replaceAllMapped(
     RegExp(
       r'((?:api[-_ ]?key|auth[-_ ]?token|token|secret|password|passwd|pwd|credential)\s*[:=]\s*)\S+',

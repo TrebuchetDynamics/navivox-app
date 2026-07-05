@@ -1025,10 +1025,11 @@ void main() {
           status:
               'ok token=secret-status-token eyJhbGciOiJIUzI1NiJ9.'
               'eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturevalue',
-          platform: 'https://user:secret-url-pass@example.test/api',
+          platform:
+              'https://user:secret-url-pass@example.test/api /home/alice/.hermes/config.json',
           version: 'sk-1234567890abcdef',
           gatewayState:
-              'Authorization: Bearer secret-gateway-token Cookie: sid=secret-cookie-token Basic secret-basic-token',
+              'Authorization: Bearer secret-gateway-token Cookie: sid=secret-cookie-token Basic secret-basic-token C:\\Users\\Alice\\.hermes\\config.json',
           activeAgents: 1,
         ),
         models: const ['model-secret-model-token'],
@@ -1073,6 +1074,9 @@ void main() {
     expect(export, isNot(contains('eyJhbGciOiJIUzI1NiJ9')));
     expect(export, isNot(contains('secret-gateway-token')));
     expect(export, isNot(contains('secret-session-token')));
+    expect(export, contains('[redacted-path]'));
+    expect(export, isNot(contains('/home/alice/.hermes/config.json')));
+    expect(export, isNot(contains('C:\\Users\\Alice\\.hermes\\config.json')));
   });
 
   testWidgets('opens bounded Hermes diagnostics from the app bar', (

@@ -478,7 +478,8 @@ readiness checklist and non-completion caveats.
    `respondToApproval` rejects locally when Hermes does not advertise approval
    response, `stopActiveTurn` stays local when Hermes does not advertise run
    stop, and bounded diagnostics now report optional run stop/approval/tool-progress
-   support plus a redacted, bounded Hermes endpoint route inventory separately;
+   support plus a redacted, bounded Hermes endpoint route inventory separately,
+   while redacting private filesystem paths from dynamic health/capability text;
    the readiness audit and `npm run hermes:server-audio-receipt`
    now define a strict future Hermes server-audio receipt schema that rejects
    local device STT/TTS fallback evidence without treating it as implementation
