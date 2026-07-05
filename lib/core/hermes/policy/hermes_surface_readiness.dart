@@ -113,30 +113,33 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
       title: 'Jobs/schedules admin',
       status: HermesSurfaceStatus.deferred,
       detail: supportsJobsAdmin
-          ? 'Jobs admin is advertised, but Navivox has not wired create/edit/delete scheduling.'
-          : 'Jobs create/edit/delete scheduling remains outside the mobile MVP.',
+          ? 'Jobs admin is advertised, but Navivox has not wired create/edit/delete scheduling; no mobile mutation controls are shown.'
+          : 'Jobs create/edit/delete scheduling remains outside the mobile MVP; no mobile mutation controls are shown.',
     ),
     const HermesSurfaceReadiness(
       title: 'Messaging gateways',
       status: HermesSurfaceStatus.deferred,
-      detail: 'No safe mobile Hermes gateway admin contract is wired.',
+      detail:
+          'No safe mobile Hermes gateway admin contract is wired; no gateway mutation controls are shown.',
     ),
     const HermesSurfaceReadiness(
       title: 'Persona/SOUL',
       status: HermesSurfaceStatus.deferred,
-      detail: 'Needs an explicit Hermes API or safe file/CLI flow.',
+      detail:
+          'Persona/SOUL editing is not wired; it needs an explicit Hermes API or safe file/CLI flow before mobile controls appear.',
     ),
     HermesSurfaceReadiness(
       title: 'Attachments/media',
       status: HermesSurfaceStatus.deferred,
       detail: supportsAttachments
-          ? 'Attachment/multimodal capability is advertised, but Navivox has not wired mobile attachments.'
-          : 'Text-only plus local voice transcript until fixture coverage lands.',
+          ? 'Attachment/multimodal capability is advertised, but Navivox has not wired mobile attachments; no upload controls are shown.'
+          : 'Text-only plus local voice transcript until Hermes exposes a mobile-safe attachment contract and Navivox wires it.',
     ),
     const HermesSurfaceReadiness(
       title: 'Files/context folders',
       status: HermesSurfaceStatus.deferred,
-      detail: 'Needs mobile-safe workspace and remote path semantics.',
+      detail:
+          'Files/context folders are not wired; they need mobile-safe workspace and remote path semantics before controls appear.',
     ),
     const HermesSurfaceReadiness(
       title: 'Bounded diagnostics',

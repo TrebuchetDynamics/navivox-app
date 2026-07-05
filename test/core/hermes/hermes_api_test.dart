@@ -176,10 +176,30 @@ void main() {
         details['Jobs/schedules admin'],
         contains('create/edit/delete scheduling'),
       );
+      expect(
+        details['Jobs/schedules admin'],
+        contains('no mobile mutation controls are shown'),
+      );
       expect(statuses['Messaging gateways'], HermesSurfaceStatus.deferred);
+      expect(
+        details['Messaging gateways'],
+        contains('no gateway mutation controls are shown'),
+      );
       expect(statuses['Persona/SOUL'], HermesSurfaceStatus.deferred);
+      expect(
+        details['Persona/SOUL'],
+        contains('Persona/SOUL editing is not wired'),
+      );
       expect(statuses['Attachments/media'], HermesSurfaceStatus.deferred);
+      expect(
+        details['Attachments/media'],
+        contains('no upload controls are shown'),
+      );
       expect(statuses['Files/context folders'], HermesSurfaceStatus.deferred);
+      expect(
+        details['Files/context folders'],
+        contains('remote path semantics before controls appear'),
+      );
       expect(statuses['Bounded diagnostics'], HermesSurfaceStatus.readOnly);
       expect(
         statuses['Raw diagnostics/log export'],
