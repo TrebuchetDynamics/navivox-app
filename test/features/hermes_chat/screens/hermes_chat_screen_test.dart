@@ -3336,6 +3336,18 @@ void main() {
     expect(find.text('Run deployment script?'), findsWidgets);
     expect(find.text('Risk: medium'), findsWidgets);
     expect(find.text('Tool call: call_1'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hermes-approval-sheet-copy')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('hermes-approval-sheet-copy')));
+    await tester.pump();
+
+    expect(
+      find.text('Copied redacted Hermes approval details.'),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('hermes-approval-sheet-session')),

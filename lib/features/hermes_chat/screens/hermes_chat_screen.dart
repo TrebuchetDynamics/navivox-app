@@ -2268,6 +2268,12 @@ class _ApprovalBanner extends StatelessWidget {
         final safeRisk = risk == null ? null : _safeHermesUiText(risk);
         final riskTruncated = (safeRisk?.length ?? 0) > 240;
         final safeToolCallId = _safeHermesUiText(request.toolCallId);
+        final approvalSummary = _approvalReviewSummary(
+          safePrompt: safePrompt,
+          safeRisk: safeRisk,
+          safeToolCallId: safeToolCallId,
+          hasApprovalId: hasApprovalId,
+        );
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -2335,6 +2341,25 @@ class _ApprovalBanner extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                      OutlinedButton.icon(
+                        key: const ValueKey('hermes-approval-sheet-copy'),
+                        onPressed: () {
+                          unawaited(
+                            Clipboard.setData(
+                              ClipboardData(text: approvalSummary),
+                            ),
+                          );
+                          ScaffoldMessenger.maybeOf(sheetContext)?.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Copied redacted Hermes approval details.',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_outlined),
+                        label: const Text('Copy details'),
+                      ),
                       TextButton(
                         key: const ValueKey('hermes-approval-sheet-close'),
                         onPressed: () => Navigator.of(sheetContext).pop(),
@@ -2400,6 +2425,29 @@ class _ApprovalBanner extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _approvalReviewSummary({
+    required String safePrompt,
+    required String? safeRisk,
+    required String safeToolCallId,
+    required bool hasApprovalId,
+  }) {
+    final buffer = StringBuffer()
+      ..writeln('Hermes approval review')
+      ..writeln('Prompt: ${_safeHermesUiPreview(safePrompt, maxLength: 600)}');
+    if (safeRisk != null) {
+      buffer.writeln('Risk: ${_safeHermesUiPreview(safeRisk, maxLength: 240)}');
+    }
+    if (safeToolCallId.trim().isNotEmpty) {
+      buffer.writeln(
+        'Tool call: ${_safeHermesUiPreview(safeToolCallId, maxLength: 160)}',
+      );
+    }
+    buffer
+      ..writeln('Approval id present: $hasApprovalId')
+      ..write('Pending approvals: $pendingCount');
+    return buffer.toString();
   }
 }
 

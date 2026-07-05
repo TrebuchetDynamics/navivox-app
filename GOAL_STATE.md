@@ -486,8 +486,8 @@ readiness checklist and non-completion caveats.
    before send, and approvals
    have a scroll-controlled/scrollable review sheet that
    shows prompt, risk, pending-count context for queued approvals, tool-call
-   context, all decision scopes, and a close action that leaves the approval queued
-   without answering; disconnect clears transient approvals, queued follow-ups,
+   context, all decision scopes, a copy action for bounded/redacted approval
+   details, and a close action that leaves the approval queued without answering; disconnect clears transient approvals, queued follow-ups,
    voice errors, stops in-flight TTS, clears the continuous-voice toggle, and
    immediately marks locally stopped streaming replies failed/Stopped so the
    spinner cannot hang after a stop; stale work cannot leak into a later connection; missing TTS plus capture and TTS failures now
@@ -573,7 +573,7 @@ readiness checklist and non-completion caveats.
   follow-ups are capped while a turn is streaming so the composer keeps overflow
   text instead of silently growing an unbounded queue. Approval review sheets now
   use bounded/redacted prompt and risk previews with explicit truncation copy for
-  mobile review. Server-audio honesty now treats either advertised `audio_api` or
+  mobile review plus a copy action for bounded/redacted approval details. Server-audio honesty now treats either advertised `audio_api` or
   `realtime_voice` as blocked until Navivox wires real server audio. Bounded
   diagnostics now redacts dynamic metadata fields such as active session title,
   health strings, capability model/features/endpoints, and model names. Tool
