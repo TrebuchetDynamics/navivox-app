@@ -2882,6 +2882,72 @@ void main() {
     );
   });
 
+  testWidgets('endpoint presets clear selected profile secrets and labels', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'lan',
+          label: 'LAN Hermes',
+          baseUrl: 'http://lan.example:8642',
+          apiKey: 'lan-secret',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('LAN Hermes'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('hermes-api-key-field')))
+          .controller!
+          .text,
+      'lan-secret',
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-profile-label-field')),
+          )
+          .controller!
+          .text,
+      'LAN Hermes',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('hermes-preset-android')));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-base-url-field')),
+          )
+          .controller!
+          .text,
+      'http://10.0.2.2:8642',
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('hermes-api-key-field')))
+          .controller!
+          .text,
+      isEmpty,
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-profile-label-field')),
+          )
+          .controller!
+          .text,
+      isEmpty,
+    );
+  });
+
   testWidgets('saved endpoint profiles can be selected and removed', (
     tester,
   ) async {

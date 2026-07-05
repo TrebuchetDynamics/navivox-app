@@ -601,7 +601,8 @@ readiness checklist and non-completion caveats.
   files/context folders, and raw log export remain deferred or read-only by
   policy. Multi-endpoint/profile management is now available locally through
   saved Hermes endpoint profile labels/chips with safe select/rename/remove
-  controls and per-profile API keys kept in secure storage. The Hermes jobs chip
+  controls, endpoint presets clear stale selected profile secrets/labels before
+  reuse, and per-profile API keys kept in secure storage. The Hermes jobs chip
   also now opens a read-only schedule detail sheet
   with enabled/state/schedule/next/last/error fields redacted and bounded plus a
   copy action for bounded/redacted job details. Queued
@@ -655,7 +656,8 @@ including one launched with `-no-audio`, so they are not real spoken-audio
 receipts. `SecureHermesEndpointStore` now keeps multi-endpoint profile metadata
 in shared preferences while per-profile API keys remain in platform secure
 storage, and profile label/rename UI redacts secret-looking labels while
-preserving those keys without echoing them into shared storage or dialog copy.
+preserving those keys without echoing them into shared storage or dialog copy;
+preset chips clear selected profile secret/label fields before switching origins.
 
 ## Loose ends
 

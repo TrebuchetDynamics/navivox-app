@@ -249,23 +249,21 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                       label: const Text('Local Hermes'),
                       onPressed: connecting
                           ? null
-                          : () => _baseUrlController.text =
-                                'http://127.0.0.1:8642',
+                          : () => _applyEndpointPreset('http://127.0.0.1:8642'),
                     ),
                     ActionChip(
                       key: const ValueKey('hermes-preset-android'),
                       label: const Text('Android emulator'),
                       onPressed: connecting
                           ? null
-                          : () => _baseUrlController.text =
-                                'http://10.0.2.2:8642',
+                          : () => _applyEndpointPreset('http://10.0.2.2:8642'),
                     ),
                     ActionChip(
                       key: const ValueKey('hermes-preset-remote'),
                       label: const Text('Remote/LAN'),
                       onPressed: connecting
                           ? null
-                          : () => _baseUrlController.clear(),
+                          : () => _applyEndpointPreset(''),
                     ),
                   ],
                 ),
@@ -660,6 +658,12 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     _baseUrlController.text = profile.baseUrl;
     _apiKeyController.text = profile.apiKey ?? '';
     _profileLabelController.text = profile.label ?? '';
+  }
+
+  void _applyEndpointPreset(String baseUrl) {
+    _baseUrlController.text = baseUrl;
+    _apiKeyController.clear();
+    _profileLabelController.clear();
   }
 
   Future<void> _renameEndpointProfile(
