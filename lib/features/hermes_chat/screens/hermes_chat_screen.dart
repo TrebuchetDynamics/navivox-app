@@ -486,7 +486,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                   ),
                 IconButton(
                   key: const ValueKey('hermes-mic-button'),
-                  tooltip: 'Speak',
+                  tooltip: 'Speak — device STT to Hermes text',
                   icon: _capturing
                       ? const SizedBox(
                           height: 18,
@@ -1937,9 +1937,13 @@ class _HermesCapabilityStrip extends StatelessWidget {
       if (!policy.supportsRunsTransport && policy.supportsSessionChatStream)
         const Chip(label: Text('Session chat streaming enabled')),
       if (policy.supportsRealtimeVoice || policy.supportsAudioApi)
-        const Chip(label: Text('Server audio advertised; using device STT'))
+        const Chip(
+          label: Text(
+            'Server audio advertised; Navivox uses device STT -> Hermes text',
+          ),
+        )
       else
-        const Chip(label: Text('Voice uses device speech-to-text')),
+        const Chip(label: Text('Voice: device STT -> Hermes text')),
       if (detailedHealth?.version case final version?)
         Chip(
           label: Text(

@@ -19,7 +19,8 @@ Implemented in `main`:
 - `/hermes` main route and `HermesChatScreen`.
 - Hermes API connect/session/chat over `HermesApiChannel`.
 - HTTP/SSE transport, session list/new/rename/delete/fork, text turns.
-- Local STT transcript submission as Hermes text voice.
+- Local STT transcript submission as Hermes text voice, with UI copy stating
+  device STT becomes Hermes text and server audio is not used yet.
 - Approvals, stop, tool-progress UI, read-only jobs inventory, bounded diagnostics.
 - Fake/live/provider browser smoke helpers.
 - Published `Hermes platform smoke` workflow with watched current-head
@@ -119,7 +120,7 @@ Work:
 
 - Capture real Android spoken phrase → Hermes text turn → provider reply → local
   TTS/re-arm receipt.
-- Add clearer UI copy that local STT is the active voice path.
+- Keep UI copy clear that local STT is the active voice path.
 - Draft Hermes realtime/server audio API requirements only after the physical mic
   receipt is green.
 

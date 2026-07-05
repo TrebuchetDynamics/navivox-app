@@ -465,7 +465,7 @@ void main() {
       );
       expect(find.text('Hermes Agent hermes-agent'), findsOneWidget);
       expect(find.text('Runs SSE enabled'), findsOneWidget);
-      expect(find.text('Voice uses device speech-to-text'), findsOneWidget);
+      expect(find.text('Voice: device STT -> Hermes text'), findsOneWidget);
       expect(find.text('Version: 0.16.0'), findsOneWidget);
       expect(find.text('Gateway: running'), findsOneWidget);
       expect(find.text('Active agents: 0'), findsOneWidget);
@@ -703,7 +703,9 @@ void main() {
       await tester.pumpWidget(_wrap(channel));
 
       expect(
-        find.text('Server audio advertised; using device STT'),
+        find.text(
+          'Server audio advertised; Navivox uses device STT -> Hermes text',
+        ),
         findsOneWidget,
       );
       expect(find.text('Server realtime voice advertised'), findsNothing);
@@ -731,7 +733,9 @@ void main() {
       await tester.pumpWidget(_wrap(channel));
 
       expect(
-        find.text('Server audio advertised; using device STT'),
+        find.text(
+          'Server audio advertised; Navivox uses device STT -> Hermes text',
+        ),
         findsOneWidget,
       );
 
