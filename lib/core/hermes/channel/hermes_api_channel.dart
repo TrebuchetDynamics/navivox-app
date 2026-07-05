@@ -593,7 +593,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
           _setTurns(sessionId, List.of(turns));
           return;
         }
-        if (event.name == 'approval.request') {
+        if (_isApprovalRequestEvent(event.name)) {
           final request = _approvalRequestFromEvent(event);
           if (request.id.isEmpty) {
             terminalRunEventReceived = true;
@@ -812,6 +812,12 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
       }
     }
     return false;
+  }
+
+  bool _isApprovalRequestEvent(String name) {
+    return name == 'approval.request' ||
+        name == 'approval.requested' ||
+        name == 'approval.required';
   }
 
   bool _isStreamErrorEvent(String name) {

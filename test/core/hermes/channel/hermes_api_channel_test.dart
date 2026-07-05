@@ -2907,6 +2907,47 @@ void main() {
     },
   );
 
+  test('sendText accepts approval request event aliases', () async {
+    final approvals = <NavivoxApprovalRequest>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) => Stream.fromIterable([
+          'event: approval.required\ndata: {"approval_id":"appr_required","prompt":"Approve required?"}\n\n',
+          'event: approval.requested\ndata: {"approval_id":"appr_requested","prompt":"Approve requested?"}\n\n',
+          'event: run.completed\ndata: {}\n\ndata: [DONE]\n\n',
+        ]),
+      ),
+    );
+    channel.approvalRequests.listen(approvals.add);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('needs approval aliases');
+
+    expect(approvals.map((approval) => approval.id), [
+      'appr_required',
+      'appr_requested',
+    ]);
+    expect(approvals.last.prompt, 'Approve requested?');
+    expect(channel.state.errorMessage, isNull);
+  });
+
   test('sendText accepts approval id aliases from run events', () async {
     final approvals = <NavivoxApprovalRequest>[];
     final channel = HermesApiChannel(
