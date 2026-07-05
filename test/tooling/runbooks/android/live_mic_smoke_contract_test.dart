@@ -19,6 +19,7 @@ void main() {
     expectRunbookContainsAll(text, [
       '# Android Live Microphone Hermes Smoke',
       'physical-audio receipt',
+      'not the no-human strict',
       'npm run android:live-mic-prep',
       'NAVIVOX_ANDROID_DEVICE_ID=<device-id>',
       'NAVIVOX_ANDROID_HERMES_URL=<android-reachable-hermes-url>',
@@ -55,14 +56,14 @@ void main() {
       '`RECORD_AUDIO` granted',
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Completion verdict: NOT COMPLETE',
-      'do not promote this Android receipt',
+      'do not promote this Android physical-mic\n   receipt',
       'passing tests, APK hashes, configured Hermes home, workflow YAML, or\n   dispatch-only output',
       'Do not count as completion',
       'npm run android:voice-smoke',
       'npm run android:hermes-voice-loop-smoke',
       'Provider transcript smoke by itself',
       'Synthetic/generated host audio playback',
-      'they do not prove an operator\n  spoke into a physical microphone',
+      'Direct transcript injection remains\n  non-physical automated evidence',
       'cmd: Failure calling service package: Broken pipe (32)',
       'Unable to\nstart the app on the device',
       'Flutter emulator launcher exit `-6`',
@@ -78,6 +79,9 @@ void main() {
     expect(script, contains('Manual evidence still required'));
     expect(script, contains('does not\nprove physical microphone capture'));
     expect(platformRunbook, contains('android/live-mic-smoke.md'));
-    expect(platformRunbook, contains('physical-audio receipt checklist'));
+    expect(
+      platformRunbook,
+      contains('Optional physical-mic evidence still requires'),
+    );
   });
 }

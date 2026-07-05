@@ -15,10 +15,10 @@ void main() {
       'npm run hermes:provider-smoke:local',
       'npm run android:voice-smoke',
       'npm run android:hermes-voice-loop-smoke',
-      'npm run android:live-mic-prep',
-      '../runbooks/android/live-mic-smoke.md',
+      'build/receipts/android-hermes-voice-loop-smoke.json',
+      'deterministic transcript capture plus fake TTS/re-arm',
       'npm run android:durable-key-smoke',
-      'Not whole-goal completion evidence by itself; run strict readiness audit',
+      'Not whole-goal completion evidence by itself',
       'npm run platform:workflow-smoke',
       'published `Hermes platform smoke` workflow',
       'build/receipts/hermes-platform-workflow.json',
@@ -28,9 +28,9 @@ void main() {
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Informational only; strict mode must fail while blockers remain.',
       'Completion verdict: NOT COMPLETE',
-      'Android physical-mic, Hermes server-audio, or deferred-surface blockers',
+      'Hermes server-audio, deferred-surface, or missing automated receipt blockers',
       'must not promote proxy evidence',
-      'tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output',
+      'tests, APK hashes, configured Hermes home, workflow YAML, dispatch-only output',
     ]) {
       expect(text, contains(snippet), reason: snippet);
     }

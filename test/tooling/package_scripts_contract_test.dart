@@ -73,8 +73,8 @@ void main() {
       );
     }
     expect(androidVoiceSmoke, contains('Manual continuous-voice closeout'));
-    expect(androidLoopSmoke, contains('not physical\nmicrophone audio input'));
-    expect(androidLoopSmoke, contains('not provider-backed replies'));
+    expect(androidLoopSmoke, contains('not physical microphone\naudio input'));
+    expect(androidLoopSmoke, contains('provider-backed replies'));
     expect(
       androidDurableKeySmoke,
       contains('not part of active pure-Hermes readiness'),

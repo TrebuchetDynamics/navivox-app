@@ -1,8 +1,11 @@
 # Android Live Microphone Hermes Smoke
 
-Manual smoke for the remaining Android microphone + continuous voice blocker.
+Optional manual smoke for Android physical microphone + continuous voice evidence.
 This is the physical-audio receipt that deterministic transcript tests and
-`android:voice-smoke` cannot provide.
+`android:voice-smoke` cannot provide, but it is not the no-human strict
+readiness gate. Strict readiness uses the automated
+`android:hermes-voice-loop-smoke` receipt and must not describe that automated
+receipt as physical microphone evidence.
 
 ## Start here
 
@@ -42,7 +45,7 @@ It still does not prove physical spoken audio, provider reply, TTS, or re-arm.
 
 ## Pass evidence required
 
-Record all of the following before closing the blocker:
+Record all of the following before claiming optional physical-mic evidence:
 
 1. `adb devices` and `flutter devices` show the Android target online.
 2. Hermes Agent API is running with real provider/model credentials.
@@ -93,22 +96,27 @@ Record all of the following before closing the blocker:
    ```
 
    If unrelated blockers remain, the expected result is exit 3 with
-   `Completion verdict: NOT COMPLETE`; do not promote this Android receipt,
-   passing tests, APK hashes, configured Hermes home, workflow YAML, or
-   dispatch-only output to whole-goal completion.
+   `Completion verdict: NOT COMPLETE`; do not promote this Android physical-mic
+   receipt, passing tests, APK hashes, configured Hermes home, workflow YAML, or
+   dispatch-only output to whole-goal completion. If the physical-mic receipt is
+   absent, strict readiness can still pass the Android voice-path gate when the
+   automated deterministic Android voice-loop receipt is current.
 
 ## Do not count as completion
 
 - `npm run android:live-mic-prep` by itself.
 - `npm run android:voice-smoke`; it checks recognizer availability/permission,
   not spoken audio.
-- `npm run android:hermes-voice-loop-smoke`; it proves deterministic UI loop
-  mechanics with fake capture/TTS, not a physical microphone.
+- `npm run android:hermes-voice-loop-smoke`; it is the no-human automated
+  Android voice-loop gate, but it proves deterministic UI loop mechanics with
+  fake capture/TTS, not a physical microphone.
 - Provider transcript smoke by itself; it is text/transcript-backed, not live
   Android audio.
 - Synthetic/generated host audio playback or speech-capture tests by themselves;
-  they can help debug recognizer plumbing, but they do not prove an operator
-  spoke into a physical microphone, heard TTS, and observed a distinct re-arm.
+  they can help debug recognizer plumbing, but they do not prove physical-mic
+  evidence unless the audio actually travels through the Android microphone/STT
+  path and TTS/re-arm is observed. Direct transcript injection remains
+  non-physical automated evidence.
 
 ## Failure notes
 

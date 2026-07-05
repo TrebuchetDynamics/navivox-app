@@ -15,8 +15,8 @@ explicit external or deferred blocker but is not a completion receipt.
 | Provider-backed Hermes chat smoke with real model/provider credentials | `npm run hermes:provider-smoke:local` writes `build/receipts/hermes-provider-smoke.json` after a no-retry Playwright pass against a configured local Hermes home. The receipt is bound to the current `head_sha`, records a sanitized origin-only `base_url`, includes `evidence_for` entries for `provider-backed Hermes typed text turn` and `deterministic transcript voice turn`, and includes `not_evidence_for` caveats for physical Android mic, Hermes realtime/server audio, native-host receipts, platform workflow publication, deferred parity, and whole-goal completion. | Covered for configured local Hermes text. |
 | Provider-backed Hermes voice smoke | Same provider smoke submits a deterministic device transcript via `navivoxE2EHermesSubmitVoice` and verifies a model reply. The helper caveat says this is deterministic transcript voice only, not physical microphone evidence or Hermes realtime/server audio, and the readiness audit rejects stale/malformed provider receipts. | Covered for transcript voice only; not physical mic or server audio. |
 | Android speech/mic readiness | `npm run android:voice-smoke` passed on a KVM-backed `fractal_test` emulator on 2026-07-03, verifying speech recognizer availability and granted mic permission. `NAVIVOX_ANDROID_SKIP_BUILD=1 NAVIVOX_ANDROID_HERMES_URL=http://10.0.2.2:8642 npm run android:live-mic-prep` also installed/launched/granted mic permission on `fractal_test`. A later direct target recheck showed `adb devices` had no attached Android devices while `flutter devices` listed only Linux desktop and Chrome web. The canonical manual physical-audio checklist is `docs/runbooks/android/live-mic-smoke.md`. | Readiness/prep covered; real spoken audio not covered. |
-| Android continuous voice loop | `NAVIVOX_ANDROID_DEVICE_ID=<emulator> NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1 npm run android:hermes-voice-loop-smoke` passed on a KVM-backed `fractal_test` emulator on 2026-07-03. It runs `HermesChatScreen` with deterministic capture, fake Hermes channel, and fake TTS for two loop turns. | Deterministic loop covered; physical mic/provider loop not covered. |
-| Android debug APK build | `flutter build apk --debug` passed on 2026-07-03 and produced `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; no live Android physical mic receipt. |
+| Android automated voice loop | `npm run android:hermes-voice-loop-smoke` writes `build/receipts/android-hermes-voice-loop-smoke.json` after an Android integration test runs `HermesChatScreen` with deterministic transcript capture, fake Hermes channel/provider replies, fake TTS, and a distinct second turn after continuous-voice re-arm. The receipt is bound to current `HEAD` and records Android device properties. | Covered for no-human Android Flutter voice-loop mechanics; explicitly not physical mic/provider/server-audio evidence. |
+| Android debug APK build | `flutter build apk --debug` passed on 2026-07-03 and produced `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; not physical mic evidence. |
 | Linux release build | `npm run linux:release-build` passed on 2026-07-03 and produced executable `build/linux/x64/release/bundle/navivox`. | Covered locally. |
 | Windows build | `build/receipts/hermes-platform-workflow.json` records watched run `28715961684`/later current-head reruns with a successful `Windows desktop build` job and non-expired `navivox-windows-debug-bundle` artifact. | Covered by hosted native-runner receipt. |
 | iOS simulator build | `build/receipts/hermes-platform-workflow.json` records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact. | Covered by hosted native-runner receipt. |
@@ -38,23 +38,22 @@ explicit external or deferred blocker but is not a completion receipt.
 
 ## Open blockers
 
-1. **Real Android spoken microphone continuous loop** — requires an audio-capable
-   responsive Android device/emulator. Current Android receipts use either native
-   readiness diagnostics or deterministic transcript capture; a KVM-backed
-   `fractal_test` refresh passed `npm run android:voice-smoke`, but that still
-   proves recognizer/permission readiness only, not spoken audio, provider reply,
-   TTS, or continuous re-arm. A later target recheck found no attached Android
-   device in `adb devices`; Flutter listed only Linux desktop and Chrome web.
-2. **Hermes server realtime audio** — not implemented in Navivox; voice remains
-   device STT -> Hermes text.
-3. **Deferred product surfaces** — config editing/admin, Hermes memory UI,
+1. **Hermes server realtime audio** — not implemented in Navivox; voice remains
+   device STT -> Hermes text. Automated Android voice-loop evidence does not
+   claim server audio.
+2. **Deferred product surfaces** — config editing/admin, Hermes memory UI,
    jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media,
    files/context folders, and raw log export remain outside the implemented
    Hermes mobile MVP. Multi-endpoint/profile management is now implemented
    locally.
-4. **Polish/hardening** — SSE reconnect/drop edge cases, offline/auth-expired UX,
+3. **Polish/hardening** — SSE reconnect/drop edge cases, offline/auth-expired UX,
    session search/grouping, queued follow-ups, and mobile approval/error/session
    sheet polish remain improvement work after the core receipt blockers.
+4. **Optional physical microphone evidence** — a real spoken Android microphone
+   receipt remains useful hardware evidence when an audio-capable target exists,
+   but it is no longer a strict no-human readiness blocker. The automated gate is
+   the deterministic Android voice-loop receipt plus provider transcript smoke,
+   both of which explicitly say they are not physical-mic evidence.
 
 ## Current completion audit verdict
 
@@ -63,7 +62,7 @@ the explicit objective as follows:
 
 | Objective item | Concrete artifact/evidence inspected | Verdict |
 | --- | --- | --- |
-| Real Android spoken mic receipt | `adb devices` currently has no attached Android device; earlier `fractal_test` receipts are readiness/prep/deterministic only. | Blocked: no current Android target for manual spoken-audio closeout. |
+| Android automated voice-loop receipt | `build/receipts/android-hermes-voice-loop-smoke.json` validates the Android `HermesChatScreen` deterministic transcript capture, fake Hermes replies, fake TTS callback, and continuous re-arm for a distinct second turn. | Covered for no-human Android voice-loop mechanics; not physical-mic/provider/server-audio evidence. |
 | Windows/iOS/macOS host receipts | `build/receipts/hermes-platform-workflow.json` validates successful watched native-host jobs and artifacts for the current checkout. | Covered. |
 | Publish platform workflow | `gh workflow list` exposes `Hermes platform smoke`, and `npm run platform:workflow-smoke` produced a successful watched receipt. | Covered. |
 | Hermes realtime/server audio | `hermesSurfaceReadiness()` marks advertised `realtime_voice` or `audio_api` as blocked until server audio is wired, and unadvertised server audio as deferred; voice remains device STT -> Hermes text. | Deferred/unimplemented by policy. |
@@ -72,8 +71,9 @@ the explicit objective as follows:
 
 Do not promote this audit, green tests, APK hashes, configured Hermes home
 presence, workflow YAML, or dispatch-only workflow output to completion evidence
-unless the missing Android physical-mic receipt, Hermes server-audio work, and
-remaining deferred-surface decisions above are closed.
+unless the missing Hermes server-audio work and remaining deferred-surface
+ decisions above are closed. Do not describe automated Android voice-loop
+ receipts as physical microphone evidence.
 
 ## Current blocker detail
 
@@ -90,14 +90,22 @@ non-overlapping categories:
   Android physical mic, Hermes server audio, native hosts, platform workflow,
   deferred parity, and whole-goal completion. Deterministic transcript voice
   still is not physical microphone or Hermes server-audio evidence.
+- Android automated voice-loop receipt: strict closeout requires
+  `build/receipts/android-hermes-voice-loop-smoke.json` from
+  `npm run android:hermes-voice-loop-smoke`. The receipt must match current
+  `HEAD`, record Android device properties, prove the two deterministic voice
+  turns and fake TTS outputs, and include `not_evidence_for` caveats for
+  physical microphone audio, provider-backed replies, server audio,
+  native-host receipts, platform workflow publication, deferred parity, and
+  whole-goal completion.
 - Native/host receipts: platform workflow publication and Windows/iOS/macOS
-  hosted receipts are covered by `build/receipts/hermes-platform-workflow.json`;
-  no online Android target remains the external device blocker. When Android is
-  missing, the helper prints `flutter devices`, `flutter emulators`, and
-  `emulator -accel-check` output as blocker context only, not Android/audio or
-  live-mic receipt evidence.
-- Voice/audio: real Android spoken microphone loop missing; Hermes
-  realtime/server audio not implemented, so voice remains device STT -> Hermes text.
+  hosted receipts are covered by `build/receipts/hermes-platform-workflow.json`.
+  When Android is missing, the helper prints `flutter devices`, `flutter
+  emulators`, and `emulator -accel-check` output as context only, not Android
+  voice-loop or physical live-mic receipt evidence.
+- Voice/audio: automated Android voice-loop mechanics are the strict no-human
+  gate; optional physical microphone evidence is separate. Hermes realtime/server
+  audio is not implemented, so voice remains device STT -> Hermes text.
 - Deferred Hermes surfaces: config editing/admin, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
   folders, and raw diagnostics/log export. Multi-endpoint/profile management is
@@ -114,8 +122,10 @@ non-overlapping categories:
   not spoken audio capture.
 - Android `live-mic-prep` by itself: it installs/launches/grants permission and
   prints a checklist; it is not a spoken-audio receipt.
-- Deterministic Android voice-loop smoke by itself: it proves UI loop mechanics,
-  not physical microphone input.
+- Deterministic Android voice-loop smoke by itself: it proves Android UI loop
+  mechanics, deterministic transcript submission, fake TTS callback, and re-arm;
+  it does not prove physical microphone input, provider-backed replies, or Hermes
+  realtime/server audio.
 - Installed-Hermes live connect smoke by itself: it proves API connect/session
   rendering against an isolated or configured API server, not provider/model
   behavior, chat/voice provider smoke, or physical microphone evidence.

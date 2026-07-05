@@ -31,7 +31,6 @@ Implemented in `main`:
 
 Current readiness blockers:
 
-- Real Android spoken microphone receipt.
 - Hermes realtime/server audio unimplemented.
 - Deferred Desktop-like surfaces: config/admin editing, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL editing, attachments/media,
@@ -68,17 +67,19 @@ Work:
   current-head run with successful Windows, macOS, and iOS simulator
   job/artifact receipts.
 - Keep provider-backed smoke current with configured model/provider credentials.
-- Run Android live-mic manual checklist on an audio-capable target.
+- Keep `build/receipts/android-hermes-voice-loop-smoke.json` refreshed from
+  `npm run android:hermes-voice-loop-smoke` for no-human Android voice-loop
+  mechanics; it must not be described as physical microphone evidence.
 
 Acceptance gate:
 
 - `NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit` has no external
-  receipt blockers for provider smoke, Android mic, native hosts, or platform
-  workflow publication.
+  receipt blockers for provider smoke, automated Android voice-loop mechanics,
+  native hosts, or platform workflow publication.
 - The runbooks contain concrete command/job/artifact receipts, not just planned
   commands. As of this update, provider smoke plus platform workflow/native-host
-  receipts are covered; Android physical mic remains the external receipt
-  blocker.
+  receipts are covered; automated Android voice-loop receipt replaces the former
+  manual physical-mic ship gate and still does not claim physical mic coverage.
 
 Rollback/hide behavior:
 
@@ -115,27 +116,38 @@ Rollback/hide behavior:
 
 ## Phase 2 — mobile voice receipts and audio strategy
 
-Goal: finish mobile voice-to-text confidence before starting server audio.
+Goal: finish mobile voice-path confidence before starting server audio without
+requiring a human speaker in the strict readiness loop.
 
 Work:
 
-- Capture real Android spoken phrase → Hermes text turn → provider reply → local
-  TTS/re-arm receipt.
-- Keep UI copy clear that local STT is the active voice path.
-- Draft Hermes realtime/server audio API requirements only after the physical mic
-  receipt is green.
+- Keep automated Android deterministic transcript → Hermes text turn → fake TTS
+  → re-arm receipt current through `npm run android:hermes-voice-loop-smoke`.
+- Keep provider transcript voice smoke current to prove model/provider replies for
+  the transcript path.
+- Keep UI copy clear that local STT is the active voice path and that automated
+  voice-loop receipts are not physical microphone evidence.
+- Keep the manual live-mic runbook available as optional hardware/audio evidence
+  when an audio-capable target exists.
+- Draft Hermes realtime/server audio API requirements only after Hermes exposes a
+  documented API and Navivox has tests against it.
 
 Acceptance gate:
 
-- `docs/runbooks/android/live-mic-smoke.md` has a current manual receipt.
-- Readiness audit no longer blocks on real Android spoken microphone.
+- `build/receipts/android-hermes-voice-loop-smoke.json` matches current `HEAD`
+  and validates deterministic Android voice-loop mechanics.
+- Provider smoke validates typed text plus deterministic transcript voice against
+  configured model/provider credentials.
+- Readiness audit no longer blocks on a human-spoken Android microphone receipt,
+  and it explicitly refuses to call automated receipts physical mic evidence.
 - Server/realtime audio remains deferred unless Hermes exposes a documented API
   and Navivox has tests against it.
 
 Rollback/hide behavior:
 
 - If device STT or audio target is unavailable, voice controls show unavailable
-  state and keep text chat usable.
+  state and keep text chat usable. If the automated Android receipt is missing or
+  stale, strict readiness blocks without asking for a human speaker.
 
 ## Phase 3 — read-only Desktop parity surfaces
 

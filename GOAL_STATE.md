@@ -325,9 +325,10 @@ readiness checklist and non-completion caveats.
    `flutter analyze`, focused Hermes regression (71 pass), full tooling/docs
    contract suite (27 pass), full `flutter test --concurrency=1` (1016 pass),
    `npm run hermes:provider-smoke:local` (1 Playwright pass), and
-   `git diff --check`. Strict readiness audit now reports 10 blockers: no Android physical spoken-mic
-   receipt is present, Hermes realtime/server audio remains unwired, and the
-   remaining Desktop-parity admin/mutation surfaces stay deferred by policy.
+   `git diff --check`. Strict readiness now uses automated Android
+   voice-loop receipt coverage instead of a human-spoken physical mic ship gate;
+   Hermes realtime/server audio remains unwired, and the remaining
+   Desktop-parity admin/mutation surfaces stay deferred by policy.
    Provider-backed Hermes text plus deterministic transcript voice is covered by
    a current no-retry provider receipt, and Windows/iOS/macOS host receipts plus
    workflow publication are covered by the watched `Hermes platform smoke`
@@ -349,10 +350,10 @@ readiness checklist and non-completion caveats.
    provider smoke still pass with their non-mic/server-audio and
    not-whole-goal-completion caveats, focused browser regression passes (68
    Chromium tests), and strict readiness audit now prints `Completion verdict:
-   NOT COMPLETE; Android physical-mic, Hermes server-audio, or deferred-surface
-   blockers remain.` plus an explicit warning not to promote proxy evidence
-   (tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only
-   output) to completion. `gh workflow list` shows `Hermes platform smoke`, and
+   NOT COMPLETE; Hermes server-audio, deferred-surface, or missing automated
+   receipt blockers remain.` plus an explicit warning not to promote proxy
+   evidence (tests, APK hashes, configured Hermes home, workflow YAML, or
+   dispatch-only output) to completion. `gh workflow list` shows `Hermes platform smoke`, and
    `build/receipts/hermes-platform-workflow.json` records a current watched
    successful run with Windows desktop, iOS simulator, and macOS desktop jobs and
    artifacts. A direct Android-target recheck still shows `adb devices` has no

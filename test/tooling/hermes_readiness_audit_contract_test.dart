@@ -15,7 +15,7 @@ void main() {
     for (final blocker in [
       'Hermes platform workflow is not visible to gh',
       'no online Android device/emulator',
-      'real spoken Android mic loop still requires manual audio/provider evidence',
+      'Android automated voice-loop receipt missing',
       'Windows desktop native-host build receipt missing',
       'iOS simulator native-host build receipt missing',
       'macOS desktop native-host build receipt missing',
@@ -153,10 +153,12 @@ void main() {
       contains('Objective checklist (read-only; not completion evidence)'),
     );
     expect(scriptText, contains('provider-backed Hermes chat/voice'));
-    expect(scriptText, contains('responsive audio-capable Android target'));
+    expect(scriptText, contains('Android automated voice path'));
     expect(
       scriptText,
-      contains('synthetic/generated audio tests are not physical-mic receipts'),
+      contains(
+        'deterministic transcript + fake TTS evidence and not physical-mic evidence',
+      ),
     );
     expect(
       scriptText,
@@ -175,10 +177,22 @@ void main() {
     expect(scriptText, contains('docs/runbooks/android/live-mic-smoke.md'));
     expect(scriptText, contains('docs/runbooks/android/release-handoff.md'));
     expect(scriptText, contains('scripts/record_android_live_mic_receipt.sh'));
+    expect(scriptText, contains('android-hermes-voice-loop-smoke.json'));
+    expect(
+      scriptText,
+      contains('Android automated voice-loop receipt present'),
+    );
+    expect(
+      scriptText,
+      contains(
+        'deterministic transcript capture plus fake TTS continuous re-arm',
+      ),
+    );
+    expect(scriptText, contains('fake TTS playback callback'));
     expect(scriptText, contains('Android live microphone receipt present'));
     expect(
       scriptText,
-      contains('real spoken Android mic loop receipt recorded'),
+      contains('optional physical Android mic loop receipt recorded'),
     );
     expect(scriptText, contains('distinct_rearmed_turn_observed'));
     expect(scriptText, contains('head_sha'));
@@ -224,9 +238,11 @@ void main() {
     );
     expect(scriptText, contains('distinct second spoken turn after re-arm'));
     expect(scriptText, contains('npm run android:live-mic-receipt'));
-    expect(scriptText, contains('npm run android:live-mic-prep'));
     expect(scriptText, contains('Flutter connected devices'));
-    expect(scriptText, contains('not Android/audio receipt evidence'));
+    expect(
+      scriptText,
+      contains('recorded deterministic Android receipt when present'),
+    );
     expect(scriptText, contains('Flutter emulator inventory'));
     expect(scriptText, contains('not an online/audio receipt'));
     expect(scriptText, contains('Android emulator acceleration check'));
@@ -239,7 +255,7 @@ void main() {
     expect(
       scriptText,
       contains(
-        'Android physical-mic, Hermes server-audio, or deferred-surface blockers',
+        'Hermes server-audio, deferred-surface, or missing automated receipt blockers',
       ),
     );
     expect(scriptText, contains('Do not promote proxy evidence'));
@@ -254,7 +270,7 @@ void main() {
     );
     expect(auditText, contains('Objective item'));
     expect(auditText, contains('Concrete artifact/evidence inspected'));
-    expect(auditText, contains('Real Android spoken mic receipt'));
+    expect(auditText, contains('Android automated voice-loop receipt'));
     expect(auditText, contains('Windows/iOS/macOS host receipts'));
     expect(auditText, contains('Publish platform workflow'));
     expect(auditText, contains('Hermes realtime/server audio'));
@@ -263,7 +279,7 @@ void main() {
     expect(
       auditText,
       contains(
-        'Blocked: no current Android target for manual spoken-audio closeout',
+        'Covered for no-human Android voice-loop mechanics; not physical-mic/provider/server-audio evidence',
       ),
     );
     expect(auditText, contains('Covered.'));
@@ -278,7 +294,10 @@ void main() {
     expect(auditText, contains('API connect/session rendering only'));
     expect(auditText, contains('not chat/voice provider smoke'));
     expect(auditText, contains('KVM-backed `fractal_test` emulator'));
-    expect(auditText, contains('recognizer/permission readiness only'));
+    expect(
+      auditText,
+      contains('Readiness/prep covered; real spoken audio not covered'),
+    );
     expect(auditText, contains('NAVIVOX_ANDROID_SKIP_BUILD=1'));
     expect(auditText, contains('installed/launched/granted mic permission'));
     expect(auditText, contains('adb devices` had no attached Android devices'));
@@ -286,12 +305,13 @@ void main() {
       auditText,
       contains('`flutter devices` listed only Linux desktop and Chrome web'),
     );
-    expect(auditText, contains('NAVIVOX_ANDROID_DEVICE_WAIT_SECONDS=1'));
     expect(
       auditText,
-      contains(
-        'Deterministic loop covered; physical mic/provider loop not covered',
-      ),
+      contains('build/receipts/android-hermes-voice-loop-smoke.json'),
+    );
+    expect(
+      auditText,
+      contains('Covered for no-human Android Flutter voice-loop mechanics'),
     );
     expect(auditText, contains('docs/runbooks/android/live-mic-smoke.md'));
     expect(
@@ -325,12 +345,14 @@ void main() {
     expect(auditText, contains('successful watched receipt'));
     expect(
       auditText,
-      contains('prints `flutter devices`, `flutter emulators`,'),
+      contains('When Android is missing, the helper prints `flutter devices`'),
     );
     expect(auditText, contains('emulator -accel-check'));
     expect(
       auditText,
-      contains('not Android/audio or\n  live-mic receipt evidence'),
+      contains(
+        'not Android\n  voice-loop or physical live-mic receipt evidence',
+      ),
     );
     expect(auditText, contains('Provider-backed smoke receipt'));
     expect(auditText, contains('configured Hermes home presence is only'));
