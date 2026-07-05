@@ -847,17 +847,22 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   }
 
   bool _isSuccessfulTerminalRunEvent(String name) {
-    return name == 'run.completed' || name == 'assistant.completed';
+    return name == 'run.completed' ||
+        name == 'assistant.completed' ||
+        name == 'message.completed';
   }
 
   bool _isFailedTerminalRunEvent(String name) {
     return name == 'run.failed' ||
         name == 'assistant.failed' ||
+        name == 'message.failed' ||
         _isCancelledTerminalRunEvent(name);
   }
 
   bool _isCancelledTerminalRunEvent(String name) {
-    return name == 'run.cancelled' || name == 'assistant.cancelled';
+    return name == 'run.cancelled' ||
+        name == 'assistant.cancelled' ||
+        name == 'message.cancelled';
   }
 
   bool _isToolEvent(String name) {

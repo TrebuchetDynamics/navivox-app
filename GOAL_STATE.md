@@ -468,10 +468,11 @@ readiness checklist and non-completion caveats.
    stale stream responses, live SSE decoding flushes a final data frame when the
    stream closes without a trailing blank-line separator instead of silently
    dropping the last delta/terminal/error payload, no-data `event: done` frames
-   are accepted as terminal events, `assistant.delta`/`message.delta` frames can
-   consume `delta`, `content`, or `text` payload keys from Hermes-compatible
-   hosts, default `message` SSE frames can resolve embedded `event`/`type`/`name`
-   payload fields so terminal/delta events are not missed,
+   are accepted as terminal events, `message.completed`/`message.failed` terminal
+   aliases are handled alongside run/assistant terminal events,
+   `assistant.delta`/`message.delta` frames can consume `delta`, `content`, or
+   `text` payload keys from Hermes-compatible hosts, default `message` SSE frames
+   can resolve embedded `event`/`type`/`name` payload fields so terminal/delta events are not missed,
    nested SSE error payloads are surfaced without leaking secrets, `tool.progress`
    SSE frames update the current tool card in place instead of disappearing or
    duplicating tool rows, and explicit SSE error events (including non-JSON error

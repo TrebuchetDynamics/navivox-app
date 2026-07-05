@@ -3150,6 +3150,51 @@ void main() {
     ]);
   });
 
+  test('sendText treats message completed as terminal success', () async {
+    var messagesRequests = 0;
+    final stream = StreamController<String>();
+    addTearDown(stream.close);
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' =>
+              (messagesRequests++ == 0)
+                  ? _messagesFixture
+                  : _reconciledMessagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) => stream.stream,
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final send = channel.sendText('finish message');
+    await pumpEventQueue();
+    stream.add('event: message.delta\ndata: {"delta":"local"}\n\n');
+    stream.add('event: message.completed\ndata: {}\n\n');
+    await send;
+
+    expect(messagesRequests, 2);
+    expect(channel.state.errorMessage, isNull);
+    expect(channel.state.activeMessages.map((turn) => turn.text), [
+      'Hello',
+      'Hi there',
+    ]);
+  });
+
   test(
     'sendText completes when a terminal run cancelled event arrives without stream close',
     () async {
@@ -3197,6 +3242,48 @@ void main() {
       expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
     },
   );
+
+  test('sendText treats message failed as terminal failure', () async {
+    final stream = _ManualStringStream();
+    final sendDone = Completer<void>();
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) => stream,
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    unawaited(channel.sendText('fail message').whenComplete(sendDone.complete));
+    await pumpEventQueue();
+    stream.emit('event: message.failed\ndata: {}\n\n');
+    await pumpEventQueue();
+
+    expect(sendDone.isCompleted, isTrue);
+    expect(channel.state.errorMessage, 'Hermes run failed.');
+    expect(channel.state.activeMessages.map((turn) => turn.text), [
+      'Hello',
+      'fail message',
+      '',
+    ]);
+    expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
+  });
 
   test('sendText treats assistant failed as terminal failure', () async {
     final stream = _ManualStringStream();
