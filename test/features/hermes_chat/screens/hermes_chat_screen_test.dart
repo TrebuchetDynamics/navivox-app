@@ -952,6 +952,13 @@ void main() {
     );
     expect(export, contains('Config write: not advertised'));
     expect(export, contains('Memory write: not advertised'));
+    expect(export, contains('Endpoint routes:'));
+    expect(
+      export,
+      contains(
+        'session_chat_stream=POST /api/sessions/{session_id}/chat/stream',
+      ),
+    );
     expect(export, contains('Surface readiness:'));
     expect(export, contains('Server realtime voice/audio: Deferred'));
     expect(export, isNot(contains('Legacy durable reconnect')));

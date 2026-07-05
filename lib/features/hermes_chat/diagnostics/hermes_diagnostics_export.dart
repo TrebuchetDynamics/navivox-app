@@ -1,4 +1,5 @@
 import '../../../core/hermes/channel/hermes_channel_state.dart';
+import '../../../core/hermes/models/hermes_capabilities.dart';
 import '../../../core/hermes/policy/hermes_surface_readiness.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
 
@@ -67,6 +68,9 @@ String hermesDiagnosticsExport(HermesChannelState state) {
       )
       ..writeln('Features: ${_safeDiagnosticsList(featureNames)}')
       ..writeln('Endpoints: ${_safeDiagnosticsList(endpointNames)}')
+      ..writeln(
+        'Endpoint routes: ${_safeDiagnosticsEndpointRoutes(capabilities.endpoints)}',
+      )
       ..writeln('Surface readiness:');
     for (final item in hermesSurfaceReadiness(capabilities)) {
       buffer.writeln(
@@ -92,6 +96,25 @@ String _safeDiagnosticsList(List<String> values) {
       .map((value) => _safeDiagnosticsText(value, maxLength: 80))
       .join(', ');
   final remaining = values.length - 12;
+  return remaining > 0 ? '$safe, +$remaining more' : safe;
+}
+
+String _safeDiagnosticsEndpointRoutes(
+  Map<String, HermesEndpointCapability> endpoints,
+) {
+  if (endpoints.isEmpty) return 'none';
+  final entries = endpoints.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  final safe = entries
+      .take(12)
+      .map((entry) {
+        final name = _safeDiagnosticsText(entry.key, maxLength: 48);
+        final method = _safeDiagnosticsText(entry.value.method, maxLength: 12);
+        final path = _safeDiagnosticsText(entry.value.path, maxLength: 96);
+        return '$name=$method $path';
+      })
+      .join(', ');
+  final remaining = entries.length - 12;
   return remaining > 0 ? '$safe, +$remaining more' : safe;
 }
 
