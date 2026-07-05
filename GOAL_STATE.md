@@ -417,7 +417,8 @@ readiness checklist and non-completion caveats.
    newer active run/stop handle, terminal Hermes run events surface
    bounded recovery copy, expose a
    reconnect path for expired keys and stream/network drops, add a mobile-friendly
-   redacted error details sheet for connect and in-chat failures, and expose a retry action for the last failed
+   redacted error details sheet with copy-to-clipboard support for connect and
+   in-chat failures, and expose a retry action for the last failed
    user turn while hiding retry during another active streaming turn; composer follow-ups now queue
    multiple messages in order during an active streaming turn, offer a manual
    `Send now` retry, and re-queue the pending message if automatic send fails

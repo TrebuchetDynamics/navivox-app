@@ -35,7 +35,7 @@ void main() {
       'install/launch/mic-grant\n   prep',
       'That remains readiness and deterministic\n   transcript/TTS loop evidence only',
       'Hermes home presence remains informational only',
-      'redacted error details sheet for connect and in-chat failures',
+      'redacted error details sheet with copy-to-clipboard support for connect and\n   in-chat failures',
       'require an explicit physical Android device observation',
       'reject emulator targets for the final live-mic receipt',
       'Real spoken Android microphone smoke',

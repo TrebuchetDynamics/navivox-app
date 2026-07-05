@@ -1290,10 +1290,33 @@ void _showHermesErrorDetailsSheet(
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  key: const ValueKey('hermes-error-details-close'),
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: const Text('Close'),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const ValueKey('hermes-error-details-copy'),
+                      onPressed: () {
+                        unawaited(
+                          Clipboard.setData(ClipboardData(text: safeError)),
+                        );
+                        ScaffoldMessenger.maybeOf(sheetContext)?.showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Copied redacted Hermes error details.',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_outlined),
+                      label: const Text('Copy redacted details'),
+                    ),
+                    TextButton(
+                      key: const ValueKey('hermes-error-details-close'),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
                 ),
               ),
             ],

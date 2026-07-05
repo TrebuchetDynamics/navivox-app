@@ -303,6 +303,15 @@ void main() {
       find.byKey(const ValueKey('hermes-error-details-redaction-note')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('hermes-error-details-copy')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('hermes-error-details-copy')));
+    await tester.pump();
+
+    expect(find.text('Copied redacted Hermes error details.'), findsOneWidget);
   });
 
   testWidgets('connect error details sheet redacts raw failures', (
@@ -328,6 +337,10 @@ void main() {
     expect(find.textContaining('secret-connect-token'), findsNothing);
     expect(find.textContaining('user:pass'), findsNothing);
     expect(find.textContaining('api_key=[redacted]'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hermes-error-details-copy')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('hides retry when chat transport is unavailable', (tester) async {
