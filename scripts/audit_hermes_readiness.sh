@@ -345,8 +345,17 @@ if command -v adb >/dev/null 2>&1; then
   android_devices="$(adb devices | awk 'NR>1 && $2=="device" {print $1}' | paste -sd, -)"
   if [ -n "$android_devices" ]; then
     ok "Android target(s) online: $android_devices"
+    if [ "$android_live_mic_receipt_valid" = 1 ]; then
+      ok 'real spoken Android mic loop receipt recorded'
+    else
+      block 'real spoken Android mic loop still requires manual physical-audio/provider/TTS/re-arm evidence; online device alone is not a pass'
+    fi
   else
-    info 'no online Android device/emulator at audit time; current Android voice-path readiness is covered only by the recorded deterministic Android receipt when present'
+    if [ "$android_live_mic_receipt_valid" = 1 ]; then
+      ok 'real spoken Android mic loop receipt recorded; no current Android attachment required for this historical receipt'
+    else
+      block 'no online Android device/emulator for real spoken mic receipt; start an audio-capable target, follow docs/runbooks/android/live-mic-smoke.md, then run npm run android:live-mic-prep'
+    fi
     if command -v flutter >/dev/null 2>&1; then
       printf 'INFO: Flutter connected devices (not Android/audio receipt evidence):\n'
       flutter devices 2>/dev/null | sed 's/^/INFO:   /' || true
@@ -361,11 +370,6 @@ if command -v adb >/dev/null 2>&1; then
       printf 'INFO: Android emulator acceleration check (not audio/live-mic evidence):\n'
       "$emulator_bin" -accel-check 2>&1 | sed 's/^/INFO:   /' || true
     fi
-  fi
-  if [ "$android_live_mic_receipt_valid" = 1 ]; then
-    ok 'optional physical Android mic loop receipt recorded'
-  else
-    info 'optional physical Android mic loop receipt not recorded; this is not a strict blocker because automated readiness uses deterministic Android voice-loop evidence and does not claim physical mic coverage'
   fi
 else
   block 'adb not installed; cannot inspect Android device readiness'
@@ -451,7 +455,7 @@ block 'Hermes raw diagnostics/log export remains deferred; bounded diagnostics o
 ok 'Hermes multi-endpoint/profile management available locally with secure per-profile API-key storage'
 printf '\nSummary: %s blocker(s), %s warning state.\n' "$blockers" "$status"
 if [ "$blockers" -gt 0 ]; then
-  printf 'Completion verdict: NOT COMPLETE; Hermes server-audio, deferred-surface, or missing automated receipt blockers remain.\n'
+  printf 'Completion verdict: NOT COMPLETE; Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers remain.\n'
 fi
 printf 'This audit is informational and must not be used as a completion receipt by itself.\n'
 printf 'Do not promote proxy evidence (tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output) to completion.\n'

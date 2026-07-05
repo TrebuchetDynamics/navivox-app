@@ -49,11 +49,11 @@ explicit external or deferred blocker but is not a completion receipt.
 3. **Polish/hardening** — SSE reconnect/drop edge cases, offline/auth-expired UX,
    session search/grouping, queued follow-ups, and mobile approval/error/session
    sheet polish remain improvement work after the core receipt blockers.
-4. **Optional physical microphone evidence** — a real spoken Android microphone
-   receipt remains useful hardware evidence when an audio-capable target exists,
-   but it is no longer a strict no-human readiness blocker. The automated gate is
-   the deterministic Android voice-loop receipt plus provider transcript smoke,
-   both of which explicitly say they are not physical-mic evidence.
+4. **Real spoken Android microphone receipt** — the active closeout still
+   requires physical-audio/provider/TTS/re-arm evidence from an audio-capable
+   Android target. The deterministic Android voice-loop receipt and provider
+   transcript smoke are useful automated gates, but both explicitly say they are
+   not physical-mic evidence.
 
 ## Current completion audit verdict
 
@@ -62,6 +62,7 @@ the explicit objective as follows:
 
 | Objective item | Concrete artifact/evidence inspected | Verdict |
 | --- | --- | --- |
+| Android physical spoken mic receipt | `build/receipts/android-live-mic-smoke.json` must validate physical mic observation, provider reply, TTS, and a distinct second spoken turn after re-arm. | Not covered until the real spoken Android receipt is current; deterministic transcript receipts do not satisfy this. |
 | Android automated voice-loop receipt | `build/receipts/android-hermes-voice-loop-smoke.json` validates the Android `HermesChatScreen` deterministic transcript capture, fake Hermes replies, fake TTS callback, and continuous re-arm for a distinct second turn. | Covered for no-human Android voice-loop mechanics; not physical-mic/provider/server-audio evidence. |
 | Windows/iOS/macOS host receipts | `build/receipts/hermes-platform-workflow.json` validates successful watched native-host jobs and artifacts for the current checkout. | Covered. |
 | Publish platform workflow | `gh workflow list` exposes `Hermes platform smoke`, and `npm run platform:workflow-smoke` produced a successful watched receipt. | Covered. |
@@ -71,9 +72,9 @@ the explicit objective as follows:
 
 Do not promote this audit, green tests, APK hashes, configured Hermes home
 presence, workflow YAML, or dispatch-only workflow output to completion evidence
-unless the missing Hermes server-audio work and remaining deferred-surface
- decisions above are closed. Do not describe automated Android voice-loop
- receipts as physical microphone evidence.
+unless the missing Android physical-mic receipt, Hermes server-audio work, and
+remaining deferred-surface decisions above are closed. Do not describe automated
+Android voice-loop receipts as physical microphone evidence.
 
 ## Current blocker detail
 
@@ -103,9 +104,10 @@ non-overlapping categories:
   When Android is missing, the helper prints `flutter devices`, `flutter
   emulators`, and `emulator -accel-check` output as context only, not Android
   voice-loop or physical live-mic receipt evidence.
-- Voice/audio: automated Android voice-loop mechanics are the strict no-human
-  gate; optional physical microphone evidence is separate. Hermes realtime/server
-  audio is not implemented, so voice remains device STT -> Hermes text.
+- Voice/audio: automated Android voice-loop mechanics are covered only as a
+  no-human regression gate; real spoken Android physical-mic evidence remains a
+  blocker until recorded. Hermes realtime/server audio is not implemented, so
+  voice remains device STT -> Hermes text.
 - Deferred Hermes surfaces: config editing/admin, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
   folders, and raw diagnostics/log export. Multi-endpoint/profile management is

@@ -81,7 +81,7 @@ void main() {
     expect(platformRunbook, contains('android/live-mic-smoke.md'));
     expect(
       platformRunbook,
-      contains('Optional physical-mic evidence still requires'),
+      contains('Required physical-mic evidence still requires'),
     );
   });
 }

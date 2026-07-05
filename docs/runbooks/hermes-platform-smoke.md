@@ -318,9 +318,9 @@ Hermes realtime/server audio, and not whole-goal completion evidence by itself.
 The helper points operators back to strict readiness audit before any completion
 claim.
 
-Optionally perform the manual live Hermes Agent voice smoke on the same device.
+Perform the manual live Hermes Agent voice smoke on an audio-capable target before any active-goal completion claim.
 Use [`android/live-mic-smoke.md`](android/live-mic-smoke.md) as the canonical
-optional physical-audio receipt checklist. To install the debug APK, grant
+required physical-audio receipt checklist. To install the debug APK, grant
 microphone permission, and launch Navivox on an audio-capable Android target,
 run:
 
@@ -343,9 +343,9 @@ NAVIVOX_ANDROID_HERMES_URL=http://10.0.2.2:8642 npm run android:live-mic-prep`
 installed/launched/granted microphone permission. This prep command is not a
 pass receipt and not whole-goal completion evidence by itself. The helper points
 operators back to strict readiness audit before any completion claim. The strict
-no-human Android gate is `npm run android:hermes-voice-loop-smoke`, which writes
+automated Android gate is `npm run android:hermes-voice-loop-smoke`, which writes
 `build/receipts/android-hermes-voice-loop-smoke.json` and must not be described
-as physical microphone evidence. Optional physical-mic evidence still requires:
+as physical microphone evidence. Required physical-mic evidence still requires:
 
 1. Connect to Hermes using `http://10.0.2.2:8642` for emulator or a LAN/VPN URL
    for a physical device.
@@ -359,5 +359,5 @@ as physical microphone evidence. Optional physical-mic evidence still requires:
 `npm run android:durable-key-smoke` remains available for preserved legacy code,
 but it is not part of the active pure-Hermes readiness gate. Do not treat legacy
 keypair or reconnect tests as blockers for the Hermes companion release. The
-active no-human Android gate is the deterministic Hermes voice-loop receipt;
-optional physical-mic evidence is tracked separately by the live-mic runbook.
+active automated Android gate is the deterministic Hermes voice-loop receipt;
+required physical-mic evidence is tracked separately by the live-mic runbook.

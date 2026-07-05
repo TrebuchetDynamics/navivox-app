@@ -17,6 +17,7 @@ void main() {
       'npm run android:hermes-voice-loop-smoke',
       'build/receipts/android-hermes-voice-loop-smoke.json',
       'deterministic transcript capture plus fake TTS/re-arm',
+      'Real spoken physical audio remains a separate required manual receipt',
       'npm run android:durable-key-smoke',
       'Not whole-goal completion evidence by itself',
       'npm run platform:workflow-smoke',
@@ -28,7 +29,7 @@ void main() {
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Informational only; strict mode must fail while blockers remain.',
       'Completion verdict: NOT COMPLETE',
-      'Hermes server-audio, deferred-surface, or missing automated receipt blockers',
+      'Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers',
       'must not promote proxy evidence',
       'tests, APK hashes, configured Hermes home, workflow YAML, dispatch-only output',
     ]) {

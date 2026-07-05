@@ -192,8 +192,9 @@ void main() {
     expect(scriptText, contains('Android live microphone receipt present'));
     expect(
       scriptText,
-      contains('optional physical Android mic loop receipt recorded'),
+      contains('real spoken Android mic loop receipt recorded'),
     );
+    expect(scriptText, contains('online device alone is not a pass'));
     expect(scriptText, contains('distinct_rearmed_turn_observed'));
     expect(scriptText, contains('head_sha'));
     expect(scriptText, contains('head_sha must match current git HEAD'));
@@ -239,10 +240,7 @@ void main() {
     expect(scriptText, contains('distinct second spoken turn after re-arm'));
     expect(scriptText, contains('npm run android:live-mic-receipt'));
     expect(scriptText, contains('Flutter connected devices'));
-    expect(
-      scriptText,
-      contains('recorded deterministic Android receipt when present'),
-    );
+    expect(scriptText, contains('start an audio-capable target'));
     expect(scriptText, contains('Flutter emulator inventory'));
     expect(scriptText, contains('not an online/audio receipt'));
     expect(scriptText, contains('Android emulator acceleration check'));
@@ -255,7 +253,7 @@ void main() {
     expect(
       scriptText,
       contains(
-        'Hermes server-audio, deferred-surface, or missing automated receipt blockers',
+        'Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers',
       ),
     );
     expect(scriptText, contains('Do not promote proxy evidence'));
@@ -270,6 +268,7 @@ void main() {
     );
     expect(auditText, contains('Objective item'));
     expect(auditText, contains('Concrete artifact/evidence inspected'));
+    expect(auditText, contains('Android physical spoken mic receipt'));
     expect(auditText, contains('Android automated voice-loop receipt'));
     expect(auditText, contains('Windows/iOS/macOS host receipts'));
     expect(auditText, contains('Publish platform workflow'));

@@ -45,7 +45,7 @@ It still does not prove physical spoken audio, provider reply, TTS, or re-arm.
 
 ## Pass evidence required
 
-Record all of the following before claiming optional physical-mic evidence:
+Record all of the following before claiming the required physical-mic evidence:
 
 1. `adb devices` and `flutter devices` show the Android target online.
 2. Hermes Agent API is running with real provider/model credentials.
@@ -99,8 +99,8 @@ Record all of the following before claiming optional physical-mic evidence:
    `Completion verdict: NOT COMPLETE`; do not promote this Android physical-mic
    receipt, passing tests, APK hashes, configured Hermes home, workflow YAML, or
    dispatch-only output to whole-goal completion. If the physical-mic receipt is
-   absent, strict readiness can still pass the Android voice-path gate when the
-   automated deterministic Android voice-loop receipt is current.
+   absent, strict readiness must keep the real spoken Android receipt blocker
+   open even when the deterministic Android voice-loop receipt is current.
 
 ## Do not count as completion
 
