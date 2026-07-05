@@ -35,6 +35,7 @@ void main() {
       'install/launch/mic-grant\n   prep',
       'That remains readiness and deterministic\n   transcript/TTS loop evidence only',
       'Hermes home presence remains informational only',
+      'redacted error details sheet for connect and in-chat failures',
       'Real spoken Android microphone smoke',
       'Windows, iOS, and macOS host-platform runner evidence is now captured by\n  `build/receipts/hermes-platform-workflow.json`',
       'The platform workflow is published and visible remotely as `Hermes platform\n  smoke`',

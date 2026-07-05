@@ -1206,40 +1206,102 @@ class _HermesChatError extends StatelessWidget {
             Text(title),
             const SizedBox(height: 4),
             Text(recovery),
-            if (onRetry != null ||
-                ((authRejected || streamOrNetworkFailure) &&
-                    onReconnect != null)) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if ((authRejected || streamOrNetworkFailure) &&
-                        onReconnect != null)
-                      OutlinedButton.icon(
-                        key: const ValueKey('hermes-chat-error-reconnect'),
-                        onPressed: onReconnect,
-                        icon: const Icon(Icons.key_outlined),
-                        label: const Text('Reconnect'),
-                      ),
-                    if (onRetry != null)
-                      FilledButton.icon(
-                        key: const ValueKey('hermes-chat-error-retry'),
-                        onPressed: onRetry,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry last message'),
-                      ),
-                  ],
-                ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  TextButton.icon(
+                    key: const ValueKey('hermes-chat-error-details'),
+                    onPressed: () => _showHermesErrorDetailsSheet(
+                      context,
+                      title: title,
+                      recovery: recovery,
+                      error: error,
+                    ),
+                    icon: const Icon(Icons.article_outlined),
+                    label: const Text('Details'),
+                  ),
+                  if ((authRejected || streamOrNetworkFailure) &&
+                      onReconnect != null)
+                    OutlinedButton.icon(
+                      key: const ValueKey('hermes-chat-error-reconnect'),
+                      onPressed: onReconnect,
+                      icon: const Icon(Icons.key_outlined),
+                      label: const Text('Reconnect'),
+                    ),
+                  if (onRetry != null)
+                    FilledButton.icon(
+                      key: const ValueKey('hermes-chat-error-retry'),
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry last message'),
+                    ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+void _showHermesErrorDetailsSheet(
+  BuildContext context, {
+  required String title,
+  required String recovery,
+  required String error,
+}) {
+  final safeError = _safeHermesUiPreview(
+    _safeHermesUiText(error),
+    maxLength: 1200,
+  );
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          key: const ValueKey('hermes-error-details-sheet'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(title, style: Theme.of(sheetContext).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(recovery),
+              const SizedBox(height: 12),
+              const Text('Redacted error details'),
+              const SizedBox(height: 4),
+              SelectableText(
+                safeError,
+                key: const ValueKey('hermes-error-details-text'),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Secrets, bearer tokens, API keys, cookies, and copied endpoint credentials are redacted before display.',
+                key: ValueKey('hermes-error-details-redaction-note'),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const ValueKey('hermes-error-details-close'),
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 String _safeHermesUiText(String text) {
@@ -1437,6 +1499,20 @@ class _HermesConnectError extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(recovery),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            key: const ValueKey('hermes-connect-error-details'),
+            onPressed: () => _showHermesErrorDetailsSheet(
+              context,
+              title: title,
+              recovery: recovery,
+              error: error,
+            ),
+            icon: const Icon(Icons.article_outlined),
+            label: const Text('Details'),
+          ),
+        ),
       ],
     );
   }

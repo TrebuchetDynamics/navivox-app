@@ -275,6 +275,61 @@ void main() {
     expect(find.textContaining('secret-stream-key'), findsNothing);
   });
 
+  testWidgets('in-chat error details sheet redacts raw failures', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      errorMessage:
+          'SocketException failed for Authorization: Bearer secret-stream-token and https://user:pass@example.test/path',
+    );
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.tap(find.byKey(const ValueKey('hermes-chat-error-details')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-error-details-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('Redacted error details'), findsOneWidget);
+    expect(find.textContaining('secret-stream-token'), findsNothing);
+    expect(find.textContaining('user:pass'), findsNothing);
+    expect(find.textContaining('Bearer [redacted]'), findsOneWidget);
+    expect(
+      find.textContaining('https://[redacted]@example.test'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-error-details-redaction-note')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('connect error details sheet redacts raw failures', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      status: HermesConnectionStatus.error,
+      errorMessage:
+          '401 unauthorized for api_key=secret-connect-token at https://user:pass@example.test',
+    );
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-connect-error-details')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-error-details-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('Hermes API rejected the API key.'), findsWidgets);
+    expect(find.textContaining('secret-connect-token'), findsNothing);
+    expect(find.textContaining('user:pass'), findsNothing);
+    expect(find.textContaining('api_key=[redacted]'), findsOneWidget);
+  });
+
   testWidgets('hides retry when chat transport is unavailable', (tester) async {
     final channel = FakeHermesChannel(
       capabilities: _noChatTransportCapabilitiesFixture,
