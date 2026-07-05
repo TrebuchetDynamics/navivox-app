@@ -152,7 +152,7 @@ String _safeDiagnosticsText(String text, {int maxLength = 120}) {
   );
   safe = safe.replaceAll(RegExp(r'\\\\[^\s,;]+'), '[redacted-path]');
   safe = safe.replaceAll(
-    RegExp(r'/(?:home|Users|var|tmp|private|mnt|Volumes)/[^\s,;]+'),
+    RegExp(r'/(?:home|Users|var|private|mnt|Volumes)/[^\s,;]+'),
     '[redacted-path]',
   );
   safe = safe.replaceAllMapped(

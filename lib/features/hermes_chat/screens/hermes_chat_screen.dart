@@ -1520,6 +1520,15 @@ String _safeHermesUiText(String text) {
     RegExp(r'([a-z][a-z0-9+.-]*://)([^/\s@]+@)', caseSensitive: false),
     (match) => '${match[1]}[redacted]@',
   );
+  safe = safe.replaceAll(
+    RegExp(r'\b[A-Z]:\\[^\s,;]+', caseSensitive: false),
+    '[redacted-path]',
+  );
+  safe = safe.replaceAll(RegExp(r'\\\\[^\s,;]+'), '[redacted-path]');
+  safe = safe.replaceAll(
+    RegExp(r'/(?:home|Users|var|private|mnt|Volumes)/[^\s,;]+'),
+    '[redacted-path]',
+  );
   safe = safe.replaceAllMapped(
     RegExp(
       r'(api[-_ ]?key|token|secret|password|passwd|pwd|credential|credentials|auth)(\s*(?:=|:)\s*)[^\s,;]+',

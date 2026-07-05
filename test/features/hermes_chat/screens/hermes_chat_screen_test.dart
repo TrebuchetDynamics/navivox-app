@@ -295,7 +295,7 @@ void main() {
   ) async {
     final channel = FakeHermesChannel(
       errorMessage:
-          'SocketException failed for Authorization: Bearer secret-stream-token and https://user:pass@example.test/path',
+          'SocketException failed for Authorization: Bearer secret-stream-token and https://user:pass@example.test/path /home/alice/.hermes/config.json C:\\Users\\Alice\\.hermes\\config.json',
     );
     await tester.pumpWidget(_wrap(channel));
 
@@ -313,6 +313,15 @@ void main() {
     expect(
       find.textContaining('https://[redacted]@example.test'),
       findsOneWidget,
+    );
+    expect(find.textContaining('[redacted-path]'), findsWidgets);
+    expect(
+      find.textContaining('/home/alice/.hermes/config.json'),
+      findsNothing,
+    );
+    expect(
+      find.textContaining('C:\\Users\\Alice\\.hermes\\config.json'),
+      findsNothing,
     );
     expect(
       find.byKey(const ValueKey('hermes-error-details-redaction-note')),

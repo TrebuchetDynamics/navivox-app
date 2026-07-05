@@ -440,8 +440,8 @@ readiness checklist and non-completion caveats.
    values, and secret-looking values from bounded active-session titles,
    bounded capability strip model/list/health details, queued-follow-up banner,
    copyable queue details, and cancel-all confirmation dialog, bounded session sheet titles/previews/parent ids, bounded delete
-   confirmation copy, unsafe or overlong rename-dialog defaults, and bounded/redacted
-   no-result query echo; session search also uses redacted metadata with
+   confirmation copy, unsafe or overlong rename-dialog defaults, private filesystem
+   paths in mobile error/details surfaces, and bounded/redacted no-result query echo; session search also uses redacted metadata with
    placeholders stripped so raw secret-looking values and `[redacted]` placeholder
    queries do not match hidden rows;
    stale setup connect completions cannot overwrite the newly saved endpoint;
