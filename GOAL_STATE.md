@@ -434,8 +434,9 @@ readiness checklist and non-completion caveats.
    actions when Hermes does not advertise them,
    hiding create-session actions when Hermes does not advertise
    session creation, locally rejecting mutable session calls when Hermes does not
-   advertise create/update/delete/fork endpoints, and surfacing bounded feedback
-   when session creation fails, and redacting bearer tokens, API keys, token
+   advertise create/update/delete/fork endpoints, surfacing bounded feedback
+   when session creation fails, requiring extra bounded/redacted confirmation before
+   the high-impact `Always allow` approval decision, and redacting bearer tokens, API keys, token
    values, and secret-looking values from bounded active-session titles,
    bounded capability strip model/list/health details, queued-follow-up banner,
    copyable queue details, and cancel-all confirmation dialog, bounded session sheet titles/previews/parent ids, bounded delete

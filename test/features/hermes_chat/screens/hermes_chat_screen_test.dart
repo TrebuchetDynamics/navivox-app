@@ -3299,6 +3299,46 @@ void main() {
     expect(find.byKey(const ValueKey('hermes-approval-banner')), findsNothing);
   });
 
+  testWidgets('always-allow approvals require bounded confirmation', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    await tester.pumpWidget(_wrap(channel));
+
+    channel.emitApprovalRequest(
+      const NavivoxApprovalRequest(
+        id: 'appr_always',
+        toolCallId: 'call_always',
+        prompt: 'Allow Bearer secret-approval-token forever?',
+        risk: 'high secret-risk-token',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-approval-always')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-approval-always-confirm-dialog')),
+      findsOneWidget,
+    );
+    expect(channel.respondToApprovalCalls, isEmpty);
+    expect(find.textContaining('Bearer [redacted]'), findsWidgets);
+    expect(find.textContaining('[redacted]'), findsWidgets);
+    expect(find.textContaining('secret-approval-token'), findsNothing);
+    expect(find.textContaining('secret-risk-token'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-approval-always-confirm')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(channel.respondToApprovalCalls, [
+      {'approvalId': 'appr_always', 'decision': HermesApprovalDecision.always},
+    ]);
+    expect(find.byKey(const ValueKey('hermes-approval-banner')), findsNothing);
+  });
+
   testWidgets('approval banner prompt and risk are bounded', (tester) async {
     final channel = FakeHermesChannel();
     final longPrompt =

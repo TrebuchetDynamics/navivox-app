@@ -2467,7 +2467,7 @@ class _ApprovalBanner extends StatelessWidget {
                   key: const ValueKey('hermes-approval-always'),
                   onPressed: responding || !canAnswer
                       ? null
-                      : () => onDecide(HermesApprovalDecision.always),
+                      : () => unawaited(_confirmAlwaysAllow(context)),
                   child: const Text('Always allow'),
                 ),
                 FilledButton(
@@ -2483,6 +2483,42 @@ class _ApprovalBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAlwaysAllow(
+    BuildContext context, {
+    bool closeSheetOnConfirm = false,
+  }) async {
+    final risk = request.risk;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('hermes-approval-always-confirm-dialog'),
+        title: const Text('Always allow this Hermes approval?'),
+        content: Text(
+          '${_safeHermesUiPreview(request.prompt, maxLength: 240)}'
+          '${risk == null ? '' : '\nRisk: ${_safeHermesUiPreview(risk, maxLength: 160)}'}\n\n'
+          'This may approve matching future requests without asking again.',
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('hermes-approval-always-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-approval-always-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Always allow'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (closeSheetOnConfirm && context.mounted) {
+      Navigator.of(context).pop();
+    }
+    onDecide(HermesApprovalDecision.always);
   }
 
   void _showApprovalSheet(BuildContext context) {
@@ -2630,10 +2666,12 @@ class _ApprovalBanner extends StatelessWidget {
                       OutlinedButton(
                         key: const ValueKey('hermes-approval-sheet-always'),
                         onPressed: canAnswer
-                            ? () {
-                                Navigator.of(sheetContext).pop();
-                                onDecide(HermesApprovalDecision.always);
-                              }
+                            ? () => unawaited(
+                                _confirmAlwaysAllow(
+                                  sheetContext,
+                                  closeSheetOnConfirm: true,
+                                ),
+                              )
                             : null,
                         child: const Text('Always allow'),
                       ),
