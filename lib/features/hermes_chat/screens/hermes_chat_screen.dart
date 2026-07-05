@@ -1995,6 +1995,7 @@ class _HermesCapabilityStrip extends StatelessWidget {
 
   void _showSurfaceReadiness(BuildContext context) {
     final items = hermesSurfaceReadiness(capabilities);
+    final summary = _surfaceReadinessSummary(items);
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -2014,6 +2015,19 @@ class _HermesCapabilityStrip extends StatelessWidget {
           ),
         ),
         actions: [
+          TextButton.icon(
+            key: const ValueKey('hermes-surfaces-copy'),
+            onPressed: () {
+              unawaited(Clipboard.setData(ClipboardData(text: summary)));
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                const SnackBar(
+                  content: Text('Copied Hermes surface readiness summary.'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy_outlined),
+            label: const Text('Copy summary'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
@@ -2021,6 +2035,17 @@ class _HermesCapabilityStrip extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _surfaceReadinessSummary(List<HermesSurfaceReadiness> items) {
+    final buffer = StringBuffer('Hermes surface readiness');
+    for (final item in items) {
+      buffer.writeln();
+      buffer.write(
+        '- ${_safeHermesUiPreview(item.title, maxLength: 80)}: ${item.status.label} — ${_safeHermesUiPreview(item.detail, maxLength: 240)}',
+      );
+    }
+    return buffer.toString();
   }
 
   @override

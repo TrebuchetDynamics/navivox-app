@@ -36,6 +36,7 @@ void main() {
       'That remains readiness and deterministic\n   transcript/TTS loop evidence only',
       'Hermes home presence remains informational only',
       'redacted error details sheet with copy-to-clipboard support for connect and\n   in-chat failures',
+      'surface-readiness dialog can copy a bounded summary',
       'require an explicit physical Android device observation',
       'reject emulator targets for the final live-mic receipt',
       'Real spoken Android microphone smoke',

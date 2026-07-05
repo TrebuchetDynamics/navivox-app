@@ -567,6 +567,16 @@ void main() {
       );
       expect(find.text('Raw diagnostics/log export'), findsOneWidget);
       expect(find.text('Deferred'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('hermes-surfaces-copy')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('hermes-surfaces-copy')));
+      await tester.pump();
+      expect(
+        find.text('Copied Hermes surface readiness summary.'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
 
