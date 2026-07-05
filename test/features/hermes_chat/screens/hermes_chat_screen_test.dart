@@ -662,6 +662,23 @@ void main() {
   testWidgets('attachments control explains deferred mobile media safely', (
     tester,
   ) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     final channel = FakeHermesChannel(capabilities: _attachmentsCapabilities);
     await tester.pumpWidget(_wrap(channel));
 
@@ -678,6 +695,18 @@ void main() {
       findsOneWidget,
     );
 
+    await tester.tap(find.byKey(const ValueKey('hermes-attachments-copy')));
+    await tester.pump();
+
+    expect(copiedText, contains('Hermes attachments/media'));
+    expect(copiedText, contains('Status: Deferred'));
+    expect(copiedText, contains('No files, photos, transcripts'));
+    expect(copiedText, isNot(contains('/Users/')));
+    expect(
+      find.text('Copied Hermes attachments/media status.'),
+      findsOneWidget,
+    );
+
     await tester.tap(find.byKey(const ValueKey('hermes-attachments-close')));
     await tester.pumpAndSettle();
     expect(find.text('Hermes attachments/media'), findsNothing);
@@ -686,6 +715,23 @@ void main() {
   testWidgets('files/context control explains deferred mobile files safely', (
     tester,
   ) async {
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     const filesCapabilities = HermesCapabilityDocument(
       object: 'hermes.api_server.capabilities',
       platform: 'hermes-agent',
@@ -719,6 +765,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('/Users/'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-files-context-copy')));
+    await tester.pump();
+
+    expect(copiedText, contains('Hermes files/context folders'));
+    expect(copiedText, contains('Status: Deferred'));
+    expect(copiedText, contains('No local file paths'));
+    expect(copiedText, isNot(contains('/Users/')));
+    expect(find.text('Copied Hermes files/context status.'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('hermes-files-context-close')));
     await tester.pumpAndSettle();

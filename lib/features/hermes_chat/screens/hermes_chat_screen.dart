@@ -580,6 +580,12 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     final detail = advertised
         ? 'Hermes advertises attachments or multimodal chat, but Navivox has not wired mobile-safe upload controls yet.'
         : 'Hermes did not advertise a mobile-safe attachments API. Navivox keeps this chat text-only plus device STT transcripts.';
+    final summary = _deferredSurfaceSummary(
+      title: 'Hermes attachments/media',
+      detail: detail,
+      exclusion:
+          'No files, photos, transcripts, or local paths are uploaded from this control.',
+    );
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -603,10 +609,32 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  key: const ValueKey('hermes-attachments-close'),
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: const Text('Close'),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton.icon(
+                      key: const ValueKey('hermes-attachments-copy'),
+                      onPressed: () {
+                        unawaited(
+                          Clipboard.setData(ClipboardData(text: summary)),
+                        );
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Copied Hermes attachments/media status.',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_outlined),
+                      label: const Text('Copy status'),
+                    ),
+                    TextButton(
+                      key: const ValueKey('hermes-attachments-close'),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -627,6 +655,12 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     final detail = advertised
         ? 'Hermes advertises file or context-folder capabilities, but Navivox has not wired mobile-safe file/context controls yet.'
         : 'Hermes did not advertise a mobile-safe files/context folders API. Navivox keeps workspace paths hidden.';
+    final summary = _deferredSurfaceSummary(
+      title: 'Hermes files/context folders',
+      detail: detail,
+      exclusion:
+          'No local file paths, folder names, transcripts, or workspace contents are uploaded from this control.',
+    );
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -654,10 +688,32 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
-                    key: const ValueKey('hermes-files-context-close'),
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: const Text('Close'),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      TextButton.icon(
+                        key: const ValueKey('hermes-files-context-copy'),
+                        onPressed: () {
+                          unawaited(
+                            Clipboard.setData(ClipboardData(text: summary)),
+                          );
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Copied Hermes files/context status.',
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_outlined),
+                        label: const Text('Copy status'),
+                      ),
+                      TextButton(
+                        key: const ValueKey('hermes-files-context-close'),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: const Text('Close'),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -666,6 +722,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
         ),
       ),
     );
+  }
+
+  String _deferredSurfaceSummary({
+    required String title,
+    required String detail,
+    required String exclusion,
+  }) {
+    return '$title\nStatus: Deferred\n$detail\n$exclusion';
   }
 
   Future<void> _resolveApproval(
