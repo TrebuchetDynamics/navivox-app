@@ -348,6 +348,9 @@ void main() {
     );
     await tester.pumpWidget(_wrap(channel));
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('hermes-connect-error-details')),
+    );
     await tester.tap(
       find.byKey(const ValueKey('hermes-connect-error-details')),
     );
@@ -2840,12 +2843,43 @@ void main() {
       find.byKey(const ValueKey('hermes-api-key-field')),
       'secret',
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-profile-label-field')),
+      'Android smoke Hermes',
+    );
     await tester.tap(find.byKey(const ValueKey('hermes-connect-button')));
     await tester.pumpAndSettle();
 
     expect(store.saveCalls, hasLength(1));
     expect(store.saveCalls.single.baseUrl, 'http://10.0.2.2:8642');
     expect(store.saveCalls.single.apiKey, 'secret');
+    expect(store.saveCalls.single.label, 'Android smoke Hermes');
+  });
+
+  testWidgets('connect profile label field redacts secret-looking labels', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore();
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-base-url-field')),
+      'http://10.0.2.2:8642',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-profile-label-field')),
+      'Bearer secret-profile-token',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-connect-button')));
+    await tester.pumpAndSettle();
+
+    expect(store.saveCalls, hasLength(1));
+    expect(store.saveCalls.single.label, 'Bearer [redacted]');
+    expect(
+      store.saveCalls.single.label,
+      isNot(contains('secret-profile-token')),
+    );
   });
 
   testWidgets('saved endpoint profiles can be selected and removed', (
@@ -2892,6 +2926,15 @@ void main() {
           .controller!
           .text,
       'lan-secret',
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-profile-label-field')),
+          )
+          .controller!
+          .text,
+      'LAN Hermes',
     );
 
     await tester.tap(

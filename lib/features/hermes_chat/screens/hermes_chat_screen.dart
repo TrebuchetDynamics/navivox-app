@@ -61,6 +61,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     text: 'http://127.0.0.1:8642',
   );
   final _apiKeyController = TextEditingController();
+  final _profileLabelController = TextEditingController();
   final _composerController = TextEditingController();
   final HermesVoiceRunController _voiceRunController =
       HermesVoiceRunController();
@@ -92,6 +93,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     _approvalSubscription?.cancel();
     _baseUrlController.dispose();
     _apiKeyController.dispose();
+    _profileLabelController.dispose();
     _composerController.dispose();
     super.dispose();
   }
@@ -284,6 +286,15 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'API key (optional)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  key: const ValueKey('hermes-profile-label-field'),
+                  controller: _profileLabelController,
+                  decoration: const InputDecoration(
+                    labelText: 'Profile label (optional)',
+                    helperText: 'Saved locally; leave blank to use the URL.',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -648,6 +659,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
   void _selectEndpointProfile(HermesEndpointConfig profile) {
     _baseUrlController.text = profile.baseUrl;
     _apiKeyController.text = profile.apiKey ?? '';
+    _profileLabelController.text = profile.label ?? '';
   }
 
   Future<void> _renameEndpointProfile(
@@ -731,6 +743,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     if (_baseUrlController.text.trim() == profile.baseUrl) {
       _baseUrlController.clear();
       _apiKeyController.clear();
+      _profileLabelController.clear();
     }
     _refreshEndpointProfiles();
   }
@@ -739,6 +752,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     final attemptId = ++_connectAttemptId;
     final baseUrl = hermesPublicEndpointBaseUrl(_baseUrlController.text);
     final apiKey = _apiKeyController.text.trim();
+    final profileLabel = _safeHermesUiText(_profileLabelController.text).trim();
     await channel.connect(
       baseUrl: baseUrl,
       apiKey: apiKey.isEmpty ? null : apiKey,
@@ -746,12 +760,18 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     if (attemptId != _connectAttemptId ||
         hermesPublicEndpointBaseUrl(_baseUrlController.text) != baseUrl ||
         _apiKeyController.text.trim() != apiKey ||
+        _safeHermesUiText(_profileLabelController.text).trim() !=
+            profileLabel ||
         channel.state.status != HermesConnectionStatus.connected) {
       return;
     }
     await ref
         .read(hermesEndpointStoreProvider)
-        .save(baseUrl: baseUrl, apiKey: apiKey.isEmpty ? null : apiKey);
+        .save(
+          baseUrl: baseUrl,
+          apiKey: apiKey.isEmpty ? null : apiKey,
+          label: profileLabel.isEmpty ? null : profileLabel,
+        );
     _refreshEndpointProfiles();
   }
 
