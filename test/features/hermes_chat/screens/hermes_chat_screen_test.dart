@@ -631,6 +631,30 @@ void main() {
     },
   );
 
+  testWidgets('attachments control explains deferred mobile media safely', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(capabilities: _attachmentsCapabilities);
+    await tester.pumpWidget(_wrap(channel));
+
+    await tester.tap(find.byKey(const ValueKey('hermes-attachments-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hermes attachments/media'), findsOneWidget);
+    expect(
+      find.textContaining('advertises attachments or multimodal chat'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('No files, photos, transcripts, or local paths'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('hermes-attachments-close')));
+    await tester.pumpAndSettle();
+    expect(find.text('Hermes attachments/media'), findsNothing);
+  });
+
   testWidgets('jobs dialog stays read-only when jobs admin is advertised', (
     tester,
   ) async {
@@ -4018,6 +4042,24 @@ const _realtimeVoiceCapabilitiesFixture = HermesCapabilityDocument(
   auth: HermesAuthCapability(type: 'bearer', required: true),
   features: {'realtime_voice': true},
   endpoints: {},
+);
+
+const _attachmentsCapabilities = HermesCapabilityDocument(
+  object: 'hermes.api_server.capabilities',
+  platform: 'hermes-agent',
+  model: 'hermes-agent',
+  auth: HermesAuthCapability(type: 'bearer', required: true),
+  features: {
+    'session_chat_streaming': true,
+    'attachments_api': true,
+    'multimodal_chat': true,
+  },
+  endpoints: {
+    'session_chat_stream': HermesEndpointCapability(
+      method: 'POST',
+      path: '/api/sessions/{session_id}/chat/stream',
+    ),
+  },
 );
 
 const _capabilitiesFixture = HermesCapabilityDocument(

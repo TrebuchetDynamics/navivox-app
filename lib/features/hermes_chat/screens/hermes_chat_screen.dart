@@ -507,6 +507,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                     icon: const Icon(Icons.stop_circle_outlined),
                     onPressed: () => _stopActiveTurn(channel),
                   ),
+                if (state.capabilities != null)
+                  IconButton(
+                    key: const ValueKey('hermes-attachments-button'),
+                    tooltip: 'Attachments/media status',
+                    icon: const Icon(Icons.attach_file_outlined),
+                    onPressed: () =>
+                        _showAttachmentsDeferred(context, state.capabilities!),
+                  ),
                 IconButton(
                   key: const ValueKey('hermes-mic-button'),
                   tooltip: 'Speak — device STT to Hermes text',
@@ -541,6 +549,52 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
     channel.stopActiveTurn();
     setState(() => _continuousVoiceEnabled = false);
     _stopSpeaking();
+  }
+
+  void _showAttachmentsDeferred(
+    BuildContext context,
+    HermesCapabilityDocument capabilities,
+  ) {
+    final advertised =
+        capabilities.supportsFeature('attachments_api') ||
+        capabilities.supportsFeature('multimodal_chat');
+    final detail = advertised
+        ? 'Hermes advertises attachments or multimodal chat, but Navivox has not wired mobile-safe upload controls yet.'
+        : 'Hermes did not advertise a mobile-safe attachments API. Navivox keeps this chat text-only plus device STT transcripts.';
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hermes attachments/media',
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              Text(detail, key: const ValueKey('hermes-attachments-detail')),
+              const SizedBox(height: 8),
+              const Text(
+                'No files, photos, transcripts, or local paths are uploaded from this control.',
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const ValueKey('hermes-attachments-close'),
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _resolveApproval(

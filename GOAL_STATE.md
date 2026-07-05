@@ -449,7 +449,10 @@ readiness checklist and non-completion caveats.
    in-chat auth/stream reconnect cleanup paths now require mobile confirmation dialogs
    with bounded/redacted endpoint copy before removing secure API-key storage;
    session create/select/rename/fork/delete failure SnackBars redact bearer tokens,
-   API keys, token values, and secret-looking values; Android live-mic receipts
+   API keys, token values, and secret-looking values; the Hermes composer exposes
+   attachments/media status as a safe deferred sheet when capabilities mention
+   attachments or multimodal chat, explicitly stating that no files, photos,
+   transcripts, or local paths are uploaded; Android live-mic receipts
    strip Hermes URL userinfo, query strings, and fragments before writing JSON,
    record current git `HEAD`, record Android device manufacturer/model/SDK/
    fingerprint properties plus installed Navivox package/version/RECORD_AUDIO
