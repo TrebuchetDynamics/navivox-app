@@ -38,11 +38,11 @@ input) as the reference. See ADR 0007.
   `npm run hermes:provider-smoke:local` and Playwright reported 1 pass.
 - Android receipts now cover speech-recognition readiness, deterministic
   Hermes continuous-voice loop mechanics, durable-key create/sign/delete on an
-  emulator, and a debug APK artifact (`build/app/outputs/flutter-apk/app-debug.apk`,
-  SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a`).
-  The APK hash is artifact identity only; physical microphone audio remains
-  unverified. The canonical manual closeout is
-  `docs/runbooks/android/live-mic-smoke.md`.
+  emulator, and a debug APK artifact at
+  `build/app/outputs/flutter-apk/app-debug.apk`. The current APK SHA-256 is
+  printed by `npm run hermes:readiness-audit` when the artifact exists; the hash
+  is artifact identity only, and physical microphone audio remains unverified.
+  The canonical manual closeout is `docs/runbooks/android/live-mic-smoke.md`.
 - Linux release build is locally repeatable through `npm run linux:release-build`.
 - App-scoped Android native units pass with `cd android && ./gradlew :app:testDebugUnitTest`.
 - Windows/iOS/macOS host receipts are covered by the published `Hermes platform

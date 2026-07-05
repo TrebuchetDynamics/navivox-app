@@ -21,7 +21,7 @@ Current local receipts (refreshed through 2026-07-03):
 - `flutter analyze` — pass.
 - `flutter test --concurrency=1` — pass, 1016 tests.
 - `flutter build web --release -t lib/main_e2e.dart` — pass.
-- `flutter build apk --debug` — pass, artifact at `build/app/outputs/flutter-apk/app-debug.apk` with SHA-256 `453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a` (artifact identity only; not live Android or mic evidence).
+- `flutter build apk --debug` — pass, artifact at `build/app/outputs/flutter-apk/app-debug.apk`. `npm run hermes:readiness-audit` prints the current APK SHA-256 when present; that hash is artifact identity only, not live Android or mic evidence.
 - `cd android && ./gradlew :app:testDebugUnitTest` — pass for Navivox app native Android unit tests. The broader `./gradlew testDebugUnitTest` runs third-party plugin tests too and currently fails in `image_picker_android`'s `ImagePickerDelegateTest` in this environment.
 - `npm run linux:release-build` — pass, artifact at
   `build/linux/x64/release/bundle/navivox`. This container has no passwordless

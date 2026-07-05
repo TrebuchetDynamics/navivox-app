@@ -9,8 +9,8 @@ void main() {
     for (final snippet in [
       'Active goal: **become a Hermes Agent mobile app with continuous voice\nsupport**',
       '**1016 tests pass**',
-      '453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a',
-      'The APK hash is artifact identity only',
+      'The current APK SHA-256 is\n  printed by `npm run hermes:readiness-audit`',
+      'the hash\n  is artifact identity only',
       'docs/runbooks/android/live-mic-smoke.md',
       'scripts/audit_hermes_readiness.sh',
       'npm run hermes:readiness-audit',

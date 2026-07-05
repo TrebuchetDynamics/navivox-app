@@ -326,7 +326,7 @@ void main() {
     expect(
       auditText,
       contains(
-        '453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a',
+        'npm run hermes:readiness-audit` prints the current APK SHA-256',
       ),
     );
     expect(

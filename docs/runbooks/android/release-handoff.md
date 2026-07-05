@@ -104,14 +104,15 @@ If the app shows `Continuous voice unavailable: device STT unavailable`, verify 
 
 Run id: `voice-readiness-smoke-2026-05-27`.
 
-Latest local debug APK:
+Latest local debug APK path:
 
 ```text
 build/app/outputs/flutter-apk/app-debug.apk
-sha256 453e746d9773b466a7393ec73713943a49276f4bee4465d18a3d083e5cb5ab0a
 ```
 
-Current host blocker: ADB lists no Android devices, and `flutter devices` lists only Linux desktop and Chrome. The available `fractal_test` Android emulator cannot boot on this host because x86_64 emulation requires KVM access and the current user does not have `/dev/kvm` permission. Do not treat this host as valid evidence for microphone permission prompts, Android speech recognizer availability, or real STT capture until a responsive Android target is connected or KVM access is fixed.
+Run `sha256sum build/app/outputs/flutter-apk/app-debug.apk` or `npm run hermes:readiness-audit` for the current artifact hash. Treat APK hashes as artifact identity only, never as Android microphone, provider reply, TTS, or re-arm evidence.
+
+Current live-mic blocker: a responsive emulator can cover deterministic voice-loop mechanics, but real spoken-audio evidence still requires the manual physical mic checklist in `docs/runbooks/android/live-mic-smoke.md`. Do not treat emulator boot, app install, microphone permission, APK hashes, generated audio, or transcript injection as physical microphone evidence.
 
 What is already covered in the app:
 
