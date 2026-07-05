@@ -176,6 +176,12 @@ void main() {
     expect(providerSmoke, contains('not physical microphone evidence'));
     expect(providerSmoke, contains('safe_receipt_base_url'));
     expect(providerSmoke, contains('urlsplit'));
+    expect(
+      providerSmoke,
+      contains("urlunsplit((parts.scheme, host, '', '', ''))"),
+    );
+    expect(providerSmoke, contains('head_sha'));
+    expect(providerSmoke, contains('git rev-parse HEAD'));
     expect(providerSmoke, contains('platform workflow publication'));
     expect(providerSmoke, contains('deferred Hermes Desktop parity surfaces'));
     expect(

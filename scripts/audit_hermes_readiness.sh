@@ -319,9 +319,11 @@ else
 fi
 provider_receipt="${NAVIVOX_PROVIDER_SMOKE_RECEIPT:-build/receipts/hermes-provider-smoke.json}"
 if [ -f "$provider_receipt" ]; then
-  if python3 - "$provider_receipt" <<'PY'
+  current_head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+  if python3 - "$provider_receipt" "$current_head_sha" <<'PY'
 import json, sys
 receipt = json.load(open(sys.argv[1], encoding='utf-8'))
+current_head_sha = sys.argv[2]
 missing = []
 if receipt.get('status') != 'passed':
     missing.append('status=passed')
@@ -329,6 +331,10 @@ if receipt.get('coverage') != 'typed text plus deterministic transcript voice':
     missing.append('typed text plus deterministic transcript voice coverage')
 if receipt.get('playwright_retries') != 0:
     missing.append('playwright_retries=0')
+if not receipt.get('head_sha'):
+    missing.append('head_sha')
+elif current_head_sha and receipt.get('head_sha') != current_head_sha:
+    missing.append('head_sha must match current git HEAD')
 not_evidence = set(receipt.get('not_evidence_for') or [])
 for item in [
     'physical Android microphone audio',

@@ -112,6 +112,8 @@ void main() {
       ),
     );
     expect(scriptText, contains("receipt.get('playwright_retries') != 0"));
+    expect(scriptText, contains("missing.append('head_sha')"));
+    expect(scriptText, contains('head_sha must match current git HEAD'));
     expect(scriptText, contains("not_evidence_for:{item}"));
     expect(scriptText, contains("receipt.get('timestamp_utc')"));
     expect(

@@ -30,7 +30,7 @@ if ':' in host and not host.startswith('['):
     host = f'[{host}]'
 if parts.port:
     host = f'{host}:{parts.port}'
-print(urlunsplit((parts.scheme, host, parts.path.rstrip('/'), '', '')))
+print(urlunsplit((parts.scheme, host, '', '', '')))
 PY
 )"
 web_log="${NAVIVOX_PROVIDER_WEB_LOG:-/tmp/navivox-provider-web.log}"
@@ -72,12 +72,14 @@ fi
 npx playwright test --config=playwright.config.mjs playwright/tests/regression/hermes-provider-chat.spec.mjs --reporter=list --retries=0
 
 receipt_path="${NAVIVOX_PROVIDER_SMOKE_RECEIPT:-build/receipts/hermes-provider-smoke.json}"
+head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
 mkdir -p "$(dirname "$receipt_path")"
 cat >"$receipt_path" <<EOF
 {
   "kind": "hermes_provider_smoke",
   "status": "passed",
   "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "head_sha": "${head_sha}",
   "base_url": "${safe_receipt_base_url}",
   "coverage": "typed text plus deterministic transcript voice",
   "playwright_retries": 0,
