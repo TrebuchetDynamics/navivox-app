@@ -806,6 +806,10 @@ void main() {
     expect(export, contains('Tool progress events: advertised'));
     expect(export, contains('Realtime voice: not advertised'));
     expect(export, contains('Audio API: not advertised'));
+    expect(
+      export,
+      contains('Voice path: device STT -> Hermes text; server audio not wired'),
+    );
     expect(export, contains('Config write: not advertised'));
     expect(export, contains('Memory write: not advertised'));
     expect(export, contains('Surface readiness:'));

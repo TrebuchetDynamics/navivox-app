@@ -58,6 +58,7 @@ String hermesDiagnosticsExport(HermesChannelState state) {
       ..writeln(
         'Audio API: ${policy.supportsAudioApi ? 'advertised' : 'not advertised'}',
       )
+      ..writeln('Voice path: device STT -> Hermes text; server audio not wired')
       ..writeln(
         'Config write: ${policy.supportsConfigWrite ? 'advertised' : 'not advertised'}',
       )
