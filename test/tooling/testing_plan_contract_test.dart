@@ -29,7 +29,7 @@ void main() {
       'NAVIVOX_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit',
       'Informational only; strict mode must fail while blockers remain.',
       'Completion verdict: NOT COMPLETE',
-      'Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers',
+      'category-specific Android physical-mic, Hermes server-audio, deferred-surface, and/or receipt blockers',
       'must not promote proxy evidence',
       'tests, APK hashes, configured Hermes home, workflow YAML, dispatch-only output',
     ]) {

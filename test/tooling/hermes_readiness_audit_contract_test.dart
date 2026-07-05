@@ -250,10 +250,14 @@ void main() {
     expect(scriptText, isNot(contains('durable reconnect')));
     expect(scriptText, contains('must not be used as a completion receipt'));
     expect(scriptText, contains('Completion verdict: NOT COMPLETE'));
+    expect(scriptText, contains('block_physical_mic'));
+    expect(scriptText, contains('block_receipt'));
+    expect(scriptText, contains('block_server_audio'));
+    expect(scriptText, contains('block_deferred_surface'));
     expect(
       scriptText,
       contains(
-        'Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers',
+        "printf 'Completion verdict: NOT COMPLETE; %s blocker(s) remain.",
       ),
     );
     expect(scriptText, contains('Do not promote proxy evidence'));

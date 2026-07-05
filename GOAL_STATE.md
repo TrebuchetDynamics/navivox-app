@@ -356,10 +356,12 @@ readiness checklist and non-completion caveats.
    provider smoke still pass with their non-mic/server-audio and
    not-whole-goal-completion caveats, focused browser regression passes (68
    Chromium tests), and strict readiness audit now prints `Completion verdict:
-   NOT COMPLETE; Android physical-mic, Hermes server-audio, deferred-surface, or
-   missing automated receipt blockers remain.` plus an explicit warning not to
-   promote proxy evidence (tests, APK hashes, configured Hermes home, workflow
-   YAML, or dispatch-only output) to completion. `gh workflow list` shows `Hermes platform smoke`, and
+   NOT COMPLETE; Android physical-mic, Hermes server-audio, deferred-surface
+   blocker(s) remain.` when receipts are current, and adds `receipt` to the
+   verdict only when provider/automated/platform receipts are stale or missing.
+   It still prints an explicit warning not to promote proxy evidence (tests, APK
+   hashes, configured Hermes home, workflow YAML, or dispatch-only output) to
+   completion. `gh workflow list` shows `Hermes platform smoke`, and
    `build/receipts/hermes-platform-workflow.json` records a current watched
    successful run with Windows desktop, iOS simulator, and macOS desktop jobs and
    artifacts. A direct Android-target recheck still shows `adb devices` has no

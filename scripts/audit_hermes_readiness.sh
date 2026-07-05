@@ -3,11 +3,19 @@ set -euo pipefail
 
 status=0
 blockers=0
+physical_mic_blockers=0
+receipt_blockers=0
+server_audio_blockers=0
+deferred_surface_blockers=0
 
 ok() { printf 'OK: %s\n' "$*"; }
 info() { printf 'INFO: %s\n' "$*"; }
 warn() { printf 'WARN: %s\n' "$*"; status=1; }
 block() { printf 'BLOCKED: %s\n' "$*"; blockers=$((blockers + 1)); }
+block_physical_mic() { block "$*"; physical_mic_blockers=$((physical_mic_blockers + 1)); }
+block_receipt() { block "$*"; receipt_blockers=$((receipt_blockers + 1)); }
+block_server_audio() { block "$*"; server_audio_blockers=$((server_audio_blockers + 1)); }
+block_deferred_surface() { block "$*"; deferred_surface_blockers=$((deferred_surface_blockers + 1)); }
 
 file_exists() {
   local path="$1" label="$2"
@@ -108,10 +116,10 @@ PY
     ok "Android automated voice-loop receipt present ($android_voice_path_receipt)"
     info 'Android automated voice-loop receipt is deterministic transcript/fake TTS evidence; it is not physical microphone, provider-reply, server-audio, or whole-goal evidence'
   else
-    block "Android automated voice-loop receipt is present but incomplete ($android_voice_path_receipt); rerun npm run android:hermes-voice-loop-smoke on an Android target"
+    block_receipt "Android automated voice-loop receipt is present but incomplete ($android_voice_path_receipt); rerun npm run android:hermes-voice-loop-smoke on an Android target"
   fi
 else
-  block 'Android automated voice-loop receipt missing; run npm run android:hermes-voice-loop-smoke on an Android target to prove no-human continuous voice-loop mechanics'
+  block_receipt 'Android automated voice-loop receipt missing; run npm run android:hermes-voice-loop-smoke on an Android target to prove no-human continuous voice-loop mechanics'
 fi
 
 if [ -f "$android_live_mic_receipt" ]; then
@@ -200,7 +208,7 @@ PY
     ok "Android live microphone receipt present ($android_live_mic_receipt)"
     info 'Android live mic receipt is not realtime/server-audio, native-host, workflow, deferred-surface, or whole-goal evidence'
   else
-    block "Android live microphone receipt is present but incomplete ($android_live_mic_receipt); rerun npm run android:live-mic-receipt after manual smoke"
+    block_physical_mic "Android live microphone receipt is present but incomplete ($android_live_mic_receipt); rerun npm run android:live-mic-receipt after manual smoke"
   fi
 fi
 
@@ -306,7 +314,7 @@ PY
     ok "platform workflow/native-host receipt present ($platform_receipt)"
     info 'platform workflow receipt is not Android physical mic, realtime/server-audio, deferred-surface, or whole-goal evidence'
   else
-    block "platform workflow receipt is present but incomplete ($platform_receipt); rerun npm run platform:workflow-smoke with NAVIVOX_WATCH_WORKFLOW=true after publishing the workflow"
+    block_receipt "platform workflow receipt is present but incomplete ($platform_receipt); rerun npm run platform:workflow-smoke with NAVIVOX_WATCH_WORKFLOW=true after publishing the workflow"
   fi
 fi
 
@@ -319,7 +327,7 @@ if command -v gh >/dev/null 2>&1; then
   elif [ "$platform_receipt_valid" = 1 ]; then
     ok 'Hermes platform workflow publication is covered by the recorded successful workflow receipt'
   else
-    block 'Hermes platform workflow is not visible to gh; publish the workflow then run npm run platform:workflow-smoke before claiming Windows/iOS/macOS/hosted Android receipts'
+    block_receipt 'Hermes platform workflow is not visible to gh; publish the workflow then run npm run platform:workflow-smoke before claiming Windows/iOS/macOS/hosted Android receipts'
     printf 'INFO: Visible workflows (not native-host receipt evidence):\n'
     printf '%s\n' "$workflow_list" | sed 's/^/INFO:   /'
   fi
@@ -327,7 +335,7 @@ if command -v gh >/dev/null 2>&1; then
     info 'active gh token scopes do not include workflow; future workflow-file updates may require refreshed credentials even though existing published workflow receipts can still be watched'
   fi
 else
-  block 'gh not installed; cannot inspect/dispatch native-host workflow receipts; install gh before running npm run platform:workflow-smoke'
+  block_receipt 'gh not installed; cannot inspect/dispatch native-host workflow receipts; install gh before running npm run platform:workflow-smoke'
 fi
 info 'workflow dispatch without successful gh run view job/artifact evidence is not a platform receipt; NAVIVOX_WATCH_WORKFLOW=false only proves dispatch was requested'
 
@@ -336,9 +344,9 @@ if [ "$platform_receipt_valid" = 1 ]; then
   ok 'iOS simulator native-host build receipt recorded'
   ok 'macOS desktop native-host build receipt recorded'
 else
-  block 'Windows desktop native-host build receipt missing; run on a Windows host or published platform workflow before claiming Windows readiness'
-  block 'iOS simulator native-host build receipt missing; run on a macOS/Xcode host or published platform workflow before claiming iOS readiness'
-  block 'macOS desktop native-host build receipt missing; run on a macOS/Xcode host or published platform workflow before claiming macOS readiness'
+  block_receipt 'Windows desktop native-host build receipt missing; run on a Windows host or published platform workflow before claiming Windows readiness'
+  block_receipt 'iOS simulator native-host build receipt missing; run on a macOS/Xcode host or published platform workflow before claiming iOS readiness'
+  block_receipt 'macOS desktop native-host build receipt missing; run on a macOS/Xcode host or published platform workflow before claiming macOS readiness'
 fi
 
 if command -v adb >/dev/null 2>&1; then
@@ -348,13 +356,13 @@ if command -v adb >/dev/null 2>&1; then
     if [ "$android_live_mic_receipt_valid" = 1 ]; then
       ok 'real spoken Android mic loop receipt recorded'
     else
-      block 'real spoken Android mic loop still requires manual physical-audio/provider/TTS/re-arm evidence; online device alone is not a pass'
+      block_physical_mic 'real spoken Android mic loop still requires manual physical-audio/provider/TTS/re-arm evidence; online device alone is not a pass'
     fi
   else
     if [ "$android_live_mic_receipt_valid" = 1 ]; then
       ok 'real spoken Android mic loop receipt recorded; no current Android attachment required for this historical receipt'
     else
-      block 'no online Android device/emulator for real spoken mic receipt; start an audio-capable target, follow docs/runbooks/android/live-mic-smoke.md, then run npm run android:live-mic-prep'
+      block_physical_mic 'no online Android device/emulator for real spoken mic receipt; start an audio-capable target, follow docs/runbooks/android/live-mic-smoke.md, then run npm run android:live-mic-prep'
     fi
     if command -v flutter >/dev/null 2>&1; then
       printf 'INFO: Flutter connected devices (not Android/audio receipt evidence):\n'
@@ -372,13 +380,13 @@ if command -v adb >/dev/null 2>&1; then
     fi
   fi
 else
-  block 'adb not installed; cannot inspect Android device readiness'
+  block_physical_mic 'adb not installed; cannot inspect Android device readiness'
 fi
 
 if [ -f "${NAVIVOX_CONFIGURED_HERMES_HOME:-${HERMES_HOME:-$HOME/.hermes}}/config.yaml" ]; then
   info 'configured local Hermes home appears present; this is not a provider-smoke receipt, run npm run hermes:provider-smoke:local for proof'
 else
-  block 'no configured Hermes config.yaml found for local provider-backed smoke'
+  block_receipt 'no configured Hermes config.yaml found for local provider-backed smoke'
 fi
 provider_receipt="${NAVIVOX_PROVIDER_SMOKE_RECEIPT:-build/receipts/hermes-provider-smoke.json}"
 if [ -f "$provider_receipt" ]; then
@@ -437,25 +445,41 @@ PY
     ok "provider-backed Hermes text/transcript-voice smoke receipt present ($provider_receipt)"
     info 'provider transcript voice receipt is not physical microphone/server audio evidence'
   else
-    block "provider-backed Hermes smoke receipt is present but not a complete passing no-retry typed-text/transcript-voice receipt ($provider_receipt); rerun npm run hermes:provider-smoke:local"
+    block_receipt "provider-backed Hermes smoke receipt is present but not a complete passing no-retry typed-text/transcript-voice receipt ($provider_receipt); rerun npm run hermes:provider-smoke:local"
   fi
 else
-  block 'full live provider-backed Hermes chat/voice smoke receipt missing from this audit; run npm run hermes:provider-smoke:local with configured model/provider credentials; deterministic transcript voice is not physical microphone/server audio evidence'
+  block_receipt 'full live provider-backed Hermes chat/voice smoke receipt missing from this audit; run npm run hermes:provider-smoke:local with configured model/provider credentials; deterministic transcript voice is not physical microphone/server audio evidence'
 fi
 
-block 'Hermes realtime/server audio remains unimplemented; device STT -> Hermes text only'
-block 'Hermes config editing/admin remains deferred by policy'
-block 'Hermes memory UI remains deferred by policy'
-block 'Hermes jobs/schedules admin remains deferred; current jobs support is read-only inventory only'
-block 'Hermes messaging gateways remain deferred by policy'
-block 'Hermes persona/SOUL editing remains deferred by policy'
-block 'Hermes attachments/media remain deferred by policy'
-block 'Hermes files/context folders remain deferred by policy'
-block 'Hermes raw diagnostics/log export remains deferred; bounded diagnostics only'
+block_server_audio 'Hermes realtime/server audio remains unimplemented; device STT -> Hermes text only'
+block_deferred_surface 'Hermes config editing/admin remains deferred by policy'
+block_deferred_surface 'Hermes memory UI remains deferred by policy'
+block_deferred_surface 'Hermes jobs/schedules admin remains deferred; current jobs support is read-only inventory only'
+block_deferred_surface 'Hermes messaging gateways remain deferred by policy'
+block_deferred_surface 'Hermes persona/SOUL editing remains deferred by policy'
+block_deferred_surface 'Hermes attachments/media remain deferred by policy'
+block_deferred_surface 'Hermes files/context folders remain deferred by policy'
+block_deferred_surface 'Hermes raw diagnostics/log export remains deferred; bounded diagnostics only'
 ok 'Hermes multi-endpoint/profile management available locally with secure per-profile API-key storage'
 printf '\nSummary: %s blocker(s), %s warning state.\n' "$blockers" "$status"
 if [ "$blockers" -gt 0 ]; then
-  printf 'Completion verdict: NOT COMPLETE; Android physical-mic, Hermes server-audio, deferred-surface, or missing automated receipt blockers remain.\n'
+  reasons=()
+  [ "$physical_mic_blockers" -gt 0 ] && reasons+=("Android physical-mic")
+  [ "$server_audio_blockers" -gt 0 ] && reasons+=("Hermes server-audio")
+  [ "$deferred_surface_blockers" -gt 0 ] && reasons+=("deferred-surface")
+  [ "$receipt_blockers" -gt 0 ] && reasons+=("receipt")
+  reason_text='uncategorized'
+  if [ "${#reasons[@]}" -gt 0 ]; then
+    reason_text=''
+    for reason in "${reasons[@]}"; do
+      if [ -z "$reason_text" ]; then
+        reason_text="$reason"
+      else
+        reason_text="$reason_text, $reason"
+      fi
+    done
+  fi
+  printf 'Completion verdict: NOT COMPLETE; %s blocker(s) remain.\n' "$reason_text"
 fi
 printf 'This audit is informational and must not be used as a completion receipt by itself.\n'
 printf 'Do not promote proxy evidence (tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only output) to completion.\n'
