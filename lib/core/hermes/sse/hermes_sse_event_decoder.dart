@@ -21,14 +21,24 @@ class HermesStreamEvent {
 
   factory HermesStreamEvent.fromSse(HermesSseEvent event) {
     if (event.isDone) return HermesStreamEvent.done();
-    final decoded = jsonDecode(event.data);
-    if (decoded is! Map) {
-      throw const FormatException('Hermes SSE data must be a JSON object');
+    try {
+      final decoded = jsonDecode(event.data);
+      if (decoded is! Map) {
+        throw const FormatException('Hermes SSE data must be a JSON object');
+      }
+      return HermesStreamEvent(
+        name: event.event,
+        payload: navivoxMapFromJson(decoded),
+      );
+    } on FormatException {
+      if (_isErrorEvent(event.event) && event.data.trim().isNotEmpty) {
+        return HermesStreamEvent(
+          name: event.event,
+          payload: {'message': event.data.trim()},
+        );
+      }
+      rethrow;
     }
-    return HermesStreamEvent(
-      name: event.event,
-      payload: navivoxMapFromJson(decoded),
-    );
   }
 
   final String name;
@@ -40,6 +50,12 @@ class HermesStreamEvent {
   String? get messageId => navivoxOptionalStringFromJson(payload['message_id']);
   String? get delta => navivoxOptionalStringFromJson(payload['delta']);
 }
+
+bool _isErrorEvent(String name) =>
+    name == 'error' ||
+    name == 'stream.error' ||
+    name == 'run.error' ||
+    name == 'assistant.error';
 
 /// Pure Dart server-sent event decoder for Hermes HTTP streams.
 class HermesSseEventDecoder {
