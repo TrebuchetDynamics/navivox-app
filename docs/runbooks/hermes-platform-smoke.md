@@ -94,12 +94,13 @@ instead of hanging:
 
 The workflow file must be visible to GitHub before this counts as a receipt.
 A local YAML file is not enough, and dispatch-only output is not enough. The
-workflow is now published remotely as `Hermes platform smoke`; the latest
-current-head watched receipt is `build/receipts/hermes-platform-workflow.json`
-from GitHub run `28731694618`, with successful Windows desktop, iOS simulator,
-and macOS desktop native-host jobs plus artifact metadata. Earlier local-only
-YAML and missing-`workflow`-scope push failures are historical non-receipts, not
-current blockers.
+workflow is now published remotely as `Hermes platform smoke`; the source of
+truth is the refreshed current-head
+`build/receipts/hermes-platform-workflow.json`, which records the watched GitHub
+run id plus successful Windows desktop, iOS simulator, and macOS desktop
+native-host jobs/artifact metadata. Earlier local-only YAML and
+missing-`workflow`-scope push failures are historical non-receipts, not current
+blockers.
 
 Dispatch and watch the host-runner receipt path with:
 

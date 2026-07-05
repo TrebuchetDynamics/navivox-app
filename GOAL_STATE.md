@@ -46,9 +46,10 @@ input) as the reference. See ADR 0007.
 - Linux release build is locally repeatable through `npm run linux:release-build`.
 - App-scoped Android native units pass with `cd android && ./gradlew :app:testDebugUnitTest`.
 - Windows/iOS/macOS host receipts are covered by the published `Hermes platform
-  smoke` workflow. Latest watched current-head receipt:
-  `build/receipts/hermes-platform-workflow.json`, run `28731694618`, with
-  successful Windows desktop, iOS simulator, and macOS desktop jobs/artifacts.
+  smoke` workflow. The source of truth is the refreshed current-head
+  `build/receipts/hermes-platform-workflow.json`, which records the watched
+  GitHub run id plus successful Windows desktop, iOS simulator, and macOS
+  desktop jobs/artifacts.
 
 See `docs/runbooks/hermes-readiness-audit.md` for the current prompt-to-artifact
 readiness checklist and non-completion caveats.
