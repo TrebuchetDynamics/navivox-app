@@ -1236,6 +1236,50 @@ void main() {
     expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
   });
 
+  test('sendText fails when a run stream emits response.error', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          expect(uri.path, '/v1/runs');
+          return '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}';
+        },
+        getStream: (uri, headers) => Stream<String>.fromIterable(const [
+          'event: response.delta\ndata: {"delta":"partial"}\n\n',
+          'event: response.error\ndata: upstream token=secret-response-error\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('response errored run');
+
+    expect(
+      channel.state.errorMessage,
+      contains('Hermes stream reported an error'),
+    );
+    expect(channel.state.errorMessage, contains('token=[redacted]'));
+    expect(
+      channel.state.errorMessage,
+      isNot(contains('secret-response-error')),
+    );
+    expect(channel.state.activeMessages.map((turn) => turn.text), [
+      'Hello',
+      'response errored run',
+      'partial',
+    ]);
+    expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
+  });
+
   test('sendText recovers a closed run stream from server history', () async {
     var messagesRequests = 0;
     final channel = HermesApiChannel(
@@ -3267,6 +3311,53 @@ void main() {
     await pumpEventQueue();
     stream.add('event: message.delta\ndata: {"delta":"local"}\n\n');
     stream.add('event: message.completed\ndata: {}\n\n');
+    await send;
+
+    expect(messagesRequests, 2);
+    expect(channel.state.errorMessage, isNull);
+    expect(channel.state.activeMessages.map((turn) => turn.text), [
+      'Hello',
+      'Hi there',
+    ]);
+  });
+
+  test('sendText accepts response stream aliases', () async {
+    var messagesRequests = 0;
+    final stream = StreamController<String>();
+    addTearDown(stream.close);
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' =>
+              (messagesRequests++ == 0)
+                  ? _messagesFixture
+                  : _reconciledMessagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) => stream.stream,
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final send = channel.sendText('finish response');
+    await pumpEventQueue();
+    stream.add(
+      'event: response.output_text.delta\ndata: {"delta":"local"}\n\n',
+    );
+    stream.add('event: response.completed\ndata: {}\n\n');
     await send;
 
     expect(messagesRequests, 2);

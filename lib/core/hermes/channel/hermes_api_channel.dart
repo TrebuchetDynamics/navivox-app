@@ -765,7 +765,10 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   bool _isDeltaEvent(String name) {
     return name == 'message' ||
         name == 'message.delta' ||
-        name == 'assistant.delta';
+        name == 'assistant.delta' ||
+        name == 'response.delta' ||
+        name == 'response.text.delta' ||
+        name == 'response.output_text.delta';
   }
 
   bool _serverHistoryDropsStreamedAssistant(
@@ -825,7 +828,8 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
         name == 'stream.error' ||
         name == 'run.error' ||
         name == 'assistant.error' ||
-        name == 'message.error';
+        name == 'message.error' ||
+        name == 'response.error';
   }
 
   String _streamErrorMessage(HermesStreamEvent event) {
@@ -856,20 +860,25 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   bool _isSuccessfulTerminalRunEvent(String name) {
     return name == 'run.completed' ||
         name == 'assistant.completed' ||
-        name == 'message.completed';
+        name == 'message.completed' ||
+        name == 'response.completed' ||
+        name == 'response.done';
   }
 
   bool _isFailedTerminalRunEvent(String name) {
     return name == 'run.failed' ||
         name == 'assistant.failed' ||
         name == 'message.failed' ||
+        name == 'response.failed' ||
         _isCancelledTerminalRunEvent(name);
   }
 
   bool _isCancelledTerminalRunEvent(String name) {
     return name == 'run.cancelled' ||
         name == 'assistant.cancelled' ||
-        name == 'message.cancelled';
+        name == 'message.cancelled' ||
+        name == 'response.cancelled' ||
+        name == 'response.canceled';
   }
 
   bool _isToolEvent(String name) {
