@@ -21,6 +21,7 @@ void main() {
       'Completion verdict: NOT COMPLETE',
       'Android physical-mic, Hermes server-audio, or deferred-surface\n   blockers remain',
       '`gh workflow list` shows `Hermes platform smoke`',
+      'platform:workflow-smoke` now dispatches/watches the published `Hermes platform\n   smoke` workflow',
       'not to promote proxy evidence',
       'tests, APK hashes, configured Hermes home, workflow YAML, or dispatch-only\n   output',
       '`build/receipts/hermes-platform-workflow.json` records a current watched\n   successful run',

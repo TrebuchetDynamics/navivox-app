@@ -507,14 +507,13 @@ readiness checklist and non-completion caveats.
    `playwright_retries: 0`, timestamp, and explicit non-evidence caveats, while
    future provider-smoke receipts now redact URL userinfo/query/fragment fields, and
    reports when active `gh` scopes still lack `workflow`); `npm run
-   platform:workflow-smoke` now also reports the missing `workflow` scope before
-   exiting with the still-unpublished workflow; when a future watched workflow
-   succeeds it now writes `build/receipts/hermes-platform-workflow.json` for audit
-   validation of Windows/iOS/macOS artifact and job names/metadata and fails
-   closed if the watched run or any required native job did not reach
-   `completed`/`success`, if any required native artifact is
-   missing/expired/empty/lacks a download URL, or if the receipt `head_sha` does
-   not match the current git `HEAD`.
+   platform:workflow-smoke` now dispatches/watches the published `Hermes platform
+   smoke` workflow and writes `build/receipts/hermes-platform-workflow.json` for
+   audit validation of Windows/iOS/macOS artifact and job names/metadata. It
+   still fails closed if the workflow is not visible, the watched run or any
+   required native job did not reach `completed`/`success`, any required native
+   artifact is missing/expired/empty/lacks a download URL, or the receipt
+   `head_sha` does not match the current git `HEAD`.
    Android live-mic receipt audit now requires a
    sanitized Hermes URL with no userinfo/query/fragment, matching receipt
    `head_sha` to current git `HEAD`, non-empty Android device properties,
