@@ -2782,10 +2782,67 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('hermes-endpoint-profile-delete-dialog')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-endpoint-profile-delete-confirm')),
+    );
+    await tester.pumpAndSettle();
 
     expect(store.deleteProfileCalls, ['lan']);
     expect(find.text('LAN Hermes'), findsNothing);
     expect(find.text('Emulator Hermes'), findsOneWidget);
+  });
+
+  testWidgets('saved endpoint profile delete dialog redacts secrets', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'secret-profile',
+          label: 'Bearer secret-profile-token',
+          baseUrl: 'http://user:secret-url-token@example.com:8642',
+          apiKey: 'secret-api-key',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(
+          const ValueKey('hermes-endpoint-profile-secret-profile'),
+        ),
+        matching: find.byIcon(Icons.close),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-endpoint-profile-delete-dialog')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Bearer [redacted]'), findsWidgets);
+    expect(
+      find.textContaining('http://[redacted]@example.com:8642'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('secret-profile-token'), findsNothing);
+    expect(find.textContaining('secret-url-token'), findsNothing);
+    expect(find.textContaining('secret-api-key'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-endpoint-profile-delete-cancel')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.deleteProfileCalls, isEmpty);
   });
 
   testWidgets('connect strips URL secret material before connect and save', (

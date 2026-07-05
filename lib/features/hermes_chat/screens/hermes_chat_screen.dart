@@ -1476,7 +1476,7 @@ class _EndpointProfileChips extends StatelessWidget {
                 onPressed: connecting ? null : () => onSelect(profile),
                 onDeleted: connecting || profile.id == null
                     ? null
-                    : () => onDelete(profile),
+                    : () => unawaited(_confirmDeleteProfile(context, profile)),
                 deleteIcon: const Icon(Icons.close, size: 18),
                 tooltip: _safeHermesUiPreview(profile.baseUrl, maxLength: 96),
               ),
@@ -1484,6 +1484,37 @@ class _EndpointProfileChips extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteProfile(
+    BuildContext context,
+    HermesEndpointConfig profile,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('hermes-endpoint-profile-delete-dialog'),
+        title: const Text('Remove saved Hermes profile?'),
+        content: Text(
+          'Remove ${_safeHermesUiPreview(profile.displayLabel, maxLength: 96)} '
+          '(${_safeHermesUiPreview(profile.baseUrl, maxLength: 120)}) from this device. '
+          'Any stored API key for this profile is removed from secure storage.',
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('hermes-endpoint-profile-delete-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-endpoint-profile-delete-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onDelete(profile);
   }
 }
 
