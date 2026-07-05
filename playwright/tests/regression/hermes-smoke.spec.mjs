@@ -30,7 +30,7 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
 
   await expect(semanticLabel(page, 'Hermes Agent hermes-agent')).toBeVisible();
   await expect(semanticLabel(page, 'Runs SSE enabled')).toBeVisible();
-  await expect(semanticLabel(page, 'Voice uses device speech-to-text')).toBeVisible();
+  await expect(semanticLabel(page, 'Voice: device STT -> Hermes text')).toBeVisible();
   await expect(semanticLabel(page, 'Version: 0.16.0')).toBeVisible();
   await expect(semanticLabel(page, 'Gateway: running')).toBeVisible();
   await expect(semanticLabel(page, 'Models: hermes-agent')).toBeVisible();
