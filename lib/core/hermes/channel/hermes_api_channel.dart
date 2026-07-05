@@ -862,6 +862,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
 
   bool _isToolEvent(String name) {
     return name == 'tool.started' ||
+        name == 'tool.progress' ||
         name == 'tool.completed' ||
         name == 'tool.failed';
   }

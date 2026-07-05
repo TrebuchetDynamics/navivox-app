@@ -472,9 +472,10 @@ readiness checklist and non-completion caveats.
    consume `delta`, `content`, or `text` payload keys from Hermes-compatible
    hosts, default `message` SSE frames can resolve embedded `event`/`type`/`name`
    payload fields so terminal/delta events are not missed,
-   nested SSE error payloads are surfaced without leaking secrets,
-   and explicit SSE error events (including non-JSON error frames) fail the active
-   assistant turn with bounded/redacted recovery copy instead of waiting for stream close;
+   nested SSE error payloads are surfaced without leaking secrets, `tool.progress`
+   SSE frames update the current tool card in place instead of disappearing or
+   duplicating tool rows, and explicit SSE error events (including non-JSON error
+   frames) fail the active assistant turn with bounded/redacted recovery copy instead of waiting for stream close;
    run SSE chat transport no longer requires optional
    approval/tool-progress/stop capabilities,
    `respondToApproval` rejects locally when Hermes does not advertise approval

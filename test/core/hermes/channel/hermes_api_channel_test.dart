@@ -3360,6 +3360,55 @@ void main() {
     },
   );
 
+  test('sendText via run transport updates tool progress in place', () async {
+    final states = <HermesChannelState>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          return switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          };
+        },
+        getStream: (uri, headers) => Stream.fromIterable([
+          'event: tool.started\ndata: {"tool":"bash","tool_call_id":"call_1","preview":"starting"}\n\n',
+          'event: tool.progress\ndata: {"tool":"bash","tool_call_id":"call_1","preview":"halfway"}\n\n',
+          'event: message.delta\ndata: {"delta":"done"}\n\ndata: [DONE]\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    channel.addListener(() => states.add(channel.state));
+
+    await channel.sendText('track progress');
+
+    final progressState = states.lastWhere(
+      (s) => s.activeMessages.any(
+        (turn) =>
+            turn.kind == HermesTurnKind.toolCall &&
+            turn.toolCall?.preview == 'halfway',
+      ),
+    );
+    final toolTurns = progressState.activeMessages
+        .where((turn) => turn.kind == HermesTurnKind.toolCall)
+        .toList(growable: false);
+    expect(toolTurns, hasLength(1));
+    expect(toolTurns.single.toolCall?.name, 'bash');
+    expect(toolTurns.single.toolCall?.status, 'running');
+    expect(toolTurns.single.toolCall?.preview, 'halfway');
+  });
+
   test(
     'sendText via run transport keeps same-name tool calls separate by event call id',
     () async {
