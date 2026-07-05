@@ -501,6 +501,9 @@ for key, expected in expected_paths.items():
 for key in ['provider_reply_observed', 'server_audio_playback_observed', 'round_trip_observed', 'no_secret_leaks_observed']:
     if receipt.get(key) is not True:
         missing.append(f'{key}=true')
+for key in ['device_stt_used', 'local_tts_only']:
+    if receipt.get(key) is not False:
+        missing.append(f'{key}=false')
 for key in ['prompt_excerpt', 'provider_reply_excerpt']:
     value = str(receipt.get(key, ''))
     if not value:

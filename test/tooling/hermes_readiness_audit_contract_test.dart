@@ -47,6 +47,12 @@ void main() {
     expect(scriptText, contains('provider_reply_observed'));
     expect(scriptText, contains('server_audio_playback_observed'));
     expect(scriptText, contains('round_trip_observed'));
+    expect(scriptText, contains("'device_stt_used', 'local_tts_only'"));
+    expect(scriptText, contains("missing.append(f'{key}=false')"));
+    expect(
+      auditText,
+      contains('`device_stt_used=false`, `local_tts_only=false`'),
+    );
     expect(
       auditText,
       contains('manual evidence recorder, not an implementation'),

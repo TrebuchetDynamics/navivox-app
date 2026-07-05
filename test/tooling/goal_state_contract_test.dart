@@ -36,7 +36,7 @@ void main() {
       'That remains readiness and deterministic\n   transcript/TTS loop evidence only',
       'Hermes home presence remains informational only',
       'redacted error details sheet with copy-to-clipboard support for connect and\n   in-chat failures',
-      'npm run hermes:server-audio-receipt`\n   now define a strict future Hermes server-audio receipt schema',
+      'npm run hermes:server-audio-receipt`\n   now define a strict future Hermes server-audio receipt schema that rejects\n   local device STT/TTS fallback evidence',
       'surface-readiness dialog can copy a bounded\n   summary',
       'copy action for bounded/redacted approval\n   details',
       'copy actions for bounded/redacted session and job details',

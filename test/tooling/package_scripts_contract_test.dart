@@ -194,6 +194,16 @@ void main() {
       serverAudioReceipt,
       contains('NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS=true'),
     );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_DEVICE_STT_USED=false'),
+    );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_LOCAL_TTS_ONLY=false'),
+    );
+    expect(serverAudioReceipt, contains('device_stt_used'));
+    expect(serverAudioReceipt, contains('local_tts_only'));
     expect(serverAudioReceipt, contains('hermes_server_audio_smoke'));
     expect(serverAudioReceipt, contains('hermes_realtime_or_audio_api'));
     expect(serverAudioReceipt, contains('client_audio_to_hermes_server_audio'));

@@ -26,18 +26,31 @@ require_true() {
   fi
 }
 
+require_false() {
+  local name="$1"
+  local value="${!name:-}"
+  if [ "$value" != "false" ]; then
+    echo "$name=false is required; local device STT/TTS fallback cannot be recorded as Hermes server audio." >&2
+    exit 2
+  fi
+}
+
 require_env NAVIVOX_HERMES_SERVER_AUDIO_PROMPT
 require_env NAVIVOX_HERMES_SERVER_AUDIO_PROVIDER_REPLY
 # Required manual-observation gates: NAVIVOX_HERMES_SERVER_AUDIO_TRANSPORT_OBSERVED=true,
 # NAVIVOX_HERMES_SERVER_AUDIO_PROVIDER_REPLY_OBSERVED=true,
 # NAVIVOX_HERMES_SERVER_AUDIO_PLAYBACK_OBSERVED=true,
-# NAVIVOX_HERMES_SERVER_AUDIO_ROUND_TRIP_OBSERVED=true, and
-# NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS=true.
+# NAVIVOX_HERMES_SERVER_AUDIO_ROUND_TRIP_OBSERVED=true,
+# NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS=true,
+# NAVIVOX_HERMES_SERVER_AUDIO_DEVICE_STT_USED=false, and
+# NAVIVOX_HERMES_SERVER_AUDIO_LOCAL_TTS_ONLY=false.
 require_true NAVIVOX_HERMES_SERVER_AUDIO_TRANSPORT_OBSERVED
 require_true NAVIVOX_HERMES_SERVER_AUDIO_PROVIDER_REPLY_OBSERVED
 require_true NAVIVOX_HERMES_SERVER_AUDIO_PLAYBACK_OBSERVED
 require_true NAVIVOX_HERMES_SERVER_AUDIO_ROUND_TRIP_OBSERVED
 require_true NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS
+require_false NAVIVOX_HERMES_SERVER_AUDIO_DEVICE_STT_USED
+require_false NAVIVOX_HERMES_SERVER_AUDIO_LOCAL_TTS_ONLY
 
 receipt_path="${NAVIVOX_HERMES_SERVER_AUDIO_RECEIPT:-build/receipts/hermes-server-audio-smoke.json}"
 mkdir -p "$(dirname "$receipt_path")"
@@ -79,6 +92,8 @@ receipt = {
     'server_audio_playback_observed': os.environ['NAVIVOX_HERMES_SERVER_AUDIO_PLAYBACK_OBSERVED'] == 'true',
     'round_trip_observed': os.environ['NAVIVOX_HERMES_SERVER_AUDIO_ROUND_TRIP_OBSERVED'] == 'true',
     'no_secret_leaks_observed': os.environ['NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS'] == 'true',
+    'device_stt_used': os.environ['NAVIVOX_HERMES_SERVER_AUDIO_DEVICE_STT_USED'] == 'true',
+    'local_tts_only': os.environ['NAVIVOX_HERMES_SERVER_AUDIO_LOCAL_TTS_ONLY'] == 'true',
     'evidence_for': [
         'Hermes realtime/server audio input',
         'server-side audio turn',

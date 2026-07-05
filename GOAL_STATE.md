@@ -460,8 +460,9 @@ readiness checklist and non-completion caveats.
    response, `stopActiveTurn` stays local when Hermes does not advertise run
    stop, and bounded diagnostics now report optional run stop/approval/tool-progress
    support separately; the readiness audit and `npm run hermes:server-audio-receipt`
-   now define a strict future Hermes server-audio receipt schema without treating
-   it as implementation evidence; the surface-readiness dialog can copy a bounded
+   now define a strict future Hermes server-audio receipt schema that rejects
+   local device STT/TTS fallback evidence without treating it as implementation
+   evidence; the surface-readiness dialog can copy a bounded
    summary of available/read-only/deferred/blocked Hermes surfaces; retry actions hide when chat transport is unavailable; queued follow-up
    banners are bounded for many long messages, redact secret-looking preview text
    without altering the queued send payload, remain bound to their original
