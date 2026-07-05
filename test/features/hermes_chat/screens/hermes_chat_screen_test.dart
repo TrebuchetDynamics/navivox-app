@@ -257,7 +257,10 @@ void main() {
     final channel = FakeHermesChannel(
       errorMessage: '403 forbidden for Bearer secret-stream-key',
     );
-    await tester.pumpWidget(_wrap(channel));
+    final store = FakeHermesEndpointStore(
+      initial: const HermesEndpointConfig(baseUrl: 'http://127.0.0.1:8642'),
+    );
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
 
     expect(find.byKey(const ValueKey('hermes-chat-error')), findsOneWidget);
     expect(find.text('Hermes API rejected the saved API key.'), findsOneWidget);
@@ -272,6 +275,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('hermes-chat-error-reconnect')));
     await tester.pumpAndSettle();
 
+    expect(
+      find.byKey(const ValueKey('hermes-disconnect-confirm-dialog')),
+      findsOneWidget,
+    );
+    expect(store.clearCalls, 0);
+    expect(find.textContaining('secret-stream-key'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-disconnect-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(store.clearCalls, 1);
     expect(find.byKey(const ValueKey('hermes-connect-button')), findsOneWidget);
     expect(find.textContaining('secret-stream-key'), findsNothing);
   });
@@ -409,6 +423,14 @@ void main() {
     );
 
     await tester.tap(find.byKey(const ValueKey('hermes-chat-error-reconnect')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-disconnect-confirm-dialog')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('hermes-disconnect-confirm')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('hermes-connect-button')), findsOneWidget);

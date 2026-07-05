@@ -391,7 +391,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
                       _retryableFailedUserText(state) == null
                   ? null
                   : () => _retryLastFailedTurn(channel),
-              onReconnect: () => unawaited(_disconnect(channel)),
+              onReconnect: () =>
+                  unawaited(_confirmDisconnect(context, channel)),
             ),
           ),
         if (_voiceError != null)
