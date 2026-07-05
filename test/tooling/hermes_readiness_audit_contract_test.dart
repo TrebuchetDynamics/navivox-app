@@ -215,6 +215,11 @@ void main() {
     expect(scriptText, contains("package_info.{key}"));
     expect(scriptText, contains('physical_mic_observed'));
     expect(scriptText, contains('synthetic_audio_used=false'));
+    expect(scriptText, contains('audio_input_path'));
+    expect(scriptText, contains('physical_android_microphone'));
+    expect(scriptText, contains('local_device_stt_to_hermes_text'));
+    expect(scriptText, contains('provider_backed_hermes_text_reply'));
+    expect(scriptText, contains('tts_observed_before_rearm'));
     expect(scriptText, contains('hermes_url_sanitized'));
     expect(
       scriptText,

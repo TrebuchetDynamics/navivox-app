@@ -111,6 +111,14 @@ void main() {
       contains('NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false'),
     );
     expect(androidLiveMicReceipt, contains('synthetic_audio_used'));
+    expect(androidLiveMicReceipt, contains('audio_input_path'));
+    expect(androidLiveMicReceipt, contains('physical_android_microphone'));
+    expect(androidLiveMicReceipt, contains('local_device_stt_to_hermes_text'));
+    expect(
+      androidLiveMicReceipt,
+      contains('provider_backed_hermes_text_reply'),
+    );
+    expect(androidLiveMicReceipt, contains('tts_observed_before_rearm'));
     expect(
       androidLiveMicReceipt,
       contains('NAVIVOX_ANDROID_SECOND_SPOKEN_PHRASE must be a different'),

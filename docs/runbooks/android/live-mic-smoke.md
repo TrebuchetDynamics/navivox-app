@@ -86,13 +86,15 @@ Record all of the following before claiming the required physical-mic evidence:
    phrases/provider reply excerpts; keep each manual evidence value to 240
    characters or less. The helper and audit require an explicit physical-mic
    manual observation gate, require `NAVIVOX_ANDROID_SYNTHETIC_AUDIO_USED=false`,
-   require the second spoken phrase to differ from the first, require the
-   provider reply excerpt to differ from both spoken phrases, require the receipt
-   `head_sha` to match the current git `HEAD`, require non-empty
-   manufacturer/model/SDK/fingerprint device properties, require the expected
-   Navivox package to be installed with version metadata and `RECORD_AUDIO`
-   granted, and validate the required fields/caveats while still treating
-   unrelated blockers as open.
+   require the receipt path labels `physical_android_microphone`,
+   `local_device_stt_to_hermes_text`, `provider_backed_hermes_text_reply`, and
+   `tts_observed_before_rearm`, require the second spoken phrase to differ from
+   the first, require the provider reply excerpt to differ from both spoken
+   phrases, require the receipt `head_sha` to match the current git `HEAD`,
+   require non-empty manufacturer/model/SDK/fingerprint device properties,
+   require the expected Navivox package to be installed with version metadata and
+   `RECORD_AUDIO` granted, and validate the required fields/caveats while still
+   treating unrelated blockers as open.
 11. Run strict readiness audit after recording the receipt:
 
    ```bash

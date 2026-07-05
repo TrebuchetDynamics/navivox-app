@@ -162,6 +162,15 @@ for key in ['physical_mic_observed', 'tts_observed', 'rearm_observed', 'no_secre
         missing.append(f'{key}=true')
 if receipt.get('synthetic_audio_used') is not False:
     missing.append('synthetic_audio_used=false')
+expected_paths = {
+    'audio_input_path': 'physical_android_microphone',
+    'stt_path': 'local_device_stt_to_hermes_text',
+    'reply_path': 'provider_backed_hermes_text_reply',
+    'playback_path': 'tts_observed_before_rearm',
+}
+for key, expected in expected_paths.items():
+    if receipt.get(key) != expected:
+        missing.append(f'{key}={expected}')
 hermes_url = str(receipt.get('hermes_url', ''))
 parsed_hermes_url = urlsplit(hermes_url)
 if parsed_hermes_url.username or parsed_hermes_url.password or parsed_hermes_url.query or parsed_hermes_url.fragment:
