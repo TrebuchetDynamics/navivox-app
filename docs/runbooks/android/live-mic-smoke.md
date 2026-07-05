@@ -106,6 +106,9 @@ Record all of the following before closing the blocker:
   mechanics with fake capture/TTS, not a physical microphone.
 - Provider transcript smoke by itself; it is text/transcript-backed, not live
   Android audio.
+- Synthetic/generated host audio playback or speech-capture tests by themselves;
+  they can help debug recognizer plumbing, but they do not prove an operator
+  spoke into a physical microphone, heard TTS, and observed a distinct re-arm.
 
 ## Failure notes
 

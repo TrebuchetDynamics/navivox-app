@@ -152,6 +152,10 @@ void main() {
     expect(scriptText, contains('responsive audio-capable Android target'));
     expect(
       scriptText,
+      contains('synthetic/generated audio tests are not physical-mic receipts'),
+    );
+    expect(
+      scriptText,
       contains('successful native-host runner jobs/artifacts'),
     );
     expect(

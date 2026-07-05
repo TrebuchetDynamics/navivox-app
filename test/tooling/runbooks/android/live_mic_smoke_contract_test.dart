@@ -61,6 +61,8 @@ void main() {
       'npm run android:voice-smoke',
       'npm run android:hermes-voice-loop-smoke',
       'Provider transcript smoke by itself',
+      'Synthetic/generated host audio playback',
+      'they do not prove an operator\n  spoke into a physical microphone',
       'cmd: Failure calling service package: Broken pipe (32)',
       'Unable to\nstart the app on the device',
       'Flutter emulator launcher exit `-6`',

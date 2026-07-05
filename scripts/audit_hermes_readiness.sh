@@ -42,7 +42,7 @@ fi
 
 printf '\nObjective checklist (read-only; not completion evidence):\n'
 info 'provider-backed Hermes chat/voice: requires configured model/provider credentials plus a current npm run hermes:provider-smoke:local receipt; transcript voice is not physical mic/server audio'
-info 'Android microphone + continuous voice: requires responsive audio-capable Android target and manual docs/runbooks/android/live-mic-smoke.md receipt'
+info 'Android microphone + continuous voice: requires responsive audio-capable Android target and manual docs/runbooks/android/live-mic-smoke.md receipt; synthetic/generated audio tests are not physical-mic receipts'
 info 'Windows, iOS, and macOS builds: require successful native-host runner jobs/artifacts or native host receipts'
 info 'Hermes realtime/server audio: unimplemented; current voice path is device STT -> Hermes text'
 info 'Deferred Hermes surfaces: config admin, memory UI, jobs/schedules admin, messaging gateways, persona/SOUL, attachments/media, files/context folders, and raw diagnostics/log export; multi-endpoint/profile management is implemented locally'
