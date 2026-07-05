@@ -108,12 +108,14 @@ non-overlapping categories:
   no-human regression gate; real spoken Android physical-mic evidence remains a
   blocker until recorded. Hermes realtime/server audio is not implemented, so
   voice remains device STT -> Hermes text. The future server-audio closeout
-  receipt is `build/receipts/hermes-server-audio-smoke.json`; it must match
-  current `HEAD`, prove `hermes_realtime_or_audio_api`,
-  `client_audio_to_hermes_server_audio`,
+  receipt is written by `npm run hermes:server-audio-receipt` to
+  `build/receipts/hermes-server-audio-smoke.json`; it must match current `HEAD`,
+  prove `hermes_realtime_or_audio_api`, `client_audio_to_hermes_server_audio`,
   `hermes_server_audio_to_client_playback`, provider reply, playback, round trip,
   safe short prompt/reply excerpts, no secret leaks, and explicit
   `not_evidence_for` caveats before it can clear only the server-audio blocker.
+  Do not run that receipt helper until Hermes server audio is actually wired and
+  observed; it is a manual evidence recorder, not an implementation.
 - Deferred Hermes surfaces: config editing/admin, memory UI, jobs/schedules
   admin, messaging gateways, persona/SOUL, attachments/media, files/context
   folders, and raw diagnostics/log export. Multi-endpoint/profile management is

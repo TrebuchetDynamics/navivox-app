@@ -39,6 +39,7 @@ void main() {
       scriptText,
       contains('build/receipts/hermes-server-audio-smoke.json'),
     );
+    expect(auditText, contains('npm run hermes:server-audio-receipt'));
     expect(scriptText, contains("kind=hermes_server_audio_smoke"));
     expect(scriptText, contains('hermes_realtime_or_audio_api'));
     expect(scriptText, contains('client_audio_to_hermes_server_audio'));
@@ -46,6 +47,10 @@ void main() {
     expect(scriptText, contains('provider_reply_observed'));
     expect(scriptText, contains('server_audio_playback_observed'));
     expect(scriptText, contains('round_trip_observed'));
+    expect(
+      auditText,
+      contains('manual evidence recorder, not an implementation'),
+    );
     expect(
       scriptText,
       contains('Hermes realtime/server audio receipt present'),

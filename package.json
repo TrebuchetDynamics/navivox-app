@@ -14,6 +14,7 @@
     "hermes:live-smoke": "./scripts/run_live_hermes_smoke.sh",
     "hermes:provider-smoke": "./scripts/run_provider_hermes_smoke.sh",
     "hermes:provider-smoke:local": "./scripts/run_local_configured_hermes_provider_smoke.sh",
+    "hermes:server-audio-receipt": "./scripts/record_hermes_server_audio_receipt.sh",
     "android:voice-smoke": "./scripts/run_android_voice_smoke.sh",
     "android:hermes-voice-loop-smoke": "./scripts/run_android_hermes_voice_loop_smoke.sh",
     "android:durable-key-smoke": "./scripts/run_android_durable_key_smoke.sh",

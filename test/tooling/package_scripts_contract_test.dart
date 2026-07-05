@@ -15,6 +15,8 @@ void main() {
       'hermes:provider-smoke': './scripts/run_provider_hermes_smoke.sh',
       'hermes:provider-smoke:local':
           './scripts/run_local_configured_hermes_provider_smoke.sh',
+      'hermes:server-audio-receipt':
+          './scripts/record_hermes_server_audio_receipt.sh',
       'hermes:readiness-audit': './scripts/audit_hermes_readiness.sh',
       'android:voice-smoke': './scripts/run_android_voice_smoke.sh',
       'android:hermes-voice-loop-smoke':
@@ -59,12 +61,16 @@ void main() {
     final androidLiveMicReceipt = File(
       'scripts/record_android_live_mic_receipt.sh',
     ).readAsStringSync();
+    final serverAudioReceipt = File(
+      'scripts/record_hermes_server_audio_receipt.sh',
+    ).readAsStringSync();
     for (final helperText in [
       androidVoiceSmoke,
       androidLoopSmoke,
       androidDurableKeySmoke,
       androidLiveMicPrep,
       androidLiveMicReceipt,
+      serverAudioReceipt,
     ]) {
       expect(helperText, contains('not whole-goal completion evidence'));
       expect(
@@ -168,6 +174,38 @@ void main() {
     expect(androidLiveMicReceipt, contains('gh[pousr]_'));
     expect(androidLiveMicReceipt, contains('xox[abprs]-'));
     expect(androidLiveMicReceipt, contains('eyJ[a-z0-9_-]'));
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_TRANSPORT_OBSERVED=true'),
+    );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_PROVIDER_REPLY_OBSERVED=true'),
+    );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_PLAYBACK_OBSERVED=true'),
+    );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_ROUND_TRIP_OBSERVED=true'),
+    );
+    expect(
+      serverAudioReceipt,
+      contains('NAVIVOX_HERMES_SERVER_AUDIO_NO_SECRET_LEAKS=true'),
+    );
+    expect(serverAudioReceipt, contains('hermes_server_audio_smoke'));
+    expect(serverAudioReceipt, contains('hermes_realtime_or_audio_api'));
+    expect(serverAudioReceipt, contains('client_audio_to_hermes_server_audio'));
+    expect(
+      serverAudioReceipt,
+      contains('hermes_server_audio_to_client_playback'),
+    );
+    expect(serverAudioReceipt, contains('provider_reply_observed'));
+    expect(serverAudioReceipt, contains('server_audio_playback_observed'));
+    expect(serverAudioReceipt, contains('round_trip_observed'));
+    expect(serverAudioReceipt, contains('not Android physical-mic'));
+    expect(serverAudioReceipt, contains('whole-goal completion evidence'));
     expect(androidLiveMicReceipt, contains('len(value) > 240'));
     expect(androidLiveMicReceipt, contains('short non-sensitive excerpt'));
     expect(androidLiveMicReceipt, contains('record a non-sensitive excerpt'));
