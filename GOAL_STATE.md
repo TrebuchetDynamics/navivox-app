@@ -444,8 +444,9 @@ readiness checklist and non-completion caveats.
    placeholders stripped so raw secret-looking values and `[redacted]` placeholder
    queries do not match hidden rows;
    stale setup connect completions cannot overwrite the newly saved endpoint;
-   saved Hermes endpoint profile deletion now requires a mobile confirmation dialog
-   with bounded/redacted profile/base-URL copy before removing secure API-key storage;
+   saved Hermes endpoint profile deletion and the app-bar disconnect/profile-removal
+   path now require mobile confirmation dialogs with bounded/redacted endpoint copy
+   before removing secure API-key storage;
    session create/select/rename/fork/delete failure SnackBars redact bearer tokens,
    API keys, token values, and secret-looking values; Android live-mic receipts
    strip Hermes URL userinfo, query strings, and fragments before writing JSON,

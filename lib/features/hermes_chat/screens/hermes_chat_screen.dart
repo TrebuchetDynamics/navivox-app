@@ -193,7 +193,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
               key: const ValueKey('hermes-disconnect-button'),
               tooltip: 'Disconnect',
               icon: const Icon(Icons.logout_outlined),
-              onPressed: () => unawaited(_disconnect(channel)),
+              onPressed: () => unawaited(_confirmDisconnect(context, channel)),
             ),
           ],
         ],
@@ -624,6 +624,37 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen> {
         .read(hermesEndpointStoreProvider)
         .save(baseUrl: baseUrl, apiKey: apiKey.isEmpty ? null : apiKey);
     _refreshEndpointProfiles();
+  }
+
+  Future<void> _confirmDisconnect(
+    BuildContext context,
+    HermesChannel channel,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('hermes-disconnect-confirm-dialog'),
+        title: const Text('Disconnect from Hermes?'),
+        content: Text(
+          'Disconnect from ${_safeHermesUiPreview(_baseUrlController.text, maxLength: 120)} '
+          'and remove this saved endpoint/API key from this device. Other saved '
+          'Hermes profiles remain available.',
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('hermes-disconnect-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-disconnect-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _disconnect(channel);
   }
 
   Future<void> _disconnect(HermesChannel channel) async {

@@ -2990,9 +2990,7 @@ void main() {
     },
   );
 
-  testWidgets('disconnect clears the store and returns to the connect form', (
-    tester,
-  ) async {
+  testWidgets('disconnect confirms before clearing the store', (tester) async {
     final channel = FakeHermesChannel();
     final store = FakeHermesEndpointStore(
       initial: const HermesEndpointConfig(baseUrl: 'http://10.0.2.2:8642'),
@@ -3002,8 +3000,51 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('hermes-disconnect-button')));
     await tester.pumpAndSettle();
 
+    expect(
+      find.byKey(const ValueKey('hermes-disconnect-confirm-dialog')),
+      findsOneWidget,
+    );
+    expect(store.clearCalls, 0);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-disconnect-confirm')));
+    await tester.pumpAndSettle();
+
     expect(store.clearCalls, 1);
     expect(find.byKey(const ValueKey('hermes-connect-button')), findsOneWidget);
+  });
+
+  testWidgets('disconnect confirmation redacts endpoint secrets', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected();
+    final store = FakeHermesEndpointStore();
+    await tester.pumpWidget(_wrap(channel, endpointStore: store));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-base-url-field')),
+      'http://user:secret-url-token@example.com:8642',
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-connect-button')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-disconnect-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-disconnect-confirm-dialog')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('http://[redacted]@example.com:8642'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('secret-url-token'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-disconnect-cancel')));
+    await tester.pumpAndSettle();
+
+    expect(store.clearCalls, 0);
+    expect(find.byKey(const ValueKey('hermes-connect-button')), findsNothing);
   });
 
   testWidgets('approval decisions disable when response endpoint is absent', (
