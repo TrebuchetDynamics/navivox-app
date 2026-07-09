@@ -36,6 +36,12 @@ Hermes endpoint hints:
 - Android emulator to host: `http://10.0.2.2:8642`
 - Physical Android on Tailscale/LAN/VPN: `http://<hermes-host>:8642`
 
+Voice input uses on-device speech recognition and fills the composer for review
+before sending. Foreground continuous voice is a separate opt-in mode. The loop
+stops and discards late transcripts when disabled, backgrounded, disconnected,
+or switched to another Hermes session. Say `navi stop`, `navi pause`,
+`navi mute`, or `navi cancel` to pause without sending the command to Hermes.
+
 ## Verify
 
 ```bash

@@ -12,9 +12,15 @@ Navivox voice is local to the client install. The app now depends on `speech_to_
 Use local device packages for voice:
 
 - `speech_to_text` captures user speech as a text transcript.
+- The explicit microphone control fills the composer with the transcript for
+  review and editing; it does not send automatically.
+- Continuous voice is a separate opt-in mode that submits the transcript,
+  speaks the completed Hermes reply, and then re-arms capture.
 - `flutter_tts` speaks assistant replies when the platform supports it.
 - Voice package support is platform-gated. Unsupported platforms return `null` providers and the UI pauses continuous voice with plain-language feedback.
 - Do not log raw recognized speech text in diagnostics.
+- Foreground lifecycle changes, switch-off, disconnects, and session changes
+  cancel active capture and invalidate late results.
 
 ## Consequences
 
@@ -33,6 +39,7 @@ Use local device packages for voice:
 
 - `pubspec.yaml:18-19`
 - `lib/features/hermes_chat/screens/hermes_chat_screen.dart:37-44`
+- `lib/features/hermes_chat/controllers/hermes_voice_input_controller.dart`
 - `lib/features/voice/services/platform/default_voice_capture_service.dart:15-33`
 - `lib/features/voice/services/speech/speech_to_text_voice_capture_service.dart:17-99`
 - `lib/features/voice/services/tts/text_to_speech_service.dart:1-111`

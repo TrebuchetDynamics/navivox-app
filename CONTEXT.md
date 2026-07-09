@@ -11,6 +11,10 @@ Navivox is the Flutter companion for Hermes Agent. Product language, routes, tes
 
 Use **Hermes endpoint** or **Hermes Agent API server** for the trusted server. Use **session** for the durable conversation lane. Use **run** for streamed work with events, approvals, and stop controls.
 
+## Voice language
+
+Use **voice input** for on-device speech-to-text that fills the composer for operator review. Use **continuous voice** for the opt-in hands-free extension that submits transcripts, speaks completed Hermes replies, and re-arms capture.
+
 ## Security posture
 
 API keys are secrets. Endpoint URLs are non-secret metadata but still operator-controlled. Prefer loopback, LAN, VPN, Tailscale, or TLS URLs. Do not log API keys or pairing secrets.
