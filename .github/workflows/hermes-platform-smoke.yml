@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - uses: actions/setup-node@v4
         with:
@@ -46,16 +46,27 @@ jobs:
       - name: Install Linux desktop dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake libgtk-3-dev libsecret-1-dev ninja-build pkg-config
+          sudo apt-get install -y clang cmake libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsecret-1-dev ninja-build pkg-config
       - name: Install dependencies
         run: |
           flutter pub get
           npm ci
           npx playwright install --with-deps chromium
-      - name: Analyze and test
+      - name: Format, analyze, test, and enforce coverage
         run: |
+          dart format --output=none --set-exit-if-changed lib test integration_test
           flutter analyze
-          flutter test --concurrency=1
+          flutter test --coverage --concurrency=1
+          coverage_percent=$(awk -F'[:,]' '/^DA:/{total++; if ($3 > 0) covered++} END {printf "%.0f", total ? covered * 100 / total : 0}' coverage/lcov.info)
+          echo "Line coverage: ${coverage_percent}%"
+          test "$coverage_percent" -ge 50
+          npm audit --audit-level=high
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: navivox-lcov
+          path: coverage/lcov.info
+          if-no-files-found: error
       - name: Build Web e2e app
         run: flutter build web --release -t lib/main_e2e.dart
       - name: Hermes browser smoke
@@ -88,6 +99,17 @@ jobs:
           path: build/linux/x64/release/bundle/**
           if-no-files-found: error
 
+  dependency-review:
+    name: Dependency and license review
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0
+
   android-emulator-smoke:
     name: Android emulator voice and durable-key smoke
     runs-on: ubuntu-latest
@@ -101,7 +123,7 @@ jobs:
           java-version: 17
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - name: Install dependencies
         run: flutter pub get
@@ -129,7 +151,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - uses: actions/setup-node@v4
         with:
@@ -154,7 +176,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - name: Build Windows app
         run: |
@@ -175,7 +197,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - name: Build iOS simulator app
         run: |
@@ -196,7 +218,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.2
           cache: true
       - name: Build macOS app
         run: |

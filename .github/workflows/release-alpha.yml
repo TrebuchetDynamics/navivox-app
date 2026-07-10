@@ -1,0 +1,117 @@
+name: Publish alpha release
+
+"on":
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: New alpha tag, for example v0.1.0-alpha.1
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Signed Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          cache: true
+      - name: Require release signing secrets
+        env:
+          KEYSTORE: ${{ secrets.NAVIVOX_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.NAVIVOX_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NAVIVOX_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.NAVIVOX_RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE"
+          test -n "$STORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/navivox-release.jks"
+      - name: Build signed release APK
+        env:
+          NAVIVOX_RELEASE_STORE_FILE: ${{ runner.temp }}/navivox-release.jks
+          NAVIVOX_RELEASE_STORE_PASSWORD: ${{ secrets.NAVIVOX_RELEASE_STORE_PASSWORD }}
+          NAVIVOX_RELEASE_KEY_ALIAS: ${{ secrets.NAVIVOX_RELEASE_KEY_ALIAS }}
+          NAVIVOX_RELEASE_KEY_PASSWORD: ${{ secrets.NAVIVOX_RELEASE_KEY_PASSWORD }}
+        run: |
+          flutter pub get
+          flutter build apk --release
+          sha256sum build/app/outputs/flutter-apk/app-release.apk > navivox-android.apk.sha256
+          cp build/app/outputs/flutter-apk/app-release.apk navivox-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: navivox-android-release
+          path: |
+            navivox-android.apk
+            navivox-android.apk.sha256
+          if-no-files-found: error
+
+  linux:
+    name: Linux release bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          cache: true
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsecret-1-dev ninja-build pkg-config
+      - name: Build Linux release archive
+        run: |
+          flutter pub get
+          flutter build linux --release
+          tar -C build/linux/x64/release -czf navivox-linux-x64.tar.gz bundle
+          sha256sum navivox-linux-x64.tar.gz > navivox-linux-x64.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: navivox-linux-release
+          path: |
+            navivox-linux-x64.tar.gz
+            navivox-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub prerelease
+    needs: [android, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Validate new alpha tag
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          case "$TAG" in v*-alpha.*) ;; *) echo "Tag must match v*-alpha.*" >&2; exit 1;; esac
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG" >&2
+            exit 1
+          fi
+      - name: Publish prerelease
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Navivox $TAG" \
+            --notes "Alpha source build. Android is signed with the configured release key; Linux is distributed with a SHA-256 checksum. See README.md for support limits." \
+            --prerelease
