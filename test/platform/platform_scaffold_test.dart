@@ -32,7 +32,27 @@ void main() {
     final releaseEntitlements = File(
       'macos/Runner/Release.entitlements',
     ).readAsStringSync();
+    final plist = File('macos/Runner/Info.plist').readAsStringSync();
     expect(debugEntitlements, contains('com.apple.security.network.client'));
     expect(releaseEntitlements, contains('com.apple.security.network.client'));
+    expect(
+      debugEntitlements,
+      contains('com.apple.security.device.audio-input'),
+    );
+    expect(
+      releaseEntitlements,
+      contains('com.apple.security.device.audio-input'),
+    );
+    expect(plist, contains('NSMicrophoneUsageDescription'));
+    expect(plist, contains('NSSpeechRecognitionUsageDescription'));
+  });
+
+  test('Android scaffold supports microphone and Bluetooth headsets', () {
+    final manifest = File(
+      'android/app/src/main/AndroidManifest.xml',
+    ).readAsStringSync();
+    expect(manifest, contains('android.permission.RECORD_AUDIO'));
+    expect(manifest, contains('android.permission.BLUETOOTH_CONNECT'));
+    expect(manifest, contains('android.speech.RecognitionService'));
   });
 }

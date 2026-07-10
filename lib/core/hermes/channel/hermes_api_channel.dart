@@ -28,6 +28,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     HermesApiClient Function(HermesApiConfig config)? clientBuilder,
     String Function()? sessionIdFactory,
     Uuid? uuid,
+    this.streamIdleTimeout = const Duration(minutes: 5),
   }) : _clientBuilder =
            clientBuilder ?? ((config) => HermesApiClient(config: config)),
        _uuid = uuid ?? const Uuid(),
@@ -39,6 +40,7 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   final HermesApiClient Function(HermesApiConfig) _clientBuilder;
   final String Function() _sessionIdFactory;
   final Uuid _uuid;
+  final Duration streamIdleTimeout;
 
   HermesApiClient? _client;
   HermesChannelState _state = const HermesChannelState();

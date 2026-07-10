@@ -1,6 +1,34 @@
 part of '../hermes_api_channel_test.dart';
 
 void _hermesApiChannelDirectChatTests() {
+  test('sendText fails an SSE stream that stays open but idle', () async {
+    final stream = StreamController<String>();
+    addTearDown(stream.close);
+    final channel = HermesApiChannel(
+      streamIdleTimeout: const Duration(milliseconds: 20),
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        postStream: (uri, headers, body) => stream.stream,
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('idle stream');
+
+    expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
+    expect(channel.state.errorMessage, contains('timed out'));
+  });
+
   test(
     'sendText appends the user turn, streams assistant deltas, then reconciles with server history',
     () async {

@@ -38,6 +38,7 @@ abstract interface class SpeechToTextEngine {
     required Duration listenFor,
     required Duration pauseFor,
     required String? localeId,
+    required bool onDevice,
   });
 
   Future<void> stop();
@@ -78,6 +79,7 @@ class PluginSpeechToTextEngine implements SpeechToTextEngine {
     required Duration listenFor,
     required Duration pauseFor,
     required String? localeId,
+    required bool onDevice,
   }) async {
     await _speechToText.listen(
       onResult: (SpeechRecognitionResult result) => onResult(
@@ -94,6 +96,7 @@ class PluginSpeechToTextEngine implements SpeechToTextEngine {
         localeId: localeId,
         partialResults: true,
         pauseFor: pauseFor,
+        onDevice: onDevice,
       ),
     );
   }
@@ -114,6 +117,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
         const SpeechToTextCaptureCoordinator(),
     String? localeId,
     Duration pauseFor = const Duration(seconds: 4),
+    bool onDeviceOnly = true,
   }) {
     return SpeechToTextVoiceCaptureService._(
       engine: engine ?? PluginSpeechToTextEngine(),
@@ -122,6 +126,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       coordinator: coordinator,
       localeId: localeId,
       pauseFor: pauseFor,
+      onDeviceOnly: onDeviceOnly,
     );
   }
 
@@ -132,6 +137,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
     required this._coordinator,
     this.localeId,
     required this.pauseFor,
+    required this.onDeviceOnly,
   });
 
   final SpeechToTextEngine _engine;
@@ -140,6 +146,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
   final SpeechToTextCaptureCoordinator _coordinator;
   final String? localeId;
   final Duration pauseFor;
+  final bool onDeviceOnly;
 
   @override
   Future<void> cancel() => _engine.cancel();
@@ -147,7 +154,14 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
   @override
   Future<VoiceCapture> capture({required Duration timeout}) async {
     final startedAt = _clock();
+    final elapsed = Stopwatch()..start();
     final completion = Completer<SpeechToTextSnapshot>();
+    unawaited(
+      completion.future.then<void>(
+        (_) {},
+        onError: (Object _, StackTrace _) {},
+      ),
+    );
     SpeechToTextSnapshot? latestTranscript;
     var listening = false;
 
@@ -166,27 +180,46 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       }
     }
 
+    Future<T> bounded<T>(Future<T> operation) {
+      final remaining = timeout - elapsed.elapsed;
+      if (remaining <= Duration.zero) {
+        unawaited(_engine.cancel());
+        throw const VoiceCaptureTimeout();
+      }
+      return operation.timeout(
+        remaining,
+        onTimeout: () async {
+          await _engine.cancel();
+          throw const VoiceCaptureTimeout();
+        },
+      );
+    }
+
     try {
-      final permissionBeforeInitialize = await _readPermissionDiagnostic(log);
+      final permissionBeforeInitialize = await bounded(
+        _readPermissionDiagnostic(log),
+      );
       log('hasPermission=$permissionBeforeInitialize before initialize');
 
-      final available = await _engine.initialize(
-        onError: completeWithError,
-        onStatus: (status) {
-          log('status=$status');
-          if (completion.isCompleted) return;
-          switch (_coordinator.terminalStatusPlan(
-            status: status,
-            latestTranscript: latestTranscript,
-          )) {
-            case IgnoreSpeechToTextTerminalStatusPlan():
-              break;
-            case CompleteSpeechToTextTerminalStatusPlan(:final snapshot):
-              completion.complete(snapshot);
-            case FailSpeechToTextTerminalStatusPlan(:final error):
-              completion.completeError(error);
-          }
-        },
+      final available = await bounded(
+        _engine.initialize(
+          onError: completeWithError,
+          onStatus: (status) {
+            log('status=$status');
+            if (completion.isCompleted) return;
+            switch (_coordinator.terminalStatusPlan(
+              status: status,
+              latestTranscript: latestTranscript,
+            )) {
+              case IgnoreSpeechToTextTerminalStatusPlan():
+                break;
+              case CompleteSpeechToTextTerminalStatusPlan(:final snapshot):
+                completion.complete(snapshot);
+              case FailSpeechToTextTerminalStatusPlan(:final error):
+                completion.completeError(error);
+            }
+          },
+        ),
       );
       log('initialize=$available');
       if (!available) {
@@ -197,47 +230,45 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
         );
       }
 
-      final effectiveLocaleId = localeId ?? await _readSystemLocale(log);
+      final effectiveLocaleId =
+          localeId ?? await bounded(_readSystemLocale(log));
       log(
         'listen locale=${effectiveLocaleId ?? 'system default'} '
         'listenFor=${timeout.inMilliseconds}ms '
-        'pauseFor=${pauseFor.inMilliseconds}ms partialResults=true',
+        'pauseFor=${pauseFor.inMilliseconds}ms partialResults=true '
+        'onDevice=$onDeviceOnly',
       );
-      await _engine.listen(
-        listenFor: timeout,
-        pauseFor: pauseFor,
-        localeId: effectiveLocaleId,
-        onResult: (snapshot) {
-          log(
-            'result wordsLength=${snapshot.words.length} '
-            'confidence=${snapshot.confidence} finalResult=${snapshot.finalResult}',
-          );
-          latestTranscript = _coordinator.latestUsableTranscript(
-            current: latestTranscript,
-            candidate: snapshot,
-          );
-          if (snapshot.finalResult && !completion.isCompleted) {
-            completion.complete(
-              _coordinator.completionTranscript(
-                terminalSnapshot: snapshot,
-                latestUsableSnapshot: latestTranscript,
-              ),
+      await bounded(
+        _engine.listen(
+          listenFor: timeout,
+          pauseFor: pauseFor,
+          localeId: effectiveLocaleId,
+          onDevice: onDeviceOnly,
+          onResult: (snapshot) {
+            log(
+              'result wordsLength=${snapshot.words.length} '
+              'confidence=${snapshot.confidence} finalResult=${snapshot.finalResult}',
             );
-          }
-        },
+            latestTranscript = _coordinator.latestUsableTranscript(
+              current: latestTranscript,
+              candidate: snapshot,
+            );
+            if (snapshot.finalResult && !completion.isCompleted) {
+              completion.complete(
+                _coordinator.completionTranscript(
+                  terminalSnapshot: snapshot,
+                  latestUsableSnapshot: latestTranscript,
+                ),
+              );
+            }
+          },
+        ),
       );
       listening = true;
 
-      final snapshot = await completion.future.timeout(
-        timeout,
-        onTimeout: () async {
-          listening = false;
-          await _engine.cancel();
-          throw const VoiceCaptureTimeout();
-        },
-      );
+      final snapshot = await bounded(completion.future);
       listening = false;
-      await _engine.stop();
+      await bounded(_engine.stop());
 
       final transcript = snapshot.words.trim();
       if (transcript.isEmpty) {

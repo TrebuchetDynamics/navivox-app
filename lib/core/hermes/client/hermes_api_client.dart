@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import '../../protocol/navivox_json.dart';
@@ -24,6 +25,7 @@ class HermesApiClient {
     HermesApiDelete? delete,
     HermesApiPostStream? postStream,
     HermesApiGetStream? getStream,
+    this.requestTimeout = const Duration(seconds: 20),
   }) : _get = get ?? transport.defaultGet,
        _post = post ?? transport.defaultPost,
        _patch = patch ?? transport.defaultPatch,
@@ -38,6 +40,7 @@ class HermesApiClient {
   final HermesApiDelete _delete;
   final HermesApiPostStream _postStream;
   final HermesApiGetStream _getStream;
+  final Duration requestTimeout;
 
   Future<HermesHealthStatus> health() async {
     return HermesHealthStatus.fromJson(await _getJson(config.healthUri));
@@ -214,7 +217,7 @@ class HermesApiClient {
   }
 
   Future<Map<String, Object?>> _getJson(Uri uri) async {
-    return _decodeObject(await _get(uri, config.headers));
+    return _decodeObject(await _bounded(_get(uri, config.headers), uri));
   }
 
   Future<Map<String, Object?>> _postJson(
@@ -225,7 +228,9 @@ class HermesApiClient {
       ...config.headers,
       hermesApiContentTypeHeader: hermesApiJsonContentType,
     };
-    return _decodeObject(await _post(uri, headers, jsonEncode(body)));
+    return _decodeObject(
+      await _bounded(_post(uri, headers, jsonEncode(body)), uri),
+    );
   }
 
   Future<Map<String, Object?>> _patchJson(
@@ -236,11 +241,23 @@ class HermesApiClient {
       ...config.headers,
       hermesApiContentTypeHeader: hermesApiJsonContentType,
     };
-    return _decodeObject(await _patch(uri, headers, jsonEncode(body)));
+    return _decodeObject(
+      await _bounded(_patch(uri, headers, jsonEncode(body)), uri),
+    );
   }
 
   Future<Map<String, Object?>> _deleteJson(Uri uri) async {
-    return _decodeObject(await _delete(uri, config.headers));
+    return _decodeObject(await _bounded(_delete(uri, config.headers), uri));
+  }
+
+  Future<T> _bounded<T>(Future<T> request, Uri uri) {
+    return request.timeout(
+      requestTimeout,
+      onTimeout: () => throw TimeoutException(
+        'Hermes API request timed out: ${uri.path}',
+        requestTimeout,
+      ),
+    );
   }
 
   List<String> _namedList(

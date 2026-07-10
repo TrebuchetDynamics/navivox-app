@@ -115,11 +115,34 @@ extension _MessagingExtension on HermesApiChannel {
     var streamFailed = false;
     var streamEndedBeforeTerminal = false;
     var terminalRunEventReceived = false;
+    Timer? idleTimer;
+    void armIdleTimer() {
+      idleTimer?.cancel();
+      idleTimer = Timer(streamIdleTimeout, () {
+        if (streamGeneration != _streamGeneration || completer.isCompleted) {
+          return;
+        }
+        streamFailed = true;
+        streamEndedBeforeTerminal = true;
+        assistantTurn = assistantTurn.copyWith(status: HermesTurnStatus.failed);
+        turns[assistantIndex] = assistantTurn;
+        _setTurns(
+          sessionId,
+          List.of(turns),
+          errorMessage:
+              'Hermes event stream timed out while waiting for activity.',
+        );
+        completer.complete();
+        unawaited(_activeStream?.cancel());
+      });
+    }
+
     _activeStream = events.listen(
       (event) {
         if (streamGeneration != _streamGeneration || terminalRunEventReceived) {
           return;
         }
+        armIdleTimer();
         if (event.isDone) {
           terminalRunEventReceived = true;
           if (!completer.isCompleted) completer.complete();
@@ -203,6 +226,7 @@ extension _MessagingExtension on HermesApiChannel {
         }
       },
       onError: (Object error) {
+        idleTimer?.cancel();
         if (streamGeneration != _streamGeneration || terminalRunEventReceived) {
           return;
         }
@@ -218,6 +242,7 @@ extension _MessagingExtension on HermesApiChannel {
         if (!completer.isCompleted) completer.complete();
       },
       onDone: () {
+        idleTimer?.cancel();
         if (streamGeneration != _streamGeneration) return;
         if (!terminalRunEventReceived) {
           streamFailed = true;
@@ -236,7 +261,9 @@ extension _MessagingExtension on HermesApiChannel {
       },
       cancelOnError: true,
     );
+    armIdleTimer();
     await completer.future;
+    idleTimer?.cancel();
     if (streamGeneration != _streamGeneration) {
       return;
     }

@@ -24,6 +24,10 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Navivox listens only while you use foreground voice with your Hermes Agent.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Navivox uses on-device speech recognition to turn speech into Hermes chat text.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

@@ -37,7 +37,7 @@ Stream<String> _requestStream({
   required Map<String, String> headers,
   String? body,
 }) async* {
-  final client = HttpClient();
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 20);
   try {
     final request = await client.openUrl(method, uri);
     request.followRedirects = false;
@@ -63,7 +63,7 @@ Future<String> _request({
   required Map<String, String> headers,
   String? body,
 }) async {
-  final client = HttpClient();
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 20);
   try {
     final request = await client.openUrl(method, uri);
     request.followRedirects = false;

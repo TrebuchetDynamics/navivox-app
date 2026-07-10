@@ -40,7 +40,12 @@ Stream<String> _requestStream({
   String? body,
 }) {
   final request = web.XMLHttpRequest();
-  final controller = StreamController<String>();
+  late final StreamController<String> controller;
+  controller = StreamController<String>(
+    onCancel: () {
+      request.abort();
+    },
+  );
   var delivered = 0;
 
   request.open(method, uri.toString(), true);
