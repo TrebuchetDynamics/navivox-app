@@ -3,6 +3,13 @@ import 'package:navivox/features/voice/services/tts/pocket_speech_asset_download
 import 'package:navivox/shared/voice/voice_settings.dart';
 
 void main() {
+  test('release defaults configure both downloadable models', () {
+    final config = PocketSpeechAssetDownloadConfig.fromEnvironment();
+
+    expect(config.kitten.isConfigured, isTrue);
+    expect(config.kokoro.isConfigured, isTrue);
+  });
+
   test('each model requires HTTPS URLs and pinned SHA-256 digests', () {
     const hash =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';

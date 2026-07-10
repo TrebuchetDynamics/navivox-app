@@ -32,21 +32,52 @@ class PocketSpeechAssetDownloadConfig {
     required this.kokoro,
   });
 
-  factory PocketSpeechAssetDownloadConfig.fromEnvironment() =>
-      const PocketSpeechAssetDownloadConfig(
-        kitten: PocketSpeechDownloadSpec(
-          modelUrl: String.fromEnvironment('KITTEN_MODEL_URL'),
-          voicesJsonUrl: String.fromEnvironment('KITTEN_VOICES_JSON_URL'),
-          modelSha256: String.fromEnvironment('KITTEN_MODEL_SHA256'),
-          voicesJsonSha256: String.fromEnvironment('KITTEN_VOICES_JSON_SHA256'),
-        ),
-        kokoro: PocketSpeechDownloadSpec(
-          modelUrl: String.fromEnvironment('KOKORO_MODEL_URL'),
-          voicesJsonUrl: String.fromEnvironment('KOKORO_VOICES_JSON_URL'),
-          modelSha256: String.fromEnvironment('KOKORO_MODEL_SHA256'),
-          voicesJsonSha256: String.fromEnvironment('KOKORO_VOICES_JSON_SHA256'),
-        ),
-      );
+  factory PocketSpeechAssetDownloadConfig.fromEnvironment() => const PocketSpeechAssetDownloadConfig(
+    kitten: PocketSpeechDownloadSpec(
+      modelUrl: String.fromEnvironment(
+        'KITTEN_MODEL_URL',
+        defaultValue:
+            'https://huggingface.co/KittenML/kitten-tts-nano-0.8-int8/resolve/main/kitten_tts_nano_v0_8.onnx?download=true',
+      ),
+      voicesJsonUrl: String.fromEnvironment(
+        'KITTEN_VOICES_JSON_URL',
+        defaultValue:
+            'https://github.com/TrebuchetDynamics/pocket-speech-dart/releases/download/runtime-assets-v1/kitten-nano-int8-jasper-voices.json',
+      ),
+      modelSha256: String.fromEnvironment(
+        'KITTEN_MODEL_SHA256',
+        defaultValue:
+            'f7b0afcbee92870b32b8e0276d855b954dc25470c9f051b376ac7eee537c76fc',
+      ),
+      voicesJsonSha256: String.fromEnvironment(
+        'KITTEN_VOICES_JSON_SHA256',
+        defaultValue:
+            'f9fcbecb209f112ff679905a4c9ff357dcd979a2ed0ba7ba516815d951f32b52',
+      ),
+    ),
+    kokoro: PocketSpeechDownloadSpec(
+      modelUrl: String.fromEnvironment(
+        'KOKORO_MODEL_URL',
+        defaultValue:
+            'https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx',
+      ),
+      voicesJsonUrl: String.fromEnvironment(
+        'KOKORO_VOICES_JSON_URL',
+        defaultValue:
+            'https://github.com/TrebuchetDynamics/pocket-speech-dart/releases/download/runtime-assets-v1/kokoro-af_heart-ef_dora-voices.json',
+      ),
+      modelSha256: String.fromEnvironment(
+        'KOKORO_MODEL_SHA256',
+        defaultValue:
+            '7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5',
+      ),
+      voicesJsonSha256: String.fromEnvironment(
+        'KOKORO_VOICES_JSON_SHA256',
+        defaultValue:
+            '01788eb0bc097dd0d2964072361fa1bc98d7fdb847bab3cdc6be4cc34109a566',
+      ),
+    ),
+  );
 
   final PocketSpeechDownloadSpec kitten;
   final PocketSpeechDownloadSpec kokoro;

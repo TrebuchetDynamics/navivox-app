@@ -75,9 +75,7 @@ class IoPocketSpeechAssetDownloadService
     required int maximumBytes,
   }) async {
     if (await file.exists()) await file.delete();
-    final request = await client.getUrl(Uri.parse(url));
-    request.followRedirects = false;
-    final response = await request.close().timeout(const Duration(seconds: 20));
+    final response = await _openHttps(client, Uri.parse(url));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw HttpException('GET $url failed with ${response.statusCode}');
     }
@@ -99,6 +97,40 @@ class IoPocketSpeechAssetDownloadService
         expectedSha256.trim().toLowerCase()) {
       throw StateError('Pocket Speech asset checksum mismatch.');
     }
+  }
+
+  Future<HttpClientResponse> _openHttps(HttpClient client, Uri uri) async {
+    var current = uri;
+    for (var redirects = 0; redirects <= 5; redirects++) {
+      final request = await client.getUrl(current);
+      request.followRedirects = false;
+      final response = await request.close().timeout(
+        const Duration(seconds: 20),
+      );
+      if (!const {
+        HttpStatus.movedPermanently,
+        HttpStatus.found,
+        HttpStatus.seeOther,
+        HttpStatus.temporaryRedirect,
+        HttpStatus.permanentRedirect,
+      }.contains(response.statusCode)) {
+        return response;
+      }
+      final location = response.headers.value(HttpHeaders.locationHeader);
+      await response.drain<void>();
+      if (location == null || redirects == 5) {
+        throw HttpException(
+          'Pocket Speech asset redirect failed.',
+          uri: current,
+        );
+      }
+      final next = current.resolve(location);
+      if (next.scheme != 'https' || next.host.isEmpty) {
+        throw StateError('Pocket Speech asset redirect must use HTTPS.');
+      }
+      current = next;
+    }
+    throw StateError('Pocket Speech asset redirected too many times.');
   }
 
   Future<void> _replace(File source, File destination) async {

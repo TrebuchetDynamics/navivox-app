@@ -51,8 +51,8 @@ or switched to another Hermes session. Say `navi stop`, `navi pause`,
 
 Optional offline TTS is provided by Pocket Speech. Navivox can select Kitten
 nano-int8 (about 26 MB) or Kokoro (about 365 MB including voices), then download
-the selected voice pack. Downloads must use HTTPS URLs and pinned SHA-256
-digests:
+the selected voice pack from pinned release defaults. Release operators may
+override the HTTPS URLs and SHA-256 digests:
 
 ```bash
 flutter run \
