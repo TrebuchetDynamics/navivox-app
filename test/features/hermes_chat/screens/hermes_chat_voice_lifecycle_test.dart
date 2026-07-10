@@ -282,6 +282,9 @@ class _RecordingTextToSpeechService implements TextToSpeechService {
   Future<void> stop() async {
     stopCalls += 1;
   }
+
+  @override
+  Future<void> dispose() => stop();
 }
 
 class _CommandThenBlockCaptureService implements VoiceCaptureService {

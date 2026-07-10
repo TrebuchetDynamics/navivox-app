@@ -1,6 +1,7 @@
 abstract interface class TextToSpeechService {
   Future<void> speak(String text);
   Future<void> stop();
+  Future<void> dispose();
 }
 
 class FakeTextToSpeechService implements TextToSpeechService {
@@ -16,4 +17,7 @@ class FakeTextToSpeechService implements TextToSpeechService {
   Future<void> stop() async {
     stopCalls += 1;
   }
+
+  @override
+  Future<void> dispose() => stop();
 }

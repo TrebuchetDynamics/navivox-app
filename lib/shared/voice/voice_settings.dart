@@ -1,54 +1,69 @@
+enum PocketSpeechModel {
+  kitten('Kitten', '≈26 MB'),
+  kokoro('Kokoro', '≈365 MB');
+
+  const PocketSpeechModel(this.label, this.downloadSize);
+
+  final String label;
+  final String downloadSize;
+}
+
+class PocketSpeechVoicePack {
+  const PocketSpeechVoicePack({
+    required this.model,
+    required this.modelPath,
+    required this.voicesPath,
+  }) : assert(modelPath != ''),
+       assert(voicesPath != '');
+
+  final PocketSpeechModel model;
+  final String modelPath;
+  final String voicesPath;
+}
+
 class NavivoxVoiceSettings {
   const NavivoxVoiceSettings({
     this.continuousVoiceEnabled = true,
-    this.profileSwitchingEnabled = true,
     this.speakRepliesEnabled = false,
-    this.kokoroTtsEnabled = false,
-    this.kokoroModelPath,
-    this.kokoroVoicesPath,
+    this.pocketSpeechTtsEnabled = false,
+    this.pocketSpeechModel = PocketSpeechModel.kitten,
+    this.pocketSpeechVoicePack,
     this.commandWord = 'navi',
-    this.trustedServerIds = const {},
   });
 
   final bool continuousVoiceEnabled;
-  final bool profileSwitchingEnabled;
 
   /// Opt-in for hands-free continuous voice: when on, assistant replies are
   /// spoken aloud and the next capture re-arms automatically. Off by default so
   /// the app never speaks or re-listens without explicit operator consent.
   final bool speakRepliesEnabled;
-  final bool kokoroTtsEnabled;
-  final String? kokoroModelPath;
-  final String? kokoroVoicesPath;
-  bool get kokoroAssetsReady =>
-      kokoroModelPath?.isNotEmpty == true &&
-      kokoroVoicesPath?.isNotEmpty == true;
+  final bool pocketSpeechTtsEnabled;
+  final PocketSpeechModel pocketSpeechModel;
+  final PocketSpeechVoicePack? pocketSpeechVoicePack;
+  bool get pocketSpeechVoicePackReady =>
+      pocketSpeechVoicePack?.model == pocketSpeechModel;
   final String commandWord;
-  final Set<String> trustedServerIds;
-
-  bool isTrusted(String serverId) => trustedServerIds.contains(serverId);
 
   NavivoxVoiceSettings copyWith({
     bool? continuousVoiceEnabled,
-    bool? profileSwitchingEnabled,
     bool? speakRepliesEnabled,
-    bool? kokoroTtsEnabled,
-    String? kokoroModelPath,
-    String? kokoroVoicesPath,
+    bool? pocketSpeechTtsEnabled,
+    PocketSpeechModel? pocketSpeechModel,
+    PocketSpeechVoicePack? pocketSpeechVoicePack,
+    bool clearPocketSpeechVoicePack = false,
     String? commandWord,
-    Set<String>? trustedServerIds,
   }) {
     return NavivoxVoiceSettings(
       continuousVoiceEnabled:
           continuousVoiceEnabled ?? this.continuousVoiceEnabled,
-      profileSwitchingEnabled:
-          profileSwitchingEnabled ?? this.profileSwitchingEnabled,
       speakRepliesEnabled: speakRepliesEnabled ?? this.speakRepliesEnabled,
-      kokoroTtsEnabled: kokoroTtsEnabled ?? this.kokoroTtsEnabled,
-      kokoroModelPath: kokoroModelPath ?? this.kokoroModelPath,
-      kokoroVoicesPath: kokoroVoicesPath ?? this.kokoroVoicesPath,
+      pocketSpeechTtsEnabled:
+          pocketSpeechTtsEnabled ?? this.pocketSpeechTtsEnabled,
+      pocketSpeechModel: pocketSpeechModel ?? this.pocketSpeechModel,
+      pocketSpeechVoicePack: clearPocketSpeechVoicePack
+          ? null
+          : pocketSpeechVoicePack ?? this.pocketSpeechVoicePack,
       commandWord: commandWord ?? this.commandWord,
-      trustedServerIds: trustedServerIds ?? this.trustedServerIds,
     );
   }
 }

@@ -11,22 +11,18 @@ class SettingsScreenPresentation {
   String get localVoiceSectionTitle => 'Local voice preferences';
 
   String get localVoiceSectionSubtitle =>
-      'Command word, local capture, and spoken replies stay on this device.';
+      'On-device recognition, a local command word, and spoken replies for the foreground Hermes voice loop.';
 
   String get continuousVoiceTitle => 'Continuous voice';
 
   String get continuousVoiceSubtitle =>
-      'Use local device STT to send transcripts to Hermes';
+      'Allow on-device STT transcripts to be sent to Hermes';
 
   String get speakRepliesTitle => 'Speak replies aloud';
 
   String get speakRepliesSubtitle =>
-      'Hands-free: speak each reply, then listen again';
+      'Remember the foreground chat loop preference';
 
   String get commandWordTitle => 'Command word';
 
-  String get profileSwitchingTitle => 'Voice profile switching';
-
-  String get profileSwitchingSubtitle =>
-      'Allow local command-word mode switches when available';
 }

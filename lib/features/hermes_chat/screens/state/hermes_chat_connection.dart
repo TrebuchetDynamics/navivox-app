@@ -117,12 +117,45 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
   Future<void> _connect(HermesChannel channel) async {
     final baseUrl = hermesPublicEndpointBaseUrl(_baseUrlController.text);
     final apiKey = _apiKeyController.text.trim();
+    if (hermesEndpointRequiresCleartextCredentialWarning(
+      baseUrl,
+      apiKey: apiKey,
+    )) {
+      final confirmed = await _confirmCleartextCredentialUse(baseUrl);
+      if (!confirmed || !mounted) return;
+    }
     await _connectToEndpoint(
       channel,
       baseUrl: baseUrl,
       apiKey: apiKey.isEmpty ? null : apiKey,
       persistOnSuccess: true,
     );
+  }
+
+  Future<bool> _confirmCleartextCredentialUse(String baseUrl) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            key: const ValueKey('hermes-cleartext-credential-warning'),
+            title: const Text('Send API key without TLS?'),
+            content: Text(
+              'The endpoint ${_safeHermesUiPreview(baseUrl, maxLength: 120)} uses plain HTTP. '
+              'Continue only on a trusted VPN, Tailscale network, or isolated LAN. Prefer HTTPS for remote Hermes endpoints.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                key: const ValueKey('hermes-cleartext-credential-confirm'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _reconnect(HermesChannel channel) async {

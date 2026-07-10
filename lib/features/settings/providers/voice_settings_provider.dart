@@ -7,15 +7,16 @@ export '../../../shared/voice/voice_settings.dart';
 
 class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
   static const _keyVoiceEnabled = 'navivox.voice.continuous_enabled';
-  static const _keyProfileSwitch = 'navivox.voice.profile_switching_enabled';
   static const _keySpeakReplies = 'navivox.voice.speak_replies_enabled';
-  static const _keyKokoroEnabled = 'navivox.voice.kokoro_tts_enabled';
-  static const _keyKokoroModelPath = 'navivox.voice.kokoro_model_path';
-  static const _keyKokoroVoicesPath = 'navivox.voice.kokoro_voices_path';
+  // Keep legacy key values so existing Kokoro installs migrate in place.
+  static const _keyPocketSpeechEnabled = 'navivox.voice.kokoro_tts_enabled';
+  static const _keyPocketSpeechModel = 'navivox.voice.pocket_speech_model';
+  static const _keyModelPath = 'navivox.voice.kokoro_model_path';
+  static const _keyVoicesPath = 'navivox.voice.kokoro_voices_path';
   static const _keyCommandWord = 'navivox.voice.command_word';
-  static const _keyTrustedServers = 'navivox.voice.trusted_server_ids';
 
   SharedPreferences? _prefs;
+  int _mutationGeneration = 0;
 
   @override
   NavivoxVoiceSettings build() {
@@ -24,25 +25,43 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
   }
 
   Future<void> _loadPrefs() async {
+    final loadGeneration = _mutationGeneration;
     try {
       _prefs = await SharedPreferences.getInstance();
+      if (loadGeneration != _mutationGeneration) {
+        await _save();
+        return;
+      }
       final enabled = _prefs?.getBool(_keyVoiceEnabled) ?? true;
-      final profileSwitch = _prefs?.getBool(_keyProfileSwitch) ?? true;
       final speakReplies = _prefs?.getBool(_keySpeakReplies) ?? false;
-      final kokoroEnabled = _prefs?.getBool(_keyKokoroEnabled) ?? false;
-      final kokoroModelPath = _prefs?.getString(_keyKokoroModelPath);
-      final kokoroVoicesPath = _prefs?.getString(_keyKokoroVoicesPath);
+      final pocketSpeechEnabled =
+          _prefs?.getBool(_keyPocketSpeechEnabled) ?? false;
+      final modelPath = _prefs?.getString(_keyModelPath);
+      final voicesPath = _prefs?.getString(_keyVoicesPath);
+      final savedModel = _prefs?.getString(_keyPocketSpeechModel);
+      final model = PocketSpeechModel.values.firstWhere(
+        (candidate) => candidate.name == savedModel,
+        // Existing path-only settings came from the Kokoro-only integration.
+        orElse: () => modelPath?.isNotEmpty == true
+            ? PocketSpeechModel.kokoro
+            : PocketSpeechModel.kitten,
+      );
+      final voicePack =
+          modelPath?.isNotEmpty == true && voicesPath?.isNotEmpty == true
+          ? PocketSpeechVoicePack(
+              model: model,
+              modelPath: modelPath!,
+              voicesPath: voicesPath!,
+            )
+          : null;
       final commandWord = _prefs?.getString(_keyCommandWord) ?? 'navi';
-      final trustedList = _prefs?.getStringList(_keyTrustedServers) ?? [];
       state = NavivoxVoiceSettings(
         continuousVoiceEnabled: enabled,
-        profileSwitchingEnabled: profileSwitch,
         speakRepliesEnabled: speakReplies,
-        kokoroTtsEnabled: kokoroEnabled,
-        kokoroModelPath: kokoroModelPath,
-        kokoroVoicesPath: kokoroVoicesPath,
+        pocketSpeechTtsEnabled: pocketSpeechEnabled,
+        pocketSpeechModel: model,
+        pocketSpeechVoicePack: voicePack,
         commandWord: commandWord,
-        trustedServerIds: trustedList.toSet(),
       );
     } catch (_) {
       state = const NavivoxVoiceSettings();
@@ -53,68 +72,64 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
     final prefs = _prefs;
     if (prefs == null) return;
     await prefs.setBool(_keyVoiceEnabled, state.continuousVoiceEnabled);
-    await prefs.setBool(_keyProfileSwitch, state.profileSwitchingEnabled);
     await prefs.setBool(_keySpeakReplies, state.speakRepliesEnabled);
-    await prefs.setBool(_keyKokoroEnabled, state.kokoroTtsEnabled);
-    final modelPath = state.kokoroModelPath;
-    final voicesPath = state.kokoroVoicesPath;
-    if (modelPath == null || modelPath.isEmpty) {
-      await prefs.remove(_keyKokoroModelPath);
+    await prefs.setBool(_keyPocketSpeechEnabled, state.pocketSpeechTtsEnabled);
+    await prefs.setString(_keyPocketSpeechModel, state.pocketSpeechModel.name);
+    final voicePack = state.pocketSpeechVoicePack;
+    if (voicePack == null) {
+      await prefs.remove(_keyModelPath);
+      await prefs.remove(_keyVoicesPath);
     } else {
-      await prefs.setString(_keyKokoroModelPath, modelPath);
-    }
-    if (voicesPath == null || voicesPath.isEmpty) {
-      await prefs.remove(_keyKokoroVoicesPath);
-    } else {
-      await prefs.setString(_keyKokoroVoicesPath, voicesPath);
+      await prefs.setString(_keyModelPath, voicePack.modelPath);
+      await prefs.setString(_keyVoicesPath, voicePack.voicesPath);
     }
     await prefs.setString(_keyCommandWord, state.commandWord);
-    await prefs.setStringList(
-      _keyTrustedServers,
-      state.trustedServerIds.toList(),
-    );
   }
 
   void setContinuousVoiceEnabled(bool enabled) {
+    _mutationGeneration += 1;
     state = state.copyWith(continuousVoiceEnabled: enabled);
     _save();
   }
 
-  void setProfileSwitchingEnabled(bool enabled) {
-    state = state.copyWith(profileSwitchingEnabled: enabled);
-    _save();
-  }
-
   void setSpeakRepliesEnabled(bool enabled) {
+    _mutationGeneration += 1;
     state = state.copyWith(speakRepliesEnabled: enabled);
     _save();
   }
 
-  void setKokoroTtsEnabled(bool enabled) {
-    if (enabled && !state.kokoroAssetsReady) return;
-    state = state.copyWith(kokoroTtsEnabled: enabled);
+  void setPocketSpeechTtsEnabled(bool enabled) {
+    if (enabled && !state.pocketSpeechVoicePackReady) return;
+    _mutationGeneration += 1;
+    state = state.copyWith(pocketSpeechTtsEnabled: enabled);
     _save();
   }
 
-  void setKokoroAssets({
-    required String modelPath,
-    required String voicesPath,
-  }) {
-    final trimmedModel = modelPath.trim();
-    final trimmedVoices = voicesPath.trim();
-    if (trimmedModel.isEmpty || trimmedVoices.isEmpty) return;
+  void setPocketSpeechModel(PocketSpeechModel model) {
+    if (model == state.pocketSpeechModel) return;
+    _mutationGeneration += 1;
     state = state.copyWith(
-      kokoroModelPath: trimmedModel,
-      kokoroVoicesPath: trimmedVoices,
+      pocketSpeechModel: model,
+      pocketSpeechTtsEnabled: false,
+      clearPocketSpeechVoicePack: true,
     );
     _save();
   }
 
-  void clearKokoroAssets() {
+  void setPocketSpeechVoicePack(PocketSpeechVoicePack voicePack) {
+    _mutationGeneration += 1;
     state = state.copyWith(
-      kokoroTtsEnabled: false,
-      kokoroModelPath: '',
-      kokoroVoicesPath: '',
+      pocketSpeechModel: voicePack.model,
+      pocketSpeechVoicePack: voicePack,
+    );
+    _save();
+  }
+
+  void clearPocketSpeechVoicePack() {
+    _mutationGeneration += 1;
+    state = state.copyWith(
+      pocketSpeechTtsEnabled: false,
+      clearPocketSpeechVoicePack: true,
     );
     _save();
   }
@@ -122,20 +137,8 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
   void setCommandWord(String value) {
     final normalized = value.trim().toLowerCase();
     if (normalized.isEmpty || normalized.contains(RegExp(r'\s'))) return;
+    _mutationGeneration += 1;
     state = state.copyWith(commandWord: normalized);
-    _save();
-  }
-
-  void setServerTrusted(String serverId, bool trusted) {
-    final trimmed = serverId.trim();
-    if (trimmed.isEmpty) return;
-    final next = {...state.trustedServerIds};
-    if (trusted) {
-      next.add(trimmed);
-    } else {
-      next.remove(trimmed);
-    }
-    state = state.copyWith(trustedServerIds: next);
     _save();
   }
 }

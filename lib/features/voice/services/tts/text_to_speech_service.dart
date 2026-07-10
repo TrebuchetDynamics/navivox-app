@@ -4,8 +4,8 @@ import '../../../../shared/voice/text_to_speech_service.dart';
 import '../platform/voice_capture_platform.dart';
 
 export '../../../../shared/voice/text_to_speech_service.dart';
-export 'kokoro_asset_download_service.dart';
-export 'kokoro_text_to_speech_service.dart';
+export 'pocket_speech_asset_download_service.dart';
+export 'pocket_speech_text_to_speech_service.dart';
 
 abstract interface class FlutterTtsEngine {
   Future<void> awaitSpeakCompletion(bool awaitCompletion);
@@ -85,6 +85,9 @@ class FlutterTextToSpeechService implements TextToSpeechService {
 
   @override
   Future<void> stop() => _engine.stop();
+
+  @override
+  Future<void> dispose() => stop();
 
   Future<void> _configure() async {
     if (_configured) return;

@@ -32,6 +32,8 @@ test('Navivox sends a say-hi turn through the live Hermes Agent', async ({ page 
 
   await page.evaluate((text) => globalThis.navivoxE2EHermesSendText(text), prompt);
   await expect(page.getByText(prompt).first()).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(expected).first()).toBeVisible({ timeout: 120000 });
+  await expect(page.getByRole('group', { name: expected }).first()).toBeVisible({
+    timeout: 120000,
+  });
   await expect(semanticLabel(page, 'Hermes could not finish')).not.toBeVisible();
 });

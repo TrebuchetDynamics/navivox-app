@@ -11,6 +11,8 @@ Navivox connects to trusted local, VPN, LAN, Tailscale, or self-hosted Hermes Ag
 
 Persist Hermes endpoint base URLs and profile metadata in shared preferences, but store API keys only in platform secure storage. Normalize endpoint URLs with `hermesPublicEndpointBaseUrl` before display or persistence so userinfo, query strings, and fragments are stripped.
 
+Bearer credentials sent to a non-loopback cleartext HTTP endpoint require an explicit operator warning. HTTPS remains the preferred remote transport; cleartext is reserved for loopback or operator-confirmed private networks.
+
 ## Consequences
 
 - Settings and reconnect surfaces may show endpoint origins but must never show API-key values.

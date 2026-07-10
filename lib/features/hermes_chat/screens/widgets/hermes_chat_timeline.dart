@@ -229,7 +229,9 @@ class _TurnBubble extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(child: Text(turn.text)),
+            Flexible(
+              child: isUser ? Text(turn.text) : HermesRichText(turn.text),
+            ),
             if (streaming) ...[
               const SizedBox(width: 8),
               const SizedBox(

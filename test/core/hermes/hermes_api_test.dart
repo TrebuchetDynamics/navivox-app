@@ -1,9 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/core/hermes/hermes_api.dart';
 
 void main() {
+  test('client bounds requests that never complete', () async {
+    final never = Completer<String>();
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('https://hermes.example'),
+      requestTimeout: const Duration(milliseconds: 10),
+      get: (uri, headers) => never.future,
+    );
+
+    await expectLater(client.health(), throwsA(isA<TimeoutException>()));
+  });
+
   test(
     'constructs Hermes API URLs without stale credentials or query state',
     () {
@@ -77,6 +89,33 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test(
+    'warns before sending bearer credentials over remote cleartext HTTP',
+    () {
+      expect(
+        hermesEndpointRequiresCleartextCredentialWarning(
+          'http://192.168.1.20:8642',
+          apiKey: 'secret',
+        ),
+        isTrue,
+      );
+      expect(
+        hermesEndpointRequiresCleartextCredentialWarning(
+          'http://127.0.0.1:8642',
+          apiKey: 'secret',
+        ),
+        isFalse,
+      );
+      expect(
+        hermesEndpointRequiresCleartextCredentialWarning(
+          'https://hermes.example',
+          apiKey: 'secret',
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('rejects blank Hermes path identifiers before ambiguous calls', () {
     final config = HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642');

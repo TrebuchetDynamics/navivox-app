@@ -30,6 +30,13 @@
 	<string>Navivox records your voice only when you tap the mic or enable continuous voice, then sends the transcript to your Hermes Agent.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Navivox uses on-device speech recognition to turn your speech into Hermes chat text.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Navivox connects to a Hermes Agent on your trusted local or private network.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

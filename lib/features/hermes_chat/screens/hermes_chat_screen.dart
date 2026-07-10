@@ -4,8 +4,6 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kokorodart/kokorodart.dart';
-
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/models/hermes_capabilities.dart';
 import '../../../core/hermes/models/hermes_chat_turn.dart';
@@ -13,6 +11,7 @@ import '../../../core/hermes/models/hermes_health.dart';
 import '../../../core/hermes/models/hermes_job.dart';
 import '../../../core/hermes/models/hermes_session.dart';
 import '../../../core/hermes/policy/hermes_surface_readiness.dart';
+import '../../../core/hermes/policy/hermes_endpoint_security.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../shared/voice/voice_capture_service.dart';
@@ -22,6 +21,7 @@ import '../../voice/services/tts/text_to_speech_service.dart';
 import '../controllers/hermes_voice_input_controller.dart';
 import '../diagnostics/hermes_diagnostics_export.dart';
 import '../providers/hermes_channel_provider.dart';
+import '../widgets/hermes_rich_text.dart';
 
 part 'widgets/hermes_chat_error.dart';
 part 'widgets/hermes_chat_sessions.dart';
@@ -40,16 +40,17 @@ final hermesVoiceCaptureServiceProvider = Provider<VoiceCaptureService?>(
 
 final hermesTextToSpeechServiceProvider = Provider<TextToSpeechService?>((ref) {
   final settings = ref.watch(navivoxVoiceSettingsProvider);
-  if (settings.kokoroTtsEnabled && settings.kokoroAssetsReady) {
-    return createKokoroTextToSpeechService(
-      enabled: true,
-      config: KokoroDartConfig(
-        modelAsset: settings.kokoroModelPath!,
-        voicesAsset: settings.kokoroVoicesPath!,
-      ),
-    );
+  final service =
+      settings.pocketSpeechTtsEnabled && settings.pocketSpeechVoicePackReady
+      ? createPocketSpeechTextToSpeechService(
+          enabled: true,
+          voicePack: settings.pocketSpeechVoicePack!,
+        )
+      : createDefaultTextToSpeechService();
+  if (service != null) {
+    ref.onDispose(() => unawaited(service.dispose()));
   }
-  return createDefaultTextToSpeechService();
+  return service;
 });
 
 const _hermesBaseUrlHint =

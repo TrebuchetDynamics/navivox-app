@@ -53,6 +53,15 @@ void main() {
     expect(engine.calls, ['stop']);
   });
 
+  test('dispose stops flutter_tts output', () async {
+    final engine = _FakeFlutterTtsEngine();
+    final service = FlutterTextToSpeechService(engine: engine);
+
+    await service.dispose();
+
+    expect(engine.calls, ['stop']);
+  });
+
   test('default TTS is only created for flutter_tts supported platforms', () {
     expect(
       createDefaultTextToSpeechService(

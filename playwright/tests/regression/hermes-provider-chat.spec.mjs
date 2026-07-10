@@ -42,12 +42,16 @@ test('Hermes provider-backed text and transcript voice turns produce assistant r
 
   await page.evaluate((prompt) => globalThis.navivoxE2EHermesSendText(prompt), textPrompt);
   await expect(page.getByText(textPrompt).first()).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(textExpected, { exact: true }).first()).toBeVisible({ timeout: 120000 });
+  await expect(
+    page.getByRole('group', { name: textExpected, exact: true }).first(),
+  ).toBeVisible({ timeout: 120000 });
 
   // This exercises the Navivox device-transcript-to-Hermes-text path without
   // relying on browser/host microphone availability. Android mic capture has a
   // separate device-gated smoke.
   await page.evaluate((prompt) => globalThis.navivoxE2EHermesSubmitVoice(prompt), voicePrompt);
   await expect(page.getByText(voicePrompt).first()).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(voiceExpected, { exact: true }).first()).toBeVisible({ timeout: 120000 });
+  await expect(
+    page.getByRole('group', { name: voiceExpected, exact: true }).first(),
+  ).toBeVisible({ timeout: 120000 });
 });

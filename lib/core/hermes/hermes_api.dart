@@ -6,6 +6,7 @@ export 'models/hermes_health.dart';
 export 'models/hermes_job.dart';
 export 'models/hermes_run.dart';
 export 'models/hermes_session.dart';
+export 'policy/hermes_endpoint_security.dart';
 export 'policy/hermes_surface_readiness.dart';
 export 'policy/hermes_transport_policy.dart';
 export 'shared/hermes_api_http.dart';

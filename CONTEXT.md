@@ -13,7 +13,11 @@ Use **Hermes endpoint** or **Hermes Agent API server** for the trusted server. U
 
 ## Voice language
 
-Use **voice input** for on-device speech-to-text that fills the composer for operator review. Use **continuous voice** for the opt-in hands-free extension that submits transcripts, speaks completed Hermes replies, and re-arms capture.
+Use **voice input** for on-device speech-to-text that fills the composer for operator review. Use **continuous voice** for the opt-in hands-free extension that submits transcripts, speaks completed Hermes replies, and re-arms capture. Use **Pocket Speech model** for the selected Kitten or Kokoro engine and **voice pack** for its downloaded model and voices resources.
+
+## Transcript language
+
+Use **rich transcript** for selectable GitHub-flavored Markdown in Hermes-authored replies, including code-copy controls. User messages remain plain text, external links use an allowlist, and remote transcript media stays deferred.
 
 ## Security posture
 

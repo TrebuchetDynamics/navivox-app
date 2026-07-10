@@ -23,8 +23,12 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(navivoxVoiceSettingsProvider.notifier);
     final channel = ref.watch(hermesChannelProvider);
     final savedEndpoint = ref.watch(_savedHermesEndpointProvider);
-    final kokoroDownloader = ref.watch(_kokoroAssetDownloadServiceProvider);
-    final kokoroDownloading = ref.watch(_kokoroAssetDownloadingProvider);
+    final pocketSpeechDownloader = ref.watch(
+      _pocketSpeechAssetDownloadServiceProvider,
+    );
+    final pocketSpeechDownloading = ref.watch(
+      _pocketSpeechAssetDownloadingProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(_settingsPresentation.title)),
@@ -195,46 +199,79 @@ class SettingsScreen extends ConsumerWidget {
                       onChanged: controller.setSpeakRepliesEnabled,
                     ),
                   ),
+                  ListTile(
+                    key: const ValueKey('voice-pocket-speech-model'),
+                    leading: const Icon(Icons.graphic_eq),
+                    title: const Text('Pocket Speech model'),
+                    subtitle: Text(
+                      '${settings.pocketSpeechModel.label} · ${settings.pocketSpeechModel.downloadSize}',
+                    ),
+                    trailing: DropdownButton<PocketSpeechModel>(
+                      value: settings.pocketSpeechModel,
+                      items: [
+                        for (final model in PocketSpeechModel.values)
+                          DropdownMenuItem(
+                            value: model,
+                            child: Text(model.label),
+                          ),
+                      ],
+                      onChanged: (model) {
+                        if (model != null) {
+                          controller.setPocketSpeechModel(model);
+                        }
+                      },
+                    ),
+                  ),
                   _ConstrainedSettingsTile(
                     child: SwitchListTile(
-                      key: const ValueKey('voice-kokoro-tts-enabled'),
-                      title: const Text('Kokoro offline TTS'),
+                      key: const ValueKey('voice-pocket-speech-enabled'),
+                      title: const Text('Pocket Speech offline TTS'),
                       subtitle: Text(
-                        settings.kokoroAssetsReady
-                            ? 'Use downloaded Kokoro voice pack for spoken replies'
-                            : 'Download Kokoro assets before enabling',
+                        settings.pocketSpeechVoicePackReady
+                            ? 'Use the downloaded ${settings.pocketSpeechModel.label} voice pack'
+                            : 'Download ${settings.pocketSpeechModel.label} before enabling',
                       ),
-                      value: settings.kokoroTtsEnabled,
-                      onChanged: settings.kokoroAssetsReady
-                          ? controller.setKokoroTtsEnabled
+                      value: settings.pocketSpeechTtsEnabled,
+                      onChanged: settings.pocketSpeechVoicePackReady
+                          ? controller.setPocketSpeechTtsEnabled
                           : null,
                     ),
                   ),
                   ListTile(
-                    key: const ValueKey('voice-kokoro-assets'),
+                    key: const ValueKey('voice-pocket-speech-assets'),
                     leading: const Icon(Icons.download_for_offline_outlined),
-                    title: const Text('Download Kokoro assets'),
-                    subtitle: Text(
-                      settings.kokoroAssetsReady
-                          ? 'Ready: ${settings.kokoroModelPath}'
-                          : kokoroDownloader == null
-                          ? 'Build with KOKORO_MODEL_URL and KOKORO_VOICES_JSON_URL to enable downloads'
-                          : 'Large optional voice pack; use Wi-Fi',
+                    title: Text(
+                      'Download ${settings.pocketSpeechModel.label} (${settings.pocketSpeechModel.downloadSize})',
                     ),
-                    trailing: kokoroDownloading
+                    subtitle: Text(
+                      settings.pocketSpeechVoicePackReady
+                          ? 'Ready: ${settings.pocketSpeechVoicePack!.modelPath}'
+                          : pocketSpeechDownloader?.isConfigured(
+                                  settings.pocketSpeechModel,
+                                ) !=
+                                true
+                          ? 'Build with HTTPS model URLs and pinned SHA-256 values'
+                          : 'Optional offline voice pack; use Wi-Fi',
+                    ),
+                    trailing: pocketSpeechDownloading
                         ? const SizedBox.square(
                             dimension: 24,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : FilledButton(
-                            onPressed: kokoroDownloader == null
-                                ? null
-                                : () => _downloadKokoroAssets(
+                            onPressed:
+                                pocketSpeechDownloader?.isConfigured(
+                                      settings.pocketSpeechModel,
+                                    ) ==
+                                    true
+                                ? () => _downloadPocketSpeechAssets(
                                     context,
                                     ref,
                                     controller,
-                                    kokoroDownloader,
-                                  ),
+                                    pocketSpeechDownloader!,
+                                    settings.pocketSpeechModel,
+                                  )
+                                : null,
                             child: const Text('Download'),
                           ),
                   ),
@@ -243,18 +280,10 @@ class SettingsScreen extends ConsumerWidget {
                     title: Text(_settingsPresentation.commandWordTitle),
                     subtitle: Text(settings.commandWord),
                     trailing: const Icon(Icons.keyboard_voice),
-                    onTap: () =>
-                        _showCommandWordSheet(context, settings.commandWord),
-                  ),
-                  _ConstrainedSettingsTile(
-                    child: SwitchListTile(
-                      key: const ValueKey('voice-profile-switching-enabled'),
-                      title: Text(_settingsPresentation.profileSwitchingTitle),
-                      subtitle: Text(
-                        _settingsPresentation.profileSwitchingSubtitle,
-                      ),
-                      value: settings.profileSwitchingEnabled,
-                      onChanged: controller.setProfileSwitchingEnabled,
+                    onTap: () => _showCommandWordSheet(
+                      context,
+                      settings.commandWord,
+                      controller.setCommandWord,
                     ),
                   ),
                 ],
@@ -271,46 +300,44 @@ final _savedHermesEndpointProvider = FutureProvider<HermesEndpointConfig?>(
   (ref) => ref.watch(hermesEndpointStoreProvider).load(),
 );
 
-final _kokoroAssetDownloadServiceProvider =
-    Provider<KokoroAssetDownloadService?>(
-      (_) => createDefaultKokoroAssetDownloadService(),
+final _pocketSpeechAssetDownloadServiceProvider =
+    Provider<PocketSpeechAssetDownloadService?>(
+      (_) => createDefaultPocketSpeechAssetDownloadService(),
     );
 
-class _KokoroAssetDownloadingController extends Notifier<bool> {
+class _PocketSpeechAssetDownloadingController extends Notifier<bool> {
   @override
   bool build() => false;
 
   void setDownloading(bool value) => state = value;
 }
 
-final _kokoroAssetDownloadingProvider =
-    NotifierProvider<_KokoroAssetDownloadingController, bool>(
-      _KokoroAssetDownloadingController.new,
+final _pocketSpeechAssetDownloadingProvider =
+    NotifierProvider<_PocketSpeechAssetDownloadingController, bool>(
+      _PocketSpeechAssetDownloadingController.new,
     );
 
-Future<void> _downloadKokoroAssets(
+Future<void> _downloadPocketSpeechAssets(
   BuildContext context,
   WidgetRef ref,
   NavivoxVoiceSettingsController controller,
-  KokoroAssetDownloadService downloader,
+  PocketSpeechAssetDownloadService downloader,
+  PocketSpeechModel model,
 ) async {
-  final downloading = ref.read(_kokoroAssetDownloadingProvider.notifier);
+  final downloading = ref.read(_pocketSpeechAssetDownloadingProvider.notifier);
   downloading.setDownloading(true);
   try {
-    final location = await downloader.download();
-    controller.setKokoroAssets(
-      modelPath: location.modelPath,
-      voicesPath: location.voicesPath,
-    );
+    final voicePack = await downloader.download(model);
+    controller.setPocketSpeechVoicePack(voicePack);
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Kokoro assets downloaded')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${model.label} voice pack downloaded')),
+      );
     }
   } catch (_) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not download Kokoro assets')),
+        SnackBar(content: Text('Could not download ${model.label}')),
       );
     }
   } finally {
@@ -450,7 +477,9 @@ class _ConstrainedSettingsTile extends StatelessWidget {
 Future<void> _showCommandWordSheet(
   BuildContext context,
   String commandWord,
+  ValueChanged<String> onSave,
 ) async {
+  final controller = TextEditingController(text: commandWord);
   await showModalBottomSheet<void>(
     context: context,
     builder: (context) => SafeArea(
@@ -462,14 +491,38 @@ Future<void> _showCommandWordSheet(
           children: [
             Text('Command word', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            Text(commandWord, style: Theme.of(context).textTheme.headlineSmall),
+            TextField(
+              key: const ValueKey('settings-command-word-field'),
+              controller: controller,
+              autofocus: true,
+              autocorrect: false,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(labelText: 'Command word'),
+              onSubmitted: (value) {
+                onSave(value);
+                Navigator.of(context).pop();
+              },
+            ),
             const SizedBox(height: 8),
             const Text(
-              'Say this before local voice commands when continuous voice is enabled.',
+              'Say this before “stop”, “pause”, “mute”, or “cancel” while the foreground voice loop is listening.',
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                key: const ValueKey('settings-command-word-save'),
+                onPressed: () {
+                  onSave(controller.text);
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save'),
+              ),
             ),
           ],
         ),
       ),
     ),
   );
+  controller.dispose();
 }

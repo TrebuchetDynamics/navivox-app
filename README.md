@@ -25,6 +25,9 @@ The app targets the Hermes Agent API server, commonly on port `8642`:
 
 ## Run
 
+Navivox consumes the pinned `pocket_speech` package for optional offline speech
+synthesis.
+
 ```bash
 flutter pub get
 flutter run -d <device-id>
@@ -36,11 +39,32 @@ Hermes endpoint hints:
 - Android emulator to host: `http://10.0.2.2:8642`
 - Physical Android on Tailscale/LAN/VPN: `http://<hermes-host>:8642`
 
+When an API key is used with a non-loopback `http://` endpoint, Navivox asks
+for explicit confirmation. Prefer HTTPS; use cleartext credentials only inside
+a trusted VPN, Tailscale network, or isolated LAN.
+
 Voice input uses on-device speech recognition and fills the composer for review
 before sending. Foreground continuous voice is a separate opt-in mode. The loop
 stops and discards late transcripts when disabled, backgrounded, disconnected,
 or switched to another Hermes session. Say `navi stop`, `navi pause`,
 `navi mute`, or `navi cancel` to pause without sending the command to Hermes.
+
+Optional offline TTS is provided by Pocket Speech. Navivox can select Kitten
+nano-int8 (about 26 MB) or Kokoro (about 365 MB including voices), then download
+the selected voice pack. Downloads must use HTTPS URLs and pinned SHA-256
+digests:
+
+```bash
+flutter run \
+  --dart-define=KITTEN_MODEL_URL=https://example/kitten/model.onnx \
+  --dart-define=KITTEN_MODEL_SHA256=<64-hex-digest> \
+  --dart-define=KITTEN_VOICES_JSON_URL=https://example/kitten/voices.json \
+  --dart-define=KITTEN_VOICES_JSON_SHA256=<64-hex-digest> \
+  --dart-define=KOKORO_MODEL_URL=https://example/kokoro/model.onnx \
+  --dart-define=KOKORO_MODEL_SHA256=<64-hex-digest> \
+  --dart-define=KOKORO_VOICES_JSON_URL=https://example/kokoro/voices.json \
+  --dart-define=KOKORO_VOICES_JSON_SHA256=<64-hex-digest>
+```
 
 ## Verify
 
