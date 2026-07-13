@@ -38,7 +38,7 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
 
   await page.getByRole('button', { name: 'Diagnostics' }).first().click();
   await expect(semanticLabel(page, 'Runs SSE enabled')).toBeVisible();
-  await expect(semanticLabel(page, 'Voice: device STT -> Hermes text')).toBeVisible();
+  await expect(semanticLabel(page, 'Voice: device STT → Hermes')).toBeVisible();
   await expect(semanticLabel(page, 'Version: 0.16.0')).toBeVisible();
   await expect(semanticLabel(page, 'Gateway: running')).toBeVisible();
   await expect(semanticLabel(page, 'Models: hermes-agent')).toBeVisible();
