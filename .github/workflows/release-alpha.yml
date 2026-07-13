@@ -48,7 +48,7 @@ jobs:
           flutter build apk --release
           sha256sum build/app/outputs/flutter-apk/app-release.apk > navivox-android.apk.sha256
           cp build/app/outputs/flutter-apk/app-release.apk navivox-android.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: navivox-android-release
           path: |
@@ -75,7 +75,7 @@ jobs:
           flutter build linux --release
           tar -C build/linux/x64/release -czf navivox-linux-x64.tar.gz bundle
           sha256sum navivox-linux-x64.tar.gz > navivox-linux-x64.tar.gz.sha256
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: navivox-linux-release
           path: |

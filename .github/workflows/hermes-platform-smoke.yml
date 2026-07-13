@@ -62,7 +62,7 @@ jobs:
           test "$coverage_percent" -ge 50
           npm audit --audit-level=high
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-lcov
           path: coverage/lcov.info
@@ -85,7 +85,7 @@ jobs:
       - name: Build Android debug APK
         run: flutter build apk --debug
       - name: Upload Android debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-android-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
@@ -93,7 +93,7 @@ jobs:
       - name: Build Linux release app
         run: flutter build linux --release
       - name: Upload Linux release bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-linux-release-bundle
           path: build/linux/x64/release/bundle/**
@@ -183,7 +183,7 @@ jobs:
           flutter pub get
           flutter build windows --debug
       - name: Upload Windows debug bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-windows-debug-bundle
           path: build/windows/x64/runner/Debug/**
@@ -204,7 +204,7 @@ jobs:
           flutter pub get
           flutter build ios --simulator --debug
       - name: Upload iOS simulator app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-ios-simulator-app
           path: build/ios/iphonesimulator/Runner.app/**
@@ -225,7 +225,7 @@ jobs:
           flutter pub get
           flutter build macos --debug
       - name: Upload macOS debug app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: navivox-macos-debug-app
           path: build/macos/Build/Products/Debug/navivox.app/**
