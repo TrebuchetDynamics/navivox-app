@@ -9,9 +9,11 @@ diagnostics chip copy `Voice: device STT -> Hermes text`; the spec now asserts
 the current `Voice: device STT → Hermes` copy and the focused smoke passed
 locally on 2026-07-13. iOS/macOS builds failed because `flutter_onnxruntime`
 (Pocket Speech) requires minimum iOS 16.0/macOS 14.0 while the projects
-targeted 13.0/10.15; deployment targets are raised in the working tree but the
-hosted native-runner receipt is pending until the fix is pushed and a watched
-run succeeds. The `Dependency and license review` job fails on every PR with
+targeted 13.0/10.15; deployment targets were raised in `6ca4afb`, and the
+push-triggered main run 29256462998 (head `9c44607`, 2026-07-13) succeeded on
+all native jobs with a validated receipt written to
+`build/receipts/hermes-platform-workflow.json`. The
+`Dependency and license review` job fails on every PR with
 "Dependency review is not supported on this repository"; enabling the
 Dependency graph in repository settings is an owner action.
 
@@ -32,8 +34,8 @@ explicit external or deferred blocker but is not a completion receipt.
 | Android debug APK build | `flutter build apk --debug` produces `build/app/outputs/flutter-apk/app-debug.apk`; `npm run hermes:readiness-audit` prints the current APK SHA-256 when present. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; not physical mic evidence. |
 | Linux release build | `npm run linux:release-build` passed on 2026-07-03 and produced executable `build/linux/x64/release/bundle/navivox`. | Covered locally. |
 | Windows build | `build/receipts/hermes-platform-workflow.json` records the watched current-head GitHub run id with a successful `Windows desktop build` job and non-expired `navivox-windows-debug-bundle` artifact. | Covered by hosted native-runner receipt. |
-| iOS simulator build | `build/receipts/hermes-platform-workflow.json` records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact, but that receipt predates `flutter_onnxruntime`; the 2026-07-10 main run failed on its iOS 16.0 minimum and the deployment target is raised to 16.0 in the working tree. | Stale; needs a fresh watched receipt after the fix ships. |
-| macOS desktop build | `build/receipts/hermes-platform-workflow.json` records a successful `macOS desktop build` job and non-expired `navivox-macos-debug-app` artifact, but that receipt predates `flutter_onnxruntime`; the 2026-07-10 main run failed on its macOS 14.0 minimum and the deployment target is raised to 14.0 in the working tree. | Stale; needs a fresh watched receipt after the fix ships. |
+| iOS simulator build | `build/receipts/hermes-platform-workflow.json` (run 29256462998, head `9c44607`, 2026-07-13) records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact after the deployment target was raised to 16.0 for `flutter_onnxruntime`. | Covered by hosted native-runner receipt. |
+| macOS desktop build | `build/receipts/hermes-platform-workflow.json` (run 29256462998, head `9c44607`, 2026-07-13) records a successful `macOS desktop build` job and non-expired `navivox-macos-debug-app` artifact after the deployment target was raised to 14.0 for `flutter_onnxruntime`. | Covered by hosted native-runner receipt. |
 | Browser fake Hermes smoke | Focused Playwright regression rerun of `navivox-e2e.spec.mjs` plus `hermes-smoke.spec.mjs` passed on 2026-07-03 against `node serve_web.mjs` with 68 Chromium tests after a longer-timeout rerun; the focused Hermes smoke itself passed 2 Chromium tests and covers fake Hermes health/capabilities/sessions/runs/events/approvals/tool progress/stop. | Covered for fake server. |
 | Installed Hermes API connect smoke | `npm run hermes:live-smoke` passed on 2026-07-03 against installed local Hermes with isolated temp home and no provider credentials; Playwright reported 1 pass. The helper caveat says this is API connect/session rendering only, not provider/model evidence, not chat/voice provider smoke, not physical microphone evidence, and not whole-goal completion evidence by itself. | Covered for live connect/session surface. |
 | Deferred server realtime audio honesty | `lib/core/hermes/policy/hermes_surface_readiness.dart` marks advertised-but-unwired server realtime voice/audio as blocked and unadvertised server audio as deferred; README states voice is local-first. | Covered by code/docs. |
