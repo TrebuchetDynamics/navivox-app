@@ -20,12 +20,12 @@ void main() {
         HermesSession(id: 'vpn-session', source: 'fake', title: 'VPN session'),
       ],
       activeSessionId: 'vpn-session',
-      connectedBaseUrl: 'http://100.108.109.96:8642',
+      connectedBaseUrl: 'http://hermes.tailnet.example:8642',
     );
     final store = FakeHermesEndpointStore(
       initial: const HermesEndpointConfig(
         id: 'vpn',
-        baseUrl: 'http://100.108.109.96:8642',
+        baseUrl: 'http://hermes.tailnet.example:8642',
         apiKey: 'old-key',
       ),
     );
@@ -56,7 +56,7 @@ void main() {
           )
           .controller
           ?.text,
-      'http://100.108.109.96:8642',
+      'http://hermes.tailnet.example:8642',
     );
     expect(
       tester
