@@ -69,6 +69,23 @@ void main() {
     },
   );
 
+  test('continuous voice allows long dictation before timing out', () async {
+    final channel = FakeHermesChannel();
+    final capture = _RecordingVoiceCaptureService();
+    final controller = HermesVoiceInputController(
+      channel: () => channel,
+      captureService: () => capture,
+      textToSpeechService: () => null,
+      settings: () => const NavivoxVoiceSettings(),
+      onDraft: (_) {},
+    );
+    addTearDown(controller.dispose);
+
+    await controller.enableContinuous();
+
+    expect(capture.timeout, const Duration(seconds: 30));
+  });
+
   test('continuous voice submits the captured transcript to Hermes', () async {
     final channel = FakeHermesChannel();
     final controller = HermesVoiceInputController(
@@ -135,6 +152,24 @@ void main() {
       'Voice capture timed out. Continuous voice paused.',
     );
   });
+}
+
+class _RecordingVoiceCaptureService implements VoiceCaptureService {
+  Duration? timeout;
+
+  @override
+  Future<VoiceCapture> capture({required Duration timeout}) async {
+    this.timeout = timeout;
+    return VoiceCapture(
+      audio: Uint8List(0),
+      transcript: 'long dictation',
+      duration: const Duration(seconds: 20),
+      confidence: 1,
+    );
+  }
+
+  @override
+  Future<void> cancel() async {}
 }
 
 class _ControlledVoiceCaptureService implements VoiceCaptureService {

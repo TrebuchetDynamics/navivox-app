@@ -83,7 +83,7 @@ class HermesVoiceInputController extends ChangeNotifier {
 
     final outcome = await const HermesVoiceCaptureFlow().capture(
       service: service,
-      timeout: const Duration(seconds: 12),
+      timeout: Duration(seconds: autoSend ? 30 : 12),
     );
     if (_disposed || operationGeneration != _operationGeneration) return;
 
