@@ -1,6 +1,19 @@
 # Hermes companion readiness audit
 
-Last updated: 2026-07-05.
+Last updated: 2026-07-13.
+
+2026-07-13 status refresh: the latest main-branch `Hermes platform smoke` run
+(29129974871, head `b7b99d8`, 2026-07-10) failed three jobs. Browser smoke
+failed because `hermes-smoke.spec.mjs` still asserted the pre-`fc40db6`
+diagnostics chip copy `Voice: device STT -> Hermes text`; the spec now asserts
+the current `Voice: device STT → Hermes` copy and the focused smoke passed
+locally on 2026-07-13. iOS/macOS builds failed because `flutter_onnxruntime`
+(Pocket Speech) requires minimum iOS 16.0/macOS 14.0 while the projects
+targeted 13.0/10.15; deployment targets are raised in the working tree but the
+hosted native-runner receipt is pending until the fix is pushed and a watched
+run succeeds. The `Dependency and license review` job fails on every PR with
+"Dependency review is not supported on this repository"; enabling the
+Dependency graph in repository settings is an owner action.
 
 This audit maps the current pure-Hermes Navivox companion goal to concrete
 evidence and remaining blockers. It is intentionally conservative: a passing
@@ -19,8 +32,8 @@ explicit external or deferred blocker but is not a completion receipt.
 | Android debug APK build | `flutter build apk --debug` produces `build/app/outputs/flutter-apk/app-debug.apk`; `npm run hermes:readiness-audit` prints the current APK SHA-256 when present. App-scoped native units also passed with `cd android && ./gradlew :app:testDebugUnitTest`. | Covered locally for build/native units and artifact identity only; not physical mic evidence. |
 | Linux release build | `npm run linux:release-build` passed on 2026-07-03 and produced executable `build/linux/x64/release/bundle/navivox`. | Covered locally. |
 | Windows build | `build/receipts/hermes-platform-workflow.json` records the watched current-head GitHub run id with a successful `Windows desktop build` job and non-expired `navivox-windows-debug-bundle` artifact. | Covered by hosted native-runner receipt. |
-| iOS simulator build | `build/receipts/hermes-platform-workflow.json` records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact. | Covered by hosted native-runner receipt. |
-| macOS desktop build | `build/receipts/hermes-platform-workflow.json` records a successful `macOS desktop build` job and non-expired `navivox-macos-debug-app` artifact. | Covered by hosted native-runner receipt. |
+| iOS simulator build | `build/receipts/hermes-platform-workflow.json` records a successful `iOS simulator build` job and non-expired `navivox-ios-simulator-app` artifact, but that receipt predates `flutter_onnxruntime`; the 2026-07-10 main run failed on its iOS 16.0 minimum and the deployment target is raised to 16.0 in the working tree. | Stale; needs a fresh watched receipt after the fix ships. |
+| macOS desktop build | `build/receipts/hermes-platform-workflow.json` records a successful `macOS desktop build` job and non-expired `navivox-macos-debug-app` artifact, but that receipt predates `flutter_onnxruntime`; the 2026-07-10 main run failed on its macOS 14.0 minimum and the deployment target is raised to 14.0 in the working tree. | Stale; needs a fresh watched receipt after the fix ships. |
 | Browser fake Hermes smoke | Focused Playwright regression rerun of `navivox-e2e.spec.mjs` plus `hermes-smoke.spec.mjs` passed on 2026-07-03 against `node serve_web.mjs` with 68 Chromium tests after a longer-timeout rerun; the focused Hermes smoke itself passed 2 Chromium tests and covers fake Hermes health/capabilities/sessions/runs/events/approvals/tool progress/stop. | Covered for fake server. |
 | Installed Hermes API connect smoke | `npm run hermes:live-smoke` passed on 2026-07-03 against installed local Hermes with isolated temp home and no provider credentials; Playwright reported 1 pass. The helper caveat says this is API connect/session rendering only, not provider/model evidence, not chat/voice provider smoke, not physical microphone evidence, and not whole-goal completion evidence by itself. | Covered for live connect/session surface. |
 | Deferred server realtime audio honesty | `lib/core/hermes/policy/hermes_surface_readiness.dart` marks advertised-but-unwired server realtime voice/audio as blocked and unadvertised server audio as deferred; README states voice is local-first. | Covered by code/docs. |
@@ -31,7 +44,7 @@ explicit external or deferred blocker but is not a completion receipt.
 | Diagnostics/log export | Bounded diagnostics export exists and explicitly labels secrets, raw logs, tool payloads, transcripts, and local paths as excluded; surface readiness separately marks raw diagnostics/log export as `deferred`. The diagnostics test seeds transcript and raw tool-payload content and asserts the export reports only counts/statuses plus the explicit `device STT -> Hermes text; server audio not wired` voice boundary. | Bounded diagnostics covered; raw logs/payloads deferred. |
 | Multi-endpoint/profile management | `HermesEndpointStore`/`SecureHermesEndpointStore` now support saved endpoint profiles; the connect form saves an optional redacted profile label, renders selectable/renamable/deletable profile chips, clears stale profile secrets/labels when using presets, and keeps per-profile API keys in secure storage. | Covered locally. |
 | Secret hygiene for Hermes diagnostics | `test/features/hermes_chat/screens/hermes_chat_screen_test.dart` asserts diagnostics include `Secrets: excluded`, omit `Authorization`, fake transcript tokens, and raw tool payload markers, and redact dynamic metadata fields such as active session title, health strings, capability model/features/endpoints, and model names. | Covered for diagnostics export. |
-| Overall Dart/widget regression | `flutter test --concurrency=1` passed on 2026-07-03 with 1016 tests after the latest diagnostics, workflow, docs, and readiness-guard changes. | Covered locally, but does not replace device/host receipts. |
+| Overall Dart/widget regression | `flutter test --concurrency=1` passed on 2026-07-13 with 216 tests; the earlier 1016-test count predates the intentional Hermes-only test removals (`ca80406` and later). | Covered locally, but does not replace device/host receipts. |
 | Static analysis | `flutter analyze` passed with no issues after the readiness audit/docs/test guard changes and again after the closeout status refreshes. | Covered locally. |
 | E2E web release build | `flutter build web --release -t lib/main_e2e.dart` passed after the closeout status refreshes and produced `build/web`. | Covered locally for web build only. |
 | CI receipt path robustness | `.github/workflows/hermes-platform-smoke.yml` is published and visible as `Hermes platform smoke`. `npm run platform:workflow-smoke` dispatches, watches, and writes `build/receipts/hermes-platform-workflow.json`; the receipt validates current `HEAD`, successful run conclusion, required native jobs, and non-empty non-expired native artifacts. | Covered for platform/native-host receipt. |
