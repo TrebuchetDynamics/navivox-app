@@ -9,9 +9,10 @@ import '../support/fake_hermes_channel.dart';
 import '../support/fake_hermes_endpoint_store.dart';
 
 void main() {
-  testWidgets('Android requires an emulator or network Hermes endpoint', (
+  testWidgets('Android uses the configured network Hermes endpoint', (
     tester,
   ) async {
+    const configuredBaseUrl = String.fromEnvironment('NAVIVOX_HERMES_BASE_URL');
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
@@ -37,7 +38,7 @@ void main() {
           )
           .controller
           ?.text,
-      isEmpty,
+      configuredBaseUrl,
     );
     expect(find.text('Local Hermes'), findsNothing);
     expect(find.text('Android emulator'), findsOneWidget);

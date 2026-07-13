@@ -59,8 +59,14 @@ const _hermesBaseUrlHint =
     'Android emulator: http://10.0.2.2:8642\n'
     'Physical device: LAN/VPN/Tailscale URL';
 const _maxQueuedFollowUps = 5;
+const _configuredHermesBaseUrl = String.fromEnvironment(
+  'NAVIVOX_HERMES_BASE_URL',
+);
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+String get _defaultHermesBaseUrl => _configuredHermesBaseUrl.isNotEmpty
+    ? _configuredHermesBaseUrl
+    : (_isAndroid ? '' : 'http://127.0.0.1:8642');
 
 /// Native Hermes Agent chat/session screen: manual connect, session list,
 /// streamed transcript, text composer, and continuous voice. See
@@ -81,9 +87,7 @@ class HermesChatScreen extends ConsumerStatefulWidget {
 
 class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     with WidgetsBindingObserver {
-  final _baseUrlController = TextEditingController(
-    text: _isAndroid ? '' : 'http://127.0.0.1:8642',
-  );
+  final _baseUrlController = TextEditingController(text: _defaultHermesBaseUrl);
   final _apiKeyController = TextEditingController();
   final _profileLabelController = TextEditingController();
   final _composerController = TextEditingController();
