@@ -2083,6 +2083,7 @@ Create `docs/superpowers/specs/2026-07-13-needle-spike-findings.md` with the obs
 ## 1. Does it run?
 <loaded successfully / failed with error "...">
 Coexistence with flutter_onnxruntime (pocket_speech TTS): <build conflicts? runtime issues? tested by playing TTS then running Needle>
+- Telemetry kill switch active (CACTUS_NO_CLOUD_TELE=1 set before init): <verified how — e.g. airplane-mode run / traffic capture>
 
 ## 2. Accuracy (20 canned transcripts, typed)
 | Verdict | Count |
