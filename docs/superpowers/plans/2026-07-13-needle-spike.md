@@ -1414,26 +1414,46 @@ void main() {
   testWidgets('typed transcript produces a parsed tool call and scorecard tick', (
     tester,
   ) async {
-    final tempDir = await Directory.systemTemp.createTemp('needle_screen');
-    addTearDown(() => tempDir.delete(recursive: true));
+    // Directory.systemTemp.createTemp and NeedleModelInstallService's async
+    // File.exists/readAsString calls go through dart:io's isolate-backed
+    // async file APIs. Those never resolve inside a bare testWidgets pump
+    // cycle (the widget-test zone fakes timers and never lets the real
+    // event loop deliver the isolate's response) — they hang forever unless
+    // wrapped in tester.runAsync, which temporarily runs on the real zone.
+    final tempDir = await tester.runAsync(
+      () => Directory.systemTemp.createTemp('needle_screen'),
+    );
+    addTearDown(() => tempDir!.delete(recursive: true));
     // Pre-install a fake model so the screen goes straight to ready state.
-    final install = NeedleModelInstallService(supportDirectory: tempDir);
+    final install = NeedleModelInstallService(supportDirectory: tempDir!);
     final modelDir = Directory('${tempDir.path}/needle_spike/model')
       ..createSync(recursive: true);
     File('${modelDir.path}/config.json').writeAsStringSync('{}');
-    await File('${tempDir.path}/needle_spike/.installed')
-        .writeAsString(modelDir.path);
+    // Use the sync write here too — only the *screen's* internal async
+    // reads need the runAsync treatment; this write just needs to land on
+    // disk before pumpWidget runs.
+    File('${tempDir.path}/needle_spike/.installed')
+        .writeAsStringSync(modelDir.path);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          needleEngineProvider.overrideWithValue(_FakeEngine()),
-          needleInstallServiceProvider.overrideWith((ref) async => install),
-          needleVoiceCaptureFactoryProvider.overrideWithValue(() => null),
-        ],
-        child: const MaterialApp(home: NeedleSpikeScreen()),
-      ),
-    );
+    // The screen's initState fires a real async File read (via
+    // NeedleModelInstallService.installedModelDir) to check for an
+    // installed model, so pumpWidget must run inside runAsync too. A short
+    // real-time delay lets the pending isolate message actually arrive
+    // before the following pump() picks up the resulting setState.
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            needleEngineProvider.overrideWithValue(_FakeEngine()),
+            needleInstallServiceProvider.overrideWith((ref) async => install),
+            needleVoiceCaptureFactoryProvider.overrideWithValue(() => null),
+          ],
+          child: const MaterialApp(home: NeedleSpikeScreen()),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await tester.pump();
+    });
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -1441,6 +1461,12 @@ void main() {
       'is the agent connected',
     );
     await tester.tap(find.byKey(const Key('needle-run-button')));
+    await tester.pumpAndSettle();
+
+    // The result card and scorecard render below the 20-chip transcript
+    // bank, which pushes them out of the default test viewport; ListView
+    // only mounts visible slivers, so scroll down before locating them.
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('show_status'), findsOneWidget);
@@ -1452,6 +1478,8 @@ void main() {
   });
 }
 ```
+
+Adaptation note (discovered while implementing): the widget test as originally drafted hung indefinitely (10-minute framework timeout, `TimeoutException` stack rooted in `dart:isolate _RawReceivePort._handleMessage`). Root cause: `NeedleModelInstallService.installedModelDir()`'s real `dart:io` async calls (`File.exists()`, `File.readAsString()`) run during the screen's `initState`, and real isolate-backed IO never completes inside a bare `testWidgets` pump cycle — it requires `tester.runAsync()`, plus a genuine real-time yield (`Future.delayed`) after `pumpWidget` for the pending isolate response to be delivered before the next `pump()`. Separately, the 20-chip transcript bank pushes the result card and scorecard below the default test viewport; since `ListView` only mounts visible slivers, the test drags the `ListView` up before asserting on their content, exactly as this plan's original note anticipated ("adapt the test mechanics, never the asserted behaviors"). No production code changed for either fix.
 
 - [ ] **Step 3: Run test to verify it fails**
 
