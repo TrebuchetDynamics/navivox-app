@@ -24,7 +24,7 @@ dependencies:
     git:
       url: https://github.com/TrebuchetDynamics/pocket-speech-dart.git
       ref: 069a2f2bdf1db40f2f6ec95d585e1c6b6ad9ab64
-  flutter_markdown_plus: ^1.0.11
+  flutter_markdown_plus: ^1.0.12
   url_launcher: ^6.3.2
   markdown: ^7.3.1
 
