@@ -8,6 +8,7 @@ import '../../../core/hermes/policy/hermes_transport_policy.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../router/app_routes.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
+import '../../needle_spike/needle_spike_flag.dart';
 import '../../voice/services/tts/text_to_speech_service.dart';
 import '../providers/voice_settings_provider.dart';
 import '../presentation/settings_screen_presentation.dart';
@@ -288,6 +289,18 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (needleSpikeEnabled)
+                _SettingsSectionCard(
+                  title: 'Needle spike (debug)',
+                  icon: Icons.science_outlined,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.play_arrow_outlined),
+                      title: const Text('Open Needle evaluation screen'),
+                      onTap: () => context.go(AppRoutes.needleSpike),
+                    ),
+                  ],
+                ),
             ],
           );
         },

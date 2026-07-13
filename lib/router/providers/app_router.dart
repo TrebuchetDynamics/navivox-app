@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/hermes_chat/screens/hermes_chat_screen.dart';
+import '../../features/needle_spike/needle_spike_flag.dart';
+import '../../features/needle_spike/screens/needle_spike_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 import '../app_routes.dart';
@@ -31,6 +33,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      if (needleSpikeEnabled)
+        GoRoute(
+          path: AppRoutes.needleSpike,
+          builder: (context, state) => const NeedleSpikeScreen(),
+        ),
     ],
     errorBuilder: (context, state) => _SelectableRoute(
       child: Scaffold(
