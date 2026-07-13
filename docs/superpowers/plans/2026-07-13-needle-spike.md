@@ -976,16 +976,18 @@ git commit -m "spike(needle): sha256-verified model download and install service
 - Create: `lib/features/needle_spike/services/needle_engine.dart`
 - Create: `lib/features/needle_spike/services/needle_spike_service.dart`
 - Test: `test/features/needle_spike/needle_spike_service_test.dart`
+- Test: `test/features/needle_spike/native_call_queue_test.dart`
 
 **Interfaces:**
 - Consumes: vendored FFI functions (Task 1), `NeedleResult.fromEngineJson` (Task 3), `NeedleToolCatalog.toolsJson` (Task 2).
 - Produces:
   - `abstract interface class NeedleEngineApi { bool get isLoaded; Future<void> load(String modelDir); Future<String> complete({required String messagesJson, required String toolsJson, required String optionsJson}); Future<void> unload(); }`
-  - `class NeedleEngine implements NeedleEngineApi` (real FFI, runs blocking calls via `Isolate.run`, passes the model handle across isolates as an int address — native heap is process-wide so this is safe).
+  - `class NativeCallQueue { Future<T> run<T>(Future<T> Function() op); }` (serializes async ops in submission order).
+  - `class NeedleEngine implements NeedleEngineApi` (real FFI, runs blocking calls via `Isolate.run`, passes the model handle across isolates as an int address — native heap is process-wide so this is safe; all ops pass through a `NativeCallQueue`).
   - `class NeedleSpikeService { NeedleSpikeService({required NeedleEngineApi engine}); Future<NeedleResult> parseTranscript(String transcript); }`
   - `class NeedleEngineException implements Exception { final String message; }`
 
-FFI calls are synchronous and CPU-heavy; running them on the main isolate would freeze the UI, so every native call goes through `Isolate.run`. The UI serializes requests (one at a time) because the engine's thread-safety is unknown.
+FFI calls are synchronous and CPU-heavy; running them on the main isolate would freeze the UI, so every native call goes through `Isolate.run`. The UI serializes requests (one at a time) because the engine's thread-safety is unknown. On top of that, `NeedleEngine` itself serializes load/complete/unload through an internal `NativeCallQueue`: unload must never destroy a handle another isolate is still using (use-after-free), and concurrent loads must not both run `cactus_init` (handle leak). A consequence: `complete()` on an unloaded engine rejects asynchronously with `NeedleEngineException` (the not-loaded check runs inside the queued op, since a queued complete may legitimately execute after a queued unload).
 
 - [ ] **Step 1: Write the failing test** (exercises `NeedleSpikeService` against a fake engine — no native lib needed)
 
@@ -1103,22 +1105,43 @@ abstract interface class NeedleEngineApi {
   Future<void> unload();
 }
 
+/// Serializes async operations in submission order. Native engine calls
+/// must never overlap: thread-safety of the engine is unknown, and
+/// unload() must not destroy a handle another isolate is still using.
+class NativeCallQueue {
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> run<T>(Future<T> Function() op) {
+    final result = _tail.then((_) => op());
+    _tail = result.then<void>((_) {}, onError: (_) {});
+    return result;
+  }
+}
+
 /// Real FFI engine. Blocking native calls run via [Isolate.run]; the model
 /// handle crosses isolates as a raw address (native heap is process-wide).
+/// Every op passes through a [NativeCallQueue] so ops execute strictly in
+/// submission order: concurrent loads dedupe, and unload waits for any
+/// in-flight complete before destroying the handle.
 class NeedleEngine implements NeedleEngineApi {
+  final NativeCallQueue _queue = NativeCallQueue();
   int? _modelAddress;
 
   @override
   bool get isLoaded => _modelAddress != null;
 
   @override
-  Future<void> load(String modelDir) async {
-    if (_modelAddress != null) return;
-    final address = await Isolate.run(() => _initSync(modelDir));
-    if (address == 0) {
-      throw NeedleEngineException('cactus_init returned null for $modelDir');
-    }
-    _modelAddress = address;
+  Future<void> load(String modelDir) {
+    return _queue.run(() async {
+      // Checked inside the queued op so concurrent loads dedupe instead of
+      // both running cactus_init and leaking a handle.
+      if (_modelAddress != null) return;
+      final address = await Isolate.run(() => _initSync(modelDir));
+      if (address == 0) {
+        throw NeedleEngineException('cactus_init returned null for $modelDir');
+      }
+      _modelAddress = address;
+    });
   }
 
   @override
@@ -1127,22 +1150,29 @@ class NeedleEngine implements NeedleEngineApi {
     required String toolsJson,
     required String optionsJson,
   }) {
-    final address = _modelAddress;
-    if (address == null) {
-      throw const NeedleEngineException('Model is not loaded.');
-    }
-    return Isolate.run(
-      () => _completeSync(address, messagesJson, toolsJson, optionsJson),
-    );
+    return _queue.run(() {
+      // Checked inside the queued op: a queued complete may legitimately
+      // run after a queued unload, and must then fail instead of touching
+      // a destroyed handle.
+      final address = _modelAddress;
+      if (address == null) {
+        throw const NeedleEngineException('Model is not loaded.');
+      }
+      return Isolate.run(
+        () => _completeSync(address, messagesJson, toolsJson, optionsJson),
+      );
+    });
   }
 
   @override
-  Future<void> unload() async {
-    final address = _modelAddress;
-    _modelAddress = null;
-    if (address != null) {
-      await Isolate.run(() => _destroySync(address));
-    }
+  Future<void> unload() {
+    return _queue.run(() async {
+      final address = _modelAddress;
+      _modelAddress = null;
+      if (address != null) {
+        await Isolate.run(() => _destroySync(address));
+      }
+    });
   }
 }
 
@@ -1172,7 +1202,7 @@ String _completeSync(
     final written = cactus.cactusComplete(
       model,
       messages,
-      buffer.cast(),
+      buffer.cast<Utf8>(),
       _responseBufferBytes,
       options,
       tools,
@@ -1182,9 +1212,17 @@ String _completeSync(
       0,
     );
     if (written < 0) {
-      throw NeedleEngineException('cactus_complete failed: status $written');
+      throw NeedleEngineException(
+        'cactus_complete failed: status $written${_lastErrorSuffix()}',
+      );
     }
-    return buffer.cast<Utf8>().toDartString();
+    if (written >= _responseBufferBytes) {
+      throw NeedleEngineException(
+        'cactus_complete response truncated '
+        '($written bytes; buffer $_responseBufferBytes)',
+      );
+    }
+    return buffer.cast<Utf8>().toDartString(length: written);
   } finally {
     calloc.free(messages);
     calloc.free(tools);
@@ -1195,6 +1233,16 @@ String _completeSync(
 
 void _destroySync(int modelAddress) {
   cactus.cactusDestroy(Pointer<Void>.fromAddress(modelAddress));
+}
+
+/// Formats `cactus_get_last_error` as an exception-message suffix, or ''
+/// when there is no error text. Only called on the isolate that just made
+/// the failing native call.
+String _lastErrorSuffix() {
+  final error = cactus.cactusGetLastError();
+  if (error == nullptr) return '';
+  final text = error.toDartString();
+  return text.isEmpty ? '' : ' ($text)';
 }
 ```
 
@@ -1213,6 +1261,9 @@ import 'needle_tool_catalog.dart';
 
 /// Turns one transcript into one measured Needle inference.
 class NeedleSpikeService {
+  // Private field behind a public named parameter; an initializing formal
+  // would force the parameter to be named `_engine`.
+  // ignore: prefer_initializing_formals
   NeedleSpikeService({required NeedleEngineApi engine}) : _engine = engine;
 
   final NeedleEngineApi _engine;

@@ -6,6 +6,9 @@ import 'needle_tool_catalog.dart';
 
 /// Turns one transcript into one measured Needle inference.
 class NeedleSpikeService {
+  // Private field behind a public named parameter; an initializing formal
+  // would force the parameter to be named `_engine`.
+  // ignore: prefer_initializing_formals
   NeedleSpikeService({required NeedleEngineApi engine}) : _engine = engine;
 
   final NeedleEngineApi _engine;

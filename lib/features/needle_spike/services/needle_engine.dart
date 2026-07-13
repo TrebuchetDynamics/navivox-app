@@ -25,22 +25,43 @@ abstract interface class NeedleEngineApi {
   Future<void> unload();
 }
 
+/// Serializes async operations in submission order. Native engine calls
+/// must never overlap: thread-safety of the engine is unknown, and
+/// unload() must not destroy a handle another isolate is still using.
+class NativeCallQueue {
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> run<T>(Future<T> Function() op) {
+    final result = _tail.then((_) => op());
+    _tail = result.then<void>((_) {}, onError: (_) {});
+    return result;
+  }
+}
+
 /// Real FFI engine. Blocking native calls run via [Isolate.run]; the model
 /// handle crosses isolates as a raw address (native heap is process-wide).
+/// Every op passes through a [NativeCallQueue] so ops execute strictly in
+/// submission order: concurrent loads dedupe, and unload waits for any
+/// in-flight complete before destroying the handle.
 class NeedleEngine implements NeedleEngineApi {
+  final NativeCallQueue _queue = NativeCallQueue();
   int? _modelAddress;
 
   @override
   bool get isLoaded => _modelAddress != null;
 
   @override
-  Future<void> load(String modelDir) async {
-    if (_modelAddress != null) return;
-    final address = await Isolate.run(() => _initSync(modelDir));
-    if (address == 0) {
-      throw NeedleEngineException('cactus_init returned null for $modelDir');
-    }
-    _modelAddress = address;
+  Future<void> load(String modelDir) {
+    return _queue.run(() async {
+      // Checked inside the queued op so concurrent loads dedupe instead of
+      // both running cactus_init and leaking a handle.
+      if (_modelAddress != null) return;
+      final address = await Isolate.run(() => _initSync(modelDir));
+      if (address == 0) {
+        throw NeedleEngineException('cactus_init returned null for $modelDir');
+      }
+      _modelAddress = address;
+    });
   }
 
   @override
@@ -49,22 +70,29 @@ class NeedleEngine implements NeedleEngineApi {
     required String toolsJson,
     required String optionsJson,
   }) {
-    final address = _modelAddress;
-    if (address == null) {
-      throw const NeedleEngineException('Model is not loaded.');
-    }
-    return Isolate.run(
-      () => _completeSync(address, messagesJson, toolsJson, optionsJson),
-    );
+    return _queue.run(() {
+      // Checked inside the queued op: a queued complete may legitimately
+      // run after a queued unload, and must then fail instead of touching
+      // a destroyed handle.
+      final address = _modelAddress;
+      if (address == null) {
+        throw const NeedleEngineException('Model is not loaded.');
+      }
+      return Isolate.run(
+        () => _completeSync(address, messagesJson, toolsJson, optionsJson),
+      );
+    });
   }
 
   @override
-  Future<void> unload() async {
-    final address = _modelAddress;
-    _modelAddress = null;
-    if (address != null) {
-      await Isolate.run(() => _destroySync(address));
-    }
+  Future<void> unload() {
+    return _queue.run(() async {
+      final address = _modelAddress;
+      _modelAddress = null;
+      if (address != null) {
+        await Isolate.run(() => _destroySync(address));
+      }
+    });
   }
 }
 
@@ -104,9 +132,17 @@ String _completeSync(
       0,
     );
     if (written < 0) {
-      throw NeedleEngineException('cactus_complete failed: status $written');
+      throw NeedleEngineException(
+        'cactus_complete failed: status $written${_lastErrorSuffix()}',
+      );
     }
-    return buffer.cast<Utf8>().toDartString();
+    if (written >= _responseBufferBytes) {
+      throw NeedleEngineException(
+        'cactus_complete response truncated '
+        '($written bytes; buffer $_responseBufferBytes)',
+      );
+    }
+    return buffer.cast<Utf8>().toDartString(length: written);
   } finally {
     calloc.free(messages);
     calloc.free(tools);
@@ -117,4 +153,14 @@ String _completeSync(
 
 void _destroySync(int modelAddress) {
   cactus.cactusDestroy(Pointer<Void>.fromAddress(modelAddress));
+}
+
+/// Formats `cactus_get_last_error` as an exception-message suffix, or ''
+/// when there is no error text. Only called on the isolate that just made
+/// the failing native call.
+String _lastErrorSuffix() {
+  final error = cactus.cactusGetLastError();
+  if (error == nullptr) return '';
+  final text = error.toDartString();
+  return text.isEmpty ? '' : ' ($text)';
 }
