@@ -33,6 +33,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // needleSpikeEnabled is a compile-time const, so in default builds
+      // this route and all transitively imported spike Dart code are
+      // tree-shaken from the AOT snapshot. NOTE: the native
+      // libcactus_engine.so under android/app/src/main/jniLibs/ is packaged
+      // by Gradle regardless of this flag once built (~4 MB compressed); it
+      // is gitignored and only present on machines that ran
+      // scripts/spike/build_cactus_engine.sh.
       if (needleSpikeEnabled)
         GoRoute(
           path: AppRoutes.needleSpike,

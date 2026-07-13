@@ -1936,6 +1936,19 @@ void main() {
       expect(topLevelPaths, isNot(contains(AppRoutes.needleSpike)));
     }
   });
+
+  // Gated round-trip test (registered only under --dart-define=NEEDLE_SPIKE=true):
+  // pump MaterialApp.router with the routerProvider's router (ProviderScope with
+  // FakeHermesChannel/FakeHermesEndpointStore overrides plus a never-resolving
+  // needleInstallServiceProvider), go('/settings'), push('/needle-spike'), and
+  // assert router.canPop() is true, then pop() back to '/settings'. Locks the
+  // push-over-Settings behavior so the operator can round-trip during evaluation.
+  if (needleSpikeEnabled) {
+    testWidgets('pushed spike route stacks over Settings for a round-trip',
+        (tester) async {
+      // see test/router/needle_spike_route_test.dart for the full harness
+    });
+  }
 }
 ```
 
@@ -1972,7 +1985,7 @@ In the `GoRouter(... routes: [...])` list, after the closing `),` of the `ShellR
         ),
 ```
 
-(`needleSpikeEnabled` is a compile-time const, so in default builds this branch — and via tree-shaking the whole spike feature — is dropped from release binaries.)
+(`needleSpikeEnabled` is a compile-time const, so in default builds this route and all transitively imported spike Dart code are tree-shaken from the AOT snapshot. NOTE: the native `libcactus_engine.so` under `android/app/src/main/jniLibs/` is packaged by Gradle regardless of this flag once built (~4 MB compressed); it is gitignored and only present on machines that ran `scripts/spike/build_cactus_engine.sh`.)
 
 - [ ] **Step 5: Add the guarded settings tile**
 
@@ -1993,13 +2006,16 @@ In the `ListView` `children:` list (after the last existing `_SettingsSectionCar
                     ListTile(
                       leading: const Icon(Icons.play_arrow_outlined),
                       title: const Text('Open Needle evaluation screen'),
-                      onTap: () => context.go(AppRoutes.needleSpike),
+                      // push (not go): the spike route is outside the
+                      // ShellRoute, so go() would replace the whole match
+                      // stack and leave canPop()==false — no back arrow.
+                      onTap: () => context.push(AppRoutes.needleSpike),
                     ),
                   ],
                 ),
 ```
 
-(`AppRoutes` and `context.go` are already imported in this file.)
+(`AppRoutes` and the go_router context extensions are already imported in this file.)
 
 - [ ] **Step 6: Run tests both gated and ungated**
 
@@ -2080,6 +2096,7 @@ Mic-spoken utterances (n=<5+>): <tally + notes on STT-noise sensitivity>
 
 ## 3. Size & speed
 - APK delta (release, arm64): <bytes> (baseline <bytes> → gated <bytes>)
+- Note: libcactus_engine.so ships in the APK regardless of NEEDLE_SPIKE once built locally (Gradle packages jniLibs unconditionally); flag-off APKs on a machine with the .so present are NOT byte-identical to baseline.
 - Model download: 16,185,061 bytes zip → <extracted size> on disk
 - Latency over the 20 runs: wall p50 <ms> / p95 <ms>; engine-reported p50 <ms>
 - First-run model load time: <ms/s>

@@ -297,7 +297,11 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.play_arrow_outlined),
                       title: const Text('Open Needle evaluation screen'),
-                      onTap: () => context.go(AppRoutes.needleSpike),
+                      // push (not go): the spike route lives outside the
+                      // ShellRoute, so go() would replace the whole match
+                      // stack and leave no back navigation. push() stacks
+                      // it over Settings for an operator round-trip.
+                      onTap: () => context.push(AppRoutes.needleSpike),
                     ),
                   ],
                 ),
