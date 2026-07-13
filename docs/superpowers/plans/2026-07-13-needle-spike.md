@@ -766,6 +766,13 @@ void main() {
     expect(File('$dir/config.json').existsSync(), isTrue);
     expect(await service.installedModelDir(), dir);
   });
+
+  test('empty zip fails installation and leaves no marker', () async {
+    final zip = _zipWith({});
+    final service = NeedleModelInstallService(supportDirectory: tempDir);
+    await expectLater(service.installFromZipBytes(zip), throwsStateError);
+    expect(await service.installedModelDir(), isNull);
+  });
 }
 
 List<int> _zipWith(Map<String, String> files) {
@@ -788,6 +795,7 @@ Create `lib/features/needle_spike/services/needle_model_install_service.dart`:
 
 ```dart
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
@@ -820,9 +828,22 @@ class NeedleModelInstallService {
     return recorded;
   }
 
+  Future<String>? _inFlight;
+
   /// Ensures the bundle is downloaded, verified, and extracted.
   /// Returns the directory to pass to `cactus_init`.
-  Future<String> ensureModel({void Function(int receivedBytes)? onProgress}) async {
+  ///
+  /// Concurrent calls share one in-flight download/extract; only the first
+  /// caller's [onProgress] receives updates.
+  Future<String> ensureModel({void Function(int receivedBytes)? onProgress}) {
+    return _inFlight ??= _ensureModel(onProgress: onProgress).whenComplete(() {
+      _inFlight = null;
+    });
+  }
+
+  Future<String> _ensureModel({
+    void Function(int receivedBytes)? onProgress,
+  }) async {
     final existing = await installedModelDir();
     if (existing != null) return existing;
     final zipBytes = await _downloadZip(onProgress: onProgress);
@@ -838,7 +859,22 @@ class NeedleModelInstallService {
     await _modelRoot.create(recursive: true);
     final archive = ZipDecoder().decodeBytes(zipBytes);
     await extractArchiveToDisk(archive, _modelRoot.path);
+    // extractArchiveToDisk swallows per-entry write failures, so verify
+    // every archive file actually landed on disk with the expected size.
+    for (final entry in archive.files.where((f) => f.isFile)) {
+      final out = File('${_modelRoot.path}/${entry.name}');
+      if (!await out.exists() || await out.length() != entry.size) {
+        throw StateError('Needle bundle extraction incomplete.');
+      }
+    }
     final modelDir = _resolveModelDir(_modelRoot);
+    final hasFiles = modelDir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .isNotEmpty;
+    if (!hasFiles) {
+      throw StateError('Needle bundle extraction incomplete.');
+    }
     await _marker.writeAsString(modelDir.path);
     return modelDir.path;
   }
@@ -869,9 +905,7 @@ class NeedleModelInstallService {
         );
       }
       final builder = BytesBuilder(copy: false);
-      await for (final chunk in response.timeout(
-        const Duration(seconds: 30),
-      )) {
+      await for (final chunk in response.timeout(const Duration(seconds: 30))) {
         builder.add(chunk);
         if (builder.length > maximumZipBytes) {
           throw StateError('Needle bundle exceeded its size limit.');
@@ -880,7 +914,7 @@ class NeedleModelInstallService {
       }
       final bytes = builder.takeBytes();
       final digest = sha256.convert(bytes).toString().toLowerCase();
-      if (digest != modelZipSha256) {
+      if (digest != modelZipSha256.trim().toLowerCase()) {
         throw StateError('Needle bundle checksum mismatch.');
       }
       return bytes;
@@ -925,7 +959,7 @@ class NeedleModelInstallService {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `flutter test test/features/needle_spike/needle_model_install_service_test.dart`
-Expected: 3 tests PASS.
+Expected: 4 tests PASS.
 
 - [ ] **Step 5: Commit**
 

@@ -32,9 +32,20 @@ class NeedleModelInstallService {
     return recorded;
   }
 
+  Future<String>? _inFlight;
+
   /// Ensures the bundle is downloaded, verified, and extracted.
   /// Returns the directory to pass to `cactus_init`.
-  Future<String> ensureModel({
+  ///
+  /// Concurrent calls share one in-flight download/extract; only the first
+  /// caller's [onProgress] receives updates.
+  Future<String> ensureModel({void Function(int receivedBytes)? onProgress}) {
+    return _inFlight ??= _ensureModel(onProgress: onProgress).whenComplete(() {
+      _inFlight = null;
+    });
+  }
+
+  Future<String> _ensureModel({
     void Function(int receivedBytes)? onProgress,
   }) async {
     final existing = await installedModelDir();
@@ -52,7 +63,22 @@ class NeedleModelInstallService {
     await _modelRoot.create(recursive: true);
     final archive = ZipDecoder().decodeBytes(zipBytes);
     await extractArchiveToDisk(archive, _modelRoot.path);
+    // extractArchiveToDisk swallows per-entry write failures, so verify
+    // every archive file actually landed on disk with the expected size.
+    for (final entry in archive.files.where((f) => f.isFile)) {
+      final out = File('${_modelRoot.path}/${entry.name}');
+      if (!await out.exists() || await out.length() != entry.size) {
+        throw StateError('Needle bundle extraction incomplete.');
+      }
+    }
     final modelDir = _resolveModelDir(_modelRoot);
+    final hasFiles = modelDir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .isNotEmpty;
+    if (!hasFiles) {
+      throw StateError('Needle bundle extraction incomplete.');
+    }
     await _marker.writeAsString(modelDir.path);
     return modelDir.path;
   }
@@ -92,7 +118,7 @@ class NeedleModelInstallService {
       }
       final bytes = builder.takeBytes();
       final digest = sha256.convert(bytes).toString().toLowerCase();
-      if (digest != modelZipSha256) {
+      if (digest != modelZipSha256.trim().toLowerCase()) {
         throw StateError('Needle bundle checksum mismatch.');
       }
       return bytes;

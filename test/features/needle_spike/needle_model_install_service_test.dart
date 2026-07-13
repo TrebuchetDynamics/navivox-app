@@ -39,6 +39,13 @@ void main() {
     expect(File('$dir/config.json').existsSync(), isTrue);
     expect(await service.installedModelDir(), dir);
   });
+
+  test('empty zip fails installation and leaves no marker', () async {
+    final zip = _zipWith({});
+    final service = NeedleModelInstallService(supportDirectory: tempDir);
+    await expectLater(service.installFromZipBytes(zip), throwsStateError);
+    expect(await service.installedModelDir(), isNull);
+  });
 }
 
 List<int> _zipWith(Map<String, String> files) {
