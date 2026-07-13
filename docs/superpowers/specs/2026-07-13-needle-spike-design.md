@@ -2,7 +2,9 @@
 
 **Date:** 2026-07-13
 **Status:** Approved (spike; findings decide whether a real integration design follows)
-**Branch:** `spike/needle` (never merged as-is; only findings return)
+**Branch:** `spike/needle` — originally never-merge; superseded 2026-07-13 by user decision
+to merge the completed, gated implementation into `main` (merge `3d4152d`) ahead of the
+Task 9 device evaluation. The spike remains fully dart-define-gated in default builds.
 
 ## Background
 
