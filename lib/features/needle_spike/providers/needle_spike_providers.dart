@@ -7,6 +7,9 @@ import '../services/needle_engine.dart';
 import '../services/needle_model_install_service.dart';
 import '../services/needle_spike_service.dart';
 
+/// Deliberately root-scoped: the loaded model stays resident for the whole
+/// app session, and [NeedleEngine.unload] runs only at ProviderContainer
+/// teardown — not when the spike screen is popped.
 final needleEngineProvider = Provider<NeedleEngineApi>((ref) {
   final engine = NeedleEngine();
   ref.onDispose(engine.unload);

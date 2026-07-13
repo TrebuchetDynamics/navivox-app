@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/voice/voice_capture_service.dart';
 import '../data/needle_test_transcripts.dart';
 import '../models/needle_scorecard.dart';
 import '../providers/needle_spike_providers.dart';
@@ -28,6 +29,15 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
   String? _error;
   NeedleResult? _result;
 
+  /// True once the current [_result] has been given a verdict. Gates the
+  /// verdict buttons so each result is scored exactly once; cleared when a
+  /// new run starts.
+  bool _resultScored = false;
+
+  /// The capture service currently recording, if any. Held so dispose can
+  /// release the microphone if the user backs out mid-capture.
+  VoiceCaptureService? _activeCapture;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +46,8 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
 
   @override
   void dispose() {
+    // Fire-and-forget: release the microphone if a capture is in flight.
+    _activeCapture?.cancel();
     _transcriptController.dispose();
     super.dispose();
   }
@@ -83,6 +95,7 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
       _running = true;
       _error = null;
       _result = null;
+      _resultScored = false;
     });
     try {
       final engine = ref.read(needleEngineProvider);
@@ -116,6 +129,7 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
       _capturing = true;
       _error = null;
     });
+    _activeCapture = capture;
     try {
       final result = await capture.capture(
         timeout: const Duration(seconds: 15),
@@ -126,12 +140,21 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
       if (!mounted) return;
       setState(() => _error = '$e');
     } finally {
+      _activeCapture = null;
       if (mounted) setState(() => _capturing = false);
     }
   }
 
+  /// Verdicts may only be recorded against a real, current, not-yet-scored
+  /// result — otherwise the tally would drift from the actual runs.
+  bool get _canRecordVerdict => _result != null && !_running && !_resultScored;
+
   void _recordVerdict(NeedleVerdict verdict) {
-    setState(() => _scorecard.record(verdict));
+    if (!_canRecordVerdict) return;
+    setState(() {
+      _scorecard.record(verdict);
+      _resultScored = true;
+    });
   }
 
   @override
@@ -262,28 +285,41 @@ class _NeedleSpikeScreenState extends ConsumerState<NeedleSpikeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(_scorecard.summaryLine),
+            if (_resultScored)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text('scored ✓'),
+              ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
                 OutlinedButton(
                   key: const Key('needle-verdict-correct'),
-                  onPressed: () => _recordVerdict(NeedleVerdict.correct),
+                  onPressed: _canRecordVerdict
+                      ? () => _recordVerdict(NeedleVerdict.correct)
+                      : null,
                   child: const Text('Correct'),
                 ),
                 OutlinedButton(
                   key: const Key('needle-verdict-wrong-tool'),
-                  onPressed: () => _recordVerdict(NeedleVerdict.wrongTool),
+                  onPressed: _canRecordVerdict
+                      ? () => _recordVerdict(NeedleVerdict.wrongTool)
+                      : null,
                   child: const Text('Wrong tool'),
                 ),
                 OutlinedButton(
                   key: const Key('needle-verdict-wrong-args'),
-                  onPressed: () => _recordVerdict(NeedleVerdict.wrongArgs),
+                  onPressed: _canRecordVerdict
+                      ? () => _recordVerdict(NeedleVerdict.wrongArgs)
+                      : null,
                   child: const Text('Wrong args'),
                 ),
                 OutlinedButton(
                   key: const Key('needle-verdict-no-call'),
-                  onPressed: () => _recordVerdict(NeedleVerdict.noCall),
+                  onPressed: _canRecordVerdict
+                      ? () => _recordVerdict(NeedleVerdict.noCall)
+                      : null,
                   child: const Text('No call'),
                 ),
                 TextButton(
