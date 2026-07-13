@@ -6,7 +6,7 @@ usage() {
 Build a Flutter Android APK and install it on an attached Android device.
 
 Usage:
-  scripts/build_send_apk.sh [--debug|--profile|--release] [-d DEVICE_ID] [--no-clean] [--extra-flutter-arg ARG]...
+  scripts/build_send_apk.sh [--debug|--profile|--release] [-d DEVICE_ID] [--clean] [--extra-flutter-arg ARG]...
 
 Examples:
   scripts/build_send_apk.sh
@@ -14,15 +14,20 @@ Examples:
   scripts/build_send_apk.sh --release -d R58M123ABC
 
 Notes:
-  - Defaults to --debug.
+  - Defaults to an incremental debug build; use --clean for a clean build.
+  - Set NAVIVOX_ANDROID_HERMES_URL to prefill a private Hermes endpoint.
   - DEVICE_ID is an adb serial from `adb devices`.
   - Extra Flutter args are appended to `flutter build apk`.
 USAGE
 }
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$script_dir/.."
+
 mode="debug"
 device_id="${ANDROID_SERIAL:-}"
-clean_first=1
+clean_first=0
+hermes_base_url="${NAVIVOX_ANDROID_HERMES_URL:-}"
 extra_flutter_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -39,7 +44,11 @@ while [[ $# -gt 0 ]]; do
       device_id="$2"
       shift 2
       ;;
-    --no-clean)
+    --clean)
+      clean_first=1
+      shift
+      ;;
+    --no-clean) # Backward compatibility.
       clean_first=0
       shift
       ;;
@@ -73,11 +82,6 @@ require_cmd() {
 require_cmd flutter
 require_cmd adb
 
-if [[ ! -f pubspec.yaml ]]; then
-  echo "Run this script from the Flutter project root." >&2
-  exit 1
-fi
-
 apk_path="build/app/outputs/flutter-apk/app-${mode}.apk"
 
 if [[ "$clean_first" -eq 1 ]]; then
@@ -85,6 +89,11 @@ if [[ "$clean_first" -eq 1 ]]; then
 fi
 
 flutter pub get
+if [[ -n "$hermes_base_url" ]]; then
+  extra_flutter_args+=(
+    "--dart-define=NAVIVOX_HERMES_BASE_URL=$hermes_base_url"
+  )
+fi
 flutter build apk --"$mode" "${extra_flutter_args[@]}"
 
 if [[ ! -f "$apk_path" ]]; then
