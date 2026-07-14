@@ -37,6 +37,10 @@ jobs:
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/navivox-release.jks"
+      - name: Build Cactus engine (arm64)
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build
+          bash scripts/spike/build_cactus_engine.sh
       - name: Build signed release APK
         env:
           NAVIVOX_RELEASE_STORE_FILE: ${{ runner.temp }}/navivox-release.jks

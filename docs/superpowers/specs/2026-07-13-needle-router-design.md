@@ -1,7 +1,7 @@
 # Needle Voice-Command Router — Design
 
 **Date:** 2026-07-13
-**Status:** Approved
+**Status:** Implemented (branch feat/needle-router); on-device smoke pending
 **Precedes:** implementation plan (docs/superpowers/plans/)
 **Builds on:** docs/superpowers/specs/2026-07-13-needle-spike-design.md and
 docs/superpowers/specs/2026-07-13-needle-spike-findings.md (16/20 correct, 85% tool
@@ -104,3 +104,38 @@ null until re-downloaded.
 
 Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failures
 (follow-up), iOS/web/Linux engines, NPU acceleration.
+
+## Implementation deviations
+
+- **`VoiceCommandSettingsSink` interface:** the dispatcher depends on a small
+  `VoiceCommandSettingsSink` interface rather than the concrete
+  `NavivoxVoiceSettingsController` from Riverpod, decoupling command dispatch from the
+  Riverpod controller type and keeping the dispatcher's unit tests free of a
+  `ProviderContainer`.
+- **Voice toggle-on side effect (user-intent deviation):** turning the "On-device voice
+  commands" toggle ON also enables spoken replies (`speakRepliesEnabled`), not just
+  routing. Rationale: a user who wants hands-free command execution almost always also
+  wants spoken confirmation of what happened; shipping routing without audible feedback
+  would be a confusing half-feature. This is a deliberate deviation from the strict
+  reading of "toggle only controls routing."
+- **Consecutive-timeout suspension (pileup guard):** in addition to the 3
+  engine-failure auto-suspend, the router also auto-suspends after repeated
+  *consecutive* timeouts, even though timeouts alone don't count as failures under the
+  original rule. This prevents a slow/thermal-throttled device from repeatedly eating
+  the full 1.5 s timeout on every transcript indefinitely; suspension only trips when
+  timeouts pile up back-to-back, not on an isolated slow response.
+- **Toggle-off pauses the controller:** switching "On-device voice commands" OFF
+  actively pauses the routing seam on the live `HermesVoiceInputController` (not just a
+  read on next capture), so an in-progress or next-imminent capture doesn't race a
+  stale "on" reading of the setting.
+- **`StateProvider` from the Riverpod legacy export:** one provider in
+  `lib/features/voice_commands/providers/voice_command_providers.dart` uses
+  `StateProvider` from Riverpod's legacy/back-compat export rather than a Riverpod 3
+  `Notifier`, matching an existing pattern already used elsewhere in this codebase
+  rather than introducing a second state-management idiom for one small piece of state.
+- **'British'-style voice aliases are a known limitation:** the spike-bank regression
+  fixture (transcript 16, "use the british voice for speech") locks in the current
+  behavior where a descriptive/aliased voice reference does not resolve unless a
+  candidate voice name literally contains the spoken words. Teaching the validator
+  locale-aware aliasing (e.g. "british" → `en-GB-*`) is deferred; today it correctly
+  falls through to Hermes rather than guessing.
