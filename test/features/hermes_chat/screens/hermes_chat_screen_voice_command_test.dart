@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:navivox/features/hermes_chat/screens/hermes_chat_screen.dart';
+import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
 import 'package:navivox/features/voice_commands/core/needle_engine.dart';
 import 'package:navivox/features/voice_commands/providers/voice_command_providers.dart';
 import 'package:navivox/features/voice_commands/services/voice_command_router.dart';
@@ -375,6 +376,17 @@ void main() {
       // 'Turn on' means start listening, not just flip the setting.
       expect(capture.captureCalls, 2);
       expect(tester.widget<Switch>(continuousSwitch()).value, isTrue);
+      // Mirror the UI switch exactly: it also enables speak-replies
+      // (hermes_chat_layout.dart). Without it, maybeContinue() would pause
+      // after the FIRST reply — hands-free would survive one exchange and
+      // then silently die.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HermesChatScreen)),
+      );
+      expect(
+        container.read(navivoxVoiceSettingsProvider).speakRepliesEnabled,
+        isTrue,
+      );
       await expireSnackBars(tester);
     });
 

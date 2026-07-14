@@ -119,7 +119,11 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
   ///   pausing explicitly. Never re-arm.
   /// - on: deliberate deviation from the plan text — the operator said
   ///   'turn on continuous voice', so start listening now rather than only
-  ///   flipping the setting while the notice claims voice is on.
+  ///   flipping the setting while the notice claims voice is on. Mirrors
+  ///   the hands-free UI switch exactly, including enabling speak-replies:
+  ///   without that, `maybeContinue()` would pause the loop after the FIRST
+  ///   reply (speakRepliesEnabled defaults to false) — hands-free would
+  ///   survive one exchange and then silently die.
   void _afterVoiceCommandDispatched(VoiceRouteResult result) {
     if (result.command == VoiceCommandId.toggleContinuousMode) {
       if (result.args['enabled'] == false) {
@@ -130,6 +134,9 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
         }
         return;
       }
+      ref
+          .read(navivoxVoiceSettingsProvider.notifier)
+          .setSpeakRepliesEnabled(true);
       unawaited(_voiceInputController.enableContinuous());
       return;
     }
