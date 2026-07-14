@@ -162,6 +162,133 @@ void main() {
     },
   );
 
+  test('capabilities parse caller scopes and endpoint requirements', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'profile_context': {
+        'type': 'query',
+        'name': 'profile',
+        'required': true,
+        'default_profile_id': 'default',
+      },
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['profiles:read'],
+        'credential_kind': 'operator_token',
+      },
+      'endpoints': {
+        'profiles': {
+          'method': 'GET',
+          'path': '/api/profiles',
+          'required_scopes': ['profiles:read'],
+          'profile_scoped': false,
+        },
+      },
+    });
+
+    expect(document.schemaVersion, 1);
+    expect(document.supportsSchema, isTrue);
+    expect(document.profileContext.name, 'profile');
+    expect(document.profileContext.required, isTrue);
+    expect(document.profileContext.defaultProfileId, 'default');
+    expect(document.auth.allows('profiles:read'), isTrue);
+    expect(document.auth.allows('profiles:write'), isFalse);
+    expect(document.endpoints['profiles']!.requiredScopes, ['profiles:read']);
+    expect(document.endpoints['profiles']!.profileScoped, isFalse);
+  });
+
+  test('absent schema_version parses as version 1', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': <String, Object?>{},
+    });
+
+    expect(document.schemaVersion, 1);
+    expect(document.supportsSchema, isTrue);
+  });
+
+  test('absent scope arrays parse as empty rather than crashing', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': {
+        'profiles': {'method': 'GET', 'path': '/api/profiles'},
+      },
+    });
+
+    expect(document.auth.grantedScopes, isEmpty);
+    expect(document.auth.allows('profiles:read'), isFalse);
+    expect(document.endpoints['profiles']!.requiredScopes, isEmpty);
+    expect(document.endpoints['profiles']!.profileScoped, isFalse);
+  });
+
+  test('unknown top-level and nested fields do not crash older clients', () {
+    expect(
+      () => HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'unexpected_top_level_field': 'ignored',
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'unexpected_auth_field': 'ignored',
+        },
+        'endpoints': {
+          'profiles': {
+            'method': 'GET',
+            'path': '/api/profiles',
+            'unexpected_endpoint_field': 'ignored',
+          },
+        },
+      }),
+      returnsNormally,
+    );
+  });
+
+  test('absent profile_context leaves profile-scoped operations unavailable '
+      'rather than implicitly default-scoped', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': {
+        'session_chat_stream': {
+          'method': 'POST',
+          'path': '/api/sessions/{session_id}/chat/stream',
+          'profile_scoped': true,
+        },
+      },
+      'features': {'session_chat_streaming': true},
+    });
+
+    expect(document.profileContext.name, isEmpty);
+    expect(document.profileContext.isSupportedQueryContext, isFalse);
+
+    final policy = HermesTransportPolicy(document);
+    expect(policy.supportsSessionChatStream, isFalse);
+  });
+
+  test(
+    'schema version 2 exposes no transport operations until the client supports it',
+    () {
+      final document = HermesCapabilityDocument.fromJson({
+        'schema_version': 2,
+        ...jsonDecode(_capabilitiesFixture) as Map<String, Object?>,
+      });
+      final policy = HermesTransportPolicy(document);
+
+      expect(document.supportsSchema, isFalse);
+      expect(policy.supportsSessionChatStream, isFalse);
+      expect(policy.supportsRunsTransport, isFalse);
+      expect(policy.supportsRunStatus, isFalse);
+      expect(policy.supportsRunStop, isFalse);
+      expect(policy.supportsRunApprovalResponse, isFalse);
+      expect(policy.supportsToolProgressEvents, isFalse);
+      expect(policy.supportsAnyChatTransport, isFalse);
+      expect(policy.supportsConfigWrite, isFalse);
+      expect(policy.supportsMemoryWrite, isFalse);
+      expect(policy.supportsAudioApi, isFalse);
+      expect(policy.supportsRealtimeVoice, isFalse);
+    },
+  );
+
   test(
     'surface readiness does not claim unwired Hermes APIs are implemented',
     () {
