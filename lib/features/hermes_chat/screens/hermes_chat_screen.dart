@@ -118,6 +118,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   VoiceRouteResult? _pendingVoiceCommand;
   bool _pendingVoiceCommandAutoSend = false;
   bool _suspensionNoticeShown = false;
+  late final VoiceCaptureHooks _voiceCaptureHooks;
 
   @override
   void initState() {
@@ -136,10 +137,10 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
       routeTranscript: _routeTranscript,
       onRoutedCommand: _onRoutedCommand,
     )..addListener(_onVoiceInputChanged);
-    final voiceCaptureHooks = ref.read(voiceCaptureHooksProvider);
-    voiceCaptureHooks.onStop = () =>
+    _voiceCaptureHooks = ref.read(voiceCaptureHooksProvider);
+    _voiceCaptureHooks.onStop = () =>
         _voiceInputController.pause('Stopped by voice command.');
-    voiceCaptureHooks.onStart = () =>
+    _voiceCaptureHooks.onStart = () =>
         unawaited(_voiceInputController.enableContinuous());
     _channelProviderSubscription = ref.listenManual<HermesChannel>(
       hermesChannelProvider,
@@ -152,6 +153,10 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Unbind the voice-capture hooks so a stop/start command dispatched
+    // after this screen is gone cannot reach a disposed controller.
+    _voiceCaptureHooks.onStop = () {};
+    _voiceCaptureHooks.onStart = () {};
     _channelProviderSubscription.close();
     _voiceInputController.removeListener(_onVoiceInputChanged);
     _voiceInputController.dispose();

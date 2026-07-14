@@ -29,7 +29,7 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
 
   void _onRoutedCommand(VoiceRouteResult result, {required bool autoSend}) {
     if (result.tier == VoiceCommandTier.instant) {
-      unawaited(_dispatchInstantVoiceCommand(result, autoSend: autoSend));
+      unawaited(_dispatchInstantVoiceCommand(result));
       return;
     }
     // One chip at a time: a new confirm-tier result replaces whatever was
@@ -41,16 +41,18 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
     });
   }
 
-  Future<void> _dispatchInstantVoiceCommand(
-    VoiceRouteResult result, {
-    required bool autoSend,
-  }) async {
+  Future<void> _dispatchInstantVoiceCommand(VoiceRouteResult result) async {
     await ref.read(voiceCommandDispatcherProvider).dispatch(result);
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(
-      context,
-    )?.showSnackBar(SnackBar(content: Text(result.describe())));
-    _rearmContinuousVoiceIfNeeded(result);
+    // show_status's dispatch already emits the real status line through
+    // voiceCommandNoticeProvider; a describe() snackbar on top of it would
+    // just queue a redundant second toast.
+    if (result.command != VoiceCommandId.showStatus) {
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text(result.describe())));
+    }
+    _afterVoiceCommandDispatched(result);
   }
 
   void _confirmVoiceCommand() {
@@ -63,10 +65,17 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
   Future<void> _dispatchConfirmedVoiceCommand(VoiceRouteResult result) async {
     await ref.read(voiceCommandDispatcherProvider).dispatch(result);
     if (!mounted) return;
-    _rearmContinuousVoiceIfNeeded(result);
+    _afterVoiceCommandDispatched(result);
   }
 
   void _declineVoiceCommand() {
+    // Narrow race, accepted: when a new confirm-tier result replaces the
+    // chip, the old chip's auto-decline timer is only cancelled in
+    // didUpdateWidget, which runs on the frame after our setState. A stale
+    // timer firing inside that window lands here and declines the
+    // REPLACEMENT command. The failure mode is a benign early decline (the
+    // transcript is still delivered to draft/Hermes), never a wrong
+    // dispatch, and the window is sub-frame — not worth keying chips over.
     final result = _pendingVoiceCommand;
     if (result == null) return;
     final autoSend = _pendingVoiceCommandAutoSend;
@@ -83,8 +92,47 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
   }
 
   Future<void> _sendDeclinedVoiceTranscript(VoiceRouteResult result) async {
-    await ref.read(hermesChannelProvider).sendText(result.transcript);
-    if (!mounted) return;
+    try {
+      await ref.read(hermesChannelProvider).sendText(result.transcript);
+    } catch (_) {
+      // sendText throws StateError while a turn is streaming or the channel
+      // is disconnected (realistic during the chip's 5 s window). Surface a
+      // transcript-free notice instead of an uncaught zone error.
+      if (mounted) {
+        ref.read(voiceCommandNoticeProvider.notifier).state =
+            'Could not send the declined transcript to Hermes.';
+      }
+    } finally {
+      // Re-arm must be evaluated even when the send failed — otherwise one
+      // bad send silently kills the hands-free loop.
+      if (mounted) _rearmContinuousVoiceIfNeeded(result);
+    }
+  }
+
+  /// Post-dispatch side effects that go beyond re-arming.
+  ///
+  /// `toggle_continuous_mode` needs the controller kept in sync with the
+  /// setting its dispatch just flipped:
+  /// - off: the dispatcher only writes the setting; without pausing the
+  ///   controller the hands-free switch renders ON-but-disabled with the
+  ///   mic still logically armed. Mirror stop_voice_run's hooks.onStop by
+  ///   pausing explicitly. Never re-arm.
+  /// - on: deliberate deviation from the plan text — the operator said
+  ///   'turn on continuous voice', so start listening now rather than only
+  ///   flipping the setting while the notice claims voice is on.
+  void _afterVoiceCommandDispatched(VoiceRouteResult result) {
+    if (result.command == VoiceCommandId.toggleContinuousMode) {
+      if (result.args['enabled'] == false) {
+        if (_voiceInputController.continuousEnabled) {
+          _voiceInputController.pause(
+            'Continuous voice turned off by voice command.',
+          );
+        }
+        return;
+      }
+      unawaited(_voiceInputController.enableContinuous());
+      return;
+    }
     _rearmContinuousVoiceIfNeeded(result);
   }
 
@@ -97,9 +145,11 @@ extension _HermesChatScreenVoiceCommands on _HermesChatScreenState {
   ///
   /// Two commands are one-shot exceptions and must NOT re-arm:
   /// `stop_voice_run` (the operator just asked the loop to stop — its
-  /// dispatch already calls `voiceController.pause()`, which is exactly why
-  /// `continuousEnabled` reads false below) and `toggle_continuous_mode`
-  /// with `enabled: false` (the operator asked to turn continuous mode off).
+  /// dispatch already calls `voiceController.pause()` via hooks.onStop,
+  /// which is exactly why `continuousEnabled` reads false below) and
+  /// `toggle_continuous_mode` with `enabled: false` (paused explicitly in
+  /// [_afterVoiceCommandDispatched]; the guard here covers decline paths,
+  /// where it is unreachable today because toggle-off is instant-tier).
   void _rearmContinuousVoiceIfNeeded(VoiceRouteResult result) {
     if (result.command == VoiceCommandId.stopVoiceRun) return;
     if (result.command == VoiceCommandId.toggleContinuousMode &&
