@@ -27,8 +27,10 @@ abstract final class VoiceCommandValidator {
     final args = <String, Object?>{};
     switch (id) {
       case VoiceCommandId.navigateToScreen:
-        final screen =
-            _snapEnum(call.arguments['screen'], const ['hermes', 'settings']);
+        final screen = _snapEnum(call.arguments['screen'], const [
+          'hermes',
+          'settings',
+        ]);
         if (screen == null) return null;
         args['screen'] = screen;
       case VoiceCommandId.toggleContinuousMode:
@@ -40,8 +42,10 @@ abstract final class VoiceCommandValidator {
         if (rate == null) return null;
         args['rate'] = rate;
       case VoiceCommandId.switchSession:
-        final title =
-            _snapFuzzy(call.arguments['session_name'], context.sessionTitles);
+        final title = _snapFuzzy(
+          call.arguments['session_name'],
+          context.sessionTitles,
+        );
         if (title == null) return null;
         args['session_name'] = title;
       case VoiceCommandId.setTtsVoice:
@@ -62,7 +66,10 @@ abstract final class VoiceCommandValidator {
     );
   }
 
-  static VoiceCommandTier _tierFor(VoiceCommandId id, Map<String, Object?> args) {
+  static VoiceCommandTier _tierFor(
+    VoiceCommandId id,
+    Map<String, Object?> args,
+  ) {
     switch (id) {
       case VoiceCommandId.navigateToScreen:
       case VoiceCommandId.showStatus:
@@ -81,12 +88,19 @@ abstract final class VoiceCommandValidator {
     }
   }
 
-  static String _normalize(Object? value) =>
-      '$value'.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  static String _normalize(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// Only primitive engine values are snappable; Maps/Lists (or anything else
+  /// the parser let through) return null so validation falls through safely.
+  static String? _normalizeOrNull(Object? value) =>
+      (value is String || value is num || value is bool)
+      ? _normalize('$value')
+      : null;
 
   static String? _snapEnum(Object? raw, List<String> allowed) {
-    if (raw == null) return null;
-    final v = _normalize(raw);
+    final v = _normalizeOrNull(raw);
+    if (v == null) return null;
     if (allowed.contains(v)) return v;
     final hits = allowed
         .where((a) => v.split(' ').contains(a) || a.split(' ').contains(v))
@@ -96,7 +110,7 @@ abstract final class VoiceCommandValidator {
 
   static bool? _snapBool(Object? raw) {
     if (raw is bool) return raw;
-    switch (_normalize(raw)) {
+    switch (_normalizeOrNull(raw)) {
       case 'true' || 'on':
         return true;
       case 'false' || 'off':
@@ -107,21 +121,19 @@ abstract final class VoiceCommandValidator {
   }
 
   static double? _snapRate(Object? raw) {
+    if (raw is! num && raw is! String) return null;
     final value = raw is num ? raw.toDouble() : double.tryParse('$raw'.trim());
     if (value == null) return null;
     return value.clamp(0.25, 3.0);
   }
 
   static String? _snapFuzzy(Object? raw, List<String> candidates) {
-    if (raw == null) return null;
-    final v = _normalize(raw);
-    if (v.isEmpty) return null;
-    final exact =
-        candidates.where((c) => _normalize(c) == v).toList();
+    final v = _normalizeOrNull(raw);
+    if (v == null || v.isEmpty) return null;
+    final exact = candidates.where((c) => _normalize(c) == v).toList();
     if (exact.length == 1) return exact.single;
     final partial = candidates
-        .where((c) =>
-            _normalize(c).contains(v) || v.contains(_normalize(c)))
+        .where((c) => _normalize(c).contains(v) || v.contains(_normalize(c)))
         .toList();
     return partial.length == 1 ? partial.single : null;
   }

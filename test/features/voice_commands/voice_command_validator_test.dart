@@ -30,10 +30,14 @@ void main() {
   });
 
   test('toggle tier depends on direction and accepts on/off strings', () {
-    expect(run('toggle_continuous_mode', {'enabled': 'off'})!.tier,
-        VoiceCommandTier.instant);
-    expect(run('toggle_continuous_mode', {'enabled': true})!.tier,
-        VoiceCommandTier.confirm);
+    expect(
+      run('toggle_continuous_mode', {'enabled': 'off'})!.tier,
+      VoiceCommandTier.instant,
+    );
+    expect(
+      run('toggle_continuous_mode', {'enabled': true})!.tier,
+      VoiceCommandTier.confirm,
+    );
     expect(run('toggle_continuous_mode', {'enabled': 'maybe'}), isNull);
   });
 
@@ -44,10 +48,16 @@ void main() {
   });
 
   test('session fuzzy-snaps to a real title or falls through', () {
-    expect(run('switch_session', {'session_name': 'Groceries'})!
-        .args['session_name'], 'groceries');
-    expect(run('switch_session', {'session_name': 'work'})!
-        .args['session_name'], 'work notes');
+    expect(
+      run('switch_session', {
+        'session_name': 'Groceries',
+      })!.args['session_name'],
+      'groceries',
+    );
+    expect(
+      run('switch_session', {'session_name': 'work'})!.args['session_name'],
+      'work notes',
+    );
     expect(run('switch_session', {'session_name': 'poetry'}), isNull);
   });
 
@@ -56,6 +66,45 @@ void main() {
     // The spike produced set_tts_voice{voice: faster} for "speak faster
     // please" — an unresolvable voice must fall through, not execute.
     expect(run('set_tts_voice', {'voice': 'faster'}), isNull);
+  });
+
+  test('non-primitive arg values fall through instead of snapping', () {
+    expect(
+      run('navigate_to_screen', {
+        'screen': {'nested': true},
+      }),
+      isNull,
+    );
+    expect(
+      run('navigate_to_screen', {
+        'screen': ['settings'],
+      }),
+      isNull,
+    );
+    expect(
+      run('toggle_continuous_mode', {
+        'enabled': {'value': false},
+      }),
+      isNull,
+    );
+    expect(
+      run('set_speech_rate', {
+        'rate': ['1.0'],
+      }),
+      isNull,
+    );
+    expect(
+      run('switch_session', {
+        'session_name': {'title': 'groceries'},
+      }),
+      isNull,
+    );
+    expect(
+      run('set_tts_voice', {
+        'voice': ['nova'],
+      }),
+      isNull,
+    );
   });
 
   test('no-arg commands validate to their tier', () {
