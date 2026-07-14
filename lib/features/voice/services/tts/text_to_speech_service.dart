@@ -99,14 +99,21 @@ class PluginFlutterTtsEngine implements FlutterTtsEngine {
 
   /// Fetches and caches `getVoices` so each [setVoiceByName] call can resolve
   /// the locale that goes with a voice name without re-querying the plugin.
+  /// An empty result is NOT cached: some Android OEM engines report no voices
+  /// until TTS finishes cold-starting, and caching that would permanently
+  /// disable voice selection for the session.
   Future<List<Map<Object?, Object?>>> _voices() async {
     final cached = _cachedVoices;
     if (cached != null) return cached;
     final raw = await _flutterTts.getVoices;
     final voices = <Map<Object?, Object?>>[
-      if (raw is List) for (final entry in raw) if (entry is Map) entry,
+      if (raw is List)
+        for (final entry in raw)
+          if (entry is Map) entry,
     ];
-    _cachedVoices = voices;
+    if (voices.isNotEmpty) {
+      _cachedVoices = voices;
+    }
     return voices;
   }
 }

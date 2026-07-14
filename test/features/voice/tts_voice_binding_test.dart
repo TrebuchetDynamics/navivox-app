@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:navivox/features/voice/services/tts/text_to_speech_service.dart';
 import 'package:navivox/shared/voice/voice_settings.dart';
 
@@ -61,7 +62,60 @@ class _RecordingEngine implements FlutterTtsEngine {
   }
 }
 
+/// Scripted [FlutterTts] whose getVoices returns the queued responses in
+/// order (repeating the last one). Exercises [PluginFlutterTtsEngine]'s
+/// voice-list caching against the real plugin surface.
+class _ScriptedFlutterTts extends FlutterTts {
+  _ScriptedFlutterTts(this.voicesResponses);
+
+  final List<Object?> voicesResponses;
+  int voicesCalls = 0;
+
+  @override
+  Future<dynamic> get getVoices async {
+    final index = voicesCalls < voicesResponses.length
+        ? voicesCalls
+        : voicesResponses.length - 1;
+    voicesCalls += 1;
+    return voicesResponses[index];
+  }
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'empty cold-start voice list is not cached; next call re-fetches',
+    () async {
+      final flutterTts = _ScriptedFlutterTts([
+        const <Object?>[],
+        const [
+          {'name': 'nova', 'locale': 'en-US'},
+        ],
+      ]);
+      final engine = PluginFlutterTtsEngine(flutterTts: flutterTts);
+
+      // Cold start: some Android OEMs report an empty voice list before the
+      // TTS engine finishes initializing. That result must not be cached.
+      expect(await engine.voiceNames(), isEmpty);
+      expect(await engine.voiceNames(), ['nova']);
+      expect(flutterTts.voicesCalls, 2);
+    },
+  );
+
+  test('non-empty voice list is cached and not re-fetched', () async {
+    final flutterTts = _ScriptedFlutterTts([
+      const [
+        {'name': 'nova', 'locale': 'en-US'},
+      ],
+    ]);
+    final engine = PluginFlutterTtsEngine(flutterTts: flutterTts);
+
+    expect(await engine.voiceNames(), ['nova']);
+    expect(await engine.voiceNames(), ['nova']);
+    expect(flutterTts.voicesCalls, 1);
+  });
+
   test('speak applies clamped rate and voice before speaking', () async {
     final engine = _RecordingEngine();
     final service = buildFlutterTtsService(
