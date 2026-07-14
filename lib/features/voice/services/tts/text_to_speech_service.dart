@@ -153,7 +153,10 @@ class FlutterTextToSpeechService implements TextToSpeechService {
   Future<void> _applySettings() async {
     final settings = _settings?.call();
     if (settings == null) return;
-    final rate = (0.5 * settings.speechRate).clamp(0.0, 1.0);
+    // Scale from this service's own baseline rate (the constructor default,
+    // 0.45) rather than a hardcoded factor, so default settings speak at
+    // the same rate as the pre-existing feature-OFF baseline.
+    final rate = (speechRate * settings.speechRate).clamp(0.0, 1.0);
     await _engine.setSpeechRate(rate);
     final voiceName = settings.ttsVoiceName;
     if (voiceName != null) {

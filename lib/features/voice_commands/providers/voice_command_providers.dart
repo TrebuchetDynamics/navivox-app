@@ -28,9 +28,13 @@ final voiceCommandInstallServiceProvider =
       return NeedleModelInstallService(supportDirectory: support);
     });
 
-/// The installed TTS voice names, queried once via `getVoices` and cached by
-/// ordinary FutureProvider semantics — the list doesn't change while the app
-/// is running. A query failure (unsupported platform, cold-starting engine)
+/// The installed TTS voice names, queried via `getVoices` and cached by
+/// ordinary FutureProvider semantics. The list normally doesn't change while
+/// the app is running, but it CAN come back empty at cold start on some
+/// Android OEM TTS engines that haven't finished initializing yet — callers
+/// that observe an empty list should invalidate this provider so the next
+/// read retries instead of being stuck with the empty cache for the whole
+/// session. A query failure (unsupported platform, cold-starting engine)
 /// degrades to an empty list rather than surfacing an error the router has
 /// no way to act on.
 final ttsVoiceNamesProvider = FutureProvider<List<String>>((ref) async {
@@ -55,13 +59,23 @@ final voiceCommandRouterProvider = Provider<VoiceCommandRouter?>((ref) {
       final install = await ref.read(voiceCommandInstallServiceProvider.future);
       return install.installedModelDir();
     },
-    contextProvider: () => VoiceCommandContext(
-      sessionTitles: [
-        for (final session in ref.read(hermesChannelProvider).state.sessions)
-          if (session.title != null) session.title!,
-      ],
-      voiceNames: ref.read(ttsVoiceNamesProvider).value ?? const [],
-    ),
+    contextProvider: () {
+      final voiceNames = ref.read(ttsVoiceNamesProvider).value ?? const [];
+      if (voiceNames.isEmpty) {
+        // Cold-start guard: some Android OEM TTS engines report no voices
+        // until they finish initializing. Don't let an empty first result
+        // stick around for the whole session — invalidate now so the NEXT
+        // route re-queries the plugin instead of reusing the empty cache.
+        ref.invalidate(ttsVoiceNamesProvider);
+      }
+      return VoiceCommandContext(
+        sessionTitles: [
+          for (final session in ref.read(hermesChannelProvider).state.sessions)
+            if (session.title != null) session.title!,
+        ],
+        voiceNames: voiceNames,
+      );
+    },
   );
 });
 

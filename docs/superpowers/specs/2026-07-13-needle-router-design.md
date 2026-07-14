@@ -141,3 +141,21 @@ Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failu
   candidate voice name literally contains the spoken words. Teaching the validator
   locale-aware aliasing (e.g. "british" → `en-GB-*`) is deferred; today it correctly
   falls through to Hermes rather than guessing.
+- **`set_speech_rate`/`set_tts_voice` only affect the flutter_tts path (known
+  limitation):** under Pocket Speech TTS, these voice commands still update the
+  `NavivoxVoiceSettings` values (so the confirmation notice is still shown), but the
+  Pocket Speech playback path doesn't read rate/voice from settings, so the spoken
+  output doesn't actually change. Wiring Pocket Speech to the same settings is
+  deferred.
+- **Engine/parse failures are fully silent by design:** the fallthrough path for
+  engine and parse failures does not emit the transcript-free debug breadcrumb
+  described above under "Error handling." In practice, logging even a
+  transcript-free breadcrumb on every failed parse (which includes ordinary
+  non-command speech that simply isn't a voice command) proved noisier than useful;
+  staying silent here is safer than over-logging. Timeout and consecutive-timeout
+  suspension still behave as specified.
+- **Model download is not Wi-Fi-gated:** the spec's "Wi-Fi-aware" download guidance
+  is not implemented — the Needle model download (~16 MB) runs regardless of
+  connection type. Given the small size and low stakes of an unwanted cellular
+  download, gating on Wi-Fi was judged not worth the added settings surface and
+  connectivity-detection code for this alpha.

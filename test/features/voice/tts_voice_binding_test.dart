@@ -126,9 +126,32 @@ void main() {
     await service.speak('hello');
     expect(
       engine.calls,
-      containsAllInOrder(['rate:0.75', 'voice:nova', 'speak']),
+      containsAllInOrder(['rate:0.675', 'voice:nova', 'speak']),
     );
   });
+
+  test(
+    'default settings speech rate preserves the service baseline rate',
+    () async {
+      // Regression: the applied rate must scale from the service's own
+      // baseline (constructor default 0.45), not a hardcoded 0.5 — a
+      // default-settings utterance (speechRate 1.0) must speak at exactly
+      // the pre-existing baseline, matching main's behavior with the
+      // feature OFF.
+      final engine = _RecordingEngine();
+      final service = buildFlutterTtsService(
+        engine: engine,
+        settings: () => const NavivoxVoiceSettings(),
+      );
+      await service.speak('hello');
+      // The last rate call is the one _applySettings makes at speak-time
+      // (overwriting _configure's initial baseline rate call) — assert on
+      // it specifically so a regression in the scaling factor is caught
+      // even though _configure also happens to call setSpeechRate(0.45).
+      final rateCalls = engine.calls.where((call) => call.startsWith('rate:'));
+      expect(rateCalls.last, 'rate:0.45');
+    },
+  );
 
   test('unknown voice is swallowed, speech still happens', () async {
     final engine = _RecordingEngine()..failVoice = true;
