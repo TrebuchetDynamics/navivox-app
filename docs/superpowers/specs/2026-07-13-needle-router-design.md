@@ -1,7 +1,7 @@
 # Needle Voice-Command Router — Design
 
 **Date:** 2026-07-13
-**Status:** Approved
+**Status:** Implemented (branch feat/needle-router); on-device smoke pending
 **Precedes:** implementation plan (docs/superpowers/plans/)
 **Builds on:** docs/superpowers/specs/2026-07-13-needle-spike-design.md and
 docs/superpowers/specs/2026-07-13-needle-spike-findings.md (16/20 correct, 85% tool
@@ -104,3 +104,58 @@ null until re-downloaded.
 
 Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failures
 (follow-up), iOS/web/Linux engines, NPU acceleration.
+
+## Implementation deviations
+
+- **`VoiceCommandSettingsSink` interface:** the dispatcher depends on a small
+  `VoiceCommandSettingsSink` interface rather than the concrete
+  `NavivoxVoiceSettingsController` from Riverpod, decoupling command dispatch from the
+  Riverpod controller type and keeping the dispatcher's unit tests free of a
+  `ProviderContainer`.
+- **Voice toggle-on side effect (user-intent deviation):** the voice command
+  `toggle_continuous_mode(enabled: true)`, once confirmed via the chip, does not just
+  flip the continuous-voice setting — it also starts hands-free listening
+  (`enableContinuous()`) and enables spoken replies (`speakRepliesEnabled`), exactly
+  mirroring the hands-free UI switch. Rationale: "turn on continuous mode" spoken
+  aloud means "start listening now"; without speak-replies the loop would silently die
+  after one exchange (maybeContinue pauses when replies aren't spoken)."
+- **Consecutive-timeout suspension (pileup guard):** in addition to the 3
+  engine-failure auto-suspend, the router also auto-suspends after repeated
+  *consecutive* timeouts, even though timeouts alone don't count as failures under the
+  original rule. This prevents a slow/thermal-throttled device from repeatedly eating
+  the full 1.5 s timeout on every transcript indefinitely; suspension only trips when
+  timeouts pile up back-to-back, not on an isolated slow response.
+- **Toggle-off pauses the controller:** the voice command
+  `toggle_continuous_mode(enabled: false)` doesn't just flip the setting — it also
+  pauses the live `HermesVoiceInputController` continuous loop (mirroring
+  `stop_voice_run`), so the hands-free switch never renders ON-but-disabled after a
+  spoken "turn off".
+- **`StateProvider` from the Riverpod legacy export:** one provider in
+  `lib/features/voice_commands/providers/voice_command_providers.dart` uses
+  `StateProvider` from Riverpod's legacy/back-compat export rather than a Riverpod 3
+  `Notifier`, matching an existing pattern already used elsewhere in this codebase
+  rather than introducing a second state-management idiom for one small piece of state.
+- **'British'-style voice aliases are a known limitation:** the spike-bank regression
+  fixture (transcript 16, "use the british voice for speech") locks in the current
+  behavior where a descriptive/aliased voice reference does not resolve unless a
+  candidate voice name literally contains the spoken words. Teaching the validator
+  locale-aware aliasing (e.g. "british" → `en-GB-*`) is deferred; today it correctly
+  falls through to Hermes rather than guessing.
+- **`set_speech_rate`/`set_tts_voice` only affect the flutter_tts path (known
+  limitation):** under Pocket Speech TTS, these voice commands still update the
+  `NavivoxVoiceSettings` values (so the confirmation notice is still shown), but the
+  Pocket Speech playback path doesn't read rate/voice from settings, so the spoken
+  output doesn't actually change. Wiring Pocket Speech to the same settings is
+  deferred.
+- **Engine/parse failures are fully silent by design:** the fallthrough path for
+  engine and parse failures does not emit the transcript-free debug breadcrumb
+  described above under "Error handling." In practice, logging even a
+  transcript-free breadcrumb on every failed parse (which includes ordinary
+  non-command speech that simply isn't a voice command) proved noisier than useful;
+  staying silent here is safer than over-logging. Timeout and consecutive-timeout
+  suspension still behave as specified.
+- **Model download is not Wi-Fi-gated:** the spec's "Wi-Fi-aware" download guidance
+  is not implemented — the Needle model download (~16 MB) runs regardless of
+  connection type. Given the small size and low stakes of an unwanted cellular
+  download, gating on Wi-Fi was judged not worth the added settings surface and
+  connectivity-detection code for this alpha.

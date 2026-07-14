@@ -7,6 +7,7 @@ import '../../../core/protocol/voice/models/navivox_voice_run.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
 import '../../../shared/voice/voice_settings.dart';
+import '../../voice_commands/models/voice_command.dart';
 import 'hermes_continuous_voice_reply_policy.dart';
 import 'hermes_voice_capture_flow.dart';
 
@@ -14,6 +15,11 @@ typedef HermesChannelReader = HermesChannel Function();
 typedef VoiceCaptureServiceReader = VoiceCaptureService? Function();
 typedef TextToSpeechServiceReader = TextToSpeechService? Function();
 typedef VoiceSettingsReader = NavivoxVoiceSettings Function();
+
+/// Optional post-STT routing seam: tried after STT, before draft/submit.
+/// Null (the default) keeps behavior identical to today.
+typedef VoiceTranscriptRouter =
+    Future<VoiceRouteResult?> Function(String transcript);
 
 /// Owns Hermes voice-input state and lifecycle while the chat widget only
 /// renders state and forwards operator intent.
@@ -24,13 +30,24 @@ class HermesVoiceInputController extends ChangeNotifier {
     required TextToSpeechServiceReader textToSpeechService,
     required VoiceSettingsReader settings,
     required ValueChanged<String> onDraft,
-  }) => HermesVoiceInputController._(
-    channel,
-    captureService,
-    textToSpeechService,
-    settings,
-    onDraft,
-  );
+    VoiceTranscriptRouter? routeTranscript,
+    void Function(VoiceRouteResult result, {required bool autoSend})?
+    onRoutedCommand,
+  }) {
+    assert(
+      routeTranscript == null || onRoutedCommand != null,
+      'onRoutedCommand is required when routeTranscript is provided',
+    );
+    return HermesVoiceInputController._(
+      channel,
+      captureService,
+      textToSpeechService,
+      settings,
+      onDraft,
+      routeTranscript,
+      onRoutedCommand,
+    );
+  }
 
   HermesVoiceInputController._(
     this._channel,
@@ -38,6 +55,8 @@ class HermesVoiceInputController extends ChangeNotifier {
     this._textToSpeechService,
     this._settings,
     this._onDraft,
+    this._routeTranscript,
+    this._onRoutedCommand,
   );
 
   final HermesChannelReader _channel;
@@ -45,6 +64,9 @@ class HermesVoiceInputController extends ChangeNotifier {
   final TextToSpeechServiceReader _textToSpeechService;
   final VoiceSettingsReader _settings;
   final ValueChanged<String> _onDraft;
+  final VoiceTranscriptRouter? _routeTranscript;
+  final void Function(VoiceRouteResult result, {required bool autoSend})?
+  _onRoutedCommand;
 
   bool _capturing = false;
   bool _continuousEnabled = false;
@@ -88,9 +110,14 @@ class HermesVoiceInputController extends ChangeNotifier {
     if (_disposed || operationGeneration != _operationGeneration) return;
 
     _activeCaptureService = null;
-    _capturing = false;
+    // _capturing intentionally stays true until each branch below resolves:
+    // the routing await in the captured branch must keep the capture window
+    // closed so maybeContinue() or a second mic tap cannot interleave and
+    // silently drop the transcript. pause() still recovers a hung router
+    // (generation bump plus _capturing reset).
     if (!channel.state.isConnected ||
         channel.state.activeSessionId != captureSessionId) {
+      _capturing = false;
       _recordCaptureFailure(
         'Voice capture was discarded because the Hermes session changed.',
         autoSend: autoSend,
@@ -101,22 +128,64 @@ class HermesVoiceInputController extends ChangeNotifier {
 
     switch (outcome.status) {
       case HermesVoiceCaptureStatus.unavailable:
+        _capturing = false;
         _recordCaptureFailure(
           'Voice input is not available here.',
           autoSend: autoSend,
         );
       case HermesVoiceCaptureStatus.failed:
+        _capturing = false;
         _recordCaptureFailure(
           outcome.errorMessage ?? 'Voice capture failed.',
           autoSend: autoSend,
         );
       case HermesVoiceCaptureStatus.captured:
-        if (!autoSend) {
-          _onDraft(outcome.capture!.transcript.trim());
+        final capture = outcome.capture!;
+        if (autoSend && _handleLocalCommand(capture.transcript)) {
+          // pause() inside _handleLocalCommand already reset _capturing.
           break;
         }
-        final capture = outcome.capture!;
-        if (_handleLocalCommand(capture.transcript)) break;
+        final transcript = capture.transcript.trim();
+        VoiceRouteResult? routed;
+        if (_routeTranscript != null) {
+          try {
+            routed = await _routeTranscript(transcript);
+          } catch (_) {
+            // A broken router must never block the transcript: fall through.
+            routed = null;
+          }
+          if (_disposed || operationGeneration != _operationGeneration) {
+            // pause()/dispose() owns _capturing now.
+            return;
+          }
+          final stillValidSession =
+              channel.state.isConnected &&
+              channel.state.activeSessionId == captureSessionId;
+          if (!stillValidSession) {
+            if (autoSend) {
+              _capturing = false;
+              _recordCaptureFailure(
+                'Voice capture was discarded because the Hermes session changed.',
+                autoSend: true,
+              );
+              notifyListeners();
+              return;
+            }
+            // Unlike the capture-time discard above, a draft is inert text in
+            // the composer, so delivering it despite the session change is
+            // deliberate — only the routed shortcut is dropped.
+            routed = null;
+          }
+        }
+        _capturing = false;
+        if (routed != null) {
+          _onRoutedCommand!(routed, autoSend: autoSend);
+          break;
+        }
+        if (!autoSend) {
+          _onDraft(transcript);
+          break;
+        }
         final voiceRunId = channel.startVoiceRun();
         channel.stageVoiceRunTranscript(
           voiceRunId: voiceRunId,
@@ -133,6 +202,9 @@ class HermesVoiceInputController extends ChangeNotifier {
           );
         }
     }
+    // onRoutedCommand may trigger navigation; cheap insurance against
+    // notifying listeners of a disposed controller after that returns.
+    if (_disposed) return;
     notifyListeners();
   }
 

@@ -14,6 +14,9 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
   static const _keyModelPath = 'navivox.voice.kokoro_model_path';
   static const _keyVoicesPath = 'navivox.voice.kokoro_voices_path';
   static const _keyCommandWord = 'navivox.voice.command_word';
+  static const _keyVoiceCommandsEnabled = 'voice_commands_enabled';
+  static const _keySpeechRate = 'tts_speech_rate';
+  static const _keyTtsVoiceName = 'tts_voice_name';
 
   SharedPreferences? _prefs;
   int _mutationGeneration = 0;
@@ -55,6 +58,10 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
             )
           : null;
       final commandWord = _prefs?.getString(_keyCommandWord) ?? 'navi';
+      final voiceCommandsEnabled =
+          _prefs?.getBool(_keyVoiceCommandsEnabled) ?? false;
+      final speechRate = _prefs?.getDouble(_keySpeechRate) ?? 1.0;
+      final ttsVoiceName = _prefs?.getString(_keyTtsVoiceName);
       state = NavivoxVoiceSettings(
         continuousVoiceEnabled: enabled,
         speakRepliesEnabled: speakReplies,
@@ -62,6 +69,9 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
         pocketSpeechModel: model,
         pocketSpeechVoicePack: voicePack,
         commandWord: commandWord,
+        voiceCommandsEnabled: voiceCommandsEnabled,
+        speechRate: speechRate,
+        ttsVoiceName: ttsVoiceName,
       );
     } catch (_) {
       state = const NavivoxVoiceSettings();
@@ -84,6 +94,14 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
       await prefs.setString(_keyVoicesPath, voicePack.voicesPath);
     }
     await prefs.setString(_keyCommandWord, state.commandWord);
+    await prefs.setBool(_keyVoiceCommandsEnabled, state.voiceCommandsEnabled);
+    await prefs.setDouble(_keySpeechRate, state.speechRate);
+    final ttsVoiceName = state.ttsVoiceName;
+    if (ttsVoiceName == null) {
+      await prefs.remove(_keyTtsVoiceName);
+    } else {
+      await prefs.setString(_keyTtsVoiceName, ttsVoiceName);
+    }
   }
 
   void setContinuousVoiceEnabled(bool enabled) {
@@ -139,6 +157,27 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
     if (normalized.isEmpty || normalized.contains(RegExp(r'\s'))) return;
     _mutationGeneration += 1;
     state = state.copyWith(commandWord: normalized);
+    _save();
+  }
+
+  void setVoiceCommandsEnabled(bool enabled) {
+    _mutationGeneration += 1;
+    state = state.copyWith(voiceCommandsEnabled: enabled);
+    _save();
+  }
+
+  void setSpeechRate(double rate) {
+    _mutationGeneration += 1;
+    state = state.copyWith(speechRate: rate.clamp(0.25, 3.0));
+    _save();
+  }
+
+  void setTtsVoiceName(String? name) {
+    _mutationGeneration += 1;
+    state = state.copyWith(
+      ttsVoiceName: name,
+      clearTtsVoiceName: name == null,
+    );
     _save();
   }
 }

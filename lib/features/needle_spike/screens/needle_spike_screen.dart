@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/voice/voice_capture_service.dart';
+import '../../voice_commands/core/needle_result.dart';
 import '../data/needle_test_transcripts.dart';
 import '../models/needle_scorecard.dart';
 import '../providers/needle_spike_providers.dart';
-import '../services/needle_result.dart';
 
 /// Hidden evaluation screen for the Needle spike. Reached only via the
 /// NEEDLE_SPIKE-gated route. Transcripts shown here are never logged or
