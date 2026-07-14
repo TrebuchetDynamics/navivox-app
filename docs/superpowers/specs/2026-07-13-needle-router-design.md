@@ -112,22 +112,24 @@ Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failu
   `NavivoxVoiceSettingsController` from Riverpod, decoupling command dispatch from the
   Riverpod controller type and keeping the dispatcher's unit tests free of a
   `ProviderContainer`.
-- **Voice toggle-on side effect (user-intent deviation):** turning the "On-device voice
-  commands" toggle ON also enables spoken replies (`speakRepliesEnabled`), not just
-  routing. Rationale: a user who wants hands-free command execution almost always also
-  wants spoken confirmation of what happened; shipping routing without audible feedback
-  would be a confusing half-feature. This is a deliberate deviation from the strict
-  reading of "toggle only controls routing."
+- **Voice toggle-on side effect (user-intent deviation):** the voice command
+  `toggle_continuous_mode(enabled: true)`, once confirmed via the chip, does not just
+  flip the continuous-voice setting — it also starts hands-free listening
+  (`enableContinuous()`) and enables spoken replies (`speakRepliesEnabled`), exactly
+  mirroring the hands-free UI switch. Rationale: "turn on continuous mode" spoken
+  aloud means "start listening now"; without speak-replies the loop would silently die
+  after one exchange (maybeContinue pauses when replies aren't spoken)."
 - **Consecutive-timeout suspension (pileup guard):** in addition to the 3
   engine-failure auto-suspend, the router also auto-suspends after repeated
   *consecutive* timeouts, even though timeouts alone don't count as failures under the
   original rule. This prevents a slow/thermal-throttled device from repeatedly eating
   the full 1.5 s timeout on every transcript indefinitely; suspension only trips when
   timeouts pile up back-to-back, not on an isolated slow response.
-- **Toggle-off pauses the controller:** switching "On-device voice commands" OFF
-  actively pauses the routing seam on the live `HermesVoiceInputController` (not just a
-  read on next capture), so an in-progress or next-imminent capture doesn't race a
-  stale "on" reading of the setting.
+- **Toggle-off pauses the controller:** the voice command
+  `toggle_continuous_mode(enabled: false)` doesn't just flip the setting — it also
+  pauses the live `HermesVoiceInputController` continuous loop (mirroring
+  `stop_voice_run`), so the hands-free switch never renders ON-but-disabled after a
+  spoken "turn off".
 - **`StateProvider` from the Riverpod legacy export:** one provider in
   `lib/features/voice_commands/providers/voice_command_providers.dart` uses
   `StateProvider` from Riverpod's legacy/back-compat export rather than a Riverpod 3
