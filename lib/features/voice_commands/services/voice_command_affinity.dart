@@ -45,23 +45,43 @@ abstract final class VoiceCommandAffinity {
   };
 
   /// True when [transcript] contains at least one lexical anchor for
-  /// [command]. Normalization matches `VoiceCommandValidator`: trim,
-  /// lowercase, collapse whitespace. Multiword anchors are matched by phrase
-  /// containment; single-word anchors by word-boundary containment.
+  /// [command]. Both transcript and anchors are tokenized with a
+  /// punctuation-robust normalization (lowercase, every non-alphanumeric
+  /// run becomes a token boundary): single-token anchors match by token
+  /// membership, multi-token anchors by contiguous token-subsequence match.
+  /// Substring matches across token boundaries never count ("lets go
+  /// together" does not match "go to") and punctuation never defeats an
+  /// anchor ("please stop." matches "stop"; "hands-free" tokenizes the
+  /// same as "hands free").
   static bool trusts(String transcript, VoiceCommandId command) {
-    final normalized = _normalize(transcript);
-    final anchors = _anchors[command] ?? const [];
-    final words = normalized.split(' ');
-    for (final anchor in anchors) {
-      if (anchor.contains(' ')) {
-        if (normalized.contains(anchor)) return true;
-      } else {
-        if (words.contains(anchor)) return true;
-      }
+    final tokens = _tokenize(transcript);
+    for (final anchor in _anchors[command] ?? const <String>[]) {
+      if (_containsTokenSequence(tokens, _tokenize(anchor))) return true;
     }
     return false;
   }
 
-  static String _normalize(String value) =>
-      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  static List<String> _tokenize(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim()
+      .split(' ')
+      .where((t) => t.isNotEmpty)
+      .toList();
+
+  static bool _containsTokenSequence(List<String> tokens, List<String> seq) {
+    if (seq.isEmpty) return false;
+    if (seq.length == 1) return tokens.contains(seq.single);
+    for (var i = 0; i + seq.length <= tokens.length; i++) {
+      var match = true;
+      for (var j = 0; j < seq.length; j++) {
+        if (tokens[i + j] != seq[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) return true;
+    }
+    return false;
+  }
 }

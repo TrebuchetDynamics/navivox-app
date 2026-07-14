@@ -134,6 +134,46 @@ final List<_Case> _cases = [
     command: VoiceCommandId.setSpeechRate,
     expected: false,
   ),
+
+  // Token-boundary regressions: multiword anchors must match contiguous
+  // TOKEN sequences, never raw substrings across word boundaries; and
+  // punctuation must not defeat single-word anchors.
+  (
+    description:
+        'navigateToScreen miss: "lets go together" must not '
+        'substring-match the "go to" anchor',
+    transcript: 'lets go together',
+    command: VoiceCommandId.navigateToScreen,
+    expected: false,
+  ),
+  (
+    description:
+        'navigateToScreen miss: "take measurements" must not '
+        'substring-match the "take me" anchor',
+    transcript: 'please take measurements of the room',
+    command: VoiceCommandId.navigateToScreen,
+    expected: false,
+  ),
+  (
+    description: 'navigateToScreen hit: go to settings',
+    transcript: 'go to settings',
+    command: VoiceCommandId.navigateToScreen,
+    expected: true,
+  ),
+  (
+    description:
+        'stopVoiceRun hit: trailing punctuation must not break the '
+        '"stop" anchor',
+    transcript: 'please stop.',
+    command: VoiceCommandId.stopVoiceRun,
+    expected: true,
+  ),
+  (
+    description: 'toggleContinuousMode hit: turn on hands-free mode',
+    transcript: 'turn on hands-free mode',
+    command: VoiceCommandId.toggleContinuousMode,
+    expected: true,
+  ),
 ];
 
 void main() {
