@@ -141,7 +141,7 @@ Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failu
   candidate voice name literally contains the spoken words. Teaching the validator
   locale-aware aliasing (e.g. "british" → `en-GB-*`) is deferred; today it correctly
   falls through to Hermes rather than guessing.
-- **Pocket Speech voice/rate supported as of 2026-07-14:** both TTS backends honor
+- **Pocket Speech voice/rate supported and user-verified audibly on-device 2026-07-14:** both TTS backends honor
   `set_tts_voice`/`set_speech_rate`; voice candidates follow the active backend
   (Kitten catalog names / Kokoro `voices.json` keys / device voices). Pocket speed is
   clamped to the package-safe 0.5–2.0 range (narrower than the app's 0.25–3.0).
