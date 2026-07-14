@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:navivox/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:navivox/features/needle_spike/needle_spike_flag.dart';
 import 'package:navivox/features/needle_spike/providers/needle_spike_providers.dart';
-import 'package:navivox/features/needle_spike/services/needle_model_install_service.dart';
+import 'package:navivox/features/voice_commands/core/needle_model_install_service.dart';
 import 'package:navivox/router/app_routes.dart';
 import 'package:navivox/router/providers/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';

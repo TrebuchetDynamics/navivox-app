@@ -3,8 +3,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../shared/voice/voice_capture_service.dart';
 import '../../voice/services/platform/default_voice_capture_service.dart';
-import '../services/needle_engine.dart';
-import '../services/needle_model_install_service.dart';
+import '../../voice_commands/core/needle_engine.dart';
+import '../../voice_commands/core/needle_model_install_service.dart';
 import '../services/needle_spike_service.dart';
 
 /// Deliberately root-scoped: the loaded model stays resident for the whole

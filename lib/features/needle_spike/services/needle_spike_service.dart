@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'needle_engine.dart';
-import 'needle_result.dart';
+import '../../voice_commands/core/needle_engine.dart';
+import '../../voice_commands/core/needle_result.dart';
 import 'needle_tool_catalog.dart';
 
 /// Turns one transcript into one measured Needle inference.
