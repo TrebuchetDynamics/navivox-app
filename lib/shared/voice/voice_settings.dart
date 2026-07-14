@@ -29,6 +29,9 @@ class NavivoxVoiceSettings {
     this.pocketSpeechModel = PocketSpeechModel.kitten,
     this.pocketSpeechVoicePack,
     this.commandWord = 'navi',
+    this.voiceCommandsEnabled = false,
+    this.speechRate = 1.0,
+    this.ttsVoiceName,
   });
 
   final bool continuousVoiceEnabled;
@@ -44,6 +47,17 @@ class NavivoxVoiceSettings {
       pocketSpeechVoicePack?.model == pocketSpeechModel;
   final String commandWord;
 
+  /// Opt-in on-device voice-command router (Needle). Off by default so
+  /// today's Hermes-only voice path is unchanged unless the operator enables
+  /// it explicitly.
+  final bool voiceCommandsEnabled;
+
+  /// Text-to-speech playback rate multiplier; 1.0 is normal speed.
+  final double speechRate;
+
+  /// Selected TTS voice name, or null to use the engine default.
+  final String? ttsVoiceName;
+
   NavivoxVoiceSettings copyWith({
     bool? continuousVoiceEnabled,
     bool? speakRepliesEnabled,
@@ -52,6 +66,10 @@ class NavivoxVoiceSettings {
     PocketSpeechVoicePack? pocketSpeechVoicePack,
     bool clearPocketSpeechVoicePack = false,
     String? commandWord,
+    bool? voiceCommandsEnabled,
+    double? speechRate,
+    String? ttsVoiceName,
+    bool clearTtsVoiceName = false,
   }) {
     return NavivoxVoiceSettings(
       continuousVoiceEnabled:
@@ -64,6 +82,11 @@ class NavivoxVoiceSettings {
           ? null
           : pocketSpeechVoicePack ?? this.pocketSpeechVoicePack,
       commandWord: commandWord ?? this.commandWord,
+      voiceCommandsEnabled: voiceCommandsEnabled ?? this.voiceCommandsEnabled,
+      speechRate: speechRate ?? this.speechRate,
+      ttsVoiceName: clearTtsVoiceName
+          ? null
+          : ttsVoiceName ?? this.ttsVoiceName,
     );
   }
 }
