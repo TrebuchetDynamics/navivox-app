@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:path_provider/path_provider.dart';
+import 'package:pocket_speech/pocket_speech.dart' show KittenCatalog;
 
 import '../../../router/providers/app_router.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
@@ -28,22 +32,71 @@ final voiceCommandInstallServiceProvider =
       return NeedleModelInstallService(supportDirectory: support);
     });
 
-/// The installed TTS voice names, queried via `getVoices` and cached by
-/// ordinary FutureProvider semantics. The list normally doesn't change while
-/// the app is running, but it CAN come back empty at cold start on some
-/// Android OEM TTS engines that haven't finished initializing yet — callers
-/// that observe an empty list should invalidate this provider so the next
-/// read retries instead of being stuck with the empty cache for the whole
-/// session. A query failure (unsupported platform, cold-starting engine)
-/// degrades to an empty list rather than surfacing an error the router has
-/// no way to act on.
+/// The candidate TTS voice names, sourced from whichever backend is
+/// currently active and cached by ordinary FutureProvider semantics. The
+/// list normally doesn't change while the app is running, but it CAN come
+/// back empty (flutter_tts cold start on some Android OEM engines; a Kokoro
+/// voice pack that hasn't finished installing) — callers that observe an
+/// empty list should invalidate this provider so the next read retries
+/// instead of being stuck with the empty cache for the whole session. A
+/// query failure (unsupported platform, cold-starting engine, unreadable
+/// voices.json) degrades to an empty list rather than surfacing an error
+/// the router has no way to act on.
+///
+/// Priority, watching the settings selects that must invalidate this
+/// provider when they change:
+/// 1. Pocket Speech enabled + Kitten model ⇒ the static Kitten catalog
+///    names (proper-cased, matching what `KittenCatalog.supportsVoice`
+///    expects — the validator hands back original-cased candidates).
+/// 2. Pocket Speech enabled + Kokoro model ⇒ the top-level keys of the
+///    active voice pack's `voices.json`.
+/// 3. Pocket Speech disabled ⇒ the flutter_tts device voice list (today's
+///    behavior, unchanged).
 final ttsVoiceNamesProvider = FutureProvider<List<String>>((ref) async {
+  final pocketEnabled = ref.watch(
+    navivoxVoiceSettingsProvider.select((s) => s.pocketSpeechTtsEnabled),
+  );
+  final pocketModel = ref.watch(
+    navivoxVoiceSettingsProvider.select((s) => s.pocketSpeechModel),
+  );
+  final kokoroVoicesPath = ref.watch(
+    navivoxVoiceSettingsProvider.select(
+      (s) => s.pocketSpeechVoicePack?.voicesPath,
+    ),
+  );
+
+  if (pocketEnabled) {
+    switch (pocketModel) {
+      case PocketSpeechModel.kitten:
+        return KittenCatalog.voices;
+      case PocketSpeechModel.kokoro:
+        return _kokoroVoiceNames(kokoroVoicesPath);
+    }
+  }
+
   try {
     return await PluginFlutterTtsEngine().voiceNames();
   } catch (_) {
     return const [];
   }
 });
+
+/// Reads the Kokoro voice pack's `voices.json` and returns its top-level
+/// keys as voice names. Missing/unreadable/malformed content degrades to an
+/// empty list — same non-caching-a-failure contract as the flutter_tts path
+/// above (an empty [FutureProvider] result is not an error, so the existing
+/// empty-retry rule in `voiceCommandRouterProvider` still applies).
+Future<List<String>> _kokoroVoiceNames(String? voicesPath) async {
+  if (voicesPath == null) return const [];
+  try {
+    final contents = await File(voicesPath).readAsString();
+    final decoded = jsonDecode(contents);
+    if (decoded is! Map) return const [];
+    return decoded.keys.map((key) => key.toString()).toList();
+  } catch (_) {
+    return const [];
+  }
+}
 
 /// Null when the feature toggle is off — the seam stays cold and today's
 /// behavior is untouched (augment-only guarantee).
