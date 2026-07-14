@@ -109,7 +109,10 @@ void main() {
     ]);
     final router = _router(engine, timeout: const Duration(milliseconds: 50));
     expect(await router.route('one'), isNull);
-    expect((await router.route('two'))!.command, VoiceCommandId.showStatus);
+    expect(
+      (await router.route('is the agent connected'))!.command,
+      VoiceCommandId.showStatus,
+    );
     expect(await router.route('three'), isNull);
     expect(router.suspended, isFalse);
   });
@@ -118,10 +121,33 @@ void main() {
     final gate = Completer<String>();
     final engine = _ScriptedEngine([() => gate.future]);
     final router = _router(engine);
-    final first = router.route('one');
+    final first = router.route('is the agent connected');
     expect(await router.route('two'), isNull);
     gate.complete(_statusCall);
     expect((await first)!.command, VoiceCommandId.showStatus);
     expect(engine.calls, 1);
   });
+
+  test(
+    'affinity guard rejects a validated result with no lexical anchor',
+    () async {
+      // Needle proposes switch_session to a real session ("groceries") so
+      // validation succeeds — but "take me back to the chat" carries no
+      // switchSession anchor (session/switch), so the affinity guard must
+      // still reject it and route falls through to Hermes.
+      const call =
+          '{"success": true, "response": "", "function_calls": '
+          '[{"name": "switch_session", "arguments": '
+          '{"session_name": "groceries"}}]}';
+      final router = VoiceCommandRouter(
+        engine: _ScriptedEngine([() async => call]),
+        modelDirProvider: () async => '/model',
+        contextProvider: () => const VoiceCommandContext(
+          sessionTitles: ['groceries'],
+          voiceNames: [],
+        ),
+      );
+      expect(await router.route('take me back to the chat'), isNull);
+    },
+  );
 }

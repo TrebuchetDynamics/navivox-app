@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../core/needle_engine.dart';
 import '../core/needle_result.dart';
 import '../models/voice_command.dart';
+import 'voice_command_affinity.dart';
 import 'voice_command_catalog.dart';
 import 'voice_command_validator.dart';
 
@@ -62,11 +63,14 @@ class VoiceCommandRouter {
       }
       _consecutiveTimeouts = 0;
       if (parsed.functionCalls.isEmpty) return null;
-      return VoiceCommandValidator.validate(
+      final result = VoiceCommandValidator.validate(
         parsed.functionCalls.first,
         transcript: trimmed,
         context: _contextProvider(),
       );
+      if (result == null) return null;
+      if (!VoiceCommandAffinity.trusts(trimmed, result.command)) return null;
+      return result;
     } on TimeoutException {
       _consecutiveTimeouts += 1;
       if (_consecutiveTimeouts >= 2) {
