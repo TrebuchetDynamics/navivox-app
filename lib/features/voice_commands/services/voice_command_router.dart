@@ -15,8 +15,12 @@ class VoiceCommandRouter {
     required Future<String?> Function() modelDirProvider,
     required VoiceCommandContext Function() contextProvider,
     this.timeout = const Duration(milliseconds: 1500),
-  }) : _engine = engine,
+    // Private fields behind public named parameters; an initializing formal
+    // would force the parameters to be named `_engine` etc.
+  }) : _engine = engine, // ignore: prefer_initializing_formals
+       // ignore: prefer_initializing_formals
        _modelDirProvider = modelDirProvider,
+       // ignore: prefer_initializing_formals
        _contextProvider = contextProvider;
 
   static const String optionsJson =
@@ -32,6 +36,13 @@ class VoiceCommandRouter {
 
   bool _busy = false;
   int _failures = 0;
+
+  /// Timeouts don't cancel the underlying native call — each one leaves an
+  /// orphaned future queued in NativeCallQueue. A single timeout is
+  /// non-punitive (slow ≠ broken), but two IN A ROW mean a hung engine:
+  /// suspend immediately so no further orphans are enqueued (pileup is
+  /// bounded at 2). Any successful engine round-trip resets the streak.
+  int _consecutiveTimeouts = 0;
 
   bool get suspended => _failures >= _maxFailures;
 
@@ -49,6 +60,7 @@ class VoiceCommandRouter {
         _failures += 1;
         return null;
       }
+      _consecutiveTimeouts = 0;
       if (parsed.functionCalls.isEmpty) return null;
       return VoiceCommandValidator.validate(
         parsed.functionCalls.first,
@@ -56,6 +68,10 @@ class VoiceCommandRouter {
         context: _contextProvider(),
       );
     } on TimeoutException {
+      _consecutiveTimeouts += 1;
+      if (_consecutiveTimeouts >= 2) {
+        _failures = _maxFailures;
+      }
       return null;
     } on Exception {
       _failures += 1;

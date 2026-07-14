@@ -89,6 +89,31 @@ void main() {
     expect(await router.route('is the agent connected'), isNull);
   });
 
+  test('two consecutive timeouts suspend the router', () async {
+    final engine = _ScriptedEngine([() => Completer<String>().future]);
+    final router = _router(engine, timeout: const Duration(milliseconds: 50));
+    expect(await router.route('one'), isNull);
+    expect(router.suspended, isFalse);
+    expect(await router.route('two'), isNull);
+    expect(router.suspended, isTrue);
+    // Suspended router short-circuits: no third orphan is enqueued.
+    expect(await router.route('three'), isNull);
+    expect(engine.calls, 2);
+  });
+
+  test('a success between timeouts resets the counter', () async {
+    final engine = _ScriptedEngine([
+      () => Completer<String>().future,
+      () async => _statusCall,
+      () => Completer<String>().future,
+    ]);
+    final router = _router(engine, timeout: const Duration(milliseconds: 50));
+    expect(await router.route('one'), isNull);
+    expect((await router.route('two'))!.command, VoiceCommandId.showStatus);
+    expect(await router.route('three'), isNull);
+    expect(router.suspended, isFalse);
+  });
+
   test('concurrent route returns null for the second caller', () async {
     final gate = Completer<String>();
     final engine = _ScriptedEngine([() => gate.future]);
