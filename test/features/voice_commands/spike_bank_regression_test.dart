@@ -186,11 +186,14 @@ final List<_SpikeCase> _cases = [
     toolName: 'toggle_continuous_mode',
     rawArgs: const {'enabled': true},
     // Recorded WRONG TOOL for this transcript (should have been
-    // new_session). The chip absorbs it: this asserts the SAFETY property
-    // (confirm tier, user must approve) not that Needle picked correctly.
-    expectedCommand: VoiceCommandId.toggleContinuousMode,
-    expectedArgs: const {'enabled': true},
-    expectedTier: VoiceCommandTier.confirm,
+    // new_session). Previously the chip absorbed it (confirm tier, user
+    // must approve); the affinity pre-route guard now catches the
+    // wrong-tool pick before the chip — "start a new conversation" carries
+    // no toggleContinuousMode anchor, so it falls straight through to
+    // Hermes (2026-07-14).
+    expectedCommand: null,
+    expectedArgs: null,
+    expectedTier: null,
   ),
   (
     transcript: 'give me a fresh session',
@@ -291,26 +294,21 @@ void main() {
   group('set_tts_voice against a Kitten-style voice context', () {
     test('unknown voice ("nova") falls through — no such voice in this '
         'context', () async {
-      final router = _routerForKitten('set_tts_voice', const {
-        'voice': 'nova',
-      });
+      final router = _routerForKitten('set_tts_voice', const {'voice': 'nova'});
       final result = await router.route('change the voice to nova');
       expect(result, isNull);
     });
 
-    test(
-      'differently-cased match ("bella") snaps to the original-cased '
-      'candidate ("Bella")',
-      () async {
-        final router = _routerForKitten('set_tts_voice', const {
-          'voice': 'bella',
-        });
-        final result = await router.route('change the voice to bella');
-        expect(result, isNotNull);
-        expect(result!.command, VoiceCommandId.setTtsVoice);
-        expect(result.args, const {'voice': 'Bella'});
-        expect(result.tier, VoiceCommandTier.confirm);
-      },
-    );
+    test('differently-cased match ("bella") snaps to the original-cased '
+        'candidate ("Bella")', () async {
+      final router = _routerForKitten('set_tts_voice', const {
+        'voice': 'bella',
+      });
+      final result = await router.route('change the voice to bella');
+      expect(result, isNotNull);
+      expect(result!.command, VoiceCommandId.setTtsVoice);
+      expect(result.args, const {'voice': 'Bella'});
+      expect(result.tier, VoiceCommandTier.confirm);
+    });
   });
 }

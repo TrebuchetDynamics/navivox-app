@@ -20,6 +20,7 @@
 **Files:**
 - Create: `lib/features/voice_commands/services/voice_command_affinity.dart`
 - Modify: `lib/features/voice_commands/services/voice_command_router.dart` (guard after validate)
+- Modify: `test/features/voice_commands/voice_command_router_test.dart` (affinity guard test, Step 3)
 - Modify: `test/features/voice_commands/spike_bank_regression_test.dart` (case 11 expectation + comment)
 - Test: `test/features/voice_commands/voice_command_affinity_test.dart` (new)
 

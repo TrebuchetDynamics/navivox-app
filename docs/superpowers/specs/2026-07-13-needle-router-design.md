@@ -157,3 +157,7 @@ Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failu
   connection type. Given the small size and low stakes of an unwanted cellular
   download, gating on Wi-Fi was judged not worth the added settings surface and
   connectivity-detection code for this alpha.
+- **Hybrid pre-routing shipped 2026-07-14 via lexical anchor affinity:** engine
+  confidence remains unusable (pinned 1.0); the handoff signal is per-tool anchor
+  evidence (see docs/superpowers/specs/2026-07-14-affinity-preroute-design.md).
+  Doubtful matches flow to Hermes with no UI, indistinguishable from non-matches.
