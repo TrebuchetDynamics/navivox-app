@@ -5,6 +5,7 @@ import '../../protocol/navivox_json.dart';
 import '../models/hermes_capabilities.dart';
 import '../models/hermes_health.dart';
 import '../models/hermes_job.dart';
+import '../models/hermes_profile.dart';
 import '../models/hermes_run.dart';
 import '../models/hermes_session.dart';
 import '../shared/hermes_api_http.dart';
@@ -22,6 +23,7 @@ class HermesApiClient {
     HermesApiGet? get,
     HermesApiPost? post,
     HermesApiPatch? patch,
+    HermesApiPut? put,
     HermesApiDelete? delete,
     HermesApiPostStream? postStream,
     HermesApiGetStream? getStream,
@@ -29,6 +31,7 @@ class HermesApiClient {
   }) : _get = get ?? transport.defaultGet,
        _post = post ?? transport.defaultPost,
        _patch = patch ?? transport.defaultPatch,
+       _put = put ?? transport.defaultPut,
        _delete = delete ?? transport.defaultDelete,
        _postStream = postStream ?? transport.defaultPostStream,
        _getStream = getStream ?? transport.defaultGetStream;
@@ -37,6 +40,7 @@ class HermesApiClient {
   final HermesApiGet _get;
   final HermesApiPost _post;
   final HermesApiPatch _patch;
+  final HermesApiPut _put;
   final HermesApiDelete _delete;
   final HermesApiPostStream _postStream;
   final HermesApiGetStream _getStream;
@@ -58,21 +62,22 @@ class HermesApiClient {
     );
   }
 
-  Future<List<String>> listModels() async {
-    return _namedList(await _getJson(config.modelsUri), const [
-      'id',
-      'root',
-      'model',
-      'name',
-    ]);
+  Future<List<String>> listModels({String? profile}) async {
+    return _namedList(
+      await _getJson(_scoped(config.modelsUri, profile)),
+      const ['id', 'root', 'model', 'name'],
+    );
   }
 
-  Future<List<String>> listSkills() async {
-    return _namedList(await _getJson(config.skillsUri), const ['name']);
+  Future<List<String>> listSkills({String? profile}) async {
+    return _namedList(
+      await _getJson(_scoped(config.skillsUri, profile)),
+      const ['name'],
+    );
   }
 
-  Future<List<String>> listEnabledToolsets() async {
-    final body = await _getJson(config.toolsetsUri);
+  Future<List<String>> listEnabledToolsets({String? profile}) async {
+    final body = await _getJson(_scoped(config.toolsetsUri, profile));
     return navivoxMapListFromJson(body['data'])
         .where((item) => navivoxBoolFromJson(item['enabled']))
         .map((item) => navivoxOptionalStringFromJson(item['name']))
@@ -80,16 +85,16 @@ class HermesApiClient {
         .toList(growable: false);
   }
 
-  Future<List<HermesSession>> listSessions() async {
-    final body = await _getJson(config.sessionsUri);
+  Future<List<HermesSession>> listSessions({String? profile}) async {
+    final body = await _getJson(_scoped(config.sessionsUri, profile));
     return navivoxMapListFromJson(body['data'])
         .map(HermesSession.fromJson)
         .where((session) => session.id.isNotEmpty)
         .toList(growable: false);
   }
 
-  Future<List<HermesJob>> listJobs() async {
-    final body = await _getJson(config.jobsUri);
+  Future<List<HermesJob>> listJobs({String? profile}) async {
+    final body = await _getJson(_scoped(config.jobsUri, profile));
     final rawJobs = body['jobs'] ?? body['data'];
     return navivoxMapListFromJson(rawJobs)
         .map(HermesJob.fromJson)
@@ -251,6 +256,84 @@ class HermesApiClient {
     );
   }
 
+  Future<List<HermesProfile>> listProfiles() async {
+    final body = await _getJson(config.profilesUri);
+    return navivoxMapListFromJson(body['data'])
+        .map(HermesProfile.fromJson)
+        .where((profile) => profile.id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<HermesProfile> createProfile({
+    required String name,
+    String? cloneFrom,
+  }) async {
+    final response = await _postJson(config.profilesUri, {
+      'name': name.trim(),
+      ...navivoxTrimmedStringFields({'clone_from': cloneFrom}),
+    });
+    return HermesProfile.fromJson(_profileEnvelope(response));
+  }
+
+  Future<HermesProfile> renameProfile({
+    required String profileId,
+    required String name,
+    required String revision,
+  }) async {
+    final response = await _patchJson(config.profileUri(profileId), {
+      'name': name.trim(),
+    }, ifMatch: revision);
+    return HermesProfile.fromJson(_profileEnvelope(response));
+  }
+
+  Future<void> deleteProfile({
+    required String profileId,
+    required String revision,
+  }) async {
+    final trimmed = profileId.trim();
+    final response = await _deleteJson(
+      config.profileUri(trimmed),
+      ifMatch: revision,
+    );
+    final id = navivoxOptionalStringFromJson(response['id']);
+    final deleted = navivoxBoolFromJson(response['deleted']);
+    if (id != trimmed || !deleted) {
+      throw StateError('Hermes profile delete was not confirmed.');
+    }
+  }
+
+  Future<HermesProfileSoul> readProfileSoul(String profileId) async {
+    final uri = config.profileScopedUri(
+      config.profileSoulUri(profileId),
+      profileId,
+    );
+    return HermesProfileSoul.fromJson(await _getJson(uri));
+  }
+
+  Future<HermesProfileSoul> writeProfileSoul({
+    required String profileId,
+    required String soul,
+    required String revision,
+  }) async {
+    final uri = config.profileScopedUri(
+      config.profileSoulUri(profileId),
+      profileId,
+    );
+    return HermesProfileSoul.fromJson(
+      await _putJson(uri, {'soul': soul}, ifMatch: revision),
+    );
+  }
+
+  Map<String, Object?> _profileEnvelope(Map<String, Object?> response) {
+    return response['profile'] is Map
+        ? navivoxMapFromJson(response['profile'])
+        : response;
+  }
+
+  Uri _scoped(Uri uri, String? profile) {
+    return profile == null ? uri : config.profileScopedUri(uri, profile);
+  }
+
   Future<Map<String, Object?>> _getJson(Uri uri) async {
     return _decodeObject(await _bounded(_get(uri, config.headers), uri));
   }
@@ -270,19 +353,49 @@ class HermesApiClient {
 
   Future<Map<String, Object?>> _patchJson(
     Uri uri,
-    Map<String, Object?> body,
-  ) async {
+    Map<String, Object?> body, {
+    String? ifMatch,
+  }) async {
     final headers = <String, String>{
       ...config.headers,
       hermesApiContentTypeHeader: hermesApiJsonContentType,
+      ..._ifMatchHeader(ifMatch),
     };
     return _decodeObject(
       await _bounded(_patch(uri, headers, jsonEncode(body)), uri),
     );
   }
 
-  Future<Map<String, Object?>> _deleteJson(Uri uri) async {
-    return _decodeObject(await _bounded(_delete(uri, config.headers), uri));
+  Future<Map<String, Object?>> _putJson(
+    Uri uri,
+    Map<String, Object?> body, {
+    String? ifMatch,
+  }) async {
+    final headers = <String, String>{
+      ...config.headers,
+      hermesApiContentTypeHeader: hermesApiJsonContentType,
+      ..._ifMatchHeader(ifMatch),
+    };
+    return _decodeObject(
+      await _bounded(_put(uri, headers, jsonEncode(body)), uri),
+    );
+  }
+
+  Future<Map<String, Object?>> _deleteJson(Uri uri, {String? ifMatch}) async {
+    final headers = <String, String>{
+      ...config.headers,
+      ..._ifMatchHeader(ifMatch),
+    };
+    return _decodeObject(await _bounded(_delete(uri, headers), uri));
+  }
+
+  /// Builds the optimistic-concurrency precondition header. A blank revision
+  /// is omitted so the server answers `428 Precondition Required` rather than
+  /// silently accepting an unconditional write.
+  Map<String, String> _ifMatchHeader(String? revision) {
+    final value = revision?.trim();
+    if (value == null || value.isEmpty) return const {};
+    return {hermesApiIfMatchHeader: value};
   }
 
   /// Posts JSON without any bearer credential, regardless of [config]. Used

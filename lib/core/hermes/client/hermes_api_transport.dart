@@ -7,6 +7,9 @@ typedef HermesApiPost =
 typedef HermesApiPatch =
     Future<String> Function(Uri uri, Map<String, String> headers, String body);
 
+typedef HermesApiPut =
+    Future<String> Function(Uri uri, Map<String, String> headers, String body);
+
 typedef HermesApiDelete =
     Future<String> Function(Uri uri, Map<String, String> headers);
 
@@ -43,6 +46,14 @@ Future<String> unsupportedHermesApiPatch(
   String body,
 ) {
   throw UnsupportedError('Hermes API HTTP PATCH transport is not configured.');
+}
+
+Future<String> unsupportedHermesApiPut(
+  Uri uri,
+  Map<String, String> headers,
+  String body,
+) {
+  throw UnsupportedError('Hermes API HTTP PUT transport is not configured.');
 }
 
 Future<String> unsupportedHermesApiDelete(

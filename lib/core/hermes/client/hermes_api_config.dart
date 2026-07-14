@@ -81,6 +81,29 @@ class HermesApiConfig {
     '/v1/runs/${hermesApiTrimmedPathSegment(runId, name: 'runId')}/stop',
   );
 
+  /// Administrative profile collection. Machine-scoped and keyed by name in
+  /// the path, so it never carries the profile-owned `profile` query.
+  Uri get profilesUri => _withPath('/api/profiles');
+
+  Uri profileUri(String profileId) => _withPath(
+    '/api/profiles/${hermesApiTrimmedPathSegment(profileId, name: 'profileId')}',
+  );
+
+  Uri profileSoulUri(String profileId) => _withPath(
+    '/api/profiles/${hermesApiTrimmedPathSegment(profileId, name: 'profileId')}/soul',
+  );
+
+  /// Adds the mandatory `profile` query to a profile-owned request or SSE URL,
+  /// including the literal `default` profile. The id is validated (non-blank)
+  /// so an implicit/empty profile scope can never reach the wire, and existing
+  /// query parameters on [uri] are preserved.
+  Uri profileScopedUri(Uri uri, String profileId) {
+    final id = hermesApiRequiredTrimmedValue(profileId, 'profileId');
+    return uri.replace(
+      queryParameters: {...uri.queryParameters, 'profile': id},
+    );
+  }
+
   Map<String, String> get headers {
     final value = apiKey?.trim();
     if (value == null || value.isEmpty) return const {};

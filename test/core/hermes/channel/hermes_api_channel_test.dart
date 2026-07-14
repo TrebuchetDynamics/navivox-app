@@ -26,7 +26,68 @@ void main() {
   _hermesApiChannelLifecycleRaceTests();
   _hermesApiChannelRunTransportTests();
   _hermesApiChannelApprovalStopTests();
+  _hermesApiChannelProfileTests();
 }
+
+const _profileCapabilitiesFixture = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "schema_version": 1,
+  "profile_context": {"type": "query", "name": "profile", "required": true, "default_profile_id": "default"},
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["profiles:read", "profiles:write"]},
+  "features": {"session_chat_streaming": true},
+  "endpoints": {
+    "session_create": {"method": "POST", "path": "/api/sessions"},
+    "session_chat_stream": {"method": "POST", "path": "/api/sessions/{session_id}/chat/stream"},
+    "profiles": {"method": "GET", "path": "/api/profiles", "required_scopes": ["profiles:read"]},
+    "profile_create": {"method": "POST", "path": "/api/profiles", "required_scopes": ["profiles:write"]},
+    "profile_update": {"method": "PATCH", "path": "/api/profiles/{profile_id}", "required_scopes": ["profiles:write"]},
+    "profile_delete": {"method": "DELETE", "path": "/api/profiles/{profile_id}", "required_scopes": ["profiles:write"]},
+    "profile_soul": {"method": "GET", "path": "/api/profiles/{profile_id}/soul", "profile_scoped": true, "required_scopes": ["profiles:read"]},
+    "profile_soul_update": {"method": "PUT", "path": "/api/profiles/{profile_id}/soul", "profile_scoped": true, "required_scopes": ["profiles:write"]}
+  }
+}
+''';
+
+const _profilesFixture = '''
+{
+  "data": [
+    {"id": "default", "name": "Default", "revision": "rev-d", "is_default": true},
+    {"id": "coder", "name": "Coding Agent", "revision": "rev-c", "skills_count": 3}
+  ]
+}
+''';
+
+const _profilesAfterCreateFixture = '''
+{
+  "data": [
+    {"id": "default", "name": "Default", "revision": "rev-d", "is_default": true},
+    {"id": "coder", "name": "Coding Agent", "revision": "rev-c"},
+    {"id": "writer", "name": "Writer", "revision": "rev-w"}
+  ]
+}
+''';
+
+const _coderSessionsFixture = '''
+{
+  "object": "list",
+  "data": [
+    {"id": "sess_9", "source": "api_server", "title": "Coder", "message_count": 1}
+  ]
+}
+''';
+
+const _coderMessagesFixture = '''
+{
+  "object": "list",
+  "session_id": "sess_9",
+  "data": [
+    {"id": "msg_9", "session_id": "sess_9", "role": "assistant", "content": "Coder view"}
+  ]
+}
+''';
 
 const _capabilitiesFixture = '''
 {
@@ -329,3 +390,288 @@ const _interleavedLaterReplyMessagesFixture = '''
   ]
 }
 ''';
+
+void _hermesApiChannelProfileTests() {
+  test('selectProfile keeps selection client-side and scopes profile-owned '
+      'refreshes with the mandatory profile query', () async {
+    final requests = <Uri>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          requests.add(uri);
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _profileCapabilitiesFixture,
+            '/api/sessions' =>
+              uri.queryParameters['profile'] == 'coder'
+                  ? _coderSessionsFixture
+                  : _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/sess_9/messages' => _coderMessagesFixture,
+            '/api/profiles' => _profilesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    requests.clear();
+
+    await channel.selectProfile('coder');
+
+    expect(channel.state.selectedProfileId, 'coder');
+    expect(channel.state.profiles.map((p) => p.id), ['default', 'coder']);
+    expect(channel.state.sessions.single.id, 'sess_9');
+    expect(channel.state.activeSessionId, 'sess_9');
+    expect(channel.state.activeMessages.single.text, 'Coder view');
+
+    // The profile list is an administrative resource: no profile query.
+    final profilesRequest = requests.firstWhere(
+      (uri) => uri.path == '/api/profiles',
+    );
+    expect(profilesRequest.queryParameters.containsKey('profile'), isFalse);
+
+    // Profile-owned session refresh retains ?profile=coder.
+    final sessionsRequest = requests.firstWhere(
+      (uri) => uri.path == '/api/sessions',
+    );
+    expect(sessionsRequest.queryParameters['profile'], 'coder');
+
+    // Selection never calls a server active-profile endpoint.
+    expect(requests.any((uri) => uri.path.contains('active')), isFalse);
+  });
+
+  test('createProfile refreshes the profile list after a successful '
+      'mutation', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _profileCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/profiles' => _profilesAfterCreateFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async => jsonEncode({
+          'profile': {'id': 'writer', 'name': 'Writer', 'revision': 'rev-w'},
+        }),
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.createProfile(name: 'Writer');
+
+    expect(channel.state.profiles.map((p) => p.id), [
+      'default',
+      'coder',
+      'writer',
+    ]);
+  });
+
+  test(
+    'a 412 stale-revision conflict refreshes profiles and rethrows',
+    () async {
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _profileCapabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              '/api/profiles' => _profilesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          patch: (uri, headers, body) async =>
+              throw StateError('Hermes API returned HTTP 412'),
+        ),
+      );
+      addTearDown(channel.dispose);
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await expectLater(
+        channel.renameProfile(
+          profileId: 'coder',
+          name: 'Renamed',
+          revision: 'stale',
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(channel.state.profiles.map((p) => p.id), ['default', 'coder']);
+    },
+  );
+
+  test(
+    'profile mutations and selection reject unadvertised endpoints before any '
+    'network call',
+    () async {
+      var posted = false;
+      var patched = false;
+      var deleted = false;
+      var put = false;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _capabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          post: (uri, headers, body) async {
+            posted = true;
+            return '{}';
+          },
+          patch: (uri, headers, body) async {
+            patched = true;
+            return '{}';
+          },
+          delete: (uri, headers) async {
+            deleted = true;
+            return '{}';
+          },
+          put: (uri, headers, body) async {
+            put = true;
+            return '{}';
+          },
+        ),
+      );
+      addTearDown(channel.dispose);
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await expectLater(channel.selectProfile('coder'), throwsStateError);
+      await expectLater(channel.createProfile(name: 'X'), throwsStateError);
+      await expectLater(
+        channel.renameProfile(profileId: 'coder', name: 'X', revision: 'r'),
+        throwsStateError,
+      );
+      await expectLater(
+        channel.deleteProfile(profileId: 'coder', revision: 'r'),
+        throwsStateError,
+      );
+      await expectLater(
+        channel.writeProfileSoul(profileId: 'coder', soul: 'x', revision: 'r'),
+        throwsStateError,
+      );
+
+      expect(posted, isFalse);
+      expect(patched, isFalse);
+      expect(deleted, isFalse);
+      expect(put, isFalse);
+      expect(channel.state.selectedProfileId, isNull);
+    },
+  );
+
+  test(
+    'profile edits reject a blank revision before any network call',
+    () async {
+      var patched = false;
+      var deleted = false;
+      var put = false;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _profileCapabilitiesFixture,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          patch: (uri, headers, body) async {
+            patched = true;
+            return '{}';
+          },
+          delete: (uri, headers) async {
+            deleted = true;
+            return '{}';
+          },
+          put: (uri, headers, body) async {
+            put = true;
+            return '{}';
+          },
+        ),
+      );
+      addTearDown(channel.dispose);
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await expectLater(
+        channel.renameProfile(profileId: 'coder', name: 'X', revision: '  '),
+        throwsArgumentError,
+      );
+      await expectLater(
+        channel.deleteProfile(profileId: 'coder', revision: ''),
+        throwsArgumentError,
+      );
+      await expectLater(
+        channel.writeProfileSoul(profileId: 'coder', soul: 'x', revision: ' '),
+        throwsArgumentError,
+      );
+
+      expect(patched, isFalse);
+      expect(deleted, isFalse);
+      expect(put, isFalse);
+    },
+  );
+
+  test('readProfileSoul and writeProfileSoul carry the profile query and '
+      'If-Match', () async {
+    Uri? soulGet;
+    Uri? soulPut;
+    String? ifMatch;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          if (uri.path == '/api/profiles/coder/soul') {
+            soulGet = uri;
+            return jsonEncode({'soul': 'Be helpful.', 'revision': 'rev-c'});
+          }
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _profileCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/profiles' => _profilesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        put: (uri, headers, body) async {
+          soulPut = uri;
+          ifMatch = headers['If-Match'];
+          return jsonEncode({'soul': 'Be terse.', 'revision': 'rev-c2'});
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final soul = await channel.readProfileSoul('coder');
+    expect(soul.soul, 'Be helpful.');
+    expect(soulGet!.queryParameters['profile'], 'coder');
+
+    await channel.writeProfileSoul(
+      profileId: 'coder',
+      soul: 'Be terse.',
+      revision: 'rev-c',
+    );
+    expect(soulPut!.path, '/api/profiles/coder/soul');
+    expect(soulPut!.queryParameters['profile'], 'coder');
+    expect(ifMatch, 'rev-c');
+  });
+}

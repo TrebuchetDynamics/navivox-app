@@ -17,6 +17,10 @@ Future<String> defaultPatch(Uri uri, Map<String, String> headers, String body) {
   return _request(uri: uri, method: 'PATCH', headers: headers, body: body);
 }
 
+Future<String> defaultPut(Uri uri, Map<String, String> headers, String body) {
+  return _request(uri: uri, method: 'PUT', headers: headers, body: body);
+}
+
 Future<String> defaultDelete(Uri uri, Map<String, String> headers) {
   return _request(uri: uri, method: 'DELETE', headers: headers);
 }
