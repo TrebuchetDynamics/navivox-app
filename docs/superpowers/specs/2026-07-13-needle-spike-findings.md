@@ -78,7 +78,7 @@ pass remains open for a later ad-hoc session).
 | Role | Go/No-go | Why |
 |---|---|---|
 | Local voice-command router | **Go, with guardrails** | 85% tool accuracy and ~660 ms wall latency are workable for a whitelisted command set, but 15% wrong-tool means confirmations (or an allowlist of reversible actions) are mandatory; `confidence` can't gate — it's always 1.0. |
-| Hybrid pre-router | **Not yet** | Pre-routing needs a reliable "don't know → hand off" signal; Needle confidently mis-tools paraphrases, so it would swallow utterances Hermes should get. Revisit if a usable confidence/verifier emerges. |
+| Hybrid pre-router | **Shipped 2026-07-14** via lexical affinity (see affinity-preroute design) | Pre-routing needs a reliable "don't know → hand off" signal; Needle confidently mis-tools paraphrases, so it would swallow utterances Hermes should get. Revisit if a usable confidence/verifier emerges. |
 | Offline fallback | **Go (narrow)** | For a degraded offline command set (start/stop/status/settings), observed accuracy on direct phrasings was 100%; failures clustered in paraphrases. |
 
 **Recommendation:** proceed to a real integration design for the **local voice-command
