@@ -162,6 +162,42 @@ void main() {
     );
 
     test(
+      'pocket speech + kokoro resolves keys from a multi-megabyte voices.json',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final voicesFile = File('${tempDir.path}/voices.json');
+        // Realistic shape: Kokoro packs embed float32 style vectors, so the
+        // production file is tens of MB. ~2 MB here keeps the suite fast
+        // while still proving large payloads resolve their keys.
+        final vector = List<double>.filled(2048, 0.125);
+        await voicesFile.writeAsString(
+          jsonEncode({
+            for (var i = 0; i < 100; i++) 'voice_$i': {'style': vector},
+          }),
+        );
+        final container = _buildContainer(tempDir);
+        addTearDown(container.dispose);
+
+        final notifier = container.read(navivoxVoiceSettingsProvider.notifier);
+        await pumpEventQueue();
+        notifier.setPocketSpeechVoicePack(
+          PocketSpeechVoicePack(
+            model: PocketSpeechModel.kokoro,
+            modelPath: '${tempDir.path}/model.bin',
+            voicesPath: voicesFile.path,
+          ),
+        );
+        notifier.setPocketSpeechTtsEnabled(true);
+        await pumpEventQueue();
+
+        final names = await container.read(ttsVoiceNamesProvider.future);
+        expect(names, hasLength(100));
+        expect(names, contains('voice_0'));
+        expect(names, contains('voice_99'));
+      },
+    );
+
+    test(
       'pocket speech + kokoro with a missing voices.json returns an empty list',
       () async {
         SharedPreferences.setMockInitialValues({});

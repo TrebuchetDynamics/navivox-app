@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
@@ -86,16 +87,28 @@ final ttsVoiceNamesProvider = FutureProvider<List<String>>((ref) async {
 /// empty list — same non-caching-a-failure contract as the flutter_tts path
 /// above (an empty [FutureProvider] result is not an error, so the existing
 /// empty-retry rule in `voiceCommandRouterProvider` still applies).
+///
+/// The read + decode + key extraction runs in [Isolate.run]: Kokoro's
+/// voices.json embeds full float32 style vectors and can be tens of MB, so
+/// decoding it on the main isolate would visibly jank the UI on every
+/// backend switch. The closure captures only the path string (isolate
+/// entrypoints must not capture unsendable state like `ref` or plugin
+/// handles), and only the small key list crosses back.
 Future<List<String>> _kokoroVoiceNames(String? voicesPath) async {
   if (voicesPath == null) return const [];
   try {
-    final contents = await File(voicesPath).readAsString();
-    final decoded = jsonDecode(contents);
-    if (decoded is! Map) return const [];
-    return decoded.keys.map((key) => key.toString()).toList();
+    return await Isolate.run(() => _readVoiceNamesSync(voicesPath));
   } catch (_) {
     return const [];
   }
+}
+
+/// Isolate entrypoint for [_kokoroVoiceNames]; must stay top-level (or
+/// static) so it can't accidentally close over unsendable state.
+List<String> _readVoiceNamesSync(String voicesPath) {
+  final decoded = jsonDecode(File(voicesPath).readAsStringSync());
+  if (decoded is! Map) return const [];
+  return decoded.keys.map((key) => key.toString()).toList();
 }
 
 /// Null when the feature toggle is off — the seam stays cold and today's
