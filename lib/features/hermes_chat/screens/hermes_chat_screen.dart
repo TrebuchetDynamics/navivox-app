@@ -47,7 +47,9 @@ final hermesTextToSpeechServiceProvider = Provider<TextToSpeechService?>((ref) {
           enabled: true,
           voicePack: settings.pocketSpeechVoicePack!,
         )
-      : createDefaultTextToSpeechService();
+      : createDefaultTextToSpeechService(
+          settings: () => ref.read(navivoxVoiceSettingsProvider),
+        );
   if (service != null) {
     ref.onDispose(() => unawaited(service.dispose()));
   }

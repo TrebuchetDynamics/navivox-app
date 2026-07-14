@@ -131,4 +131,15 @@ class _FakeFlutterTtsEngine implements FlutterTtsEngine {
   Future<void> stop() async {
     calls.add('stop');
   }
+
+  @override
+  Future<List<String>> voiceNames() async {
+    calls.add('voiceNames');
+    return const ['nova', 'en-GB-standard'];
+  }
+
+  @override
+  Future<void> setVoiceByName(String name) async {
+    calls.add('setVoiceByName:$name');
+  }
 }
