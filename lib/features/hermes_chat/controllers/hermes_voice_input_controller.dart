@@ -7,6 +7,7 @@ import '../../../core/protocol/voice/models/navivox_voice_run.dart';
 import '../../../shared/voice/text_to_speech_service.dart';
 import '../../../shared/voice/voice_capture_service.dart';
 import '../../../shared/voice/voice_settings.dart';
+import '../../voice_commands/models/voice_command.dart';
 import 'hermes_continuous_voice_reply_policy.dart';
 import 'hermes_voice_capture_flow.dart';
 
@@ -14,6 +15,11 @@ typedef HermesChannelReader = HermesChannel Function();
 typedef VoiceCaptureServiceReader = VoiceCaptureService? Function();
 typedef TextToSpeechServiceReader = TextToSpeechService? Function();
 typedef VoiceSettingsReader = NavivoxVoiceSettings Function();
+
+/// Optional post-STT routing seam: tried after STT, before draft/submit.
+/// Null (the default) keeps behavior identical to today.
+typedef VoiceTranscriptRouter =
+    Future<VoiceRouteResult?> Function(String transcript);
 
 /// Owns Hermes voice-input state and lifecycle while the chat widget only
 /// renders state and forwards operator intent.
@@ -24,12 +30,17 @@ class HermesVoiceInputController extends ChangeNotifier {
     required TextToSpeechServiceReader textToSpeechService,
     required VoiceSettingsReader settings,
     required ValueChanged<String> onDraft,
+    VoiceTranscriptRouter? routeTranscript,
+    void Function(VoiceRouteResult result, {required bool autoSend})?
+    onRoutedCommand,
   }) => HermesVoiceInputController._(
     channel,
     captureService,
     textToSpeechService,
     settings,
     onDraft,
+    routeTranscript,
+    onRoutedCommand,
   );
 
   HermesVoiceInputController._(
@@ -38,6 +49,8 @@ class HermesVoiceInputController extends ChangeNotifier {
     this._textToSpeechService,
     this._settings,
     this._onDraft,
+    this._routeTranscript,
+    this._onRoutedCommand,
   );
 
   final HermesChannelReader _channel;
@@ -45,6 +58,9 @@ class HermesVoiceInputController extends ChangeNotifier {
   final TextToSpeechServiceReader _textToSpeechService;
   final VoiceSettingsReader _settings;
   final ValueChanged<String> _onDraft;
+  final VoiceTranscriptRouter? _routeTranscript;
+  final void Function(VoiceRouteResult result, {required bool autoSend})?
+  _onRoutedCommand;
 
   bool _capturing = false;
   bool _continuousEnabled = false;
@@ -111,12 +127,38 @@ class HermesVoiceInputController extends ChangeNotifier {
           autoSend: autoSend,
         );
       case HermesVoiceCaptureStatus.captured:
-        if (!autoSend) {
-          _onDraft(outcome.capture!.transcript.trim());
+        final capture = outcome.capture!;
+        if (autoSend && _handleLocalCommand(capture.transcript)) break;
+        final transcript = capture.transcript.trim();
+        VoiceRouteResult? routed;
+        if (_routeTranscript != null) {
+          routed = await _routeTranscript(transcript);
+          if (_disposed || operationGeneration != _operationGeneration) {
+            return;
+          }
+          final stillValidSession =
+              channel.state.isConnected &&
+              channel.state.activeSessionId == captureSessionId;
+          if (!stillValidSession) {
+            if (autoSend) {
+              _recordCaptureFailure(
+                'Voice capture was discarded because the Hermes session changed.',
+                autoSend: true,
+              );
+              notifyListeners();
+              return;
+            }
+            routed = null;
+          }
+        }
+        if (routed != null) {
+          _onRoutedCommand!(routed, autoSend: autoSend);
           break;
         }
-        final capture = outcome.capture!;
-        if (_handleLocalCommand(capture.transcript)) break;
+        if (!autoSend) {
+          _onDraft(transcript);
+          break;
+        }
         final voiceRunId = channel.startVoiceRun();
         channel.stageVoiceRunTranscript(
           voiceRunId: voiceRunId,
