@@ -165,16 +165,22 @@ class PocketSpeechTextToSpeechService implements TextToSpeechService {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
     final settings = _settings?.call();
-    // Already clamped 0.25-3.0 upstream (voice_command_validator /
-    // voice_settings_provider); clamp again here harmlessly so this service
-    // never depends on that invariant holding.
-    final speed = (settings?.speechRate ?? 1.0).clamp(0.25, 3.0);
+    // pocket_speech's KokoroCatalog.speed.check rejects values outside
+    // 0.5-2.0; the app-level 0.25-3.0 clamp is wider by design for
+    // flutter_tts, so re-clamp here to the package-safe range.
+    final speed = (settings?.speechRate ?? 1.0).clamp(0.5, 2.0);
     final voice = settings?.ttsVoiceName;
-    final wav = await _engine.synthesizeWav(
-      trimmed,
-      voice: voice,
-      speed: speed,
-    );
+    Uint8List wav;
+    try {
+      wav = await _engine.synthesizeWav(trimmed, voice: voice, speed: speed);
+    } on ArgumentError {
+      // Defense per the never-break-speech constraint: a rejected voice or
+      // speed (pocket_speech throws ArgumentError/RangeError) must not
+      // silence the utterance — retry once with the engine defaults. If the
+      // retry also throws, let it propagate; the outer service contract
+      // already treats speak failures.
+      wav = await _engine.synthesizeWav(trimmed);
+    }
     if (wav.isEmpty) return;
     await _audioSink.playWav(wav);
   }
