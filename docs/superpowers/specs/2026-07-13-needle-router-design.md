@@ -1,0 +1,106 @@
+# Needle Voice-Command Router — Design
+
+**Date:** 2026-07-13
+**Status:** Approved
+**Precedes:** implementation plan (docs/superpowers/plans/)
+**Builds on:** docs/superpowers/specs/2026-07-13-needle-spike-design.md and
+docs/superpowers/specs/2026-07-13-needle-spike-findings.md (16/20 correct, 85% tool
+accuracy, p50 662 ms wall on-device, CPU-only)
+
+## Guiding constraint (unchanged, hard)
+
+**Augment-only.** The router may only add a local shortcut; it can never block, alter,
+or replace the Hermes path. Feature OFF ⇒ behavior identical to today. Every
+non-executed path delivers the transcript exactly where it would have gone anyway.
+
+## What it does
+
+For opted-in users, each voice transcript is first offered to Needle (~660 ms, hard
+1.5 s timeout). A whitelisted match executes locally — instantly for safe actions,
+after a one-tap confirmation chip for state-changing ones. Everything else (no match,
+invalid args, engine failure, timeout, declined chip) flows to Hermes as today.
+
+## Decisions
+
+| Decision | Choice |
+|---|---|
+| Trigger | Every voice transcript pre-screened (no separate mic, no wake word) |
+| Confirmation | Tiered: instant + snackbar for reversible; confirmation chip for state-changing; decline/timeout ⇒ transcript goes to Hermes |
+| Command surface | All ten spike tools bound to real actions (see table) |
+| Rollout | Runtime opt-in Settings toggle "On-device voice commands (beta)", default OFF; engine .so ships in every APK (~+4 MB, CI-built); 16 MB model downloads on enable; NEEDLE_SPIKE dart-define retires to gating only the dev eval screen |
+| Architecture | New `lib/features/voice_commands/` module + one injectable seam in `HermesVoiceInputController` |
+
+## Architecture & data flow
+
+`lib/features/voice_commands/` owns: engine lifecycle (promoted from the spike:
+`NeedleEngine`, `NativeCallQueue`, `NeedleResult`), model install service (promoted),
+the real tool catalog, arg validation/snapping, `VoiceCommandRouter`, and
+`CommandDispatcher`. The spike feature keeps only the dev eval screen (still behind
+`NEEDLE_SPIKE`), importing shared pieces from the new module.
+
+Flow: STT transcript → `HermesVoiceInputController` tries its injectable, nullable
+seam `Future<VoiceRouteResult?> Function(String)?` → `null` ⇒ existing draft/submit
+path unchanged. A `VoiceRouteResult{command, args, tier}` goes to the UI layer:
+instant tier dispatches immediately with a snackbar; confirm tier renders a chip
+stating exactly what will happen; decline or chip timeout sends the transcript to
+Hermes as a normal message. Latency cost exists only for opt-in users.
+
+## Command surface & tiers
+
+| Command | Action binding | Tier |
+|---|---|---|
+| `navigate_to_screen` | go_router | Instant |
+| `show_status` | connection-state snackbar | Instant |
+| `stop_voice_run` | stop continuous/capture | Instant |
+| `toggle_continuous_mode` (off) | voice settings controller | Instant |
+| `toggle_continuous_mode` (on) | voice settings controller | Confirm |
+| `start_voice_run` | re-arm capture | Confirm |
+| `new_session` | Hermes channel | Confirm |
+| `switch_session` | fuzzy-match against real session titles | Confirm |
+| `set_tts_voice` | snap to installed voice list | Confirm |
+| `set_speech_rate` | clamp 0.25–3.0 | Confirm |
+
+## Guardrails (mitigating the observed 15% wrong-tool rate)
+
+Layered, all pre-execution:
+1. Tool name must exist in the catalog — else fallthrough.
+2. Args schema-validated and snapped: enums by normalized/fuzzy match
+   (`"settings screen"` → `settings`), numbers parsed/clamped, unknown session or
+   voice names ⇒ fallthrough or the chip shows the best candidate for confirmation.
+3. Engine `confidence` is ignored by design (pinned at 1.0 in the spike).
+4. Confirm tier absorbs residual wrong-tool risk; the chip text names the exact effect.
+5. No transcript is ever silently dropped.
+
+Privacy invariants carry over: no transcript logging/persistence; on-device only
+(`auto_handoff: false`; `CACTUS_NO_CLOUD_TELE=1` before init).
+
+## Shipping & lifecycle
+
+- Engine `.so` in every APK: CI runs `scripts/spike/build_cactus_engine.sh`
+  (symbol-export patch included); local gitignore stays, CI builds before assemble.
+- Settings section: toggle (default OFF, shared_preferences-backed), Wi-Fi-aware model
+  download with progress/retry, delete-model affordance.
+- Engine loads lazily on first routed transcript; resident for the app session.
+- Repeated engine/parse failures (3 per session) auto-suspend routing until restart
+  and surface a settings hint.
+
+## Error handling
+
+Any engine/parse/validation failure ⇒ fallthrough to Hermes plus a transcript-free
+debug breadcrumb. Timeout 1.5 s ⇒ fallthrough. Model missing/deleted ⇒ router returns
+null until re-downloaded.
+
+## Testing
+
+- Unit: catalog schema, validator/snapping (table-driven per tool), dispatcher against
+  fake services, router timeout/fallthrough/suspend.
+- Widget: confirmation chip confirm/decline/timeout paths; settings toggle + download.
+- Regression fixture: the spike's 20-transcript bank replayed through the full
+  validation pipeline using recorded engine outputs (fake engine), asserting expected
+  tool + snapped args.
+- On-device: extended Maestro flow including a confirmation-chip scenario.
+
+## Out of scope
+
+Hybrid pre-routing, wake words, model fine-tuning for the three paraphrase failures
+(follow-up), iOS/web/Linux engines, NPU acceleration.
