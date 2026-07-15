@@ -1021,4 +1021,4 @@ Expected: `docs=ok` and no diff-check output.
 
 - [ ] **Step 5: Final reviewer checkpoint**
 
-Review against ADRs 0011–0016 and 0024–0035. Confirm no raw credential reaches persisted JSON, logs, widgets, URLs, clipboard, or diagnostics; authorization failures are server-enforced; `/agents` is functional rather than a placeholder; all new app-owned strings use generated English localization keys; its critical flow passes the required semantics, scaling, and TalkBack receipt; unrelated owner changes remain untouched.
+Review against ADRs 0011–0016, 0024–0032, 0035, and 0040. Confirm no raw credential reaches persisted JSON, logs, widgets, URLs, clipboard, or diagnostics; authorization failures are server-enforced; `/agents` is functional rather than a placeholder; all new app-owned strings use generated English localization keys; its critical flow passes the required semantics, scaling, and TalkBack receipt; unrelated owner changes remain untouched.

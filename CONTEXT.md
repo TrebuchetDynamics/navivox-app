@@ -112,6 +112,30 @@ _Avoid_: HERMES_HOME zip, full backup
 The canonical host, port, key algorithm, and SHA-256 fingerprint explicitly trusted for one desktop SSH endpoint and stored only in Navivox-owned host-key state.
 _Avoid_: accept-new, SSH credential
 
+**Managed runtime release**:
+An exact Hermes Agent version and platform artifact authenticated by signed release metadata before a desktop host adapter installs or activates it.
+_Avoid_: latest main, install script URL
+
+**Canonical package matrix**:
+The signed AAB/APK, APT/RPM, MSIX, and notarized DMG formats that carry official Navivox releases and retirement evidence.
+_Avoid_: every Electron format, generic archive release
+
+**Detached run**:
+A server-owned Hermes run that continues while Android presentation and transport are suspended, then reconciles from authoritative state on foreground resume.
+_Avoid_: background queue, foreground-service run
+
+**Filesystem grant**:
+A profile- and principal-bound Hermes resource handle created from an explicit same-host native-picker selection with bounded access and retention.
+_Avoid_: saved path, folder permission
+
+**Guarded wallet export**:
+A local-only, one-wallet-at-a-time Hermes Desktop exit flow that verifies and reveals a legacy recovery phrase transiently or writes it in a passphrase-encrypted file.
+_Avoid_: wallet migration, recovery sync
+
+**Device authorization**:
+The RFC 8628 system-browser flow that gives one native Navivox installation a client-global Hermes One OAuth credential after browser approval.
+_Avoid_: device enrollment, Hermes pairing
+
 **Pairing code**:
 A short-lived, single-use enrollment secret that authorizes one scoped-token exchange after the operator reviews the endpoint and requested scopes. It is not a bearer token and may travel in a QR or `navivox://connect` payload.
 _Avoid_: pairing token, API key

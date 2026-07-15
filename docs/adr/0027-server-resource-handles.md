@@ -13,3 +13,4 @@ Attachments and context folders cross the Navivox–Hermes boundary as opaque se
 - Chat, runs, history, retries, and context-folder selection refer to handles and safe metadata, not private absolute paths.
 - Deleting or expiring a handle follows documented retention rules and cannot escape its profile boundary.
 - Capabilities advertise upload, same-host path registration, workspace selection, limits, and supported resource types independently.
+- Same-host path registration follows ADR 0041's native-picker grant, isolation, retention, revocation, and path-safety rules.

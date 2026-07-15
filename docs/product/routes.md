@@ -8,8 +8,9 @@ Navivox uses one adaptive route tree. Android renders four primary destinations 
 | `/discover` | Discover | Skills and MCP discovery. | planned |
 | `/office` | Office | Adaptive Hermes Office. | planned |
 | `/tasks` | Tasks | Kanban and Schedules. | planned |
-| `/agents` | More | Profiles, persona, and profile administration. | planned |
-| `/providers` | More | Providers, models, and task-model overrides. | planned |
+| `/agents` | More | Profiles, persona, and profile administration. | implemented |
+| `/enroll` | (deep link) | One-time pairing-code enrollment, outside the shell. | implemented |
+| `/providers` | More | Providers, models, and task-model overrides. | implemented |
 | `/tools` | More | Toolsets and MCP administration. | planned |
 | `/memory` | More | Memory entries, profile, capacity, and providers. | planned |
 | `/gateway` | More | Gateway lifecycle and messaging platforms. | planned |

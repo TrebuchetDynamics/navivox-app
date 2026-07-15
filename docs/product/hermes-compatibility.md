@@ -26,6 +26,44 @@ For scoped credentials, `/v1/capabilities` reports the caller's granted scopes
 and the required scopes for advertised operations. Flutter must treat those
 grants as presentation input while Hermes Agent remains the enforcement point.
 
+Milestone 0 (Remote trust foundation) and Profiles/Agents advertise these
+scoped operations. Enrollment inspect/exchange are unauthenticated because the
+one-time code is itself the credential (origin-bound, TTL-limited,
+lockout-rate-limited); everything else requires the listed scope:
+
+| Method | Path | Required scope |
+| --- | --- | --- |
+| `POST` | `/v1/operator/enrollments` | `settings:write` |
+| `POST` | `/v1/operator/enrollments/inspect` | (code + origin) |
+| `POST` | `/v1/operator/enrollments/exchange` | (code + origin) |
+| `GET` | `/v1/operator/credentials` | `settings:read` |
+| `DELETE` | `/v1/operator/credentials/{id}` | `settings:write` |
+| `GET` | `/api/profiles` | `profiles:read` |
+| `POST` | `/api/profiles` | `profiles:write` |
+| `PATCH` | `/api/profiles/{name}` | `profiles:write` (`If-Match`) |
+| `DELETE` | `/api/profiles/{name}` | `profiles:write` (`If-Match`) |
+| `GET` | `/api/profiles/{name}/soul` | `profiles:read` |
+| `PUT` | `/api/profiles/{name}/soul` | `profiles:write` (`If-Match`) |
+| `GET` | `/api/providers` | `providers:read` |
+| `PUT` | `/api/providers/{slug}/credential` | `providers:write` |
+| `DELETE` | `/api/providers/{slug}/credential` | `providers:write` |
+| `POST` | `/api/providers/{slug}/credential/validate` | `providers:write` |
+| `GET` | `/api/models` | `models:read` |
+| `POST` | `/api/models/refresh` | `models:write` |
+| `PUT` | `/api/models/assignment` | `models:write` (`If-Match`) |
+
+Profile mutations use opaque domain revisions: a missing `If-Match` returns
+`428`, a stale revision returns `412` with no write, and the client refreshes
+the profile list on either a successful mutation or a `412`.
+
+Every provider-credential operation is profile-scoped through the mandatory
+`?profile=` query described below (`"current"` is not accepted as a
+fallback). Provider API keys are write-only: `PUT`/`DELETE
+/api/providers/{slug}/credential` accept or clear a value but never return
+it, `GET /api/providers` and the validate response report only `configured`
+(bool) and a masked last-4-character `key_hint`, and no capability field,
+error body, or log line ever carries the raw key.
+
 The capability document advertises this profile-context contract:
 
 ```json
@@ -109,7 +147,10 @@ durably queue or automatically replay chat sends, approvals, administrative
 mutations, task actions, or lifecycle commands. Reconnect refreshes capabilities,
 profile context, domain revisions, and authoritative resources before enabling
 mutations. Pending work is invalidated by endpoint, profile, session, credential,
-or connection-generation changes.
+or connection-generation changes. Android backgrounding may detach the event
+stream without stopping a server-owned run. Foreground resume revalidates trust
+and context, fetches authoritative session/run state, and only then reconnects
+the stream; it never replays local approvals, follow-ups, or mutations.
 
 ## Resource-handle contract
 
@@ -117,11 +158,14 @@ Attachments and context folders use capability-advertised Hermes resource
 handles. Upload, same-host path registration, and server-workspace selection
 are separate operations with declared size, media-type, count, and retention
 limits. Handles are opaque and profile-bound; chat and history payloads expose
-only the handle plus safe display metadata. Path registration is available only
-when Navivox and Hermes Agent share a host and the operator selected the path.
-Remote/mobile clients upload content or select an advertised server workspace.
-Missing resource capabilities hide the affected picker without disabling text
-chat.
+only the handle plus safe display metadata. Path registration is available only when Navivox and Hermes Agent share a
+verified host and the operator selected the path through the native picker.
+The returned grant declares profile, principal, purpose, access mode, expiry,
+and optional session binding without returning the path. Remembered access is a
+separate confirmation. Remote, SSH-tunnelled, and mobile clients upload content
+or select an advertised server workspace. Every use revalidates filesystem
+identity and root containment; revocation and expiry fail closed. Missing
+resource capabilities hide the affected picker without disabling text chat.
 
 ## Backup and restore contract
 
@@ -154,5 +198,11 @@ Hermes One account login, cloud-agent synchronization, and backend-managed
 wallets use the optional Hermes One account service directly. That HTTPS service
 has its own OAuth capability and credential lifecycle; it is not an alternate
 Hermes endpoint, Dashboard transport, or fallback for unavailable Hermes Agent
-operations. Account-service failure must not disable Hermes chat or
-administration.
+operations. Account-service failure must not disable Hermes chat or administration. Native
+clients use advertised RFC 8628 device authorization through the system browser,
+with an allowed HTTPS verification origin, generic device label, server-directed
+polling, expiry/cancellation, and a client-global credential in platform secure
+storage. Codes and tokens never transit through Hermes Agent, URLs owned by
+Navivox, clipboard, logs, analytics, or migration. Web account support remains
+excluded until Hermes One advertises Authorization Code + PKCE and the browser
+storage boundary passes review.

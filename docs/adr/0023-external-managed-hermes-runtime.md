@@ -11,4 +11,4 @@ Navivox desktop packages contain Flutter and platform host adapters, not an embe
 - Existing installations and operator-selected Hermes homes are first-class migration paths.
 - Host adapters own installer invocation, process lifecycle, secure local connection setup, and actionable recovery when verification fails.
 - Domain behavior remains behind Hermes Agent interfaces after bootstrap; Flutter does not parse runtime files or CLI output.
-- Desktop package acceptance verifies both a clean install and adoption of an existing supported installation.
+- Desktop package acceptance verifies both a clean install and adoption of an existing supported installation through ADR 0038's authenticated, version-pinned lifecycle.

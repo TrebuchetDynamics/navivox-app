@@ -11,3 +11,4 @@ Hermes Desktop remains supported while Navivox ships incremental Android and des
 - Every baseline desktop capability and accepted pre-cutoff delta must be validated on all three desktop targets, replaced by an equivalent outcome, explicitly deprecated, or have an approved platform exclusion.
 - iOS and web completion do not block Electron retirement because Hermes Desktop does not serve those platforms.
 - The parity ledger, not route count or visual resemblance, is the retirement evidence.
+- ADR 0039's canonical packages must pass on Linux, Windows, and macOS; optional legacy package formats do not block retirement when their users have a documented migration path.

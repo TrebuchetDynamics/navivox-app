@@ -3,7 +3,7 @@
 Status: accepted
 Date: 2026-07-13
 
-Navivox does not create, import, store, or automatically transfer wallet recovery phrases. Before Hermes Desktop can retire, it must provide a guarded one-time export path for recovery phrases encrypted by its legacy local wallet store; backend-managed cloud wallets remain the supported Navivox wallet model.
+Navivox does not create, import, store, or automatically transfer wallet recovery phrases. Before Hermes Desktop can retire, it must provide ADR 0042's guarded one-wallet-at-a-time export path for recovery phrases encrypted by its legacy local wallet store; backend-managed cloud wallets remain the supported Navivox wallet model.
 
 ## Consequences
 

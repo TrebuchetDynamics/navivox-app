@@ -8,6 +8,7 @@ The optional Hermes One account service remains the authority for cloud identity
 ## Consequences
 
 - A connected app may hold one scoped Hermes Agent credential and, after optional account sign-in, one separate Hermes One OAuth credential.
+- Native account sign-in follows ADR 0043's hardened RFC 8628 system-browser flow; web requires its separately advertised PKCE contract.
 - Account device authorization and cloud wallet calls require HTTPS and platform secure storage.
 - Hermes Agent does not store, proxy, or expose the Hermes One OAuth credential.
 - Cloud wallet secrets remain backend-held; Navivox receives only public wallet metadata and authorized account results.
