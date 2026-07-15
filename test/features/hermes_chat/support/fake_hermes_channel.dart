@@ -35,6 +35,9 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     List<String> enabledToolsets = const [],
     List<HermesJob> jobs = const [],
     List<HermesSession>? sessions,
+    List<HermesProfile> profiles = const [],
+    String? selectedProfileId,
+    this.profileSoul = const HermesProfileSoul(soul: '', revision: 'rev-1'),
     String connectedBaseUrl = 'http://fake-hermes:8642',
     bool connectedWithApiKey = true,
     this.createSessionFails = false,
@@ -42,6 +45,11 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     this.selectSessionFailureMessage = 'select failed',
     this.approvalResponsesFail = false,
     this.approvalResponseGate,
+    this.createProfileFails = false,
+    this.renameProfileFails = false,
+    this.deleteProfileFails = false,
+    this.writeProfileSoulFails = false,
+    this.profileMutationFailureMessage = 'Hermes API returned HTTP 412',
   }) : _state = status == HermesConnectionStatus.connected
            ? HermesChannelState(
                status: status,
@@ -56,6 +64,8 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
                connectedWithApiKey: connectedWithApiKey,
                sessions:
                    sessions ?? [HermesSession(id: sessionId, source: 'fake')],
+               profiles: profiles,
+               selectedProfileId: selectedProfileId,
                activeSessionId:
                    activeSessionId ??
                    ((sessions != null && sessions.isEmpty) ? null : sessionId),
@@ -78,12 +88,29 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   final List<Map<String, String>> renameSessionCalls = [];
   final List<String> deleteSessionCalls = [];
   final List<String> forkSessionCalls = [];
+  final List<String> selectProfileCalls = [];
+  final List<Map<String, String?>> createProfileCalls = [];
+  final List<Map<String, String>> renameProfileCalls = [];
+  final List<Map<String, String>> deleteProfileCalls = [];
+  final List<String> readProfileSoulCalls = [];
+  final List<Map<String, String>> writeProfileSoulCalls = [];
+  final HermesProfileSoul profileSoul;
   final List<Map<String, Object?>> respondToApprovalCalls = [];
   final bool createSessionFails;
   bool selectSessionFails;
   String selectSessionFailureMessage;
   final bool approvalResponsesFail;
   final Future<void> Function()? approvalResponseGate;
+
+  /// Profile-mutation failure injection. When set, the corresponding mutation
+  /// records its call, refreshes nothing successfully, and throws a
+  /// [StateError] carrying [profileMutationFailureMessage] (default contains
+  /// `HTTP 412`, which the UI maps to a revision-conflict message).
+  final bool createProfileFails;
+  final bool renameProfileFails;
+  final bool deleteProfileFails;
+  final bool writeProfileSoulFails;
+  final String profileMutationFailureMessage;
   int stopActiveTurnCalls = 0;
   final _approvalController =
       StreamController<HermesApprovalRequest>.broadcast();
@@ -220,6 +247,105 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
         },
       ),
     );
+  }
+
+  @override
+  Future<void> selectProfile(String profileId) async {
+    selectProfileCalls.add(profileId);
+    _setState(_state.copyWith(selectedProfileId: profileId));
+  }
+
+  @override
+  Future<void> createProfile({required String name, String? cloneFrom}) async {
+    createProfileCalls.add({'name': name, 'cloneFrom': cloneFrom});
+    if (createProfileFails) {
+      throw StateError(profileMutationFailureMessage);
+    }
+    final id = name.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    _setState(
+      _state.copyWith(
+        profiles: [
+          ..._state.profiles,
+          HermesProfile(id: id, displayName: name.trim(), revision: 'rev-new'),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<void> renameProfile({
+    required String profileId,
+    required String name,
+    required String revision,
+  }) async {
+    renameProfileCalls.add({
+      'profileId': profileId,
+      'name': name,
+      'revision': revision,
+    });
+    if (renameProfileFails) {
+      throw StateError(profileMutationFailureMessage);
+    }
+    _setState(
+      _state.copyWith(
+        profiles: [
+          for (final profile in _state.profiles)
+            if (profile.id == profileId)
+              HermesProfile(
+                id: profile.id,
+                displayName: name.trim(),
+                revision: 'rev-next',
+                description: profile.description,
+                model: profile.model,
+                skillsCount: profile.skillsCount,
+                gatewayRunning: profile.gatewayRunning,
+              )
+            else
+              profile,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteProfile({
+    required String profileId,
+    required String revision,
+  }) async {
+    deleteProfileCalls.add({'profileId': profileId, 'revision': revision});
+    if (deleteProfileFails) {
+      throw StateError(profileMutationFailureMessage);
+    }
+    _setState(
+      _state.copyWith(
+        profiles: [
+          for (final profile in _state.profiles)
+            if (profile.id != profileId) profile,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<HermesProfileSoul> readProfileSoul(String profileId) async {
+    readProfileSoulCalls.add(profileId);
+    return profileSoul;
+  }
+
+  @override
+  Future<void> writeProfileSoul({
+    required String profileId,
+    required String soul,
+    required String revision,
+  }) async {
+    writeProfileSoulCalls.add({
+      'profileId': profileId,
+      'soul': soul,
+      'revision': revision,
+    });
+    if (writeProfileSoulFails) {
+      throw StateError(profileMutationFailureMessage);
+    }
   }
 
   @override

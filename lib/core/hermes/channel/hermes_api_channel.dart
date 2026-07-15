@@ -16,6 +16,7 @@ import 'hermes_channel.dart';
 
 part 'api_channel/hermes_api_channel_connection.dart';
 part 'api_channel/hermes_api_channel_sessions.dart';
+part 'api_channel/hermes_api_channel_profiles.dart';
 part 'api_channel/hermes_api_channel_messaging.dart';
 part 'api_channel/hermes_api_channel_approvals.dart';
 part 'api_channel/hermes_api_channel_voice.dart';
@@ -109,6 +110,37 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   @override
   Future<void> forkSession(String sessionId, {String? title}) =>
       _forkSession(sessionId, title: title);
+
+  @override
+  Future<void> selectProfile(String profileId) => _selectProfile(profileId);
+
+  @override
+  Future<void> createProfile({required String name, String? cloneFrom}) =>
+      _createProfile(name: name, cloneFrom: cloneFrom);
+
+  @override
+  Future<void> renameProfile({
+    required String profileId,
+    required String name,
+    required String revision,
+  }) => _renameProfile(profileId: profileId, name: name, revision: revision);
+
+  @override
+  Future<void> deleteProfile({
+    required String profileId,
+    required String revision,
+  }) => _deleteProfile(profileId: profileId, revision: revision);
+
+  @override
+  Future<HermesProfileSoul> readProfileSoul(String profileId) =>
+      _readProfileSoul(profileId);
+
+  @override
+  Future<void> writeProfileSoul({
+    required String profileId,
+    required String soul,
+    required String revision,
+  }) => _writeProfileSoul(profileId: profileId, soul: soul, revision: revision);
 
   @override
   Future<void> sendText(String text) => _sendText(text);

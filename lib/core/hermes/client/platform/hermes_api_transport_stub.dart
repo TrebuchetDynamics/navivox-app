@@ -12,6 +12,10 @@ Future<String> defaultPatch(Uri uri, Map<String, String> headers, String body) {
   return unsupportedHermesApiPatch(uri, headers, body);
 }
 
+Future<String> defaultPut(Uri uri, Map<String, String> headers, String body) {
+  return unsupportedHermesApiPut(uri, headers, body);
+}
+
 Future<String> defaultDelete(Uri uri, Map<String, String> headers) {
   return unsupportedHermesApiDelete(uri, headers);
 }

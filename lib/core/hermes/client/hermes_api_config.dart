@@ -38,6 +38,13 @@ class HermesApiConfig {
   Uri get jobsUri => _withPath('/api/jobs');
   Uri get runsUri => _withPath('/v1/runs');
 
+  /// Unauthenticated one-time pairing endpoints; see
+  /// docs/adr/0043-hardened-hermes-one-device-authorization.md. Callers must
+  /// never attach [headers] (a saved bearer credential) to these requests.
+  Uri get enrollmentInspectUri => _withPath('/v1/operator/enrollments/inspect');
+  Uri get enrollmentExchangeUri =>
+      _withPath('/v1/operator/enrollments/exchange');
+
   Uri sessionUri(String sessionId) => _withPath(
     '/api/sessions/${hermesApiTrimmedPathSegment(sessionId, name: 'sessionId')}',
   );
@@ -73,6 +80,29 @@ class HermesApiConfig {
   Uri runStopUri(String runId) => _withPath(
     '/v1/runs/${hermesApiTrimmedPathSegment(runId, name: 'runId')}/stop',
   );
+
+  /// Administrative profile collection. Machine-scoped and keyed by name in
+  /// the path, so it never carries the profile-owned `profile` query.
+  Uri get profilesUri => _withPath('/api/profiles');
+
+  Uri profileUri(String profileId) => _withPath(
+    '/api/profiles/${hermesApiTrimmedPathSegment(profileId, name: 'profileId')}',
+  );
+
+  Uri profileSoulUri(String profileId) => _withPath(
+    '/api/profiles/${hermesApiTrimmedPathSegment(profileId, name: 'profileId')}/soul',
+  );
+
+  /// Adds the mandatory `profile` query to a profile-owned request or SSE URL,
+  /// including the literal `default` profile. The id is validated (non-blank)
+  /// so an implicit/empty profile scope can never reach the wire, and existing
+  /// query parameters on [uri] are preserved.
+  Uri profileScopedUri(Uri uri, String profileId) {
+    final id = hermesApiRequiredTrimmedValue(profileId, 'profileId');
+    return uri.replace(
+      queryParameters: {...uri.queryParameters, 'profile': id},
+    );
+  }
 
   Map<String, String> get headers {
     final value = apiKey?.trim();

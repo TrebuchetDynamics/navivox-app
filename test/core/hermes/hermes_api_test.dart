@@ -162,6 +162,200 @@ void main() {
     },
   );
 
+  test('capabilities parse caller scopes and endpoint requirements', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'profile_context': {
+        'type': 'query',
+        'name': 'profile',
+        'required': true,
+        'default_profile_id': 'default',
+      },
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['profiles:read'],
+        'credential_kind': 'operator_token',
+      },
+      'endpoints': {
+        'profiles': {
+          'method': 'GET',
+          'path': '/api/profiles',
+          'required_scopes': ['profiles:read'],
+          'profile_scoped': false,
+        },
+      },
+    });
+
+    expect(document.schemaVersion, 1);
+    expect(document.supportsSchema, isTrue);
+    expect(document.profileContext.name, 'profile');
+    expect(document.profileContext.required, isTrue);
+    expect(document.profileContext.defaultProfileId, 'default');
+    expect(document.auth.allows('profiles:read'), isTrue);
+    expect(document.auth.allows('profiles:write'), isFalse);
+    expect(document.endpoints['profiles']!.requiredScopes, ['profiles:read']);
+    expect(document.endpoints['profiles']!.profileScoped, isFalse);
+  });
+
+  test('parsed capability scopes are immutable', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['profiles:read'],
+      },
+      'endpoints': {
+        'profiles': {
+          'method': 'GET',
+          'path': '/api/profiles',
+          'required_scopes': ['profiles:read'],
+        },
+      },
+    });
+
+    expect(
+      () => document.auth.grantedScopes[0] = 'profiles:write',
+      throwsUnsupportedError,
+    );
+    expect(
+      () =>
+          document.endpoints['profiles']!.requiredScopes[0] = 'profiles:write',
+      throwsUnsupportedError,
+    );
+  });
+
+  test('absent schema_version parses as version 1', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': <String, Object?>{},
+    });
+
+    expect(document.schemaVersion, 1);
+    expect(document.supportsSchema, isTrue);
+  });
+
+  test('absent scope arrays parse as empty rather than crashing', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': {
+        'profiles': {'method': 'GET', 'path': '/api/profiles'},
+      },
+    });
+
+    expect(document.auth.grantedScopes, isEmpty);
+    expect(document.auth.allows('profiles:read'), isFalse);
+    expect(document.endpoints['profiles']!.requiredScopes, isEmpty);
+    expect(document.endpoints['profiles']!.profileScoped, isFalse);
+  });
+
+  test('unknown top-level and nested fields do not crash older clients', () {
+    expect(
+      () => HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'unexpected_top_level_field': 'ignored',
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'unexpected_auth_field': 'ignored',
+        },
+        'endpoints': {
+          'profiles': {
+            'method': 'GET',
+            'path': '/api/profiles',
+            'unexpected_endpoint_field': 'ignored',
+          },
+        },
+      }),
+      returnsNormally,
+    );
+  });
+
+  test('profile context support requires the exact query declaration', () {
+    final valid = HermesProfileContextCapability.fromJson({
+      'type': 'query',
+      'name': 'profile',
+      'required': true,
+      'default_profile_id': 'default',
+    });
+    expect(valid.isSupportedQueryContext, isTrue);
+
+    for (final malformed in [
+      {
+        'type': 'header',
+        'name': 'profile',
+        'required': true,
+        'default_profile_id': 'default',
+      },
+      {
+        'type': 'query',
+        'name': 'wrong',
+        'required': true,
+        'default_profile_id': 'default',
+      },
+      {
+        'type': 'query',
+        'name': 'profile',
+        'required': false,
+        'default_profile_id': 'default',
+      },
+      {'type': 'query', 'name': 'profile', 'required': true},
+    ]) {
+      expect(
+        HermesProfileContextCapability.fromJson(
+          malformed,
+        ).isSupportedQueryContext,
+        isFalse,
+        reason: '$malformed is not the advertised profile query contract',
+      );
+    }
+  });
+
+  test('absent profile_context leaves profile-scoped operations unavailable '
+      'rather than implicitly default-scoped', () {
+    final document = HermesCapabilityDocument.fromJson({
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': {
+        'session_chat_stream': {
+          'method': 'POST',
+          'path': '/api/sessions/{session_id}/chat/stream',
+          'profile_scoped': true,
+        },
+      },
+      'features': {'session_chat_streaming': true},
+    });
+
+    expect(document.profileContext.name, isEmpty);
+    expect(document.profileContext.isSupportedQueryContext, isFalse);
+
+    final policy = HermesTransportPolicy(document);
+    expect(policy.supportsSessionChatStream, isFalse);
+  });
+
+  test(
+    'schema version 2 exposes no transport operations until the client supports it',
+    () {
+      final document = HermesCapabilityDocument.fromJson({
+        'schema_version': 2,
+        ...jsonDecode(_capabilitiesFixture) as Map<String, Object?>,
+      });
+      final policy = HermesTransportPolicy(document);
+
+      expect(document.supportsSchema, isFalse);
+      expect(policy.supportsSessionChatStream, isFalse);
+      expect(policy.supportsRunsTransport, isFalse);
+      expect(policy.supportsRunStatus, isFalse);
+      expect(policy.supportsRunStop, isFalse);
+      expect(policy.supportsRunApprovalResponse, isFalse);
+      expect(policy.supportsToolProgressEvents, isFalse);
+      expect(policy.supportsAnyChatTransport, isFalse);
+      expect(policy.supportsConfigWrite, isFalse);
+      expect(policy.supportsMemoryWrite, isFalse);
+      expect(policy.supportsAudioApi, isFalse);
+      expect(policy.supportsRealtimeVoice, isFalse);
+    },
+  );
+
   test(
     'surface readiness does not claim unwired Hermes APIs are implemented',
     () {
@@ -664,6 +858,190 @@ void main() {
     expect(
       events.last.payload['message'],
       'response failed token=secret-response-error',
+    );
+  });
+
+  test('profile list parses stable id and metadata', () async {
+    final config = HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642');
+    final client = HermesApiClient(
+      config: config,
+      get: (_, _) async => jsonEncode({
+        'data': [
+          {
+            'id': 'coder',
+            'name': 'Coding Agent',
+            'revision': 'rev-1',
+            'skills_count': 4,
+          },
+        ],
+      }),
+    );
+
+    final profiles = await client.listProfiles();
+    expect(profiles.single.id, 'coder');
+    expect(profiles.single.displayName, 'Coding Agent');
+    expect(profiles.single.revision, 'rev-1');
+    expect(profiles.single.skillsCount, 4);
+  });
+
+  test('listProfiles discards rows with a blank id', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (_, _) async => jsonEncode({
+        'data': [
+          {'id': '', 'name': 'Ghost', 'revision': 'r'},
+          {'name': 'Missing id', 'revision': 'r'},
+          {'id': 'keep', 'name': 'Kept', 'revision': 'rev-2'},
+        ],
+      }),
+    );
+
+    final profiles = await client.listProfiles();
+    expect(profiles.map((profile) => profile.id), ['keep']);
+  });
+
+  test('creates and clones a profile over POST', () async {
+    final posts = <String, Map<String, Object?>>{};
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      post: (uri, headers, body) async {
+        posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        return jsonEncode({
+          'profile': {'id': 'coder', 'name': 'Coder', 'revision': 'rev-1'},
+        });
+      },
+    );
+
+    final created = await client.createProfile(
+      name: ' Coder ',
+      cloneFrom: ' default ',
+    );
+
+    expect(posts['/api/profiles'], {'name': 'Coder', 'clone_from': 'default'});
+    expect(created.id, 'coder');
+    expect(created.revision, 'rev-1');
+  });
+
+  test('renames a profile over PATCH with an If-Match precondition', () async {
+    final patches = <String, Map<String, Object?>>{};
+    String? ifMatch;
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      patch: (uri, headers, body) async {
+        patches[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        ifMatch = headers['If-Match'];
+        return jsonEncode({
+          'profile': {'id': 'coder', 'name': 'Renamed', 'revision': 'rev-2'},
+        });
+      },
+    );
+
+    final updated = await client.renameProfile(
+      profileId: 'coder',
+      name: ' Renamed ',
+      revision: 'rev-1',
+    );
+
+    expect(patches['/api/profiles/coder'], {'name': 'Renamed'});
+    expect(ifMatch, 'rev-1');
+    expect(updated.revision, 'rev-2');
+  });
+
+  test('deletes a profile over DELETE with If-Match and confirms the '
+      'envelope', () async {
+    final deletes = <String>[];
+    String? ifMatch;
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      delete: (uri, headers) async {
+        deletes.add(uri.path);
+        ifMatch = headers['If-Match'];
+        return jsonEncode({'id': 'coder', 'deleted': true});
+      },
+    );
+
+    await client.deleteProfile(profileId: 'coder', revision: 'rev-9');
+
+    expect(deletes, ['/api/profiles/coder']);
+    expect(ifMatch, 'rev-9');
+  });
+
+  test('rejects an unconfirmed profile delete response', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      delete: (_, _) async => jsonEncode({'id': 'other', 'deleted': false}),
+    );
+
+    await expectLater(
+      client.deleteProfile(profileId: 'coder', revision: 'rev-9'),
+      throwsStateError,
+    );
+  });
+
+  test('reads and writes profile soul with the mandatory profile query and '
+      'an If-Match precondition', () async {
+    Uri? getUri;
+    Uri? putUri;
+    String? ifMatch;
+    Map<String, Object?>? putBody;
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (uri, headers) async {
+        getUri = uri;
+        return jsonEncode({'soul': 'Be helpful.', 'revision': 'rev-1'});
+      },
+      put: (uri, headers, body) async {
+        putUri = uri;
+        ifMatch = headers['If-Match'];
+        putBody = jsonDecode(body) as Map<String, Object?>;
+        return jsonEncode({'soul': 'Be terse.', 'revision': 'rev-2'});
+      },
+    );
+
+    final soul = await client.readProfileSoul('default');
+    expect(soul.soul, 'Be helpful.');
+    expect(getUri!.path, '/api/profiles/default/soul');
+    expect(getUri!.queryParameters['profile'], 'default');
+
+    final saved = await client.writeProfileSoul(
+      profileId: 'default',
+      soul: 'Be terse.',
+      revision: 'rev-1',
+    );
+    expect(putUri!.path, '/api/profiles/default/soul');
+    expect(putUri!.queryParameters['profile'], 'default');
+    expect(ifMatch, 'rev-1');
+    expect(putBody, {'soul': 'Be terse.'});
+    expect(saved.revision, 'rev-2');
+  });
+
+  test('profileScopedUri merges a mandatory profile query including '
+      'default', () {
+    final config = HermesApiConfig.fromBaseUrl('https://hermes.example:8642');
+
+    expect(
+      config.profilesUri.toString(),
+      'https://hermes.example:8642/api/profiles',
+    );
+    expect(
+      config.profileUri('coder').toString(),
+      'https://hermes.example:8642/api/profiles/coder',
+    );
+    expect(
+      config.profileSoulUri('coder').toString(),
+      'https://hermes.example:8642/api/profiles/coder/soul',
+    );
+    expect(
+      config.profileScopedUri(config.sessionsUri, 'default').toString(),
+      'https://hermes.example:8642/api/sessions?profile=default',
+    );
+    expect(
+      config.profileScopedUri(config.sessionsUri, ' coder ').toString(),
+      'https://hermes.example:8642/api/sessions?profile=coder',
+    );
+    expect(
+      () => config.profileScopedUri(config.sessionsUri, '  '),
+      throwsArgumentError,
     );
   });
 }

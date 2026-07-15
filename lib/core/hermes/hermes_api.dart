@@ -4,6 +4,7 @@ export 'client/hermes_api_transport.dart';
 export 'models/hermes_capabilities.dart';
 export 'models/hermes_health.dart';
 export 'models/hermes_job.dart';
+export 'models/hermes_profile.dart';
 export 'models/hermes_run.dart';
 export 'models/hermes_session.dart';
 export 'policy/hermes_endpoint_security.dart';

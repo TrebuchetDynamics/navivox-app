@@ -3,6 +3,7 @@ import '../models/hermes_capabilities.dart';
 import '../models/hermes_chat_turn.dart';
 import '../models/hermes_health.dart';
 import '../models/hermes_job.dart';
+import '../models/hermes_profile.dart';
 import '../models/hermes_session.dart';
 
 enum HermesConnectionStatus { disconnected, connecting, connected, error }
@@ -22,6 +23,8 @@ class HermesChannelState {
     this.optionalResourceErrors = const {},
     this.sessions = const [],
     this.activeSessionId,
+    this.profiles = const [],
+    this.selectedProfileId,
     this.connectedBaseUrl,
     this.connectedWithApiKey = false,
     this.messages = const {},
@@ -43,8 +46,25 @@ class HermesChannelState {
   final Map<HermesOptionalResource, String> optionalResourceErrors;
   final List<HermesSession> sessions;
   final String? activeSessionId;
+
+  /// Profiles ("agents") advertised by the connected endpoint. Refreshed by
+  /// profile selection and after every profile mutation or 412 conflict.
+  final List<HermesProfile> profiles;
+
+  /// The client-selected profile. This is Navivox-local state only: selecting
+  /// a profile never mutates the Hermes CLI's active profile.
+  final String? selectedProfileId;
   final String? connectedBaseUrl;
   final bool connectedWithApiKey;
+
+  HermesProfile? get selectedProfile {
+    final id = selectedProfileId;
+    if (id == null) return null;
+    for (final profile in profiles) {
+      if (profile.id == id) return profile;
+    }
+    return null;
+  }
 
   /// Turns per session id, in arrival order.
   final Map<String, List<HermesChatTurn>> messages;
@@ -99,6 +119,9 @@ class HermesChannelState {
     List<HermesSession>? sessions,
     String? activeSessionId,
     bool clearActiveSessionId = false,
+    List<HermesProfile>? profiles,
+    String? selectedProfileId,
+    bool clearSelectedProfileId = false,
     String? connectedBaseUrl,
     bool clearConnectedBaseUrl = false,
     bool? connectedWithApiKey,
@@ -114,6 +137,10 @@ class HermesChannelState {
     assert(
       !clearActiveVoiceRunId || activeVoiceRunId == null,
       'copyWith cannot set and clear activeVoiceRunId at the same time.',
+    );
+    assert(
+      !clearSelectedProfileId || selectedProfileId == null,
+      'copyWith cannot set and clear selectedProfileId at the same time.',
     );
     return HermesChannelState(
       status: status ?? this.status,
@@ -132,6 +159,10 @@ class HermesChannelState {
       activeSessionId: clearActiveSessionId
           ? null
           : activeSessionId ?? this.activeSessionId,
+      profiles: profiles ?? this.profiles,
+      selectedProfileId: clearSelectedProfileId
+          ? null
+          : selectedProfileId ?? this.selectedProfileId,
       connectedBaseUrl: clearConnectedBaseUrl
           ? null
           : connectedBaseUrl ?? this.connectedBaseUrl,

@@ -238,6 +238,36 @@ class _AndroidHermesVoiceSmokeChannel extends ChangeNotifier
   Future<void> forkSession(String sessionId, {String? title}) async {}
 
   @override
+  Future<void> selectProfile(String profileId) async {}
+
+  @override
+  Future<void> createProfile({required String name, String? cloneFrom}) async {}
+
+  @override
+  Future<void> renameProfile({
+    required String profileId,
+    required String name,
+    required String revision,
+  }) async {}
+
+  @override
+  Future<void> deleteProfile({
+    required String profileId,
+    required String revision,
+  }) async {}
+
+  @override
+  Future<HermesProfileSoul> readProfileSoul(String profileId) async =>
+      const HermesProfileSoul(soul: '', revision: '');
+
+  @override
+  Future<void> writeProfileSoul({
+    required String profileId,
+    required String soul,
+    required String revision,
+  }) async {}
+
+  @override
   void cancelActiveTurn() {}
 
   @override

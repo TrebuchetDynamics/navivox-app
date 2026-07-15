@@ -3,6 +3,7 @@ const hermesApiAuthorizationHeader = 'Authorization';
 const hermesApiContentTypeHeader = 'Content-Type';
 const hermesApiAcceptHeader = 'Accept';
 const hermesApiCacheControlHeader = 'Cache-Control';
+const hermesApiIfMatchHeader = 'If-Match';
 const hermesApiJsonContentType = 'application/json';
 const hermesApiEventStreamContentType = 'text/event-stream';
 const hermesApiNoCache = 'no-cache';

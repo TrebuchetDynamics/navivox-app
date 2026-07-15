@@ -7,7 +7,7 @@ class HermesTransportPolicy {
 
   bool get supportsSessionChatStream {
     return capabilities.supportsFeature('session_chat_streaming') &&
-        capabilities.advertisesEndpoint(
+        _endpointReady(
           'session_chat_stream',
           'POST',
           '/api/sessions/{session_id}/chat/stream',
@@ -20,42 +20,52 @@ class HermesTransportPolicy {
   bool get supportsRunsTransport {
     return capabilities.supportsFeature('run_submission') &&
         capabilities.supportsFeature('run_events_sse') &&
-        capabilities.advertisesEndpoint('runs', 'POST', '/v1/runs') &&
-        capabilities.advertisesEndpoint(
-          'run_events',
-          'GET',
-          '/v1/runs/{run_id}/events',
-        );
+        _endpointReady('runs', 'POST', '/v1/runs') &&
+        _endpointReady('run_events', 'GET', '/v1/runs/{run_id}/events');
   }
 
   bool get supportsRunStatus =>
       capabilities.supportsFeature('run_status') &&
-      capabilities.advertisesEndpoint('run_status', 'GET', '/v1/runs/{run_id}');
+      _endpointReady('run_status', 'GET', '/v1/runs/{run_id}');
 
   bool get supportsRunStop =>
       capabilities.supportsFeature('run_stop') &&
-      capabilities.advertisesEndpoint(
-        'run_stop',
-        'POST',
-        '/v1/runs/{run_id}/stop',
-      );
+      _endpointReady('run_stop', 'POST', '/v1/runs/{run_id}/stop');
 
   bool get supportsRunApprovalResponse =>
       capabilities.supportsFeature('run_approval_response') &&
-      capabilities.advertisesEndpoint(
-        'run_approval',
-        'POST',
-        '/v1/runs/{run_id}/approval',
-      );
+      _endpointReady('run_approval', 'POST', '/v1/runs/{run_id}/approval');
 
   bool get supportsToolProgressEvents =>
+      capabilities.supportsSchema &&
       capabilities.supportsFeature('tool_progress_events');
 
   bool get supportsConfigWrite =>
+      capabilities.supportsSchema &&
       capabilities.supportsFeature('admin_config_rw');
   bool get supportsMemoryWrite =>
+      capabilities.supportsSchema &&
       capabilities.supportsFeature('memory_write_api');
-  bool get supportsAudioApi => capabilities.supportsFeature('audio_api');
+  bool get supportsAudioApi =>
+      capabilities.supportsSchema && capabilities.supportsFeature('audio_api');
   bool get supportsRealtimeVoice =>
+      capabilities.supportsSchema &&
       capabilities.supportsFeature('realtime_voice');
+
+  /// Gates a named endpoint on schema support and, when the server marks it
+  /// `profile_scoped`, on a declared and understood profile-context
+  /// contract. This never rejects health display and never mutates or
+  /// erases [capabilities] itself — only the derived boolean operations are
+  /// hidden when the client cannot safely use them.
+  bool _endpointReady(String name, String method, String path) {
+    if (!capabilities.supportsSchema) return false;
+    if (!capabilities.advertisesEndpoint(name, method, path)) return false;
+    final endpoint = capabilities.endpoints[name];
+    if (endpoint != null &&
+        endpoint.profileScoped &&
+        !capabilities.profileContext.isSupportedQueryContext) {
+      return false;
+    }
+    return true;
+  }
 }

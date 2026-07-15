@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 
 import 'hermes_approval_request.dart';
 import '../models/hermes_approval_decision.dart';
+import '../models/hermes_profile.dart';
 import 'hermes_channel_state.dart';
 
 export 'hermes_approval_request.dart';
 export '../models/hermes_approval_decision.dart';
+export '../models/hermes_profile.dart';
 export 'hermes_channel_state.dart';
 
 /// Native Hermes Agent channel: sessions, streamed chat turns, and the
@@ -25,6 +27,28 @@ abstract interface class HermesChannel implements Listenable {
   });
   Future<void> deleteSession(String sessionId);
   Future<void> forkSession(String sessionId, {String? title});
+
+  /// Selects [profileId] as the client-local active profile. This never calls
+  /// a server active-profile endpoint; it refreshes the profile list and the
+  /// profile-owned sessions/inventory using the mandatory `profile` query.
+  Future<void> selectProfile(String profileId);
+
+  Future<void> createProfile({required String name, String? cloneFrom});
+  Future<void> renameProfile({
+    required String profileId,
+    required String name,
+    required String revision,
+  });
+  Future<void> deleteProfile({
+    required String profileId,
+    required String revision,
+  });
+  Future<HermesProfileSoul> readProfileSoul(String profileId);
+  Future<void> writeProfileSoul({
+    required String profileId,
+    required String soul,
+    required String revision,
+  });
 
   Future<void> sendText(String text);
 
