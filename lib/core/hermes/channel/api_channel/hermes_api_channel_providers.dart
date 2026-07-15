@@ -148,19 +148,42 @@ extension _ProvidersExtension on HermesApiChannel {
     _requireNonBlank(model, 'model');
     _requireRevision(revision);
     final generation = _connectionGeneration;
-    final assignment = await client.assignModel(
-      scope: scope,
-      task: task,
-      provider: provider,
-      model: model,
-      revision: revision,
-      profile: profile,
-    );
+    final HermesModelAssignment assignment;
+    try {
+      assignment = await client.assignModel(
+        scope: scope,
+        task: task,
+        provider: provider,
+        model: model,
+        revision: revision,
+        profile: profile,
+      );
+    } catch (error) {
+      // On a stale-revision 412, reload the model inventory (the same GET
+      // path _loadModels uses) so the caller sees the winning revision rather
+      // than retrying forever with the cached one. Responses that land after a
+      // reconnect are dropped by the generation guard.
+      if (_isPreconditionFailed(error) &&
+          _isCurrentConnection(generation, client)) {
+        await _refreshModelInventory(client, profile, generation);
+      }
+      rethrow;
+    }
     if (!_isCurrentConnection(generation, client)) return;
     final current = _state.modelInventory ?? const HermesModelInventory();
     _setState(
       _state.copyWith(modelInventory: current.withAssignment(assignment)),
     );
+  }
+
+  Future<void> _refreshModelInventory(
+    HermesApiClient client,
+    String profile,
+    int generation,
+  ) async {
+    final inventory = await client.getModelInventory(profile: profile);
+    if (!_isCurrentConnection(generation, client)) return;
+    _setState(_state.copyWith(modelInventory: inventory));
   }
 
   void _replaceProvider(HermesProvider updated) {

@@ -1151,6 +1151,62 @@ void _hermesApiChannelProviderModelTests() {
     expect(inventory.assignment.revision, 'mrev-2');
   });
 
+  test('assignModel refreshes the model inventory and rethrows on a 412 '
+      'stale revision', () async {
+    final requests = <Uri>[];
+    var modelsGets = 0;
+    final channel = await _connectedProviderModelChannel(
+      capabilities: _providerModelCapabilitiesFixture,
+      requests: requests,
+      get: (uri) async {
+        if (uri.path == '/api/models') {
+          modelsGets += 1;
+          // First load reports mrev-1; the post-412 refresh reports the
+          // winning revision the caller must retry against.
+          return modelsGets == 1
+              ? _modelsInventoryBody
+              : jsonEncode({
+                  'catalog': {
+                    'providers': {
+                      'openai': {
+                        'models': [
+                          {'id': 'gpt-5'},
+                        ],
+                      },
+                    },
+                  },
+                  'active': {'provider': 'openai', 'model': 'gpt-5'},
+                  'auxiliary': <Object?>[],
+                  'revision': 'mrev-9',
+                });
+        }
+        return null;
+      },
+      put: (uri, body) async =>
+          throw StateError('Hermes API returned HTTP 412'),
+    );
+    await channel.loadModels();
+    expect(channel.state.modelInventory!.assignment.revision, 'mrev-1');
+    requests.clear();
+    final getsBefore = modelsGets;
+
+    await expectLater(
+      channel.assignModel(
+        scope: 'main',
+        provider: 'openai',
+        model: 'gpt-5',
+        revision: 'mrev-1',
+      ),
+      throwsStateError,
+    );
+
+    // The stale assignment refreshed the inventory before rethrowing: the
+    // model-list GET fired again and the state now holds the winning revision.
+    expect(modelsGets, getsBefore + 1);
+    expect(requests.any((uri) => uri.path == '/api/models'), isTrue);
+    expect(channel.state.modelInventory!.assignment.revision, 'mrev-9');
+  });
+
   test('read-only scopes gate write operations and visibility hooks before '
       'any network call', () async {
     var wrote = false;
