@@ -10,7 +10,9 @@ HermesModelInventory _inventory(List<String> modelIds) => HermesModelInventory(
   catalog: HermesModelCatalog.fromJson({
     'providers': {
       'openai': {
-        'models': [for (final id in modelIds) {'id': id}],
+        'models': [
+          for (final id in modelIds) {'id': id},
+        ],
       },
     },
   }),
@@ -58,37 +60,36 @@ Widget _testApp(FakeHermesChannel channel, HermesModelInventory inventory) =>
     );
 
 void main() {
-  testWidgets(
-    'refresh updates the open sheet with the newly fetched catalog',
-    (tester) async {
-      final initial = _inventory(const ['gpt-5']);
-      final refreshed = _inventory(const ['gpt-5', 'gpt-5.1-new']);
-      final channel = _RefreshingFakeChannel(
-        initialInventory: initial,
-        refreshedInventory: refreshed,
-      );
-      addTearDown(channel.dispose);
+  testWidgets('refresh updates the open sheet with the newly fetched catalog', (
+    tester,
+  ) async {
+    final initial = _inventory(const ['gpt-5']);
+    final refreshed = _inventory(const ['gpt-5', 'gpt-5.1-new']);
+    final channel = _RefreshingFakeChannel(
+      initialInventory: initial,
+      refreshedInventory: refreshed,
+    );
+    addTearDown(channel.dispose);
 
-      await tester.pumpWidget(_testApp(channel, initial));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_testApp(channel, initial));
+    await tester.pumpAndSettle();
 
-      // Not visible before refresh: the sheet only knows the construction
-      // snapshot.
-      expect(find.text('gpt-5.1-new'), findsNothing);
+    // Not visible before refresh: the sheet only knows the construction
+    // snapshot.
+    expect(find.text('gpt-5.1-new'), findsNothing);
 
-      await tester.tap(find.text('Refresh catalog'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Refresh catalog'));
+    await tester.pumpAndSettle();
 
-      expect(channel.refreshModelsCalls, 1);
+    expect(channel.refreshModelsCalls, 1);
 
-      // Open the model dropdown (the second DropdownButtonFormField<String>;
-      // there is no auxiliary slot, so no slot dropdown precedes it) and
-      // confirm the freshly-fetched model id is now selectable without
-      // closing/reopening the sheet.
-      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
-      await tester.pumpAndSettle();
+    // Open the model dropdown (the second DropdownButtonFormField<String>;
+    // there is no auxiliary slot, so no slot dropdown precedes it) and
+    // confirm the freshly-fetched model id is now selectable without
+    // closing/reopening the sheet.
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
 
-      expect(find.text('gpt-5.1-new'), findsWidgets);
-    },
-  );
+    expect(find.text('gpt-5.1-new'), findsWidgets);
+  });
 }

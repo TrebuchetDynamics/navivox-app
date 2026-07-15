@@ -25,40 +25,70 @@ abstract final class NeedleToolCatalog {
   }
 
   static final List<Map<String, dynamic>> tools = [
-    _tool('navigate_to_screen', 'Open one of the app screens.', {
-      'screen': {
-        'type': 'string',
-        'enum': ['hermes', 'settings'],
-        'description': 'Which screen to open.',
+    _tool(
+      'navigate_to_screen',
+      'Open one of the app screens.',
+      {
+        'screen': {
+          'type': 'string',
+          'enum': ['hermes', 'settings'],
+          'description': 'Which screen to open.',
+        },
       },
-    }, ['screen']),
+      ['screen'],
+    ),
     _tool('start_voice_run', 'Start listening for a voice command.', {}, []),
     _tool('stop_voice_run', 'Stop the current voice capture.', {}, []),
-    _tool('toggle_continuous_mode', 'Turn continuous voice mode on or off.', {
-      'enabled': {
-        'type': 'boolean',
-        'description': 'true to enable continuous mode.',
+    _tool(
+      'toggle_continuous_mode',
+      'Turn continuous voice mode on or off.',
+      {
+        'enabled': {
+          'type': 'boolean',
+          'description': 'true to enable continuous mode.',
+        },
       },
-    }, ['enabled']),
-    _tool('send_message', 'Send a chat message to the agent.', {
-      'text': {'type': 'string', 'description': 'The message to send.'},
-    }, ['text']),
+      ['enabled'],
+    ),
+    _tool(
+      'send_message',
+      'Send a chat message to the agent.',
+      {
+        'text': {'type': 'string', 'description': 'The message to send.'},
+      },
+      ['text'],
+    ),
     _tool('new_session', 'Start a fresh chat session.', {}, []),
-    _tool('switch_session', 'Switch to a named chat session.', {
-      'session_name': {
-        'type': 'string',
-        'description': 'Name of the session to switch to.',
+    _tool(
+      'switch_session',
+      'Switch to a named chat session.',
+      {
+        'session_name': {
+          'type': 'string',
+          'description': 'Name of the session to switch to.',
+        },
       },
-    }, ['session_name']),
-    _tool('set_tts_voice', 'Change the text-to-speech voice.', {
-      'voice': {'type': 'string', 'description': 'Voice name to use.'},
-    }, ['voice']),
-    _tool('set_speech_rate', 'Change how fast speech is read aloud.', {
-      'rate': {
-        'type': 'number',
-        'description': 'Speech rate multiplier, e.g. 1.0 is normal.',
+      ['session_name'],
+    ),
+    _tool(
+      'set_tts_voice',
+      'Change the text-to-speech voice.',
+      {
+        'voice': {'type': 'string', 'description': 'Voice name to use.'},
       },
-    }, ['rate']),
+      ['voice'],
+    ),
+    _tool(
+      'set_speech_rate',
+      'Change how fast speech is read aloud.',
+      {
+        'rate': {
+          'type': 'number',
+          'description': 'Speech rate multiplier, e.g. 1.0 is normal.',
+        },
+      },
+      ['rate'],
+    ),
     _tool('show_status', 'Show the agent connection status.', {}, []),
   ];
 

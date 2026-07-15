@@ -174,10 +174,7 @@ class NavivoxVoiceSettingsController extends Notifier<NavivoxVoiceSettings> {
 
   void setTtsVoiceName(String? name) {
     _mutationGeneration += 1;
-    state = state.copyWith(
-      ttsVoiceName: name,
-      clearTtsVoiceName: name == null,
-    );
+    state = state.copyWith(ttsVoiceName: name, clearTtsVoiceName: name == null);
     _save();
   }
 }
