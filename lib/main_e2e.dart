@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/hermes/channel/hermes_api_channel.dart';
 import 'features/hermes_chat/providers/hermes_channel_provider.dart';
+import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
 import 'theme/navivox_theme.dart';
 
@@ -67,6 +68,8 @@ class _E2ETestApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Navivox',
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: navivoxLightTheme,
       darkTheme: navivoxDarkTheme,
       themeMode: ThemeMode.system,
