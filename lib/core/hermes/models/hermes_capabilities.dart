@@ -103,7 +103,11 @@ class HermesProfileContextCapability {
 
   /// True only for a declared query-parameter profile context. Endpoints
   /// marked `profile_scoped` are unavailable unless this is true.
-  bool get isSupportedQueryContext => type == 'query' && name.isNotEmpty;
+  bool get isSupportedQueryContext =>
+      type == 'query' &&
+      name == 'profile' &&
+      required &&
+      defaultProfileId == 'default';
 }
 
 class HermesAuthCapability {
@@ -122,7 +126,9 @@ class HermesAuthCapability {
         json['credential_kind'],
         fallback: '',
       ),
-      grantedScopes: navivoxStringListFromJson(json['granted_scopes']),
+      grantedScopes: List.unmodifiable(
+        navivoxStringListFromJson(json['granted_scopes']),
+      ),
     );
   }
 
@@ -149,7 +155,9 @@ class HermesEndpointCapability {
     return HermesEndpointCapability(
       method: navivoxStringFromJson(json['method'], fallback: '').toUpperCase(),
       path: navivoxStringFromJson(json['path'], fallback: ''),
-      requiredScopes: navivoxStringListFromJson(json['required_scopes']),
+      requiredScopes: List.unmodifiable(
+        navivoxStringListFromJson(json['required_scopes']),
+      ),
       profileScoped: navivoxBoolFromJson(json['profile_scoped']),
     );
   }
