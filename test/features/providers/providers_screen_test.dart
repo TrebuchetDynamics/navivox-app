@@ -81,6 +81,40 @@ HermesModelInventory _inventory() => HermesModelInventory(
   ),
 );
 
+/// A [FakeHermesChannel] whose visible `providers`/`modelInventory` are
+/// selected by whichever profile is currently `selectedProfileId`, keyed by
+/// [providersByProfile]/[modelsByProfile]. The plain fake's lists are fixed
+/// at construction and never change, which is not enough to prove
+/// `ProvidersScreen` refetches and re-renders after a mid-session profile
+/// switch.
+class _ProfileSwitchingFakeChannel extends FakeHermesChannel {
+  _ProfileSwitchingFakeChannel({
+    required this.providersByProfile,
+    required this.modelsByProfile,
+    required HermesCapabilityDocument capabilities,
+    required String selectedProfileId,
+  }) : super(
+         capabilities: capabilities,
+         providers: providersByProfile[selectedProfileId] ?? const [],
+         modelInventory: modelsByProfile[selectedProfileId],
+         selectedProfileId: selectedProfileId,
+       );
+
+  final Map<String, List<HermesProvider>> providersByProfile;
+  final Map<String, HermesModelInventory> modelsByProfile;
+
+  @override
+  HermesChannelState get state {
+    final base = super.state;
+    final profileId = base.selectedProfileId;
+    return base.copyWith(
+      providers: providersByProfile[profileId] ?? const [],
+      modelInventory:
+          modelsByProfile[profileId] ?? const HermesModelInventory(),
+    );
+  }
+}
+
 Widget _testApp(FakeHermesChannel channel, {double textScale = 1.0}) =>
     ProviderScope(
       overrides: [hermesChannelProvider.overrideWithValue(channel)],
@@ -124,6 +158,43 @@ void main() {
     // Masked hint (never a full key).
     expect(find.textContaining('····ab12'), findsWidgets);
   });
+
+  testWidgets(
+    'reloads providers and models when the selected profile changes mid-session',
+    (tester) async {
+      final channel = _ProfileSwitchingFakeChannel(
+        capabilities: _capabilities(const [
+          'providers:read',
+          'providers:write',
+          'models:read',
+          'models:write',
+        ]),
+        providersByProfile: {
+          'profile-a': const [_openAiProvider],
+          'profile-b': const [_anthropicProvider],
+        },
+        modelsByProfile: {'profile-a': _inventory(), 'profile-b': _inventory()},
+        selectedProfileId: 'profile-a',
+      );
+      addTearDown(channel.dispose);
+
+      await tester.pumpWidget(_testApp(channel));
+      await tester.pumpAndSettle();
+
+      expect(channel.loadProvidersCalls, 1);
+      expect(channel.loadModelsCalls, 1);
+      expect(find.text('OpenAI'), findsOneWidget);
+      expect(find.text('Anthropic'), findsNothing);
+
+      await channel.selectProfile('profile-b');
+      await tester.pumpAndSettle();
+
+      expect(channel.loadProvidersCalls, 2);
+      expect(channel.loadModelsCalls, 2);
+      expect(find.text('OpenAI'), findsNothing);
+      expect(find.text('Anthropic'), findsOneWidget);
+    },
+  );
 
   testWidgets('write scopes expose mutation affordances', (tester) async {
     final channel = FakeHermesChannel(
