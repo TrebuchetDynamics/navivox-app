@@ -46,7 +46,7 @@ extension _ProfilesExtension on HermesApiChannel {
           load: () => client.listModels(profile: id),
           errors: errors,
         ) ??
-        _state.models;
+        const <String>[];
     final skills =
         await _loadOptional<List<String>>(
           advertised:
@@ -56,7 +56,7 @@ extension _ProfilesExtension on HermesApiChannel {
           load: () => client.listSkills(profile: id),
           errors: errors,
         ) ??
-        _state.skills;
+        const <String>[];
     final toolsets =
         await _loadOptional<List<String>>(
           advertised:
@@ -70,7 +70,7 @@ extension _ProfilesExtension on HermesApiChannel {
           load: () => client.listEnabledToolsets(profile: id),
           errors: errors,
         ) ??
-        _state.enabledToolsets;
+        const <String>[];
     final jobs =
         await _loadOptional<List<HermesJob>>(
           advertised:
@@ -80,15 +80,15 @@ extension _ProfilesExtension on HermesApiChannel {
           load: () => client.listJobs(profile: id),
           errors: errors,
         ) ??
-        _state.jobs;
+        const <HermesJob>[];
     if (!_isCurrentConnection(generation, client)) return;
 
     final activeId = sessions.firstOrNull?.id;
-    var messages = _state.messages;
+    var messages = const <String, List<HermesChatTurn>>{};
     if (activeId != null) {
       final turns = await _fetchTurns(client, activeId);
       if (!_isCurrentConnection(generation, client)) return;
-      messages = {..._state.messages, activeId: turns};
+      messages = {activeId: turns};
     }
 
     _finishActiveTurnLocally();
@@ -103,10 +103,10 @@ extension _ProfilesExtension on HermesApiChannel {
         skills: skills,
         enabledToolsets: toolsets,
         jobs: jobs,
-        optionalResourceErrors: errors.isEmpty
-            ? _state.optionalResourceErrors
-            : {..._state.optionalResourceErrors, ...errors},
+        optionalResourceErrors: errors,
         messages: messages,
+        voiceRuns: const {},
+        clearActiveVoiceRunId: true,
       ),
     );
   }
