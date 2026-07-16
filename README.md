@@ -1,46 +1,62 @@
-# Navivox
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Navivox — the cross-platform Flutter client for trusted Hermes Agent sessions, streamed runs, approvals, and device speech">
+</p>
 
-Canonical cross-platform Flutter client for [Hermes Agent](https://github.com/NousResearch/hermes-agent) and successor to Hermes Desktop. The replacement effort remains alpha and source-distributed.
+<p align="center">
+  <a href="https://github.com/TrebuchetDynamics/navivox-app/actions/workflows/hermes-platform-smoke.yml"><img alt="Hermes platform smoke" src="https://github.com/TrebuchetDynamics/navivox-app/actions/workflows/hermes-platform-smoke.yml/badge.svg"></a>
+  <a href="#project-status"><img alt="Status: alpha" src="https://img.shields.io/badge/status-alpha-f59e0b"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3b82f6"></a>
+</p>
 
-Navivox connects to a trusted Hermes Agent API endpoint and provides session
-chat, streamed assistant and tool activity, approval handling, endpoint
-configuration, and optional speech input.
+<p align="center">
+  <strong>The canonical cross-platform Flutter client for <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a>.</strong><br>
+  <sub>Successor to Hermes Desktop · source-distributed alpha</sub>
+</p>
 
-## Project status
+<p align="center">
+  <img src="./assets/readme/showcase.png" width="100%" alt="Current Navivox desktop and mobile Hermes session interfaces">
+</p>
 
-Navivox is alpha software. It is currently distributed as source builds only;
-no signed public binaries or store releases are published.
+<p align="center"><sub>Current interfaces captured against Navivox's deterministic browser fixture; no private endpoint, credential, or transcript data is shown.</sub></p>
 
-![Navivox Hermes connection screen](docs/images/hermes-connect.png)
+## What Navivox does
 
-| Platform | Current evidence | Status |
-| --- | --- | --- |
-| Android | Debug build and optional emulator integration smokes | Experimental alpha |
-| Web | Release build and fake-server browser smoke | Alpha, text-focused |
-| Linux | Release build | Alpha, text-focused |
-| Windows | Debug compilation | Build-tested only |
-| iOS | Simulator debug compilation | Build-tested only |
-| macOS | Debug compilation | Build-tested only |
+Navivox connects to a trusted Hermes Agent API endpoint and adapts the same
+session model to phone, web, and desktop layouts.
 
-Voice input requests on-device recognition from the operating system speech
-service on Android, iOS, macOS, Windows, and web. Availability depends on the
-device and installed recognizer; Linux voice input is unavailable. Continuous
-voice is an opt-in application loop that rearms bounded recognition sessions,
-not an always-on audio stream. A repeatable physical-device microphone receipt
-has not yet been recorded.
+- **Sessions and runs** — create and manage sessions, stream assistant and tool
+  activity, stop active work, and render rich Markdown replies.
+- **Operator control** — review approval requests inline instead of silently
+  allowing sensitive actions.
+- **Agents and models** — manage profiles, providers, model assignments, and
+  auxiliary task models when the endpoint advertises those capabilities.
+- **Device speech** — request operating-system speech recognition, review the
+  resulting text, then submit it to Hermes. Optional continuous voice rearms
+  bounded recognition sessions and can speak completed replies.
+- **Adaptive interface** — Telegram-light mobile ergonomics and a
+  Hermes Desktop-inspired dark workspace share one Flutter codebase.
 
-## Hermes compatibility
+## How it works
 
-Navivox negotiates behavior through `/v1/capabilities` instead of claiming a
-fixed Hermes version range. A compatible server must provide `/health`,
-`/v1/capabilities`, and the advertised session or run endpoints Navivox uses.
-See the [compatibility contract](docs/product/hermes-compatibility.md) and the
-[Hermes Agent repository](https://github.com/NousResearch/hermes-agent) for
-server setup.
+<p align="center">
+  <picture>
+    <source media="(max-width: 600px)" srcset="./assets/readme/runtime-flow-mobile.svg">
+    <img src="./assets/readme/runtime-flow.svg" width="100%" alt="Navivox runtime flow from device input through operator review to Hermes sessions, streamed runs, and approvals">
+  </picture>
+</p>
 
-## Quick start
+Navivox discovers `/v1/capabilities` before enabling endpoint features. Hermes
+Agent remains authoritative for profiles, sessions, tools, runs, approvals,
+and configuration; Navivox does not parse Hermes files or mirror its backend.
+HTTP handles commands and resources while SSE carries typed run events.
 
-Prerequisites: Flutter 3.44.2 and the platform SDK for your target.
+## Start from source
+
+> [!IMPORTANT]
+> Navivox is alpha software. There are no signed public binaries or store
+> releases yet.
+
+Prerequisites: **Flutter 3.44.2** and the platform SDK for your target.
 
 ```bash
 git clone https://github.com/TrebuchetDynamics/navivox-app.git
@@ -49,38 +65,67 @@ flutter pub get
 flutter run -d <device-id>
 ```
 
-Connect to one of these Hermes endpoints:
+Then connect to a trusted Hermes endpoint:
 
-- Desktop on the same host: `http://127.0.0.1:8642`
-- Android emulator to host: `http://10.0.2.2:8642`
-- Physical device: an HTTPS, VPN, Tailscale, or isolated-LAN endpoint
+| Target | Endpoint example |
+| --- | --- |
+| Same desktop host | `http://127.0.0.1:8642` |
+| Android emulator → host | `http://10.0.2.2:8642` |
+| Physical device or remote desktop | HTTPS, VPN, Tailscale, or isolated LAN URL |
 
-Navivox asks for explicit confirmation before sending an API key to a
-non-loopback plaintext HTTP endpoint.
+Navivox asks for explicit confirmation before sending a bearer credential to a
+non-loopback plaintext HTTP endpoint. See the
+[Android setup guide](docs/runbooks/android-hermes-setup.md) and the
+[Hermes compatibility contract](docs/product/hermes-compatibility.md).
 
-## Privacy and transport
+## Project status
 
-- API keys use the platform secure-storage implementation; hardware backing and
-  backup behavior vary by platform.
+| Platform | Current evidence | Status |
+| --- | --- | --- |
+| Android | Debug build and optional emulator integration smokes | Experimental alpha |
+| Web | Release build and deterministic browser smoke | Alpha, text-focused |
+| Linux | Release build | Alpha, text-focused |
+| Windows | Debug compilation | Build-tested only |
+| iOS | Simulator debug compilation | Build-tested only |
+| macOS | Debug compilation | Build-tested only |
+
+Voice input requests the operating system's on-device recognition interface on
+Android, iOS, macOS, Windows, and web. Availability and offline behavior depend
+on the installed recognizer and device policy. Linux voice input is currently
+unavailable, and a repeatable physical-device microphone receipt has not yet
+been recorded.
+
+## Security and privacy boundaries
+
+- Bearer credentials use the platform secure-storage implementation; hardware
+  backing and backup behavior vary by platform.
 - Endpoint metadata is stored separately in shared preferences.
 - Recognized words are excluded from diagnostic logs.
-- Navivox submits completed transcripts to Hermes as text and does not send the
-  captured microphone audio through this path.
-- Requesting on-device recognition does not prove that every operating-system
-  recognizer works offline. Verify the recognizer and device policy you deploy.
-- HTTPS is the default recommendation for remote endpoints. Plain HTTP can
-  expose credentials and conversation data outside a trusted encrypted network.
+- The voice path submits completed text to Hermes, not captured microphone
+  audio.
+- HTTPS is recommended for remote endpoints. Plain HTTP can expose credentials
+  and conversation data outside a trusted encrypted network.
+- Authorization is enforced by Hermes Agent capabilities and scopes, not by
+  hidden client controls alone.
 
-See [SECURITY.md](SECURITY.md) and the [threat model](docs/security/threat-model.md).
+Read [SECURITY.md](SECURITY.md) and the
+[threat model](docs/security/threat-model.md) before deploying outside a local
+or encrypted private network.
 
-## Known limitations
+## Compatibility and known limits
 
-- No signed public packages or store distribution.
-- No repeatable real-device microphone validation in ordinary CI.
+Navivox negotiates compatibility rather than claiming a fixed Hermes release
+range. A compatible server must provide `/health`, `/v1/capabilities`, and the
+advertised session or run endpoints used by the client.
+
+Current limits:
+
+- No signed packages or store distribution.
 - Windows, iOS, and macOS are compilation-tested, not release-supported.
 - Hermes server audio and realtime audio are not wired; voice submits text.
-- Optional Hermes inventory may be unavailable even when advertised; Navivox
-  reports those retrieval failures separately from empty inventories.
+- Remote transcript media and client-path attachments remain deferred.
+- Optional Hermes inventory can fail independently of an otherwise healthy
+  connection; Navivox reports those failures separately from empty results.
 
 ## Development
 
@@ -91,10 +136,23 @@ flutter test --concurrency=1
 flutter build web --release -t lib/main_e2e.dart
 npm ci
 npm run web:e2e
+npm audit
 ```
 
-Optional offline text-to-speech uses the pinned `pocket_speech` package and
-operator-selected Kitten or Kokoro voice packs.
+Optional offline text-to-speech uses the pinned
+[`pocket_speech`](https://github.com/TrebuchetDynamics/pocket-speech-dart)
+package with operator-selected Kitten or Kokoro voice packs.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), and the
-[project documentation](docs/README.md).
+## Project map
+
+- [Documentation index](docs/README.md)
+- [Hermes compatibility](docs/product/hermes-compatibility.md)
+- [Hermes Desktop parity ledger](docs/product/hermes-desktop-parity.md)
+- [Architecture decisions](docs/adr/README.md)
+- [Alpha release runbook](docs/runbooks/release-alpha.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+
+## License
+
+Navivox is available under the [MIT License](LICENSE).

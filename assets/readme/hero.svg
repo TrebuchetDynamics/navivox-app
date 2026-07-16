@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-labelledby="title desc">
+  <title id="title">Navivox — the cross-platform Flutter client for Hermes Agent</title>
+  <desc id="desc">A technical title board showing Navivox connecting a device voice and text interface to capability-negotiated Hermes sessions, streamed runs, and approvals.</desc>
+
+  <rect width="1200" height="380" rx="28" fill="#111214"/>
+  <path d="M0 312H1200" stroke="#30343b"/>
+  <path d="M720 0V380" stroke="#24272d"/>
+
+  <g transform="translate(58 52)">
+    <text x="0" y="0" dominant-baseline="hanging" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="700" letter-spacing="2.5">HERMES ONE / FLUTTER CLIENT</text>
+    <text x="0" y="58" dominant-baseline="hanging" fill="#f4f4f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="76" font-weight="800" letter-spacing="-3">NAVIVOX</text>
+    <text x="2" y="154" dominant-baseline="hanging" fill="#c4c8cf" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="25" font-weight="500">Run Hermes sessions from phone, web, or desktop.</text>
+    <text x="2" y="196" dominant-baseline="hanging" fill="#8f96a3" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18">Stream work, handle approvals, manage agents, and use device speech.</text>
+  </g>
+
+  <g transform="translate(760 38)">
+    <rect x="0" y="0" width="380" height="258" rx="22" fill="#1b1d21" stroke="#30343b"/>
+    <text x="24" y="25" dominant-baseline="hanging" fill="#8f96a3" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" letter-spacing="1.5">TRUSTED CONTROL PATH</text>
+
+    <g transform="translate(30 76)">
+      <circle cx="54" cy="54" r="45" fill="#15171a" stroke="#3b82f6" stroke-width="3"/>
+      <path d="M29 57h10v-16h10v33h10V28h10v46h10V41h10v16h10" fill="none" stroke="#7dd3fc" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="54" cy="4" r="6" fill="#3b82f6"/>
+      <circle cx="10" cy="78" r="6" fill="#3b82f6"/>
+      <circle cx="98" cy="78" r="6" fill="#3b82f6"/>
+      <text x="54" y="119" text-anchor="middle" fill="#f4f4f5" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">NAVIVOX</text>
+    </g>
+
+    <path d="M142 130H206" stroke="#565b65" stroke-width="2"/>
+    <path d="M194 121l12 9-12 9" fill="none" stroke="#7dd3fc" stroke-width="2"/>
+
+    <g transform="translate(214 77)">
+      <rect width="136" height="106" rx="16" fill="#24272d" stroke="#3b82f6"/>
+      <circle cx="24" cy="26" r="6" fill="#3b82f6"/>
+      <text x="40" y="20" dominant-baseline="hanging" fill="#f4f4f5" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="15" font-weight="700">Hermes Agent</text>
+      <path d="M20 54H116" stroke="#3b82f6" stroke-width="2"/>
+      <text x="20" y="67" dominant-baseline="hanging" fill="#c4c8cf" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">/v1/capabilities</text>
+      <text x="20" y="87" dominant-baseline="hanging" fill="#c4c8cf" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">HTTP + SSE</text>
+    </g>
+
+    <g transform="translate(24 215)">
+      <rect width="95" height="25" rx="12" fill="#24272d"/>
+      <text x="47.5" y="7" dominant-baseline="hanging" text-anchor="middle" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700">SESSION</text>
+      <rect x="105" width="95" height="25" rx="12" fill="#24272d"/>
+      <text x="152.5" y="7" dominant-baseline="hanging" text-anchor="middle" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700">RUN SSE</text>
+      <rect x="210" width="118" height="25" rx="12" fill="#24272d"/>
+      <text x="269" y="7" dominant-baseline="hanging" text-anchor="middle" fill="#7dd3fc" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700">APPROVAL</text>
+    </g>
+  </g>
+
+  <g transform="translate(58 334)">
+    <text x="0" y="0" dominant-baseline="hanging" fill="#8f96a3" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" letter-spacing="1.1">ALPHA · SOURCE BUILDS · CAPABILITY-NEGOTIATED</text>
+    <circle cx="944" cy="8" r="5" fill="#3b82f6"/>
+    <text x="960" y="0" dominant-baseline="hanging" fill="#c4c8cf" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">FLUTTER 3.44.2</text>
+  </g>
+</svg>
