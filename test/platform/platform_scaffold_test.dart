@@ -14,6 +14,17 @@ void main() {
     },
   );
 
+  test('web scaffold uses the device viewport on mobile browsers', () {
+    final html = File('web/index.html').readAsStringSync();
+
+    expect(
+      html,
+      contains(
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+      ),
+    );
+  });
+
   test('Windows scaffold is present for host-runner validation', () {
     expect(File('windows/CMakeLists.txt').existsSync(), isTrue);
     expect(File('windows/runner/main.cpp').existsSync(), isTrue);
