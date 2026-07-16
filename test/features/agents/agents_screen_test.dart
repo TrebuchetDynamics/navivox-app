@@ -10,39 +10,42 @@ import 'package:navivox/l10n/app_localizations.dart';
 
 import '../hermes_chat/support/fake_hermes_channel.dart';
 
-HermesCapabilityDocument _profileCapabilities(List<String> scopes) =>
-    HermesCapabilityDocument.fromJson({
-      'schema_version': 1,
-      'profile_context': {
-        'type': 'query',
-        'name': 'profile',
-        'required': true,
-        'default_profile_id': 'default',
+HermesCapabilityDocument _profileCapabilities(
+  List<String> scopes, {
+  bool advertisesDelete = true,
+}) => HermesCapabilityDocument.fromJson({
+  'schema_version': 1,
+  'profile_context': {
+    'type': 'query',
+    'name': 'profile',
+    'required': true,
+    'default_profile_id': 'default',
+  },
+  'auth': {'type': 'bearer', 'required': true, 'granted_scopes': scopes},
+  'endpoints': {
+    'profiles': {
+      'method': 'GET',
+      'path': '/api/profiles',
+      'required_scopes': ['profiles:read'],
+    },
+    'profile_create': {
+      'method': 'POST',
+      'path': '/api/profiles',
+      'required_scopes': ['profiles:write'],
+    },
+    'profile_update': {
+      'method': 'PATCH',
+      'path': '/api/profiles/{profile_id}',
+      'required_scopes': ['profiles:write'],
+    },
+    if (advertisesDelete)
+      'profile_delete': {
+        'method': 'DELETE',
+        'path': '/api/profiles/{profile_id}',
+        'required_scopes': ['profiles:write'],
       },
-      'auth': {'type': 'bearer', 'required': true, 'granted_scopes': scopes},
-      'endpoints': {
-        'profiles': {
-          'method': 'GET',
-          'path': '/api/profiles',
-          'required_scopes': ['profiles:read'],
-        },
-        'profile_create': {
-          'method': 'POST',
-          'path': '/api/profiles',
-          'required_scopes': ['profiles:write'],
-        },
-        'profile_update': {
-          'method': 'PATCH',
-          'path': '/api/profiles/{profile_id}',
-          'required_scopes': ['profiles:write'],
-        },
-        'profile_delete': {
-          'method': 'DELETE',
-          'path': '/api/profiles/{profile_id}',
-          'required_scopes': ['profiles:write'],
-        },
-      },
-    });
+  },
+});
 
 Widget _agentsTestApp(FakeHermesChannel channel, {double textScale = 1.0}) =>
     ProviderScope(
@@ -111,6 +114,29 @@ void main() {
     expect(find.text('New Agent'), findsNothing);
     expect(find.text('Delete agent'), findsNothing);
     expect(find.text('Edit'), findsNothing);
+  });
+
+  testWidgets('edit sheet respects a missing profile delete endpoint', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: _profileCapabilities(const [
+        'profiles:read',
+        'profiles:write',
+      ], advertisesDelete: false),
+      profiles: const [
+        HermesProfile(id: 'coder', displayName: 'Coding Agent', revision: 'c'),
+      ],
+      selectedProfileId: 'coder',
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_agentsTestApp(channel));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Edit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete agent'), findsNothing);
   });
 
   testWidgets('shows a loading indicator while connecting', (tester) async {

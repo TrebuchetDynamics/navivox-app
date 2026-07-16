@@ -157,7 +157,15 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                       method: 'PUT',
                       path: '/api/profiles/{profile_id}/soul',
                     ),
-                canDelete: profiles[index].id != 'default',
+                canDelete:
+                    profiles[index].id != 'default' &&
+                    _canUseEndpoint(
+                      capabilities,
+                      scope: 'profiles:write',
+                      name: 'profile_delete',
+                      method: 'DELETE',
+                      path: '/api/profiles/{profile_id}',
+                    ),
               ),
               onDelete: () => _openEditor(
                 channel: channel,
