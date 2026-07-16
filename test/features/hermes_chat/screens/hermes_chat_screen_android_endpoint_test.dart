@@ -13,8 +13,12 @@ void main() {
     tester,
   ) async {
     const configuredBaseUrl = String.fromEnvironment('NAVIVOX_HERMES_BASE_URL');
+    await tester.binding.setSurfaceSize(const Size(390, 844));
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+      debugDefaultTargetPlatformOverride = null;
+    });
 
     await tester.pumpWidget(
       ProviderScope(
@@ -40,9 +44,19 @@ void main() {
           ?.text,
       configuredBaseUrl,
     );
-    expect(find.text('Local Hermes'), findsNothing);
+    expect(find.text('Connect to your Hermes VPS'), findsOneWidget);
+    expect(find.text('Android emulator'), findsNothing);
+
+    final developerShortcuts = find.byKey(
+      const ValueKey('hermes-developer-shortcuts'),
+    );
+    await tester.ensureVisible(developerShortcuts);
+    await tester.tap(developerShortcuts);
+    await tester.pumpAndSettle();
+
+    expect(find.text('This device'), findsNothing);
     expect(find.text('Android emulator'), findsOneWidget);
-    expect(find.text('Remote/LAN'), findsOneWidget);
+    expect(find.text('Clear server details'), findsOneWidget);
     debugDefaultTargetPlatformOverride = null;
   });
 }

@@ -448,7 +448,6 @@ class _HermesComposerStrip extends StatelessWidget {
     required this.canRetry,
     required this.onStop,
     required this.onRetry,
-    required this.onDiagnostics,
   });
 
   final String modelLabel;
@@ -458,7 +457,6 @@ class _HermesComposerStrip extends StatelessWidget {
   final bool canRetry;
   final VoidCallback onStop;
   final VoidCallback onRetry;
-  final VoidCallback onDiagnostics;
 
   @override
   Widget build(BuildContext context) {
@@ -495,13 +493,6 @@ class _HermesComposerStrip extends StatelessWidget {
               onPressed: onRetry,
             ),
           ],
-          const SizedBox(width: 8),
-          ActionChip(
-            key: const ValueKey('hermes-composer-diagnostics-chip'),
-            avatar: const Icon(Icons.info_outline, size: 18),
-            label: const Text('Diagnostics'),
-            onPressed: onDiagnostics,
-          ),
         ],
       ),
     );

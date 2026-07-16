@@ -9,7 +9,7 @@ async function open(page, route) {
 
 test('Hermes connect screen screenshot', async ({ page }) => {
   await open(page, '#/hermes');
-  await expect(page.getByText('Connect to Hermes Agent').first()).toBeVisible();
+  await expect(page.getByText('Connect to your Hermes VPS').first()).toBeVisible();
   await page.screenshot({ path: 'playwright/screenshots/hermes-connect.png', fullPage: true });
 });
 

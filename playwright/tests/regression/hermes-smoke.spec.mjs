@@ -11,13 +11,37 @@ test('Hermes route renders connect form and cross-platform setup hints in a real
   await page.waitForTimeout(2000);
   await a11y(page);
 
-  await expect(page.getByText('Connect to Hermes Agent').first()).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Hermes API base URL' })).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'Local Hermes' })).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'Android emulator' })).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'Remote/LAN' })).toBeVisible();
-  await expect(page.getByText('Android emulator: http://10.0.2.2:8642').first()).toBeVisible();
-  await expect(page.getByText('Physical device: LAN/VPN/Tailscale URL').first()).toBeVisible();
+  await expect(page.getByText('Connect to your Hermes VPS').first()).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Hermes server URL' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Access token' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'VPS name (optional)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Connect to VPS' })).toBeVisible();
+
+  await page.getByText('Connecting to a local Agent?').click();
+  await expect(page.getByText('This device').first()).toBeVisible();
+  await expect(page.getByText('Android emulator').first()).toBeVisible();
+});
+
+test('mobile Hermes chat keeps secondary actions in an accessible overflow menu', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${APP}#/hermes`, { timeout: 15000 });
+  await page.waitForTimeout(2000);
+  await a11y(page);
+
+  await page.evaluate(() => globalThis.navivoxE2EHermesConnect());
+  await expect(page.getByRole('button', { name: 'Sessions' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'New session' })).toBeVisible();
+
+  const send = page.getByRole('button', { name: 'Send' });
+  await expect(send).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Attachments/media status' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Files/context folders status' })).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Message Hermes…' }).fill('mobile draft');
+  await expect(send).toBeEnabled();
+
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Diagnostics' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Disconnect' })).toBeVisible();
 });
 
 test('Hermes route renders connected session/capabilities in a real browser e2e build', async ({ page }) => {

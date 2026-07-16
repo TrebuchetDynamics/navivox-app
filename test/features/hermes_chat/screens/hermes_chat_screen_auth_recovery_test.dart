@@ -84,6 +84,44 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Connect to your Hermes VPS'), findsOneWidget);
+    expect(find.text('VPS connection'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('hermes-base-url-field')),
+          )
+          .controller
+          ?.text,
+      isEmpty,
+    );
+    expect(
+      find.textContaining('stored in secure device storage'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey('hermes-connect-button')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('hermes-api-key-field')))
+          .obscureText,
+      isTrue,
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-api-key-visibility')));
+    await tester.pump();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('hermes-api-key-field')))
+          .obscureText,
+      isFalse,
+    );
+
     await tester.enterText(
       find.byKey(const ValueKey('hermes-api-key-field')),
       'private-key',
@@ -92,7 +130,17 @@ void main() {
       find.byKey(const ValueKey('hermes-profile-label-field')),
       'Local agent',
     );
-    await tester.tap(find.byKey(const ValueKey('hermes-preset-remote')));
+    final developerShortcuts = find.byKey(
+      const ValueKey('hermes-developer-shortcuts'),
+    );
+    await tester.ensureVisible(developerShortcuts);
+    await tester.tap(developerShortcuts);
+    await tester.pumpAndSettle();
+    final clearServerDetails = find.byKey(
+      const ValueKey('hermes-preset-remote'),
+    );
+    await tester.ensureVisible(clearServerDetails);
+    await tester.tap(clearServerDetails);
     await tester.pump();
     expect(
       tester
@@ -119,7 +167,9 @@ void main() {
       find.byKey(const ValueKey('hermes-profile-label-field')),
       'Local agent',
     );
-    await tester.tap(find.byKey(const ValueKey('hermes-connect-button')));
+    final connectButton = find.byKey(const ValueKey('hermes-connect-button'));
+    expect(tester.widget<FilledButton>(connectButton).onPressed, isNotNull);
+    tester.widget<FilledButton>(connectButton).onPressed?.call();
     await tester.pumpAndSettle();
 
     expect(store.saveCalls.single.label, 'Local agent');

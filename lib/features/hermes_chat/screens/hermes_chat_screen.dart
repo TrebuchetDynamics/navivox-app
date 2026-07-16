@@ -73,9 +73,14 @@ const _configuredHermesBaseUrl = String.fromEnvironment(
 );
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
-String get _defaultHermesBaseUrl => _configuredHermesBaseUrl.isNotEmpty
-    ? _configuredHermesBaseUrl
-    : (_isAndroid ? '' : 'http://127.0.0.1:8642');
+String get _defaultHermesBaseUrl => _configuredHermesBaseUrl;
+
+bool _isValidHermesBaseUrl(String value) {
+  final uri = Uri.tryParse(value.trim());
+  return uri != null &&
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty;
+}
 
 /// Native Hermes Agent chat/session screen: manual connect, session list,
 /// streamed transcript, text composer, and continuous voice. See
@@ -113,6 +118,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   String? _approvalSessionId;
   int _connectAttemptId = 0;
   bool _reconnectingOnResume = false;
+  bool _obscureApiKey = true;
   late Future<List<HermesEndpointConfig>> _endpointProfilesFuture;
 
   // Voice-command routing (see docs/superpowers/plans/2026-07-13-needle-router.md
@@ -127,6 +133,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _baseUrlController.addListener(_onConnectionFormChanged);
+    _composerController.addListener(_onComposerChanged);
     _voiceInputController = HermesVoiceInputController(
       channel: () => ref.read(hermesChannelProvider),
       captureService: () =>
@@ -165,12 +173,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     _voiceInputController.dispose();
     _subscribed?.removeListener(_onChannelChanged);
     _approvalSubscription?.cancel();
+    _baseUrlController.removeListener(_onConnectionFormChanged);
+    _composerController.removeListener(_onComposerChanged);
     _baseUrlController.dispose();
     _apiKeyController.dispose();
     _profileLabelController.dispose();
     _composerController.dispose();
     _transcriptScrollController.dispose();
     super.dispose();
+  }
+
+  void _onConnectionFormChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onComposerChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -339,6 +357,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     final channel = ref.watch(hermesChannelProvider);
     final state = channel.state;
     final activeSession = state.activeSession;
+    final compactAppBar = MediaQuery.sizeOf(context).width < 480;
 
     ref.listen<String?>(voiceCommandNoticeProvider, (_, notice) {
       if (notice == null) return;
@@ -370,18 +389,51 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
                 icon: const Icon(Icons.add_comment_outlined),
                 onPressed: () => unawaited(_createSession(context, channel)),
               ),
-            IconButton(
-              key: const ValueKey('hermes-diagnostics-button'),
-              tooltip: 'Diagnostics',
-              icon: const Icon(Icons.info_outline),
-              onPressed: () => _showDiagnosticsDialog(context, state),
-            ),
-            IconButton(
-              key: const ValueKey('hermes-disconnect-button'),
-              tooltip: 'Disconnect',
-              icon: const Icon(Icons.logout_outlined),
-              onPressed: () => unawaited(_confirmDisconnect(context, channel)),
-            ),
+            if (compactAppBar)
+              PopupMenuButton<String>(
+                key: const ValueKey('hermes-more-actions-button'),
+                tooltip: 'More actions',
+                onSelected: (action) {
+                  if (action == 'diagnostics') {
+                    _showDiagnosticsDialog(context, state);
+                  } else {
+                    unawaited(_confirmDisconnect(context, channel));
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'diagnostics',
+                    child: ListTile(
+                      leading: Icon(Icons.info_outline),
+                      title: Text('Diagnostics'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'disconnect',
+                    child: ListTile(
+                      leading: Icon(Icons.logout_outlined),
+                      title: Text('Disconnect'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              IconButton(
+                key: const ValueKey('hermes-diagnostics-button'),
+                tooltip: 'Diagnostics',
+                icon: const Icon(Icons.info_outline),
+                onPressed: () => _showDiagnosticsDialog(context, state),
+              ),
+              IconButton(
+                key: const ValueKey('hermes-disconnect-button'),
+                tooltip: 'Disconnect',
+                icon: const Icon(Icons.logout_outlined),
+                onPressed: () =>
+                    unawaited(_confirmDisconnect(context, channel)),
+              ),
+            ],
           ],
         ],
       ),

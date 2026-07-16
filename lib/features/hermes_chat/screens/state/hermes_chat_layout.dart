@@ -7,109 +7,291 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     HermesChannelState state,
   ) {
     final connecting = state.status == HermesConnectionStatus.connecting;
+    final canConnect =
+        !connecting && _isValidHermesBaseUrl(_baseUrlController.text);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: AutofillGroup(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Connect to Hermes Agent',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<List<HermesEndpointConfig>>(
-                  future: _endpointProfilesFuture,
-                  builder: (context, snapshot) => _EndpointProfileChips(
-                    profiles: snapshot.data ?? const [],
-                    connecting: connecting,
-                    onSelect: _selectEndpointProfile,
-                    onRename: (profile) =>
-                        unawaited(_renameEndpointProfile(context, profile)),
-                    onDelete: (profile) =>
-                        unawaited(_deleteEndpointProfile(profile)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (!_isAndroid)
-                      ActionChip(
-                        key: const ValueKey('hermes-preset-local'),
-                        label: const Text('Local Hermes'),
-                        onPressed: connecting
-                            ? null
-                            : () =>
-                                  _applyEndpointPreset('http://127.0.0.1:8642'),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ActionChip(
-                      key: const ValueKey('hermes-preset-android'),
-                      label: const Text('Android emulator'),
-                      onPressed: connecting
-                          ? null
-                          : () => _applyEndpointPreset('http://10.0.2.2:8642'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Icon(
+                          Icons.cloud_outlined,
+                          size: 28,
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
                     ),
-                    ActionChip(
-                      key: const ValueKey('hermes-preset-remote'),
-                      label: const Text('Remote/LAN'),
-                      onPressed: connecting
-                          ? null
-                          : () => _applyEndpointPreset(''),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Connect to your Hermes VPS',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Navivox connects to the Hermes Agent on your VPS over HTTPS, Tailscale, or another private network.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  key: const ValueKey('hermes-base-url-field'),
-                  controller: _baseUrlController,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'Hermes API base URL',
-                    helperText: _hermesBaseUrlHint,
-                  ),
+                const SizedBox(height: 28),
+                FutureBuilder<List<HermesEndpointConfig>>(
+                  future: _endpointProfilesFuture,
+                  builder: (context, snapshot) {
+                    final profiles = snapshot.data ?? const [];
+                    if (profiles.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: _EndpointProfileChips(
+                        profiles: profiles,
+                        connecting: connecting,
+                        onSelect: _selectEndpointProfile,
+                        onRename: (profile) =>
+                            unawaited(_renameEndpointProfile(context, profile)),
+                        onDelete: (profile) =>
+                            unawaited(_deleteEndpointProfile(profile)),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  key: const ValueKey('hermes-api-key-field'),
-                  controller: _apiKeyController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'API key (optional)',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  key: const ValueKey('hermes-profile-label-field'),
-                  controller: _profileLabelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Profile label (optional)',
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'VPS connection',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Use HTTPS or a private-network URL. Never expose an unauthenticated Hermes port to the internet.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          key: const ValueKey('hermes-base-url-field'),
+                          controller: _baseUrlController,
+                          keyboardType: TextInputType.url,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.url],
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          decoration: const InputDecoration(
+                            labelText: 'Hermes server URL',
+                            hintText: 'https://hermes.example.com',
+                            helperText:
+                                'Enter the HTTPS or private-network URL without /v1.',
+                            helperMaxLines: 2,
+                            prefixIcon: Icon(Icons.language_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          key: const ValueKey('hermes-api-key-field'),
+                          controller: _apiKeyController,
+                          obscureText: _obscureApiKey,
+                          textInputAction: TextInputAction.next,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          decoration: InputDecoration(
+                            labelText: 'Access token',
+                            helperText:
+                                'Required for internet-facing servers; optional only on trusted private networks.',
+                            helperMaxLines: 2,
+                            prefixIcon: const Icon(Icons.key_outlined),
+                            suffixIcon: IconButton(
+                              key: const ValueKey('hermes-api-key-visibility'),
+                              tooltip: _obscureApiKey
+                                  ? 'Show access token'
+                                  : 'Hide access token',
+                              onPressed: () => _setState(
+                                () => _obscureApiKey = !_obscureApiKey,
+                              ),
+                              icon: Icon(
+                                _obscureApiKey
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          key: const ValueKey('hermes-profile-label-field'),
+                          controller: _profileLabelController,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: canConnect
+                              ? (_) => unawaited(_connect(channel))
+                              : null,
+                          decoration: const InputDecoration(
+                            labelText: 'VPS name (optional)',
+                            hintText: 'My Hermes VPS',
+                            helperText:
+                                'A private label shown only on this device.',
+                            prefixIcon: Icon(Icons.label_outline),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.lock_outline,
+                                size: 20,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Your token is stored in secure device storage and is never shown after connecting.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (state.status == HermesConnectionStatus.error &&
+                            state.errorMessage != null) ...[
+                          const SizedBox(height: 16),
+                          _HermesConnectError(error: state.errorMessage!),
+                        ],
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          key: const ValueKey('hermes-connect-button'),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                          ),
+                          onPressed: canConnect
+                              ? () => unawaited(_connect(channel))
+                              : null,
+                          icon: connecting
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.arrow_forward),
+                          label: Text(
+                            connecting ? 'Connecting…' : 'Connect to VPS',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (state.status == HermesConnectionStatus.error &&
-                    state.errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _HermesConnectError(error: state.errorMessage!),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: ExpansionTile(
+                    key: const ValueKey('hermes-developer-shortcuts'),
+                    leading: const Icon(Icons.developer_mode_outlined),
+                    title: const Text('Connecting to a local Agent?'),
+                    subtitle: const Text(
+                      'Use a development shortcut instead of a VPS address.',
+                    ),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (!_isAndroid)
+                              ActionChip(
+                                key: const ValueKey('hermes-preset-local'),
+                                avatar: const Icon(
+                                  Icons.computer_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('This device'),
+                                onPressed: connecting
+                                    ? null
+                                    : () => _applyEndpointPreset(
+                                        'http://127.0.0.1:8642',
+                                      ),
+                              ),
+                            ActionChip(
+                              key: const ValueKey('hermes-preset-android'),
+                              avatar: const Icon(
+                                Icons.android_outlined,
+                                size: 18,
+                              ),
+                              label: const Text('Android emulator'),
+                              onPressed: connecting
+                                  ? null
+                                  : () => _applyEndpointPreset(
+                                      'http://10.0.2.2:8642',
+                                    ),
+                            ),
+                            ActionChip(
+                              key: const ValueKey('hermes-preset-remote'),
+                              avatar: const Icon(Icons.refresh, size: 18),
+                              label: const Text('Clear server details'),
+                              onPressed: connecting
+                                  ? null
+                                  : () => _applyEndpointPreset(''),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _hermesBaseUrlHint,
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
                   ),
-                ElevatedButton(
-                  key: const ValueKey('hermes-connect-button'),
-                  onPressed: connecting
-                      ? null
-                      : () => unawaited(_connect(channel)),
-                  child: connecting
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Connect'),
                 ),
               ],
             ),
@@ -412,7 +594,6 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       canRetry: canRetry,
       onStop: () => _stopActiveTurn(channel),
       onRetry: () => _retryLastFailedTurn(channel),
-      onDiagnostics: () => _showDiagnosticsDialog(context, state),
     );
 
     return SafeArea(
@@ -490,12 +671,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
                 children: [
                   _buildContinuousVoiceSwitch(canSendTurns),
                   const Spacer(),
-                  ..._composerIconButtons(
-                    context,
-                    channel,
-                    state,
-                    canSendTurns,
-                  ),
+                  ..._composerIconButtons(channel, canSendTurns),
                 ],
               ),
             ],
@@ -552,7 +728,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
               const SizedBox(width: 4),
               Expanded(child: strip),
               const SizedBox(width: 8),
-              ..._composerIconButtons(context, channel, state, canSendTurns),
+              ..._composerIconButtons(channel, canSendTurns),
             ],
           ),
         ],
@@ -595,34 +771,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     );
   }
 
-  List<Widget> _composerIconButtons(
-    BuildContext context,
-    HermesChannel channel,
-    HermesChannelState state,
-    bool canSendTurns,
-  ) {
+  List<Widget> _composerIconButtons(HermesChannel channel, bool canSendTurns) {
     final voiceEnabled = ref.watch(
       navivoxVoiceSettingsProvider.select(
         (settings) => settings.continuousVoiceEnabled,
       ),
     );
     return [
-      if (state.capabilities != null) ...[
-        IconButton(
-          key: const ValueKey('hermes-attachments-button'),
-          tooltip: 'Attachments/media status',
-          icon: const Icon(Icons.attach_file_outlined),
-          onPressed: () =>
-              _showAttachmentsDeferred(context, state.capabilities!),
-        ),
-        IconButton(
-          key: const ValueKey('hermes-files-context-button'),
-          tooltip: 'Files/context folders status',
-          icon: const Icon(Icons.folder_open_outlined),
-          onPressed: () =>
-              _showFilesContextDeferred(context, state.capabilities!),
-        ),
-      ],
       IconButton(
         key: const ValueKey('hermes-mic-button'),
         tooltip: 'Speak — device STT to Hermes text',
@@ -638,11 +793,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
             ? null
             : () => unawaited(_voiceInputController.captureDraft()),
       ),
-      IconButton(
+      IconButton.filled(
         key: const ValueKey('hermes-send-button'),
         tooltip: 'Send',
-        icon: const Icon(Icons.send_outlined),
-        onPressed: canSendTurns ? () => _sendComposerText(channel) : null,
+        icon: const Icon(Icons.arrow_upward),
+        onPressed: canSendTurns && _composerController.text.trim().isNotEmpty
+            ? () => _sendComposerText(channel)
+            : null,
       ),
     ];
   }
