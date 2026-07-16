@@ -164,6 +164,14 @@ class SettingsScreen extends ConsumerWidget {
                     value:
                         '${state.models.length} models • ${state.skills.length} skills • ${state.enabledToolsets.length} toolsets • ${state.jobs.length} jobs',
                   ),
+                  if (state.optionalResourceErrors.isNotEmpty)
+                    _StatusTile(
+                      icon: Icons.warning_amber_outlined,
+                      title: 'Inventory warnings',
+                      value: _optionalResourceWarningLabel(
+                        state.optionalResourceErrors.keys,
+                      ),
+                    ),
                   _StatusTile(
                     icon: Icons.chat_outlined,
                     title: 'Sessions',
@@ -410,6 +418,26 @@ String _healthLabel(HermesChannelState state) {
   final version = health.version ?? 'unknown version';
   final gateway = health.gatewayState ?? 'unknown gateway';
   return '$version • $gateway';
+}
+
+String _optionalResourceWarningLabel(
+  Iterable<HermesOptionalResource> resources,
+) {
+  final labels =
+      resources
+          .map(
+            (resource) => switch (resource) {
+              HermesOptionalResource.detailedHealth => 'health',
+              HermesOptionalResource.models => 'models',
+              HermesOptionalResource.skills => 'skills',
+              HermesOptionalResource.toolsets => 'toolsets',
+              HermesOptionalResource.jobs => 'jobs',
+            },
+          )
+          .toList()
+        ..sort();
+  final summary = labels.join(', ');
+  return '${summary[0].toUpperCase()}${summary.substring(1)} unavailable';
 }
 
 class _SettingsHeader extends StatelessWidget {

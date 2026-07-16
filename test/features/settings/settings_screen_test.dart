@@ -11,6 +11,41 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../hermes_chat/support/fake_hermes_channel.dart';
 
 void main() {
+  testWidgets('surfaces optional inventory failures without raw errors', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final channel = FakeHermesChannel(
+      optionalResourceErrors: const {
+        HermesOptionalResource.skills: 'Authorization: Bearer private-value',
+        HermesOptionalResource.models: '/home/operator/private-models',
+      },
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          hermesChannelProvider.overrideWithValue(channel),
+          hermesEndpointStoreProvider.overrideWithValue(
+            const EmptyHermesEndpointStore(),
+          ),
+        ],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('settings-copy-diagnostics')),
+      300,
+    );
+
+    expect(find.text('Inventory warnings'), findsOneWidget);
+    expect(find.text('Models, skills unavailable'), findsOneWidget);
+    expect(find.textContaining('private-value'), findsNothing);
+    expect(find.textContaining('/home/operator'), findsNothing);
+  });
+
   testWidgets('copies the bounded Hermes diagnostics snapshot', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final channel = FakeHermesChannel(
