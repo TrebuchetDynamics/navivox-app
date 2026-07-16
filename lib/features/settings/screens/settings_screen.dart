@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../router/app_routes.dart';
+import '../../hermes_chat/diagnostics/hermes_diagnostics_export.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
 import '../../needle_spike/needle_spike_flag.dart';
 import '../../voice/services/tts/text_to_speech_service.dart';
@@ -167,6 +169,25 @@ class SettingsScreen extends ConsumerWidget {
                     title: 'Sessions',
                     value:
                         '${state.sessions.length} sessions • active ${state.activeSessionId == null ? 'none' : 'yes'}',
+                  ),
+                  ListTile(
+                    key: const ValueKey('settings-copy-diagnostics'),
+                    leading: const Icon(Icons.copy_outlined),
+                    title: const Text('Copy diagnostics'),
+                    subtitle: const Text(
+                      'Safe snapshot; excludes secrets, raw logs, transcripts, and local paths.',
+                    ),
+                    onTap: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: hermesDiagnosticsExport(state)),
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Hermes diagnostics copied'),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
