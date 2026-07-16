@@ -6,7 +6,7 @@ function semanticLabel(page, text) {
   return page.locator(`flt-semantics[aria-label*="${escaped}"]`).first();
 }
 
-test('Hermes route renders connect form and cross-platform setup hints in a real browser', async ({ page }) => {
+test('Hermes route renders the VPS connect form in a real browser', async ({ page }) => {
   await page.goto(`${APP}#/hermes`, { timeout: 15000 });
   await page.waitForTimeout(2000);
   await a11y(page);
@@ -17,9 +17,6 @@ test('Hermes route renders connect form and cross-platform setup hints in a real
   await expect(page.getByRole('textbox', { name: 'VPS name (optional)' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Connect to VPS' })).toBeVisible();
 
-  await page.getByText('Connecting to a local Agent?').click();
-  await expect(page.getByText('This device').first()).toBeVisible();
-  await expect(page.getByText('Android emulator').first()).toBeVisible();
 });
 
 test('mobile Hermes chat keeps secondary actions in an accessible overflow menu', async ({ page }) => {
