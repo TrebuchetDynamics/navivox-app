@@ -128,5 +128,11 @@
   "validateCredentialAction": "Validate",
   "credentialConfiguredStatus": "Configured",
   "credentialNotConfiguredStatus": "Not configured",
-  "credentialOperationFailed": "The credential operation could not be completed."
+  "credentialOperationFailed": "The credential operation could not be completed.",
+  "transcriptImageFallbackLabel": "Image",
+  "transcriptImageNotLoaded": "image not loaded",
+  "copyCodeAction": "Copy code",
+  "codeCopiedMessage": "Code copied",
+  "showMoreAction": "Show more",
+  "showLessAction": "Show less"
 }

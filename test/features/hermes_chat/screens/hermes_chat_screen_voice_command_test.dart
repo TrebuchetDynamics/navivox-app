@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:navivox/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:navivox/features/settings/providers/voice_settings_provider.dart';
+import 'package:navivox/l10n/app_localizations.dart';
 import 'package:navivox/features/voice_commands/core/needle_engine.dart';
 import 'package:navivox/features/voice_commands/providers/voice_command_providers.dart';
 import 'package:navivox/features/voice_commands/services/voice_command_router.dart';
@@ -80,6 +81,12 @@ VoiceCaptureService _captureFor(String transcript) => FakeVoiceCaptureService(
   confidence: 0.9,
 );
 
+Widget _localizedApp({required Widget home}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
+
 void main() {
   testWidgets('a confirm-tier routed command shows the chip', (tester) async {
     final channel = FakeHermesChannel();
@@ -91,7 +98,7 @@ void main() {
           hermesChannelProvider.overrideWithValue(channel),
           voiceCommandRouterProvider.overrideWithValue(router),
         ],
-        child: MaterialApp(
+        child: _localizedApp(
           home: HermesChatScreen(
             voiceCaptureServiceOverride: _captureFor(
               'start a new conversation',
@@ -122,7 +129,7 @@ void main() {
           hermesChannelProvider.overrideWithValue(channel),
           voiceCommandRouterProvider.overrideWithValue(router),
         ],
-        child: MaterialApp(
+        child: _localizedApp(
           home: HermesChatScreen(
             voiceCaptureServiceOverride: _captureFor(
               'start a new conversation',
@@ -162,7 +169,7 @@ void main() {
           hermesChannelProvider.overrideWithValue(channel),
           voiceCommandRouterProvider.overrideWithValue(router),
         ],
-        child: MaterialApp(
+        child: _localizedApp(
           home: HermesChatScreen(
             voiceCaptureServiceOverride: _captureFor('anything'),
           ),
@@ -222,7 +229,7 @@ void main() {
             hermesChannelProvider.overrideWithValue(channel),
             voiceCommandRouterProvider.overrideWithValue(router),
           ],
-          child: MaterialApp(
+          child: _localizedApp(
             home: HermesChatScreen(
               voiceCaptureServiceOverride: capture,
               textToSpeechServiceOverride: tts,

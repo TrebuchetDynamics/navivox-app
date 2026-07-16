@@ -321,4 +321,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get credentialOperationFailed =>
       'The credential operation could not be completed.';
+
+  @override
+  String get transcriptImageFallbackLabel => 'Image';
+
+  @override
+  String get transcriptImageNotLoaded => 'image not loaded';
+
+  @override
+  String get copyCodeAction => 'Copy code';
+
+  @override
+  String get codeCopiedMessage => 'Code copied';
+
+  @override
+  String get showMoreAction => 'Show more';
+
+  @override
+  String get showLessAction => 'Show less';
 }

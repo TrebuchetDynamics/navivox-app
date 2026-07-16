@@ -5,8 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:navivox/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:navivox/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:navivox/features/hermes_chat/widgets/hermes_rich_text.dart';
+import 'package:navivox/l10n/app_localizations.dart';
 
 import '../support/fake_hermes_channel.dart';
+
+Widget _localizedApp(Widget home) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
 
 void main() {
   testWidgets(
@@ -19,7 +26,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [hermesChannelProvider.overrideWithValue(channel)],
-          child: const MaterialApp(home: HermesChatScreen()),
+          child: _localizedApp(const HermesChatScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -35,9 +42,7 @@ void main() {
     final semantics = tester.ensureSemantics();
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: HermesRichText('Accessible answer')),
-      ),
+      _localizedApp(const Scaffold(body: HermesRichText('Accessible answer'))),
     );
 
     expect(find.bySemanticsLabel('Accessible answer'), findsOneWidget);
@@ -65,7 +70,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [hermesChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: HermesChatScreen()),
+        child: _localizedApp(const HermesChatScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -74,6 +79,71 @@ void main() {
     await tester.pump();
 
     expect(copiedText, 'final answer = 42;');
+  });
+
+  testWidgets('long code blocks start collapsed and can be expanded', (
+    tester,
+  ) async {
+    final code = List.generate(16, (index) => 'line ${index + 1}').join('\n');
+
+    await tester.pumpWidget(
+      _localizedApp(Scaffold(body: HermesRichText('```text\n$code\n```'))),
+    );
+
+    expect(find.text('Show more'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-code-content')), findsNothing);
+
+    await tester.tap(find.text('Show more'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Show less'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-code-content')), findsOneWidget);
+  });
+
+  testWidgets('diff code blocks distinguish additions removals and hunks', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _localizedApp(
+        const Scaffold(
+          body: HermesRichText(
+            '```diff\n+added\n-removed\n@@ changed @@\n unchanged\n```',
+          ),
+        ),
+      ),
+    );
+
+    final colors = Theme.of(
+      tester.element(find.byType(HermesRichText)),
+    ).colorScheme;
+    expect(find.text('diff'), findsOneWidget);
+    expect(
+      tester
+          .widget<SelectableText>(
+            find.byKey(const ValueKey('hermes-diff-line-0')),
+          )
+          .style
+          ?.color,
+      colors.onTertiaryContainer,
+    );
+    expect(
+      tester
+          .widget<SelectableText>(
+            find.byKey(const ValueKey('hermes-diff-line-1')),
+          )
+          .style
+          ?.color,
+      colors.onErrorContainer,
+    );
+    expect(
+      tester
+          .widget<SelectableText>(
+            find.byKey(const ValueKey('hermes-diff-line-2')),
+          )
+          .style
+          ?.color,
+      colors.onSecondaryContainer,
+    );
   });
 
   testWidgets('remote transcript images stay deferred', (tester) async {
@@ -86,7 +156,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [hermesChannelProvider.overrideWithValue(channel)],
-        child: const MaterialApp(home: HermesChatScreen()),
+        child: _localizedApp(const HermesChatScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -104,8 +174,8 @@ void main() {
     Uri? launchedUri;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      _localizedApp(
+        Scaffold(
           body: HermesRichText(
             '[Open docs](https://example.com/docs)',
             launchUri: (uri) async {
@@ -127,8 +197,8 @@ void main() {
     var launchCount = 0;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      _localizedApp(
+        Scaffold(
           body: HermesRichText(
             '[Do not run](javascript:alert(1))',
             launchUri: (uri) async {

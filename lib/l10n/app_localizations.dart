@@ -645,6 +645,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The credential operation could not be completed.'**
   String get credentialOperationFailed;
+
+  /// No description provided for @transcriptImageFallbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get transcriptImageFallbackLabel;
+
+  /// No description provided for @transcriptImageNotLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'image not loaded'**
+  String get transcriptImageNotLoaded;
+
+  /// No description provided for @copyCodeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get copyCodeAction;
+
+  /// No description provided for @codeCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get codeCopiedMessage;
+
+  /// No description provided for @showMoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get showMoreAction;
+
+  /// No description provided for @showLessAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get showLessAction;
 }
 
 class _AppLocalizationsDelegate
