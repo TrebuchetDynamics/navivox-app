@@ -86,6 +86,7 @@ class HermesEnrollmentController extends ChangeNotifier {
   HermesEnrollmentPreview? _preview;
   String? _errorMessage;
   Uri? _origin;
+  Uri? _exchangeOrigin;
   String? _code;
   bool _exchangeAttempted = false;
   int _generation = 0;
@@ -118,6 +119,7 @@ class HermesEnrollmentController extends ChangeNotifier {
   Future<void> inspect(HermesEnrollmentPayload payload) async {
     final generation = ++_generation;
     _origin = payload.origin;
+    _exchangeOrigin = payload.brokerOrigin ?? payload.origin;
     _code = payload.code;
     _exchangeAttempted = false;
     _preview = null;
@@ -126,7 +128,7 @@ class HermesEnrollmentController extends ChangeNotifier {
     _notify();
     try {
       final preview = await _inspect(
-        origin: payload.origin,
+        origin: _exchangeOrigin!,
         code: payload.code,
       );
       if (generation != _generation) return;
@@ -150,15 +152,21 @@ class HermesEnrollmentController extends ChangeNotifier {
   Future<void> confirm() async {
     if (_status != HermesEnrollmentStatus.ready || _exchangeAttempted) return;
     final origin = _origin;
+    final exchangeOrigin = _exchangeOrigin;
     final code = _code;
     final preview = _preview;
-    if (origin == null || code == null || preview == null) return;
+    if (origin == null ||
+        exchangeOrigin == null ||
+        code == null ||
+        preview == null) {
+      return;
+    }
     _exchangeAttempted = true;
     final generation = ++_generation;
     _status = HermesEnrollmentStatus.confirming;
     _notify();
     try {
-      final issued = await _exchange(origin: origin, code: code);
+      final issued = await _exchange(origin: exchangeOrigin, code: code);
       await _store.save(
         baseUrl: origin.toString(),
         apiKey: issued.token,
@@ -166,6 +174,7 @@ class HermesEnrollmentController extends ChangeNotifier {
       );
       if (generation != _generation) return;
       _origin = null;
+      _exchangeOrigin = null;
       _code = null;
       _status = HermesEnrollmentStatus.confirmed;
       _notify();
@@ -185,6 +194,7 @@ class HermesEnrollmentController extends ChangeNotifier {
   void cancel() {
     _generation++;
     _origin = null;
+    _exchangeOrigin = null;
     _code = null;
     _preview = null;
     _errorMessage = null;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -341,58 +342,64 @@ void main() {
     expect(link.stdout, isNot(contains(token)));
   });
 
-  test('wing-cli explains when Hermes lacks secure enrollment', () async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    addTearDown(server.close);
-    final origin = 'http://${server.address.address}:${server.port}';
-    final requestHandled = server.first.then((request) async {
-      request.response.statusCode = HttpStatus.notFound;
-      await request.response.close();
-    });
-
-    final qr = await Process.run(
+  test('wing-cli brokers one token once and renders its QR locally', () async {
+    const token = 'test-superuser-token';
+    const origin = 'http://127.0.0.1:8642';
+    final process = await Process.start(
       './wing-cli',
-      ['qr', '--origin', origin],
+      ['qr', '--origin', origin, '--label', 'test-phone'],
       environment: {
         ...Platform.environment,
-        'WING_HERMES_TOKEN': 'test-superuser-token',
+        'WING_HERMES_TOKEN': token,
+        'WING_CLI_BROKER_HOST': '127.0.0.1',
+        'WING_CLI_BROKER_TIMEOUT': '30',
+        'WING_CLI_SHOW_LINK': 'true',
       },
     );
-    await requestHandled;
-
-    expect(qr.exitCode, isNot(0));
-    expect(qr.stderr, contains('does not support secure Wing enrollment'));
-    expect(qr.stderr, contains('never placed in QR codes'));
-  });
-
-  test('wing-cli renders QR without an external package', () async {
-    const token = 'test-superuser-token';
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    addTearDown(server.close);
-    final origin = 'http://${server.address.address}:${server.port}';
-    final requestHandled = server.first.then((request) async {
-      request.response
-        ..statusCode = HttpStatus.created
-        ..write(
-          jsonEncode({
-            'pairing_uri':
-                'navivox://connect?origin=${Uri.encodeQueryComponent(origin)}&code=one-time',
-          }),
-        );
-      await request.response.close();
+    final output = StringBuffer();
+    final error = StringBuffer();
+    final pairingReady = Completer<Uri>();
+    process.stdout.transform(utf8.decoder).listen((chunk) {
+      output.write(chunk);
+      if (!pairingReady.isCompleted) {
+        final match = RegExp(
+          r'wing://connect\?[^\s]+',
+        ).firstMatch(output.toString());
+        if (match != null) pairingReady.complete(Uri.parse(match.group(0)!));
+      }
     });
+    process.stderr.transform(utf8.decoder).listen(error.write);
 
-    final qr = await Process.run(
-      './wing-cli',
-      ['qr', '--origin', origin],
-      environment: {...Platform.environment, 'WING_HERMES_TOKEN': token},
+    final pairing = await pairingReady.future.timeout(
+      const Duration(seconds: 10),
     );
-    await requestHandled;
+    expect(pairing.queryParameters['origin'], origin);
+    final broker = Uri.parse(pairing.queryParameters['broker']!);
+    final code = pairing.queryParameters['code']!;
+    final client = HttpClient();
+    addTearDown(client.close);
 
-    expect(qr.exitCode, 0, reason: qr.stderr as String);
-    expect(qr.stdout, contains('\x1b[40m'));
-    expect(qr.stdout, contains('\x1b[47m'));
-    expect(qr.stdout, isNot(contains(token)));
+    Future<Map<String, Object?>> post(String path) async {
+      final request = await client.postUrl(broker.replace(path: path));
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'origin': origin, 'code': code}));
+      final response = await request.close();
+      expect(response.statusCode, HttpStatus.ok);
+      return (jsonDecode(await utf8.decoder.bind(response).join()) as Map)
+          .cast<String, Object?>();
+    }
+
+    final preview = await post('/v1/operator/enrollments/inspect');
+    expect(preview['origin'], origin);
+    expect(preview['scopes'], ['*']);
+    expect(preview.values, isNot(contains(token)));
+    final issued = await post('/v1/operator/enrollments/exchange');
+    expect(issued['token'], token);
+
+    expect(await process.exitCode, 0, reason: error.toString());
+    expect(output.toString(), contains('\x1b[40m'));
+    expect(output.toString(), contains('\x1b[47m'));
+    expect(output.toString(), isNot(contains(token)));
   });
 
   test('wing-cli installer creates a runnable global command', () async {

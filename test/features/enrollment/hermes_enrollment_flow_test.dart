@@ -101,6 +101,40 @@ void main() {
       expect(store.saveCalls.single.label, 'Galaxy S24');
     });
 
+    test(
+      'CLI broker exchanges the token but saves the Hermes origin',
+      () async {
+        final contactedOrigins = <Uri>[];
+        final store = FakeHermesEndpointStore();
+        final controller = HermesEnrollmentController(
+          inspectEnrollment: ({required origin, required code}) async {
+            contactedOrigins.add(origin);
+            return _preview;
+          },
+          exchangeEnrollment: ({required origin, required code}) async {
+            contactedOrigins.add(origin);
+            return _issued;
+          },
+          endpointStore: store,
+        );
+        addTearDown(controller.dispose);
+
+        final payload = HermesEnrollmentPayload.parse(
+          'wing://connect?origin=https%3A%2F%2Fhermes.example'
+          '&broker=https%3A%2F%2Fhermes.example%3A45123&code=one-time',
+        );
+        await controller.inspect(payload);
+        await controller.confirm();
+
+        expect(
+          contactedOrigins,
+          everyElement(Uri.parse('https://hermes.example:45123')),
+        );
+        expect(store.saveCalls.single.baseUrl, 'https://hermes.example');
+        expect(store.saveCalls.single.apiKey, _secretToken);
+      },
+    );
+
     test('confirm before a successful inspection is a no-op', () async {
       var exchangeCalls = 0;
       final store = FakeHermesEndpointStore();

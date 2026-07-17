@@ -6,11 +6,19 @@
 /// carried in this payload — the code below is exchanged for one later, only
 /// after operator review.
 class HermesEnrollmentPayload {
-  const HermesEnrollmentPayload({required this.origin, required this.code});
+  const HermesEnrollmentPayload({
+    required this.origin,
+    required this.code,
+    this.brokerOrigin,
+  });
 
   /// Normalized Hermes API origin: scheme + host + optional port only. No
   /// path, query, fragment, or userinfo ever survives parsing.
   final Uri origin;
+
+  /// Optional same-host, short-lived Wing CLI broker that exchanges [code]
+  /// for the existing Hermes API key without changing Hermes Agent.
+  final Uri? brokerOrigin;
 
   /// The one-time pairing code exchanged for a bearer token after operator
   /// review. This is never a bearer token itself.
@@ -61,6 +69,12 @@ class HermesEnrollmentPayload {
       cleartextOriginConfirmed: cleartextOriginConfirmed,
     );
 
+    final brokerOrigin = _parseBrokerOrigin(
+      uri.queryParameters['broker'],
+      hermesOrigin: origin,
+      cleartextOriginConfirmed: cleartextOriginConfirmed,
+    );
+
     final code = (uri.queryParameters['code'] ?? '').trim();
     if (code.isEmpty) {
       throw const FormatException('connect payload is missing a code');
@@ -69,7 +83,38 @@ class HermesEnrollmentPayload {
       throw const FormatException('connect payload code is too long');
     }
 
-    return HermesEnrollmentPayload(origin: origin, code: code);
+    return HermesEnrollmentPayload(
+      origin: origin,
+      code: code,
+      brokerOrigin: brokerOrigin,
+    );
+  }
+
+  static Uri? _parseBrokerOrigin(
+    String? rawBroker, {
+    required Uri hermesOrigin,
+    required bool cleartextOriginConfirmed,
+  }) {
+    final value = rawBroker?.trim() ?? '';
+    if (value.isEmpty) return null;
+    final parsed = Uri.parse(value);
+    if (parsed.path.isNotEmpty && parsed.path != '/' ||
+        parsed.query.isNotEmpty ||
+        parsed.fragment.isNotEmpty) {
+      throw const FormatException(
+        'connect payload broker must be an origin without path, query, or fragment',
+      );
+    }
+    final broker = _parseOrigin(
+      value,
+      cleartextOriginConfirmed: cleartextOriginConfirmed,
+    );
+    if (broker.host.toLowerCase() != hermesOrigin.host.toLowerCase()) {
+      throw const FormatException(
+        'connect payload broker must use the Hermes endpoint host',
+      );
+    }
+    return broker;
   }
 
   static Uri _parseOrigin(

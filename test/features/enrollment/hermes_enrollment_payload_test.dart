@@ -10,6 +10,25 @@ void main() {
     expect(payload.code, 'one-time');
   });
 
+  test('accepts a same-host one-time CLI broker', () {
+    final payload = HermesEnrollmentPayload.parse(
+      'wing://connect?origin=https%3A%2F%2Fhermes.example%3A8642'
+      '&broker=https%3A%2F%2Fhermes.example%3A45123&code=one-time',
+    );
+    expect(payload.origin, Uri.parse('https://hermes.example:8642'));
+    expect(payload.brokerOrigin, Uri.parse('https://hermes.example:45123'));
+  });
+
+  test('rejects a broker on a different host', () {
+    expect(
+      () => HermesEnrollmentPayload.parse(
+        'wing://connect?origin=https%3A%2F%2Fhermes.example'
+        '&broker=https%3A%2F%2Fevil.example&code=one-time',
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('rejects bearer token query parameters', () {
     expect(
       () => HermesEnrollmentPayload.parse(
