@@ -33,6 +33,26 @@ final voiceCommandInstallServiceProvider =
       return NeedleModelInstallService(supportDirectory: support);
     });
 
+/// Voices available in the installed Pocket Speech pack, independent of
+/// whether that backend is currently enabled. Settings uses this to let the
+/// operator choose a voice before turning on offline reply speech.
+final pocketSpeechVoiceNamesProvider = FutureProvider<List<String>>((
+  ref,
+) async {
+  final model = ref.watch(
+    wingVoiceSettingsProvider.select((s) => s.pocketSpeechModel),
+  );
+  final voicesPath = ref.watch(
+    wingVoiceSettingsProvider.select(
+      (s) => s.pocketSpeechVoicePack?.voicesPath,
+    ),
+  );
+  return switch (model) {
+    PocketSpeechModel.kitten => KittenCatalog.voices,
+    PocketSpeechModel.kokoro => _kokoroVoiceNames(voicesPath),
+  };
+});
+
 /// The candidate TTS voice names, sourced from whichever backend is
 /// currently active and cached by ordinary FutureProvider semantics. The
 /// list normally doesn't change while the app is running, but it CAN come
@@ -57,22 +77,9 @@ final ttsVoiceNamesProvider = FutureProvider<List<String>>((ref) async {
   final pocketEnabled = ref.watch(
     wingVoiceSettingsProvider.select((s) => s.pocketSpeechTtsEnabled),
   );
-  final pocketModel = ref.watch(
-    wingVoiceSettingsProvider.select((s) => s.pocketSpeechModel),
-  );
-  final kokoroVoicesPath = ref.watch(
-    wingVoiceSettingsProvider.select(
-      (s) => s.pocketSpeechVoicePack?.voicesPath,
-    ),
-  );
 
   if (pocketEnabled) {
-    switch (pocketModel) {
-      case PocketSpeechModel.kitten:
-        return KittenCatalog.voices;
-      case PocketSpeechModel.kokoro:
-        return _kokoroVoiceNames(kokoroVoicesPath);
-    }
+    return ref.watch(pocketSpeechVoiceNamesProvider.future);
   }
 
   try {

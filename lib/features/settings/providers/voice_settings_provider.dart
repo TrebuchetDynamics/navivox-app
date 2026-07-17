@@ -130,15 +130,18 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
       pocketSpeechModel: model,
       pocketSpeechTtsEnabled: false,
       clearPocketSpeechVoicePack: true,
+      clearTtsVoiceName: true,
     );
     _save();
   }
 
   void setPocketSpeechVoicePack(PocketSpeechVoicePack voicePack) {
     _mutationGeneration += 1;
+    final modelChanged = voicePack.model != state.pocketSpeechModel;
     state = state.copyWith(
       pocketSpeechModel: voicePack.model,
       pocketSpeechVoicePack: voicePack,
+      clearTtsVoiceName: modelChanged,
     );
     _save();
   }
@@ -148,6 +151,7 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
     state = state.copyWith(
       pocketSpeechTtsEnabled: false,
       clearPocketSpeechVoicePack: true,
+      clearTtsVoiceName: true,
     );
     _save();
   }

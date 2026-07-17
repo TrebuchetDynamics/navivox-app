@@ -6,8 +6,11 @@ void main() {
     const defaults = WingVoiceSettings();
 
     expect(defaults.pocketSpeechModel, PocketSpeechModel.kitten);
-    expect(PocketSpeechModel.kitten.downloadSize, '≈26 MB');
-    expect(PocketSpeechModel.kokoro.downloadSize, '≈365 MB');
+    expect(
+      PocketSpeechModel.kitten.downloadSummary,
+      'About 26 MB · English · 8 voices',
+    );
+    expect(PocketSpeechModel.kokoro.downloadBytes, 331147356);
     expect(defaults.pocketSpeechTtsEnabled, isFalse);
     expect(defaults.pocketSpeechVoicePackReady, isFalse);
   });

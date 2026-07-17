@@ -90,4 +90,37 @@ void main() {
     expect(copiedText, contains('Secrets: excluded'));
     expect(find.text('Hermes diagnostics copied'), findsOneWidget);
   });
+
+  testWidgets('Pocket Speech settings explain downloads and playback choices', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          hermesChannelProvider.overrideWithValue(channel),
+          hermesEndpointStoreProvider.overrideWithValue(
+            const EmptyHermesEndpointStore(),
+          ),
+        ],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final speed = find.byKey(const ValueKey('voice-pocket-speech-speed'));
+    await tester.scrollUntilVisible(speed, 300);
+
+    expect(find.byKey(const ValueKey('voice-pocket-speech-voice')), findsOne);
+    expect(speed, findsOne);
+    expect(find.text('About 26 MB · English · 8 voices'), findsOneWidget);
+    expect(find.textContaining('stored on this device'), findsOneWidget);
+  });
 }

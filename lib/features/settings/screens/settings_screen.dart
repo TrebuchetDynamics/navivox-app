@@ -32,9 +32,11 @@ class SettingsScreen extends ConsumerWidget {
     final pocketSpeechDownloader = ref.watch(
       _pocketSpeechAssetDownloadServiceProvider,
     );
-    final pocketSpeechDownloading = ref.watch(
+    final pocketSpeechDownload = ref.watch(
       _pocketSpeechAssetDownloadingProvider,
     );
+    final pocketSpeechVoices = ref.watch(pocketSpeechVoiceNamesProvider);
+    final pocketSpeechDownloading = pocketSpeechDownload != null;
 
     return Scaffold(
       appBar: AppBar(title: Text(_settingsPresentation.title)),
@@ -236,8 +238,8 @@ class SettingsScreen extends ConsumerWidget {
                     key: const ValueKey('voice-pocket-speech-model'),
                     leading: const Icon(Icons.graphic_eq),
                     title: const Text('Pocket Speech model'),
-                    subtitle: Text(
-                      '${settings.pocketSpeechModel.label} · ${settings.pocketSpeechModel.downloadSize}',
+                    subtitle: const Text(
+                      'Choose a compact English pack or the larger bilingual pack',
                     ),
                     trailing: DropdownButton<PocketSpeechModel>(
                       value: settings.pocketSpeechModel,
@@ -248,20 +250,87 @@ class SettingsScreen extends ConsumerWidget {
                             child: Text(model.label),
                           ),
                       ],
-                      onChanged: (model) {
-                        if (model != null) {
-                          controller.setPocketSpeechModel(model);
-                        }
-                      },
+                      onChanged: pocketSpeechDownloading
+                          ? null
+                          : (model) {
+                              if (model != null) {
+                                controller.setPocketSpeechModel(model);
+                              }
+                            },
                     ),
+                  ),
+                  ListTile(
+                    key: const ValueKey('voice-pocket-speech-assets'),
+                    leading: Icon(
+                      settings.pocketSpeechVoicePackReady
+                          ? Icons.check_circle_outline
+                          : Icons.download_for_offline_outlined,
+                    ),
+                    title: Text(
+                      '${settings.pocketSpeechModel.label} voice pack',
+                    ),
+                    subtitle: _PocketSpeechAssetSubtitle(
+                      model: settings.pocketSpeechModel,
+                      ready: settings.pocketSpeechVoicePackReady,
+                      configured:
+                          pocketSpeechDownloader?.isConfigured(
+                            settings.pocketSpeechModel,
+                          ) ==
+                          true,
+                      progress: pocketSpeechDownload,
+                    ),
+                    trailing: pocketSpeechDownloading
+                        ? Text(
+                            '${(pocketSpeechDownload.fraction * 100).round()}%',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          )
+                        : Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (settings.pocketSpeechVoicePackReady)
+                                IconButton(
+                                  tooltip: 'Remove downloaded voice pack',
+                                  onPressed: pocketSpeechDownloader == null
+                                      ? null
+                                      : () => _deletePocketSpeechAssets(
+                                          context,
+                                          ref,
+                                          controller,
+                                          pocketSpeechDownloader,
+                                          settings.pocketSpeechModel,
+                                        ),
+                                  icon: const Icon(Icons.delete_outline),
+                                ),
+                              FilledButton(
+                                onPressed:
+                                    pocketSpeechDownloader?.isConfigured(
+                                          settings.pocketSpeechModel,
+                                        ) ==
+                                        true
+                                    ? () => _downloadPocketSpeechAssets(
+                                        context,
+                                        ref,
+                                        controller,
+                                        pocketSpeechDownloader!,
+                                        settings.pocketSpeechModel,
+                                      )
+                                    : null,
+                                child: Text(
+                                  settings.pocketSpeechVoicePackReady
+                                      ? 'Update'
+                                      : 'Download',
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                   _ConstrainedSettingsTile(
                     child: SwitchListTile(
                       key: const ValueKey('voice-pocket-speech-enabled'),
-                      title: const Text('Pocket Speech offline TTS'),
+                      title: const Text('Use Pocket Speech for replies'),
                       subtitle: Text(
                         settings.pocketSpeechVoicePackReady
-                            ? 'Use the downloaded ${settings.pocketSpeechModel.label} voice pack'
+                            ? 'Use the installed ${settings.pocketSpeechModel.label} pack when Speak assistant replies is on'
                             : 'Download ${settings.pocketSpeechModel.label} before enabling',
                       ),
                       value: settings.pocketSpeechTtsEnabled,
@@ -271,42 +340,60 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   ListTile(
-                    key: const ValueKey('voice-pocket-speech-assets'),
-                    leading: const Icon(Icons.download_for_offline_outlined),
-                    title: Text(
-                      'Download ${settings.pocketSpeechModel.label} (${settings.pocketSpeechModel.downloadSize})',
-                    ),
+                    key: const ValueKey('voice-pocket-speech-voice'),
+                    leading: const Icon(Icons.record_voice_over_outlined),
+                    title: const Text('Offline voice'),
                     subtitle: Text(
                       settings.pocketSpeechVoicePackReady
-                          ? 'Ready: ${settings.pocketSpeechVoicePack!.modelPath}'
-                          : pocketSpeechDownloader?.isConfigured(
-                                  settings.pocketSpeechModel,
-                                ) !=
-                                true
-                          ? 'Build with HTTPS model URLs and pinned SHA-256 values'
-                          : 'Optional offline voice pack; use Wi-Fi',
+                          ? 'Voice used for Pocket Speech replies'
+                          : 'Available after the voice pack is downloaded',
                     ),
-                    trailing: pocketSpeechDownloading
-                        ? const SizedBox.square(
-                            dimension: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : FilledButton(
-                            onPressed:
-                                pocketSpeechDownloader?.isConfigured(
-                                      settings.pocketSpeechModel,
-                                    ) ==
-                                    true
-                                ? () => _downloadPocketSpeechAssets(
-                                    context,
-                                    ref,
-                                    controller,
-                                    pocketSpeechDownloader!,
-                                    settings.pocketSpeechModel,
-                                  )
-                                : null,
-                            child: const Text('Download'),
-                          ),
+                    trailing: pocketSpeechVoices.when(
+                      data: (voices) {
+                        final selected = voices.contains(settings.ttsVoiceName)
+                            ? settings.ttsVoiceName
+                            : null;
+                        return DropdownButton<String?>(
+                          value: selected,
+                          hint: const Text('Default'),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('Default'),
+                            ),
+                            for (final voice in voices)
+                              DropdownMenuItem<String?>(
+                                value: voice,
+                                child: Text(voice),
+                              ),
+                          ],
+                          onChanged: settings.pocketSpeechVoicePackReady
+                              ? controller.setTtsVoiceName
+                              : null,
+                        );
+                      },
+                      loading: () => const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      error: (_, _) => const Text('Unavailable'),
+                    ),
+                  ),
+                  ListTile(
+                    key: const ValueKey('voice-pocket-speech-speed'),
+                    leading: const Icon(Icons.speed_outlined),
+                    title: Text(
+                      'Reply speed · ${settings.speechRate.clamp(0.5, 2.0).toStringAsFixed(2)}×',
+                    ),
+                    subtitle: Slider(
+                      value: settings.speechRate.clamp(0.5, 2.0),
+                      min: 0.5,
+                      max: 2.0,
+                      divisions: 6,
+                      label:
+                          '${settings.speechRate.clamp(0.5, 2.0).toStringAsFixed(2)}×',
+                      onChanged: controller.setSpeechRate,
+                    ),
                   ),
                   ListTile(
                     key: const ValueKey('settings-command-word'),
@@ -355,17 +442,30 @@ final _pocketSpeechAssetDownloadServiceProvider =
       (_) => createDefaultPocketSpeechAssetDownloadService(),
     );
 
-class _PocketSpeechAssetDownloadingController extends Notifier<bool> {
+class _PocketSpeechAssetDownloadingController
+    extends Notifier<PocketSpeechDownloadProgress?> {
   @override
-  bool build() => false;
+  PocketSpeechDownloadProgress? build() => null;
 
-  void setDownloading(bool value) => state = value;
+  void start(PocketSpeechModel model) {
+    state = PocketSpeechDownloadProgress(
+      model: model,
+      part: PocketSpeechDownloadPart.model,
+      receivedBytes: 0,
+      totalBytes: model.downloadBytes,
+    );
+  }
+
+  void update(PocketSpeechDownloadProgress progress) => state = progress;
+
+  void finish() => state = null;
 }
 
 final _pocketSpeechAssetDownloadingProvider =
-    NotifierProvider<_PocketSpeechAssetDownloadingController, bool>(
-      _PocketSpeechAssetDownloadingController.new,
-    );
+    NotifierProvider<
+      _PocketSpeechAssetDownloadingController,
+      PocketSpeechDownloadProgress?
+    >(_PocketSpeechAssetDownloadingController.new);
 
 Future<void> _downloadPocketSpeechAssets(
   BuildContext context,
@@ -374,26 +474,176 @@ Future<void> _downloadPocketSpeechAssets(
   PocketSpeechAssetDownloadService downloader,
   PocketSpeechModel model,
 ) async {
+  if (model == PocketSpeechModel.kokoro &&
+      !await _confirmLargePocketSpeechDownload(context, model)) {
+    return;
+  }
+  if (!context.mounted) return;
+
   final downloading = ref.read(_pocketSpeechAssetDownloadingProvider.notifier);
-  downloading.setDownloading(true);
+  downloading.start(model);
   try {
-    final voicePack = await downloader.download(model);
+    final voicePack = await downloader.download(
+      model,
+      onProgress: downloading.update,
+    );
     controller.setPocketSpeechVoicePack(voicePack);
+    ref.invalidate(pocketSpeechVoiceNamesProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${model.label} voice pack downloaded')),
+        SnackBar(
+          content: Text('${model.label} voice pack is ready'),
+          action: SnackBarAction(
+            label: 'Use for replies',
+            onPressed: () {
+              controller.setPocketSpeechTtsEnabled(true);
+              controller.setSpeakRepliesEnabled(true);
+            },
+          ),
+        ),
       );
     }
   } catch (_) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not download ${model.label}')),
+        SnackBar(
+          content: Text(
+            '${model.label} download failed. Check the connection and free storage, then retry.',
+          ),
+        ),
       );
     }
   } finally {
-    downloading.setDownloading(false);
+    downloading.finish();
   }
 }
+
+Future<bool> _confirmLargePocketSpeechDownload(
+  BuildContext context,
+  PocketSpeechModel model,
+) async =>
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Download ${model.label}?'),
+        content: Text(
+          '${model.downloadSummary}. Keep Hermes Wing open until the verified download finishes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Download'),
+          ),
+        ],
+      ),
+    ) ??
+    false;
+
+Future<void> _deletePocketSpeechAssets(
+  BuildContext context,
+  WidgetRef ref,
+  WingVoiceSettingsController controller,
+  PocketSpeechAssetDownloadService downloader,
+  PocketSpeechModel model,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Remove ${model.label} voice pack?'),
+      content: Text(
+        'This frees ${model.downloadSize} of app storage. You can download it again later.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Remove'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    await downloader.delete(model);
+    controller.clearPocketSpeechVoicePack();
+    ref.invalidate(pocketSpeechVoiceNamesProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${model.label} voice pack removed')),
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not remove ${model.label} voice pack')),
+      );
+    }
+  }
+}
+
+class _PocketSpeechAssetSubtitle extends StatelessWidget {
+  const _PocketSpeechAssetSubtitle({
+    required this.model,
+    required this.ready,
+    required this.configured,
+    required this.progress,
+  });
+
+  final PocketSpeechModel model;
+  final bool ready;
+  final bool configured;
+  final PocketSpeechDownloadProgress? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeProgress = progress?.model == model ? progress : null;
+    if (activeProgress != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${activeProgress.part.label} · ${_formatDownloadBytes(activeProgress.receivedBytes)} of ${_formatDownloadBytes(activeProgress.totalBytes)}',
+            ),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(
+              value: activeProgress.fraction,
+              semanticsLabel: '${model.label} download progress',
+              semanticsValue:
+                  '${(activeProgress.fraction * 100).round()} percent',
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(model.downloadSummary),
+        Text(
+          ready
+              ? 'Installed and stored on this device for offline use'
+              : configured
+              ? 'Verified download; stored on this device. Keep the app open.'
+              : 'This build does not configure a verified download source',
+        ),
+      ],
+    );
+  }
+}
+
+String _formatDownloadBytes(int bytes) =>
+    '${(bytes / 1000 / 1000).toStringAsFixed(bytes < 100000000 ? 1 : 0)} MB';
 
 String _connectionStatusLabel(HermesConnectionStatus status) =>
     switch (status) {

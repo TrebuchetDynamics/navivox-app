@@ -47,9 +47,17 @@ class PackagePocketSpeechEngine implements PocketSpeechEngine {
             voicesAsset: voicePack.voicesPath,
           ),
         );
-        _synthesize = (text, {voice, speed = 1.0}) => voice != null
-            ? tts.synthesizeWav(text, voice: voice, speed: speed)
-            : tts.synthesizeWav(text, speed: speed);
+        _synthesize = (text, {voice, speed = 1.0}) {
+          if (voice == null || !KokoroCatalog.supportsVoice(voice)) {
+            return tts.synthesizeWav(text, speed: speed);
+          }
+          return tts.synthesizeWav(
+            text,
+            voice: voice,
+            language: KokoroCatalog.voice(voice).languageCode,
+            speed: speed,
+          );
+        };
         _dispose = tts.dispose;
     }
   }

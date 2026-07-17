@@ -1,17 +1,52 @@
 import '../../../../shared/voice/voice_settings.dart';
 
+enum PocketSpeechDownloadPart {
+  model('Model'),
+  voices('Voice data');
+
+  const PocketSpeechDownloadPart(this.label);
+
+  final String label;
+}
+
+class PocketSpeechDownloadProgress {
+  const PocketSpeechDownloadProgress({
+    required this.model,
+    required this.part,
+    required this.receivedBytes,
+    required this.totalBytes,
+  });
+
+  final PocketSpeechModel model;
+  final PocketSpeechDownloadPart part;
+  final int receivedBytes;
+  final int totalBytes;
+
+  double get fraction =>
+      totalBytes <= 0 ? 0 : (receivedBytes / totalBytes).clamp(0.0, 1.0);
+}
+
+typedef PocketSpeechDownloadProgressCallback =
+    void Function(PocketSpeechDownloadProgress progress);
+
 class PocketSpeechDownloadSpec {
   const PocketSpeechDownloadSpec({
     required this.modelUrl,
     required this.voicesJsonUrl,
     required this.modelSha256,
     required this.voicesJsonSha256,
+    required this.modelBytes,
+    required this.voicesJsonBytes,
   });
 
   final String modelUrl;
   final String voicesJsonUrl;
   final String modelSha256;
   final String voicesJsonSha256;
+  final int modelBytes;
+  final int voicesJsonBytes;
+
+  int get totalBytes => modelBytes + voicesJsonBytes;
 
   bool get isConfigured {
     final modelUri = Uri.tryParse(modelUrl.trim());
@@ -22,7 +57,9 @@ class PocketSpeechDownloadSpec {
         voicesUri?.scheme == 'https' &&
         voicesUri!.host.isNotEmpty &&
         hashPattern.hasMatch(modelSha256.trim()) &&
-        hashPattern.hasMatch(voicesJsonSha256.trim());
+        hashPattern.hasMatch(voicesJsonSha256.trim()) &&
+        modelBytes > 0 &&
+        voicesJsonBytes > 0;
   }
 }
 
@@ -54,6 +91,14 @@ class PocketSpeechAssetDownloadConfig {
         defaultValue:
             'f9fcbecb209f112ff679905a4c9ff357dcd979a2ed0ba7ba516815d951f32b52',
       ),
+      modelBytes: int.fromEnvironment(
+        'KITTEN_MODEL_BYTES',
+        defaultValue: 24369971,
+      ),
+      voicesJsonBytes: int.fromEnvironment(
+        'KITTEN_VOICES_JSON_BYTES',
+        defaultValue: 2083829,
+      ),
     ),
     kokoro: PocketSpeechDownloadSpec(
       modelUrl: String.fromEnvironment(
@@ -76,6 +121,14 @@ class PocketSpeechAssetDownloadConfig {
         defaultValue:
             '01788eb0bc097dd0d2964072361fa1bc98d7fdb847bab3cdc6be4cc34109a566',
       ),
+      modelBytes: int.fromEnvironment(
+        'KOKORO_MODEL_BYTES',
+        defaultValue: 325532387,
+      ),
+      voicesJsonBytes: int.fromEnvironment(
+        'KOKORO_VOICES_JSON_BYTES',
+        defaultValue: 5614969,
+      ),
     ),
   );
 
@@ -90,5 +143,9 @@ class PocketSpeechAssetDownloadConfig {
 
 abstract interface class PocketSpeechAssetDownloadService {
   bool isConfigured(PocketSpeechModel model);
-  Future<PocketSpeechVoicePack> download(PocketSpeechModel model);
+  Future<PocketSpeechVoicePack> download(
+    PocketSpeechModel model, {
+    PocketSpeechDownloadProgressCallback? onProgress,
+  });
+  Future<void> delete(PocketSpeechModel model);
 }

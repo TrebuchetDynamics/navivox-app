@@ -616,8 +616,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "069a2f2bdf1db40f2f6ec95d585e1c6b6ad9ab64"
-      resolved-ref: "069a2f2bdf1db40f2f6ec95d585e1c6b6ad9ab64"
+      ref: "17f45643e65a834b6852f433e2b4b2c0a6630597"
+      resolved-ref: "17f45643e65a834b6852f433e2b4b2c0a6630597"
       url: "https://github.com/TrebuchetDynamics/pocket-speech-dart.git"
     source: git
     version: "0.1.0"

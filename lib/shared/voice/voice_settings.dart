@@ -1,11 +1,20 @@
 enum PocketSpeechModel {
-  kitten('Kitten', '≈26 MB'),
-  kokoro('Kokoro', '≈365 MB');
+  kitten('Kitten', 'About 26 MB', 26453800, 'English · 8 voices'),
+  kokoro('Kokoro', 'About 331 MB', 331147356, 'English + Spanish · 2 voices');
 
-  const PocketSpeechModel(this.label, this.downloadSize);
+  const PocketSpeechModel(
+    this.label,
+    this.downloadSize,
+    this.downloadBytes,
+    this.voiceSummary,
+  );
 
   final String label;
   final String downloadSize;
+  final int downloadBytes;
+  final String voiceSummary;
+
+  String get downloadSummary => '$downloadSize · $voiceSummary';
 }
 
 class PocketSpeechVoicePack {

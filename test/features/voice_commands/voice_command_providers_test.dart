@@ -111,6 +111,27 @@ void main() {
       }
     });
 
+    test(
+      'Pocket Speech voices are available before enabling replies',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final container = _buildContainer(tempDir);
+        addTearDown(container.dispose);
+
+        container.read(wingVoiceSettingsProvider.notifier);
+        await pumpEventQueue();
+
+        final names = await container.read(
+          pocketSpeechVoiceNamesProvider.future,
+        );
+        expect(names, equals(KittenCatalog.voices));
+        expect(
+          container.read(wingVoiceSettingsProvider).pocketSpeechTtsEnabled,
+          isFalse,
+        );
+      },
+    );
+
     test('pocket speech + kitten returns the Kitten catalog names', () async {
       SharedPreferences.setMockInitialValues({});
       final container = _buildContainer(tempDir);

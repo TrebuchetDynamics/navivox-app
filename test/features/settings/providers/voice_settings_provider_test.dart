@@ -42,12 +42,14 @@ void main() {
         ),
       );
       controller.setPocketSpeechTtsEnabled(true);
+      controller.setTtsVoiceName('ef_dora');
       controller.setPocketSpeechModel(PocketSpeechModel.kitten);
 
       final settings = container.read(wingVoiceSettingsProvider);
       expect(settings.pocketSpeechModel, PocketSpeechModel.kitten);
       expect(settings.pocketSpeechVoicePack, isNull);
       expect(settings.pocketSpeechTtsEnabled, isFalse);
+      expect(settings.ttsVoiceName, isNull);
       await pumpEventQueue();
     },
   );

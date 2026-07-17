@@ -18,7 +18,10 @@ class IoPocketSpeechAssetDownloadService
       config.specFor(model).isConfigured;
 
   @override
-  Future<PocketSpeechVoicePack> download(PocketSpeechModel model) async {
+  Future<PocketSpeechVoicePack> download(
+    PocketSpeechModel model, {
+    PocketSpeechDownloadProgressCallback? onProgress,
+  }) async {
     final spec = config.specFor(model);
     if (!spec.isConfigured) {
       throw StateError('${model.label} download is not configured.');
@@ -38,19 +41,33 @@ class IoPocketSpeechAssetDownloadService
         spec.modelUrl,
         modelTemp,
         expectedSha256: spec.modelSha256,
-        maximumBytes: model == PocketSpeechModel.kokoro
-            ? 500 * 1024 * 1024
-            : 100 * 1024 * 1024,
+        expectedBytes: spec.modelBytes,
+        onProgress: (received) => onProgress?.call(
+          PocketSpeechDownloadProgress(
+            model: model,
+            part: PocketSpeechDownloadPart.model,
+            receivedBytes: received,
+            totalBytes: spec.totalBytes,
+          ),
+        ),
       );
       await _download(
         client,
         spec.voicesJsonUrl,
         voicesTemp,
         expectedSha256: spec.voicesJsonSha256,
-        maximumBytes: 20 * 1024 * 1024,
+        expectedBytes: spec.voicesJsonBytes,
+        onProgress: (received) => onProgress?.call(
+          PocketSpeechDownloadProgress(
+            model: model,
+            part: PocketSpeechDownloadPart.voices,
+            receivedBytes: spec.modelBytes + received,
+            totalBytes: spec.totalBytes,
+          ),
+        ),
       );
       final decoded = jsonDecode(await voicesTemp.readAsString());
-      if (decoded is! Map && decoded is! List) {
+      if (decoded is! Map) {
         throw const FormatException('Pocket Speech voices must be JSON.');
       }
       await _replace(modelTemp, modelFile);
@@ -67,30 +84,46 @@ class IoPocketSpeechAssetDownloadService
     );
   }
 
+  @override
+  Future<void> delete(PocketSpeechModel model) async {
+    final base = await getApplicationSupportDirectory();
+    final dir = Directory('${base.path}/pocket_speech/${model.name}');
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
+
   Future<void> _download(
     HttpClient client,
     String url,
     File file, {
     required String expectedSha256,
-    required int maximumBytes,
+    required int expectedBytes,
+    required void Function(int receivedBytes) onProgress,
   }) async {
     if (await file.exists()) await file.delete();
     final response = await _openHttps(client, Uri.parse(url));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw HttpException('GET $url failed with ${response.statusCode}');
     }
+    if (response.contentLength >= 0 &&
+        response.contentLength != expectedBytes) {
+      throw StateError('Pocket Speech asset size mismatch.');
+    }
     final sink = file.openWrite();
     var received = 0;
     try {
       await for (final chunk in response.timeout(const Duration(seconds: 30))) {
         received += chunk.length;
-        if (received > maximumBytes) {
-          throw StateError('Pocket Speech asset exceeded its size limit.');
+        if (received > expectedBytes) {
+          throw StateError('Pocket Speech asset exceeded its expected size.');
         }
         sink.add(chunk);
+        onProgress(received);
       }
     } finally {
       await sink.close();
+    }
+    if (received != expectedBytes) {
+      throw StateError('Pocket Speech asset size mismatch.');
     }
     final digest = await sha256.bind(file.openRead()).first;
     if (digest.toString().toLowerCase() !=
