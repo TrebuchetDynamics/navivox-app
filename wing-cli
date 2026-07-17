@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'EOF'
+Usage: ./wing-cli [info|token|link|qr] [options]
+
+Commands:
+  info   Print the Tailscale address and Hermes endpoint (default)
+  token  Print API_SERVER_KEY explicitly; never included in info or QR output
+  link   Create and print a short-lived, single-use wing:// pairing link
+  qr     Create a pairing link and render it in the terminal
+
+Options:
+  --origin URL    Hermes API origin (default: WING_HERMES_URL or Tailscale IP)
+  --label NAME    Device label (default: hostname)
+  --scopes CSV    Pairing scopes (default: basic Hermes Wing chat access)
+  -h, --help      Show this help
+
+Environment overrides:
+  WING_HERMES_URL, WING_HERMES_PORT, WING_HERMES_TOKEN, WING_HERMES_SCOPES
+EOF
+}
+
+env_path() {
+  command -v hermes >/dev/null 2>&1 || {
+    echo "hermes is required, or set WING_HERMES_TOKEN." >&2
+    return 1
+  }
+  hermes config env-path | tail -1
+}
+
+env_value() {
+  python3 - "$1" "$2" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1]).expanduser()
+key = sys.argv[2]
+if path.is_file():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name.strip() == key:
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            print(value)
+            break
+PY
+}
+
+api_token() {
+  if [[ -n "${WING_HERMES_TOKEN:-}" ]]; then
+    printf '%s\n' "$WING_HERMES_TOKEN"
+    return
+  fi
+  local path token
+  path="$(env_path)"
+  token="$(env_value "$path" API_SERVER_KEY)"
+  if [[ -z "$token" ]]; then
+    echo "API_SERVER_KEY is not configured in $path." >&2
+    return 1
+  fi
+  printf '%s\n' "$token"
+}
+
+tailscale_ip() {
+  command -v tailscale >/dev/null 2>&1 || return 1
+  tailscale ip -4 2>/dev/null | head -1
+}
+
+hermes_port() {
+  if [[ -n "${WING_HERMES_PORT:-}" ]]; then
+    printf '%s\n' "$WING_HERMES_PORT"
+    return
+  fi
+  local path port=""
+  if path="$(env_path 2>/dev/null)"; then
+    port="$(env_value "$path" API_SERVER_PORT)"
+  fi
+  printf '%s\n' "${port:-8642}"
+}
+
+default_origin() {
+  if [[ -n "${WING_HERMES_URL:-}" ]]; then
+    printf '%s\n' "${WING_HERMES_URL%/}"
+    return
+  fi
+  local ip
+  ip="$(tailscale_ip)" || {
+    echo "No Tailscale IPv4 address found; pass --origin or set WING_HERMES_URL." >&2
+    return 1
+  }
+  printf 'http://%s:%s\n' "$ip" "$(hermes_port)"
+}
+
+render_qr() {
+  local payload="$1" candidate vendor=""
+  for candidate in \
+    "$script_dir/vendor/qrcodegen.py" \
+    "$script_dir/.wing-cli/qrcodegen.py" \
+    "$script_dir/../share/wing-cli/qrcodegen.py" \
+    "/usr/local/share/wing-cli/qrcodegen.py"; do
+    if [[ -f "$candidate" ]]; then
+      vendor="$candidate"
+      break
+    fi
+  done
+  [[ -n "$vendor" ]] || {
+    echo "Vendored QR encoder not found; reinstall wing-cli." >&2
+    return 1
+  }
+
+  python3 -B - "$vendor" 3<<<"$payload" <<'PY'
+import importlib.util
+import os
+import sys
+
+spec = importlib.util.spec_from_file_location("wing_cli_qrcodegen", sys.argv[1])
+if spec is None or spec.loader is None:
+    raise SystemExit("Could not load the vendored QR encoder")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+payload = os.fdopen(3, encoding="utf-8").read().strip()
+qr = module.QrCode.encode_text(payload, module.QrCode.Ecc.MEDIUM)
+border = 4
+for y in range(-border, qr.get_size() + border):
+    row = []
+    for x in range(-border, qr.get_size() + border):
+        row.append("\x1b[40m  " if qr.get_module(x, y) else "\x1b[47m  ")
+    print("".join(row) + "\x1b[0m")
+PY
+}
+
+create_pairing_link() {
+  local origin="$1" label="$2" scopes="$3" token
+  token="$(api_token)"
+  python3 - "$origin" "$label" "$scopes" 3<<<"$token" <<'PY'
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+origin, label, raw_scopes = sys.argv[1:]
+parts = urllib.parse.urlsplit(origin)
+if (
+    parts.scheme not in {"http", "https"}
+    or not parts.hostname
+    or parts.username is not None
+    or parts.password is not None
+    or parts.path not in {"", "/"}
+    or parts.query
+    or parts.fragment
+):
+    raise SystemExit("--origin must be an http(s) origin without credentials, path, query, or fragment")
+
+host = f"[{parts.hostname}]" if ":" in parts.hostname else parts.hostname
+netloc = f"{host}:{parts.port}" if parts.port else host
+origin = urllib.parse.urlunsplit((parts.scheme, netloc, "", "", ""))
+scopes = [scope.strip() for scope in raw_scopes.split(",") if scope.strip()]
+valid_domains = {"chat", "sessions", "profiles", "providers", "skills", "tools", "memory", "tasks", "gateway", "settings", "models"}
+if not scopes or any(
+    scope != "*" and (scope.count(":") != 1 or scope.split(":")[0] not in valid_domains or scope.split(":")[1] not in {"read", "write"})
+    for scope in scopes
+):
+    raise SystemExit("--scopes must be a comma-separated list of valid domain:read/write scopes")
+
+token = os.fdopen(3, encoding="utf-8").read().strip()
+request = urllib.request.Request(
+    origin + "/v1/operator/enrollments",
+    data=json.dumps({"label": label, "origin": origin, "scopes": scopes}).encode(),
+    headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(request, timeout=10) as response:
+        payload = json.load(response)
+except urllib.error.HTTPError as error:
+    if error.code == 404:
+        raise SystemExit(
+            "Hermes does not support secure Wing enrollment "
+            "(/v1/operator/enrollments returned 404). Update Hermes Agent; "
+            "access tokens are intentionally never placed in QR codes."
+        ) from None
+    detail = error.read(500).decode("utf-8", "replace")
+    raise SystemExit(f"Hermes enrollment failed ({error.code}): {detail}") from None
+except urllib.error.URLError as error:
+    raise SystemExit(f"Could not reach Hermes at {origin}: {error.reason}") from None
+
+pairing = urllib.parse.urlsplit(str(payload.get("pairing_uri", "")))
+code = urllib.parse.parse_qs(pairing.query).get("code", [""])[0]
+if not code:
+    raise SystemExit("Hermes enrollment response did not include a pairing code")
+query = urllib.parse.urlencode({"origin": origin, "code": code})
+print(urllib.parse.urlunsplit(("wing", "connect", "", query, "")))
+PY
+}
+
+command="${1:-info}"
+if [[ $# -gt 0 ]]; then shift; fi
+origin=""
+label="$(hostname)"
+scopes="${WING_HERMES_SCOPES:-chat:read,chat:write,sessions:read,sessions:write,profiles:read}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --origin) origin="${2:?--origin requires a URL}"; shift 2 ;;
+    --label) label="${2:?--label requires a name}"; shift 2 ;;
+    --scopes) scopes="${2:?--scopes requires CSV}"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+case "$command" in
+  -h|--help|help)
+    usage
+    ;;
+  info)
+    origin="${origin:-$(default_origin)}"
+    printf 'Tailscale IPv4: %s\n' "$(tailscale_ip 2>/dev/null || echo unavailable)"
+    printf 'Hermes endpoint: %s\n' "$origin"
+    if api_token >/dev/null 2>&1; then
+      echo "Access token: configured (run './wing-cli token' to reveal)"
+    else
+      echo "Access token: not configured"
+    fi
+    ;;
+  token)
+    echo "Warning: this is a superuser credential; do not share, log, or encode it in a QR." >&2
+    api_token
+    ;;
+  link)
+    origin="${origin:-$(default_origin)}"
+    create_pairing_link "$origin" "$label" "$scopes"
+    ;;
+  qr)
+    origin="${origin:-$(default_origin)}"
+    link="$(create_pairing_link "$origin" "$label" "$scopes")"
+    printf 'Hermes endpoint: %s\nScopes: %s\nScan this short-lived, single-use code with Hermes Wing:\n' "$origin" "$scopes"
+    render_qr "$link"
+    ;;
+  *)
+    echo "Unknown command: $command" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

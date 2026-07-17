@@ -275,4 +275,148 @@ void main() {
       contains('WING_FAIL_ON_BLOCKERS=1 npm run hermes:readiness-audit'),
     );
   });
+
+  test('wing-cli keeps token output explicit', () async {
+    const token = 'test-superuser-token';
+    final environment = {
+      ...Platform.environment,
+      'WING_HERMES_URL': 'https://hermes.example',
+      'WING_HERMES_TOKEN': token,
+    };
+
+    final info = await Process.run('./wing-cli', [
+      'info',
+    ], environment: environment);
+    expect(info.exitCode, 0);
+    expect(info.stdout, contains('https://hermes.example'));
+    expect(info.stdout, isNot(contains(token)));
+
+    final reveal = await Process.run('./wing-cli', [
+      'token',
+    ], environment: environment);
+    expect(reveal.exitCode, 0);
+    expect((reveal.stdout as String).trim(), token);
+  });
+
+  test('wing-cli creates a pairing link without exposing the token', () async {
+    const token = 'test-superuser-token';
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    final origin = 'http://${server.address.address}:${server.port}';
+    final requestHandled = server.first.then((request) async {
+      expect(request.method, 'POST');
+      expect(request.uri.path, '/v1/operator/enrollments');
+      expect(
+        request.headers.value(HttpHeaders.authorizationHeader),
+        'Bearer $token',
+      );
+      final body = jsonDecode(await utf8.decoder.bind(request).join()) as Map;
+      expect(body['label'], 'test-phone');
+      expect(body['origin'], origin);
+
+      request.response
+        ..statusCode = HttpStatus.created
+        ..write(
+          jsonEncode({
+            'pairing_uri':
+                'navivox://connect?origin=${Uri.encodeQueryComponent(origin)}&code=one-time',
+          }),
+        );
+      await request.response.close();
+    });
+
+    final link = await Process.run(
+      './wing-cli',
+      ['link', '--origin', origin, '--label', 'test-phone'],
+      environment: {...Platform.environment, 'WING_HERMES_TOKEN': token},
+    );
+    await requestHandled;
+
+    expect(link.exitCode, 0, reason: link.stderr as String);
+    final pairing = Uri.parse((link.stdout as String).trim());
+    expect(pairing.scheme, 'wing');
+    expect(pairing.host, 'connect');
+    expect(pairing.queryParameters['origin'], origin);
+    expect(pairing.queryParameters['code'], 'one-time');
+    expect(link.stdout, isNot(contains(token)));
+  });
+
+  test('wing-cli explains when Hermes lacks secure enrollment', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    final origin = 'http://${server.address.address}:${server.port}';
+    final requestHandled = server.first.then((request) async {
+      request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
+    });
+
+    final qr = await Process.run(
+      './wing-cli',
+      ['qr', '--origin', origin],
+      environment: {
+        ...Platform.environment,
+        'WING_HERMES_TOKEN': 'test-superuser-token',
+      },
+    );
+    await requestHandled;
+
+    expect(qr.exitCode, isNot(0));
+    expect(qr.stderr, contains('does not support secure Wing enrollment'));
+    expect(qr.stderr, contains('never placed in QR codes'));
+  });
+
+  test('wing-cli renders QR without an external package', () async {
+    const token = 'test-superuser-token';
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    final origin = 'http://${server.address.address}:${server.port}';
+    final requestHandled = server.first.then((request) async {
+      request.response
+        ..statusCode = HttpStatus.created
+        ..write(
+          jsonEncode({
+            'pairing_uri':
+                'navivox://connect?origin=${Uri.encodeQueryComponent(origin)}&code=one-time',
+          }),
+        );
+      await request.response.close();
+    });
+
+    final qr = await Process.run(
+      './wing-cli',
+      ['qr', '--origin', origin],
+      environment: {...Platform.environment, 'WING_HERMES_TOKEN': token},
+    );
+    await requestHandled;
+
+    expect(qr.exitCode, 0, reason: qr.stderr as String);
+    expect(qr.stdout, contains('\x1b[40m'));
+    expect(qr.stdout, contains('\x1b[47m'));
+    expect(qr.stdout, isNot(contains(token)));
+  });
+
+  test('wing-cli installer creates a runnable global command', () async {
+    final installDir = await Directory.systemTemp.createTemp(
+      'wing-cli-install-',
+    );
+    addTearDown(() => installDir.delete(recursive: true));
+
+    final install = await Process.run('./install-wing-cli.sh', [
+      '--prefix',
+      installDir.path,
+    ]);
+    expect(install.exitCode, 0, reason: install.stderr as String);
+
+    final installed = File('${installDir.path}/wing-cli');
+    expect(installed.existsSync(), isTrue);
+    expect(installed.statSync().mode & 0x49, isNonZero);
+    expect(
+      File('${installDir.path}/.wing-cli/qrcodegen.py').existsSync(),
+      isTrue,
+    );
+
+    final help = await Process.run(installed.path, ['--help']);
+    expect(help.exitCode, 0);
+    expect(help.stdout, contains('Usage: ./wing-cli'));
+  });
 }
