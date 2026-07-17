@@ -123,7 +123,16 @@ void main() {
     await tester.scrollUntilVisible(speed, 300);
 
     expect(find.byKey(const ValueKey('voice-pocket-speech-voice')), findsOne);
-    expect(find.byKey(const ValueKey('voice-pocket-speech-preview')), findsOne);
+    final preview = find.byKey(const ValueKey('voice-pocket-speech-preview'));
+    expect(preview, findsOne);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.descendant(of: preview, matching: find.byType(OutlinedButton)),
+          )
+          .onPressed,
+      isNotNull,
+    );
     expect(speed, findsOne);
     expect(find.text('About 26 MB · English · 8 voices'), findsOneWidget);
     expect(find.textContaining('stored on this device'), findsOneWidget);
