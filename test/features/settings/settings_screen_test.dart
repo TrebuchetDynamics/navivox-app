@@ -98,7 +98,11 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'wing.voice.pocket_speech_model': 'kitten',
+      'wing.voice.kokoro_model_path': '/models/kitten/model.onnx',
+      'wing.voice.kokoro_voices_path': '/models/kitten/voices.json',
+    });
     final channel = FakeHermesChannel();
     addTearDown(channel.dispose);
 
