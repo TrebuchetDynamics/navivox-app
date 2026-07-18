@@ -211,7 +211,7 @@ Current provider options include aggregators, first-party providers, local serve
 
 Sources: `../hermes-desktop/src/renderer/src/screens/Providers/Providers.tsx:135-1088`, `../hermes-desktop/src/renderer/src/constants.ts:37-412`, `../hermes-desktop/src/renderer/src/components/ProviderKeysSection.tsx`, `../hermes-desktop/src/renderer/src/components/RegistryBrowserModal.tsx:28-235`, `../hermes-desktop/src/renderer/src/components/AuxiliaryTasksSection.tsx:21-341`.
 
-**Wing disposition:** **contract-gated**. Secrets must be write-only, profile-scoped, and never returned. Generic `.env` or YAML access is not a Wing contract.
+**Wing disposition:** exact scoped administration remains **contract-gated**. When it is absent but the gateway advertises `GET /v1/models`, Wing shows a bounded read-only runtime model inventory without credential or assignment controls. Secrets must be write-only, profile-scoped, and never returned. Generic `.env` or YAML access is not a Wing contract.
 
 ### 10. Discover marketplace
 

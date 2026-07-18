@@ -515,6 +515,7 @@ void main() {
   testWidgets(
     'shows advertised runtime models when admin APIs are unavailable',
     (tester) async {
+      final oversizedModel = List.filled(140, 'm').join();
       final channel = FakeHermesChannel(
         capabilities: HermesCapabilityDocument.fromJson({
           'schema_version': 1,
@@ -523,7 +524,7 @@ void main() {
             'models': {'method': 'GET', 'path': '/v1/models'},
           },
         }),
-        models: const ['hermes-agent', 'openrouter/example'],
+        models: ['hermes-agent', 'openrouter/example', oversizedModel],
       );
       addTearDown(channel.dispose);
 
@@ -533,6 +534,8 @@ void main() {
       expect(find.text('Runtime models'), findsOneWidget);
       expect(find.text('hermes-agent'), findsOneWidget);
       expect(find.text('openrouter/example'), findsOneWidget);
+      expect(find.text('${List.filled(119, 'm').join()}…'), findsOneWidget);
+      expect(find.text(oversizedModel), findsNothing);
       expect(find.text('Read-only access'), findsWidgets);
       expect(find.text('Choose model'), findsNothing);
       expect(channel.loadProvidersCalls, 0);
