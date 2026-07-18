@@ -248,10 +248,26 @@
   "localCommandsHelpBody": "These commands run on this device and are never sent to Hermes Agent.",
   "localCommandHelpDescription": "Show Wing-owned commands.",
   "localCommandToolsDescription": "Open installed skills and toolsets.",
+  "localCommandSkillsDescription": "Open installed skills.",
   "localCommandGatewayDescription": "Open gateway status.",
   "localCommandAgentsDescription": "Open gateway-scoped agents.",
   "localCommandProvidersDescription": "Open providers and models.",
+  "localCommandModelDescription": "Open provider and model management.",
   "localCommandSchedulesDescription": "Open gateway schedules.",
+  "localCommandPersonaDescription": "Show the selected agent persona.",
+  "profilePersonaTitle": "{profile} persona",
+  "@profilePersonaTitle": {
+    "placeholders": {
+      "profile": {"type": "String"}
+    }
+  },
+  "profilePersonaEmptyBody": "This agent has no persona content.",
+  "profilePersonaLoadFailed": "Persona could not be loaded: {error}",
+  "@profilePersonaLoadFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "localCommandNewDescription": "Start a new Hermes session.",
   "localCommandSessionsDescription": "Open session history.",
   "localCommandClearDescription": "Clear the current draft.",

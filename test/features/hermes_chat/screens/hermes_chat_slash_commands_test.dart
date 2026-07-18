@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wing/core/hermes/models/hermes_capabilities.dart';
+import 'package:wing/core/hermes/models/hermes_profile.dart';
 import 'package:wing/core/hermes/models/hermes_run.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
@@ -197,6 +199,29 @@ void main() {
     );
   });
 
+  testWidgets('local skills command opens installed skill inventory', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/skills',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tools destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/skills'),
+      isEmpty,
+    );
+  });
+
   testWidgets('local agents command opens the implemented Agents surface', (
     tester,
   ) async {
@@ -216,6 +241,163 @@ void main() {
     expect(find.text('Agents destination'), findsOneWidget);
     expect(
       channel.state.activeMessages.where((turn) => turn.text == '/agents'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('advertised persona command reads the selected profile SOUL', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': ['profiles:read'],
+        },
+        'features': {'session_chat_streaming': true},
+        'endpoints': {
+          'session_chat_stream': {
+            'method': 'POST',
+            'path': '/api/sessions/{session_id}/chat/stream',
+          },
+          'profile_soul': {
+            'method': 'GET',
+            'path': '/api/profiles/{name}/soul',
+            'required_scopes': ['profiles:read'],
+          },
+        },
+      }),
+      profiles: const [
+        HermesProfile(id: 'coder', displayName: 'Coder', revision: 'profile-1'),
+      ],
+      selectedProfileId: 'coder',
+      profileSoul: const HermesProfileSoul(
+        soul: 'Be concise and verify every claim.',
+        revision: 'soul-1',
+      ),
+    );
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/persona',
+    );
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('hermes-local-command-persona')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-local-command-persona')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Coder persona'), findsOneWidget);
+    expect(find.text('Be concise and verify every claim.'), findsOneWidget);
+    expect(channel.readProfileSoulCalls, ['coder']);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/persona'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('persona control requires the granted profiles read scope', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': <String>[],
+        },
+        'features': {'session_chat_streaming': true},
+        'endpoints': {
+          'session_chat_stream': {
+            'method': 'POST',
+            'path': '/api/sessions/{session_id}/chat/stream',
+          },
+          'profile_soul': {
+            'method': 'GET',
+            'path': '/api/profiles/{name}/soul',
+            'required_scopes': ['profiles:read'],
+          },
+        },
+      }),
+      profiles: const [
+        HermesProfile(id: 'coder', displayName: 'Coder', revision: 'p1'),
+      ],
+      selectedProfileId: 'coder',
+    );
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/persona',
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-local-command-persona')),
+      findsNothing,
+    );
+    expect(channel.readProfileSoulCalls, isEmpty);
+  });
+
+  testWidgets('unadvertised persona command stays server-owned', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/persona',
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-local-command-persona')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(channel.readProfileSoulCalls, isEmpty);
+    expect(
+      channel.state.activeMessages.any((turn) => turn.text == '/persona'),
+      isTrue,
+    );
+  });
+
+  testWidgets('local model command opens provider and model management', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/model',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Providers destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/model'),
       isEmpty,
     );
   });

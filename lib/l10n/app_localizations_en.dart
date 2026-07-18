@@ -642,6 +642,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open installed skills and toolsets.';
 
   @override
+  String get localCommandSkillsDescription => 'Open installed skills.';
+
+  @override
   String get localCommandGatewayDescription => 'Open gateway status.';
 
   @override
@@ -651,7 +654,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localCommandProvidersDescription => 'Open providers and models.';
 
   @override
+  String get localCommandModelDescription =>
+      'Open provider and model management.';
+
+  @override
   String get localCommandSchedulesDescription => 'Open gateway schedules.';
+
+  @override
+  String get localCommandPersonaDescription =>
+      'Show the selected agent persona.';
+
+  @override
+  String profilePersonaTitle(String profile) {
+    return '$profile persona';
+  }
+
+  @override
+  String get profilePersonaEmptyBody => 'This agent has no persona content.';
+
+  @override
+  String profilePersonaLoadFailed(String error) {
+    return 'Persona could not be loaded: $error';
+  }
 
   @override
   String get localCommandNewDescription => 'Start a new Hermes session.';

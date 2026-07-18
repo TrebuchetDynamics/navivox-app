@@ -1210,6 +1210,12 @@ abstract class AppLocalizations {
   /// **'Open installed skills and toolsets.'**
   String get localCommandToolsDescription;
 
+  /// No description provided for @localCommandSkillsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open installed skills.'**
+  String get localCommandSkillsDescription;
+
   /// No description provided for @localCommandGatewayDescription.
   ///
   /// In en, this message translates to:
@@ -1228,11 +1234,41 @@ abstract class AppLocalizations {
   /// **'Open providers and models.'**
   String get localCommandProvidersDescription;
 
+  /// No description provided for @localCommandModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open provider and model management.'**
+  String get localCommandModelDescription;
+
   /// No description provided for @localCommandSchedulesDescription.
   ///
   /// In en, this message translates to:
   /// **'Open gateway schedules.'**
   String get localCommandSchedulesDescription;
+
+  /// No description provided for @localCommandPersonaDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the selected agent persona.'**
+  String get localCommandPersonaDescription;
+
+  /// No description provided for @profilePersonaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{profile} persona'**
+  String profilePersonaTitle(String profile);
+
+  /// No description provided for @profilePersonaEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent has no persona content.'**
+  String get profilePersonaEmptyBody;
+
+  /// No description provided for @profilePersonaLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Persona could not be loaded: {error}'**
+  String profilePersonaLoadFailed(String error);
 
   /// No description provided for @localCommandNewDescription.
   ///

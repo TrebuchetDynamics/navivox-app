@@ -644,6 +644,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
 
   List<_LocalSlashCommand> _matchingLocalSlashCommands(
     AppLocalizations strings,
+    HermesChannelState state,
   ) {
     final draft = _composerController.text.trimLeft();
     if (!draft.startsWith('/') || draft.substring(1).contains(RegExp(r'\s'))) {
@@ -652,6 +653,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     final query = draft.substring(1).toLowerCase();
     return _localSlashCommands(
       strings,
+      state,
     ).where((item) => item.command.substring(1).startsWith(query)).toList();
   }
 
@@ -663,7 +665,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       return null;
     }
     final strings = _hermesStrings(context);
-    final commands = _matchingLocalSlashCommands(strings);
+    final commands = _matchingLocalSlashCommands(strings, channel.state);
     if (commands.isEmpty) return null;
     return Card(
       key: const ValueKey('hermes-local-command-suggestions'),
@@ -719,18 +721,20 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         break;
       case 'settings':
         context.go(AppRoutes.settings);
-      case 'tools':
+      case 'tools' || 'skills':
         context.go(AppRoutes.tools);
       case 'gateway':
         context.go(AppRoutes.gateway);
       case 'agents':
         context.go(AppRoutes.agents);
-      case 'providers':
+      case 'providers' || 'model':
         context.go(AppRoutes.providers);
       case 'schedules':
         context.go(AppRoutes.schedules);
       case 'help':
-        unawaited(_showLocalSlashCommandHelp(context));
+        unawaited(_showLocalSlashCommandHelp(context, channel));
+      case 'persona':
+        unawaited(_showCurrentPersona(context, channel));
       case 'usage':
         final turns = channel.state.activeMessages;
         final usageIndex = turns.lastIndexWhere((turn) => turn.usage != null);
@@ -755,9 +759,12 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     return true;
   }
 
-  Future<void> _showLocalSlashCommandHelp(BuildContext context) async {
+  Future<void> _showLocalSlashCommandHelp(
+    BuildContext context,
+    HermesChannel channel,
+  ) async {
     final strings = AppLocalizations.of(context);
-    final commands = _localSlashCommands(strings);
+    final commands = _localSlashCommands(strings, channel.state);
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -791,11 +798,76 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     );
   }
 
+  Future<void> _showCurrentPersona(
+    BuildContext context,
+    HermesChannel channel,
+  ) async {
+    final profileId = channel.state.selectedProfileId;
+    if (profileId == null || !channel.state.canReadProfileSoul) return;
+    final strings = AppLocalizations.of(context);
+    try {
+      final soul = await channel.readProfileSoul(profileId);
+      if (!context.mounted || channel.state.selectedProfileId != profileId) {
+        return;
+      }
+      final selected = channel.state.selectedProfile;
+      final profileLabel = selected == null || selected.displayName.isEmpty
+          ? profileId
+          : selected.displayName;
+      final content = soul.soul.trim();
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.8,
+            ),
+            child: SingleChildScrollView(
+              key: const ValueKey('hermes-profile-persona'),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      strings.profilePersonaTitle(
+                        _safeHermesUiPreview(profileLabel, maxLength: 64),
+                      ),
+                      style: Theme.of(sheetContext).textTheme.titleLarge,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SelectableText(
+                    content.isEmpty
+                        ? strings.profilePersonaEmptyBody
+                        : _safeHermesUiPreview(content, maxLength: 16384),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            strings.profilePersonaLoadFailed(_safeHermesUiError(error)),
+          ),
+        ),
+      );
+    }
+  }
+
   bool _runExactLocalSlashCommand(String text, HermesChannel channel) {
     if (_isTurnActive(channel.state)) return false;
     final commandText = text.trim().toLowerCase();
     final strings = AppLocalizations.of(context);
-    for (final command in _localSlashCommands(strings)) {
+    for (final command in _localSlashCommands(strings, channel.state)) {
       if (command.command == commandText) {
         return _runLocalSlashCommand(command, channel);
       }
@@ -803,7 +875,10 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     return false;
   }
 
-  List<_LocalSlashCommand> _localSlashCommands(AppLocalizations strings) => [
+  List<_LocalSlashCommand> _localSlashCommands(
+    AppLocalizations strings,
+    HermesChannelState state,
+  ) => [
     _LocalSlashCommand(
       id: 'new',
       command: '/new',
@@ -847,6 +922,12 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       icon: Icons.build_outlined,
     ),
     _LocalSlashCommand(
+      id: 'skills',
+      command: '/skills',
+      description: strings.localCommandSkillsDescription,
+      icon: Icons.extension_outlined,
+    ),
+    _LocalSlashCommand(
       id: 'gateway',
       command: '/gateway',
       description: strings.localCommandGatewayDescription,
@@ -865,11 +946,24 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       icon: Icons.hub_outlined,
     ),
     _LocalSlashCommand(
+      id: 'model',
+      command: '/model',
+      description: strings.localCommandModelDescription,
+      icon: Icons.memory_outlined,
+    ),
+    _LocalSlashCommand(
       id: 'schedules',
       command: '/schedules',
       description: strings.localCommandSchedulesDescription,
       icon: Icons.schedule_outlined,
     ),
+    if (state.canReadProfileSoul && state.selectedProfileId != null)
+      _LocalSlashCommand(
+        id: 'persona',
+        command: '/persona',
+        description: strings.localCommandPersonaDescription,
+        icon: Icons.psychology_outlined,
+      ),
   ];
 
   Widget _buildMobileComposer(
