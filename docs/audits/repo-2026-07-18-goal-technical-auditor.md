@@ -5,7 +5,7 @@
 - Scope: `.`
 - Branch: `main`
 - Baseline commit: `b4d47909943cbfd94ff3de8d1595746de0582df4`
-- Latest green commit: `306d6ad14a9529af3966c3cbba612dc1bf2880e0`
+- Latest green commit: `c8b39c00f0b54b2a113988bce1eda4090f0d6d82`
 - Audit passes: 1
 - Clean audit pass: not recorded
 
@@ -43,7 +43,7 @@ Mega automation contract:
 | --- | --- | --- | --- | --- | --- |
 | M0-1 | High | fixed | Restore failing baseline: flutter test --coverage --concurrency=1 | Baseline command exited 1 | 14567eec4d85447e767c952d276049845a488fb1 |
 | F-002 | Medium | blocked | Contain gateway directory startup and refresh failures | lib/features/hermes_chat/gateways/hermes_gateway_directory.dart:122-182 marks startup/refresh state before unguarded cache/store operations; lines 427-442 discard periodic/resume refresh futures. | stash@{0} |
-| F-003 | Medium | pending | Gate signed alpha publishing on repository validation | .github/workflows/release-alpha.yml:14-117 builds and publishes after compilation only; docs/runbooks/release-alpha.md:21-23 leaves format/analyze/test/audit validation as an unenforced operator instruction. | — |
+| F-003 | Medium | fixed | Gate signed alpha publishing on repository validation | .github/workflows/release-alpha.yml:14-117 builds and publishes after compilation only; docs/runbooks/release-alpha.md:21-23 leaves format/analyze/test/audit validation as an unenforced operator instruction. | c8b39c00f0b54b2a113988bce1eda4090f0d6d82 |
 | F-004 | Low | pending | Remove stale transient validation metrics from readiness documentation | docs/runbooks/hermes-readiness-audit.md:54,83 claims a current 543-test 73.07% pass; live baseline ran 427 passing cases plus one failure and measured 73.90%. | — |
 | F-005 | Medium | pending | Dependency review is knowingly red on every pull request | docs/runbooks/hermes-readiness-audit.md:16-18 records that GitHub dependency review is unsupported because the repository dependency graph is disabled while the PR workflow still runs the job. | — |
 | A-002 | Medium | pending | Deepen the Hermes transport seam | lib/core/hermes/client/hermes_api_client.dart:22-49 exposes seven verb callbacks; lib/core/hermes/client/hermes_api_transport.dart:1-74 mirrors those functions; 141 test constructors repeat transport wiring across real IO, web, stub, and fake adapters. | — |
@@ -55,6 +55,12 @@ Mega automation contract:
 - `dart format --output=none --set-exit-if-changed lib test integration_test` — exit 0
 - `flutter analyze` — exit 0
 - `flutter test --coverage --concurrency=1` — exit 1
+- `flutter test --concurrency=1` — exit 0
+- `dart format --output=none --set-exit-if-changed lib test integration_test` — exit 0
+- `flutter analyze` — exit 0
+- `flutter test --coverage --concurrency=1` — exit 0
+- `npm audit --audit-level=high` — exit 0
+- `flutter build web --release -t lib/main_e2e.dart` — exit 0
 - `flutter test --concurrency=1` — exit 0
 - `dart format --output=none --set-exit-if-changed lib test integration_test` — exit 0
 - `flutter analyze` — exit 0
