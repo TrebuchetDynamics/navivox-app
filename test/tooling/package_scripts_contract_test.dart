@@ -402,6 +402,62 @@ void main() {
     expect(output.toString(), isNot(contains(token)));
   });
 
+  test('Maestro fixtures use the documented canonical paths', () {
+    final audit = File(
+      'docs/runbooks/hermes-readiness-audit.md',
+    ).readAsStringSync();
+    for (final path in [
+      'scripts/maestro/chat_ux_qa.yaml',
+      'scripts/maestro/multi_gateway_chat.yaml',
+    ]) {
+      final flow = File(path);
+      final command = 'maestro check-syntax $path';
+      expect(flow.existsSync(), isTrue, reason: path);
+      expect(flow.readAsStringSync(), contains(command), reason: path);
+      expect(audit, contains('`$command`'), reason: path);
+    }
+  });
+
+  test('Maestro fixtures omit environment-specific sensitive data', () {
+    final flows = Directory(
+      'scripts/maestro',
+    ).listSync().whereType<File>().where((file) => file.path.endsWith('.yaml'));
+    for (final flow in flows) {
+      final content = flow.readAsStringSync();
+      final forbidden = [
+        RegExp(r'(?:https?|wing)://'),
+        RegExp(
+          r'(api[_-]?key|authorization|bearer|password|token|secret)\s*[:=]',
+          caseSensitive: false,
+        ),
+        RegExp(
+          r'(?<![\d.])(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|100\.)',
+        ),
+        RegExp(r'\beyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{8,}'),
+      ];
+      for (final pattern in forbidden) {
+        expect(content, isNot(matches(pattern)), reason: flow.path);
+      }
+      expect(
+        content,
+        isNot(matches(RegExp(r'assertVisible:.*·\s*(online|offline)'))),
+        reason: '${flow.path} must not bind to a local gateway label',
+      );
+
+      var isolatedChat = false;
+      for (final line in content.split('\n')) {
+        if (line.contains('tapOn:') && line.contains('New session')) {
+          isolatedChat = true;
+        }
+        if (line.contains('takeScreenshot:') &&
+            !line.contains('contacts') &&
+            !isolatedChat) {
+          fail('${flow.path} captures a live transcript before isolation');
+        }
+      }
+    }
+  });
+
   test('wing-cli installer creates a runnable global command', () async {
     final installDir = await Directory.systemTemp.createTemp(
       'wing-cli-install-',

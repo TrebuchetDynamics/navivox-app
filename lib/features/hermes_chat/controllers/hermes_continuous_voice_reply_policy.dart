@@ -17,12 +17,14 @@ HermesChatTurn? hermesContinuousVoiceReplyToSpeak({
 
   HermesChatTurn? latest;
   for (final turn in turns) {
-    if (turn.author != HermesTurnAuthor.assistant) continue;
-    if (turn.status != HermesTurnStatus.completed) continue;
-    if (turn.text.trim().isEmpty) continue;
-    latest = turn;
+    if (turn.author == HermesTurnAuthor.assistant) latest = turn;
   }
 
-  if (latest == null || latest.id == lastSpokenTurnId) return null;
+  if (latest == null ||
+      latest.status != HermesTurnStatus.completed ||
+      latest.text.trim().isEmpty ||
+      latest.id == lastSpokenTurnId) {
+    return null;
+  }
   return latest;
 }

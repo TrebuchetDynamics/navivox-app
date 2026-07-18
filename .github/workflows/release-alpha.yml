@@ -37,10 +37,6 @@ jobs:
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
           printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/wing-release.jks"
-      - name: Build Cactus engine (arm64)
-        run: |
-          sudo apt-get update && sudo apt-get install -y cmake ninja-build
-          bash scripts/spike/build_cactus_engine.sh
       - name: Build signed release APK
         env:
           WING_RELEASE_STORE_FILE: ${{ runner.temp }}/wing-release.jks
@@ -50,7 +46,6 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release
-          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -q "libcactus_engine.so" || { echo "engine .so missing from APK" >&2; exit 1; }
           sha256sum build/app/outputs/flutter-apk/app-release.apk > hermes-wing-android.apk.sha256
           cp build/app/outputs/flutter-apk/app-release.apk hermes-wing-android.apk
       - uses: actions/upload-artifact@v7

@@ -38,6 +38,16 @@ Hermes backend.
 - **Move between layouts** — use a compact mobile flow or a desktop workspace
   from one adaptive codebase.
 
+### Multiple Hermes gateways
+
+Hermes Wing treats each saved Hermes Agent endpoint as a gateway and shows its
+Hermes profiles in one activity-ordered contact list. Only the open contact owns
+the full streaming channel; inactive gateways refresh health and session
+summaries over lightweight requests. Opening a contact activates that endpoint,
+Hermes profile, and its latest session; older sessions remain available from
+the chat header. Offline gateways remain visible from cached non-secret
+summaries.
+
 ## From source to first session
 
 Prerequisites: **Flutter 3.44.2**, the SDK for your target platform, and a

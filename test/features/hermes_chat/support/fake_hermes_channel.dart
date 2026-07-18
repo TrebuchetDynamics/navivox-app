@@ -52,6 +52,8 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     this.selectSessionFailureMessage = 'select failed',
     this.approvalResponsesFail = false,
     this.approvalResponseGate,
+    this.connectGate,
+    this.sendTextGate,
     this.createProfileFails = false,
     this.renameProfileFails = false,
     this.deleteProfileFails = false,
@@ -92,7 +94,10 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
       FakeHermesChannel(status: HermesConnectionStatus.disconnected);
 
   final List<FakeHermesConnectCall> connectCalls = [];
+  int disconnectCalls = 0;
   final List<String> sentVoiceTranscripts = [];
+  final List<String?> sentImageDataUrls = [];
+  final List<String?> sentTextAttachments = [];
   final List<String?> createSessionCalls = [];
   final List<String> selectSessionCalls = [];
   final List<Map<String, String>> renameSessionCalls = [];
@@ -124,6 +129,8 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   String selectSessionFailureMessage;
   final bool approvalResponsesFail;
   final Future<void> Function()? approvalResponseGate;
+  final Future<void> Function()? connectGate;
+  final Future<void> Function()? sendTextGate;
 
   /// Profile-mutation failure injection. When set, the corresponding mutation
   /// records its call, refreshes nothing successfully, and throws a
@@ -161,6 +168,13 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   @override
   Future<void> connect({required String baseUrl, String? apiKey}) async {
     connectCalls.add(FakeHermesConnectCall(baseUrl: baseUrl, apiKey: apiKey));
+    final gate = connectGate;
+    if (gate != null) {
+      _setState(
+        const HermesChannelState(status: HermesConnectionStatus.connecting),
+      );
+      await gate();
+    }
     const sessionId = 'sess_1';
     _setState(
       HermesChannelState(
@@ -176,6 +190,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
 
   @override
   Future<void> disconnect() async {
+    disconnectCalls++;
     _setState(const HermesChannelState());
   }
 
@@ -488,8 +503,28 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   }
 
   @override
-  Future<void> sendText(String text) async {
-    _appendExchange(text);
+  Future<void> sendText(
+    String text, {
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
+  }) async {
+    sentImageDataUrls.add(imageDataUrl);
+    sentTextAttachments.add(textAttachment);
+    final displayText = imageDataUrl != null
+        ? '${text.trim()}\n\n[Image: ${attachmentName ?? 'attachment'}]'.trim()
+        : textAttachment != null
+        ? '${text.trim()}\n\n[File: ${attachmentName ?? 'attachment.txt'}]'
+              .trim()
+        : text;
+    final gate = sendTextGate;
+    if (gate == null) {
+      _appendExchange(displayText);
+      return;
+    }
+    beginStreamingTurn(displayText);
+    await gate();
+    completeStreamingTurn(text: 'Echo: $displayText');
   }
 
   void emitApprovalRequest(HermesApprovalRequest request) {

@@ -15,6 +15,6 @@ test('Hermes connect screen screenshot', async ({ page }) => {
 
 test('settings screen screenshot', async ({ page }) => {
   await open(page, '#/settings');
-  await expect(page.getByText('Hermes Agent dashboard').first()).toBeVisible();
+  await expect(page.getByText('Connect another gateway').first()).toBeVisible();
   await page.screenshot({ path: 'playwright/screenshots/settings.png', fullPage: true });
 });

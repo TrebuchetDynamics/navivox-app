@@ -147,6 +147,9 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
   final String? localeId;
   final Duration pauseFor;
   final bool onDeviceOnly;
+  bool _initialized = false;
+  void Function(Object error)? _onError;
+  void Function(String status)? _onStatus;
 
   @override
   Future<void> cancel() => _engine.cancel();
@@ -202,7 +205,7 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       log('hasPermission=$permissionBeforeInitialize before initialize');
 
       final available = await bounded(
-        _engine.initialize(
+        _initialize(
           onError: completeWithError,
           onStatus: (status) {
             log('status=$status');
@@ -294,6 +297,20 @@ class SpeechToTextVoiceCaptureService implements VoiceCaptureService {
       if (normalized is SpeechToTextCaptureFailure) throw normalized;
       throw SpeechToTextCaptureFailure(error);
     }
+  }
+
+  Future<bool> _initialize({
+    required void Function(Object error) onError,
+    required void Function(String status) onStatus,
+  }) async {
+    _onError = onError;
+    _onStatus = onStatus;
+    if (_initialized) return true;
+    _initialized = await _engine.initialize(
+      onError: (error) => _onError?.call(error),
+      onStatus: (status) => _onStatus?.call(status),
+    );
+    return _initialized;
   }
 
   Future<bool?> _readPermissionDiagnostic(

@@ -56,6 +56,73 @@ void _hermesApiChannelConnectionTests() {
     expect(channel.state.enabledToolsets, ['default']);
   });
 
+  test('connect starts independent startup requests concurrently', () async {
+    const capabilities = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "auth": {"type": "bearer", "required": true},
+  "features": {},
+  "endpoints": {
+    "health_detailed": {"method": "GET", "path": "/health/detailed"},
+    "models": {"method": "GET", "path": "/v1/models"},
+    "skills": {"method": "GET", "path": "/v1/skills"},
+    "toolsets": {"method": "GET", "path": "/v1/toolsets"},
+    "jobs": {"method": "GET", "path": "/api/jobs"}
+  }
+}
+''';
+    final concurrentPaths = {
+      '/health/detailed',
+      '/v1/models',
+      '/v1/skills',
+      '/v1/toolsets',
+      '/api/jobs',
+      '/api/sessions',
+    };
+    final started = <String>[];
+    final firstStarted = Completer<void>();
+    final release = Completer<void>();
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          if (concurrentPaths.contains(uri.path)) {
+            started.add(uri.path);
+            if (!firstStarted.isCompleted) firstStarted.complete();
+            await release.future;
+          }
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => capabilities,
+            '/health/detailed' => '{"status":"ok"}',
+            '/v1/models' => _modelsFixture,
+            '/v1/skills' => _skillsFixture,
+            '/v1/toolsets' => _toolsetsFixture,
+            '/api/jobs' => _jobsFixture,
+            '/api/sessions' => '{"object":"list","data":[]}',
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    final connect = channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    addTearDown(() async {
+      if (!release.isCompleted) release.complete();
+      await connect;
+      channel.dispose();
+    });
+
+    await firstStarted.future;
+    await pumpEventQueue();
+
+    expect(started.toSet(), concurrentPaths);
+    release.complete();
+    await connect;
+    expect(channel.state.status, HermesConnectionStatus.connected);
+  });
+
   test('connect distinguishes failed optional inventory from empty', () async {
     final channel = HermesApiChannel(
       clientBuilder: (config) => HermesApiClient(
@@ -141,35 +208,37 @@ void _hermesApiChannelConnectionTests() {
     expect(channel.state.detailedHealth?.activeAgents, 0);
   });
 
-  test('connect creates a session with a generated id when none exist', () async {
-    final posts = <String, Map<String, Object?>>{};
-    final channel = HermesApiChannel(
-      sessionIdFactory: () => 'navi-test-1',
-      clientBuilder: (config) => HermesApiClient(
-        config: config,
-        get: (uri, headers) async {
-          return switch (uri.path) {
-            '/health' => '{"status":"ok"}',
-            '/v1/capabilities' => _sessionCreateCapabilitiesFixture,
-            '/api/sessions' => '{"object":"list","data":[]}',
-            '/api/sessions/navi-test-1/messages' =>
-              '{"object":"list","session_id":"navi-test-1","data":[]}',
-            _ => throw StateError('unexpected GET $uri'),
-          };
-        },
-        post: (uri, headers, body) async {
-          posts[uri.path] = {};
-          return '{"object":"hermes.session","session":{"id":"navi-test-1","source":"api_server"}}';
-        },
-      ),
-    );
+  test(
+    'connect never creates a session merely by viewing an empty gateway',
+    () async {
+      final posts = <String>[];
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => _sessionCreateCapabilitiesFixture,
+              '/api/sessions' => '{"object":"list","data":[]}',
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          post: (uri, headers, body) async {
+            posts.add(uri.path);
+            return '{}';
+          },
+        ),
+      );
 
-    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
 
-    expect(channel.state.status, HermesConnectionStatus.connected);
-    expect(channel.state.activeSessionId, 'navi-test-1');
-    expect(posts.keys, ['/api/sessions']);
-  });
+      expect(channel.state.status, HermesConnectionStatus.connected);
+      expect(channel.state.sessions, isEmpty);
+      expect(channel.state.activeSessionId, isNull);
+      expect(channel.state.messages, isEmpty);
+      expect(posts, isEmpty);
+    },
+  );
 
   test(
     'connect stays sessionless when create is absent and none exist',

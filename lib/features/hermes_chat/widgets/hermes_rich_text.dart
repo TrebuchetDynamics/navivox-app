@@ -12,33 +12,45 @@ typedef HermesUriLauncher = Future<bool> Function(Uri uri);
 
 /// Selectable GitHub-flavored Markdown used for Hermes-authored transcript text.
 class HermesRichText extends StatelessWidget {
-  const HermesRichText(this.data, {this.launchUri, super.key});
+  const HermesRichText(
+    this.data, {
+    this.launchUri,
+    this.selectable = true,
+    super.key,
+  });
 
   final String data;
   final HermesUriLauncher? launchUri;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    return SelectionArea(
-      child: MarkdownBody(
-        data: data,
-        shrinkWrap: true,
-        builders: {'pre': _HermesCodeBlockBuilder()},
-        imageBuilder: (uri, title, alt) => Text(
-          '${(alt == null || alt.trim().isEmpty) ? strings.transcriptImageFallbackLabel : alt.trim()} '
-          '(${strings.transcriptImageNotLoaded})',
-        ),
-        onTapLink: (text, href, title) {
-          final uri = href == null ? null : Uri.tryParse(href);
-          if (uri == null ||
-              !_safeLinkSchemes.contains(uri.scheme.toLowerCase())) {
-            return;
-          }
-          unawaited((launchUri ?? _launchUri)(uri));
-        },
-      ),
+    final theme = Theme.of(context);
+    final markdownStyle = MarkdownStyleSheet.fromTheme(theme).copyWith(
+      p: theme.textTheme.bodyMedium?.copyWith(height: 1.38),
+      listBullet: theme.textTheme.bodyMedium?.copyWith(height: 1.38),
+      blockSpacing: 10,
     );
+    final content = MarkdownBody(
+      data: data,
+      styleSheet: markdownStyle,
+      shrinkWrap: true,
+      builders: {'pre': _HermesCodeBlockBuilder()},
+      imageBuilder: (uri, title, alt) => Text(
+        '${(alt == null || alt.trim().isEmpty) ? strings.transcriptImageFallbackLabel : alt.trim()} '
+        '(${strings.transcriptImageNotLoaded})',
+      ),
+      onTapLink: (text, href, title) {
+        final uri = href == null ? null : Uri.tryParse(href);
+        if (uri == null ||
+            !_safeLinkSchemes.contains(uri.scheme.toLowerCase())) {
+          return;
+        }
+        unawaited((launchUri ?? _launchUri)(uri));
+      },
+    );
+    return selectable ? SelectionArea(child: content) : content;
   }
 }
 

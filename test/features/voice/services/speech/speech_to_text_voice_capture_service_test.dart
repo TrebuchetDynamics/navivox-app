@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:wing/features/voice/services/speech/speech_to_text_voice_capture_service.dart';
 import 'package:wing/shared/voice/voice_capture_service.dart';
 
@@ -20,6 +21,23 @@ void main() {
     expect(logs.join('\n'), contains('result wordsLength=21'));
     expect(engine.lastOnDevice, isTrue);
   });
+
+  test(
+    'reuses initialization while routing errors to the current capture',
+    () async {
+      final engine = _InitializeOnceSpeechToTextEngine();
+      final service = SpeechToTextVoiceCaptureService(engine: engine);
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        await expectLater(
+          service.capture(timeout: const Duration(milliseconds: 100)),
+          throwsA(isA<SpeechToTextCaptureFailure>()),
+        );
+      }
+
+      expect(engine.initializeCalls, 1);
+    },
+  );
 
   test('capture timeout also bounds speech engine initialization', () async {
     final engine = _HangingSpeechToTextEngine();
@@ -66,6 +84,44 @@ class _FakeSpeechToTextEngine implements SpeechToTextEngine {
     onResult(
       SpeechToTextSnapshot(words: words, confidence: 0.9, finalResult: true),
     );
+  }
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> cancel() async {}
+}
+
+class _InitializeOnceSpeechToTextEngine implements SpeechToTextEngine {
+  void Function(Object error)? _onError;
+  int initializeCalls = 0;
+
+  @override
+  Future<bool?> hasPermission() async => true;
+
+  @override
+  Future<bool> initialize({
+    required void Function(Object error) onError,
+    required void Function(String status) onStatus,
+  }) async {
+    initializeCalls += 1;
+    _onError ??= onError;
+    return true;
+  }
+
+  @override
+  Future<SpeechToTextLocale?> systemLocale() async => null;
+
+  @override
+  Future<void> listen({
+    required void Function(SpeechToTextSnapshot result) onResult,
+    required Duration listenFor,
+    required Duration pauseFor,
+    required String? localeId,
+    required bool onDevice,
+  }) async {
+    _onError!(SpeechRecognitionError('error_no_match', false));
   }
 
   @override

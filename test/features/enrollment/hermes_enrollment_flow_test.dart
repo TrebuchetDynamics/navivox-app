@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/l10n/app_localizations.dart';
 import 'package:wing/core/hermes/client/hermes_api_client.dart';
+import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
 import 'package:wing/features/enrollment/models/hermes_enrollment_payload.dart';
 import 'package:wing/features/enrollment/providers/hermes_enrollment_provider.dart';
 import 'package:wing/features/enrollment/services/hermes_connect_intent_source.dart';
@@ -237,23 +238,84 @@ void main() {
       expect(controller.preview, isNull);
     });
 
-    test('connectSavedEndpoint runs only after a successful save', () async {
-      var connectCalls = 0;
-      final store = FakeHermesEndpointStore();
+    test(
+      'successful enrollment appends and reloads without deletion',
+      () async {
+        var reloadCalls = 0;
+        final store = FakeHermesEndpointStore(
+          initial: const HermesEndpointConfig(
+            id: 'a',
+            label: 'Alpha',
+            baseUrl: 'https://a.example',
+            apiKey: 'a-secret',
+          ),
+        );
+        final controller = HermesEnrollmentController(
+          inspectEnrollment: ({required origin, required code}) async =>
+              _preview,
+          exchangeEnrollment: ({required origin, required code}) async =>
+              _issued,
+          endpointStore: store,
+          connectSavedEndpoint: () async {
+            reloadCalls++;
+          },
+        );
+        addTearDown(controller.dispose);
+
+        await controller.inspect(HermesEnrollmentPayload.parse(_validPayload));
+        await controller.confirm();
+
+        expect(await store.loadProfiles(), hasLength(2));
+        expect(reloadCalls, 1);
+        expect(store.deleteProfileCalls, isEmpty);
+      },
+    );
+
+    test('updating a gateway preserves every unrelated gateway', () async {
+      final store = FakeHermesEndpointStore(
+        profiles: const [
+          HermesEndpointConfig(
+            id: 'existing',
+            label: 'Old label',
+            baseUrl: 'https://hermes.example',
+            apiKey: 'old-key',
+          ),
+          HermesEndpointConfig(
+            id: 'unrelated',
+            label: 'Unrelated',
+            baseUrl: 'https://other.example',
+            apiKey: 'other-key',
+          ),
+        ],
+      );
       final controller = HermesEnrollmentController(
         inspectEnrollment: ({required origin, required code}) async => _preview,
         exchangeEnrollment: ({required origin, required code}) async => _issued,
         endpointStore: store,
-        connectSavedEndpoint: () async {
-          connectCalls++;
-        },
       );
       addTearDown(controller.dispose);
 
       await controller.inspect(HermesEnrollmentPayload.parse(_validPayload));
       await controller.confirm();
 
-      expect(connectCalls, 1);
+      final profiles = await store.loadProfiles();
+      expect(profiles, hasLength(2));
+      expect(
+        profiles
+            .singleWhere(
+              (profile) => profile.baseUrl == 'https://hermes.example',
+            )
+            .apiKey,
+        _secretToken,
+      );
+      final unrelated = profiles.singleWhere(
+        (profile) => profile.id == 'unrelated',
+      );
+      expect(unrelated.baseUrl, 'https://other.example');
+      expect(unrelated.label, 'Unrelated');
+      expect(unrelated.apiKey, 'other-key');
+      expect(store.deleteProfileCalls, isEmpty);
+      expect(store.clearCalls, 0);
     });
   });
 

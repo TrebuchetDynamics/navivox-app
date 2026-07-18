@@ -91,7 +91,12 @@ abstract interface class HermesChannel implements Listenable {
     required String revision,
   });
 
-  Future<void> sendText(String text);
+  Future<void> sendText(
+    String text, {
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
+  });
 
   /// Cancels the in-flight streaming turn on the client side only. Prefer
   /// [stopActiveTurn] when `/v1/runs` transport is active so the server

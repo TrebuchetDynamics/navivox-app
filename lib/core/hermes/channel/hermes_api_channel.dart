@@ -186,7 +186,17 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   );
 
   @override
-  Future<void> sendText(String text) => _sendText(text);
+  Future<void> sendText(
+    String text, {
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
+  }) => _sendText(
+    text,
+    imageDataUrl: imageDataUrl,
+    textAttachment: textAttachment,
+    attachmentName: attachmentName,
+  );
 
   @override
   void cancelActiveTurn() => _cancelActiveTurn();

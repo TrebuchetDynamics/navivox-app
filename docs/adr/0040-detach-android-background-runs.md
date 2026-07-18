@@ -7,7 +7,7 @@ When Hermes Wing leaves the Android foreground, it detaches presentation and may
 
 ## Background transition
 
-- Microphone capture, continuous voice, speech recognition, text-to-speech, and local voice-command listening stop immediately; late results are discarded.
+- Microphone capture, continuous voice, speech recognition, and text-to-speech stop immediately; late results are discarded.
 - Draft text remains inert in memory under ADR 0030. In-memory follow-up queues, approval affordances, and pending client mutations are invalidated and never replayed automatically.
 - Backgrounding itself sends no stop, approval, tool, task, or administrative command.
 - The app releases transport and media resources when Android requires it. Process termination may discard in-memory drafts and stale snapshots.

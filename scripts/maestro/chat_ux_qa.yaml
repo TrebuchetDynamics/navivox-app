@@ -1,0 +1,65 @@
+# Static validation: maestro check-syntax scripts/maestro/chat_ux_qa.yaml
+# Keep selectors and prompts synthetic. Screenshot output belongs only in the
+# ignored test-results tree or an external temporary directory.
+appId: com.trebuchetdynamics.hermes.wing
+name: chat_ux_qa
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Settings.*"
+- tapOn: "(?s).*Default agent.*"
+- assertVisible: "(?s).*online.*"
+- assertVisible: "(?s).*Message Hermes….*"
+- assertNotVisible: "(?s).*Settings.*"
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s).*New session.*"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- takeScreenshot: 01_empty_chat
+
+# Exercise multiline draft layout without mutating the conversation.
+- tapOn: "(?s).*Message Hermes….*"
+- inputText: "This is a deliberately long mobile draft that verifies wrapping and keeps every composer action reachable"
+- assertVisible: "(?s).*deliberately long mobile draft.*"
+- takeScreenshot: 02_multiline_draft_keyboard
+- eraseText: 200
+
+# Exercise the real gateway turn lifecycle and render the response.
+- inputText: "What color is fresh snow Reply with one lowercase word"
+- tapOn: "(?s).*Send.*"
+- assertVisible: "(?s).*What color is fresh snow.*"
+- extendedWaitUntil:
+    visible: "(?s)^white.*"
+    timeout: 120000
+- hideKeyboard
+- takeScreenshot: 03_live_response
+
+# Exercise session discovery and the empty-search state.
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s).*Sessions.*"
+- assertVisible: "(?s).*Hermes sessions.*"
+- assertVisible: "(?s).*Search sessions.*"
+- tapOn: "(?s).*Search sessions.*"
+- inputText: "qa_no_matching_session_98765"
+- assertVisible: "(?s).*No Hermes sessions match.*"
+- takeScreenshot: 04_session_search_empty
+- hideKeyboard
+- pressKey: back
+
+# Verify navigation does not lose the completed live turn.
+- tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Settings.*"
+- tapOn: "(?s).*Default agent.*"
+- assertNotVisible: "(?s).*Settings.*"
+- assertVisible: "(?s)^white.*"
+- takeScreenshot: 05_reopened_chat_retains_turn
+- tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Settings.*"

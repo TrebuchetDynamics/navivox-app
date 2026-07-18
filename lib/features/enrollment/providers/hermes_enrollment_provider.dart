@@ -21,7 +21,6 @@ final hermesConnectIntentSourceProvider = Provider<HermesConnectIntentSource>(
 final hermesEnrollmentControllerProvider =
     ChangeNotifierProvider.autoDispose<HermesEnrollmentController>((ref) {
       final store = ref.watch(hermesEndpointStoreProvider);
-      final channel = ref.watch(hermesChannelProvider);
       return HermesEnrollmentController(
         inspectEnrollment: ({required origin, required code}) =>
             HermesApiClient(
@@ -32,7 +31,8 @@ final hermesEnrollmentControllerProvider =
               config: HermesApiConfig.fromBaseUrl(origin.toString()),
             ).exchangeEnrollment(origin: origin, code: code),
         endpointStore: store,
-        connectSavedEndpoint: () => hermesAutoConnect(channel, store),
+        connectSavedEndpoint: () =>
+            ref.read(hermesGatewayDirectoryProvider).reload(),
       );
     });
 

@@ -5,6 +5,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/hermes_api.dart';
 
 void main() {
+  test('summarizes multimodal history without exposing image data', () {
+    final message = HermesMessage.fromJson({
+      'id': 'message-1',
+      'session_id': 'session-1',
+      'role': 'user',
+      'content': [
+        {'type': 'text', 'text': 'What is this?'},
+        {
+          'type': 'image_url',
+          'image_url': {'url': 'data:image/png;base64,secret'},
+        },
+      ],
+    });
+
+    expect(message.content, 'What is this?\n\n[Image]');
+    expect(message.content, isNot(contains('secret')));
+  });
+
+  test('summarizes text-file history without exposing its contents', () {
+    final message = HermesMessage.fromJson({
+      'id': 'message-1',
+      'session_id': 'session-1',
+      'role': 'user',
+      'content':
+          'Review this\n\n<file name="notes&lt;&amp;.txt" mime="text/plain">\nsecret contents\n</file>',
+    });
+
+    expect(message.content, 'Review this\n\n[File: notes<&.txt]');
+    expect(message.content, isNot(contains('secret contents')));
+  });
+
   test('client bounds requests that never complete', () async {
     final never = Completer<String>();
     final client = HermesApiClient(
@@ -654,6 +685,37 @@ void main() {
       expect(events[1].delta, 'Hi');
     },
   );
+
+  test('serializes image content for session and run transports', () async {
+    const content = [
+      {'type': 'input_text', 'text': 'What is this?'},
+      {'type': 'input_image', 'image_url': 'data:image/png;base64,AAAA'},
+    ];
+    final posts = <String, Map<String, Object?>>{};
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      postStream: (uri, headers, body) {
+        posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        return const Stream.empty();
+      },
+      post: (uri, headers, body) async {
+        posts[uri.path] = jsonDecode(body) as Map<String, Object?>;
+        return '{"id":"run_1","session_id":"sess_1"}';
+      },
+    );
+
+    await client.streamSessionChat('sess_1', message: content).toList();
+    await client.startRun(sessionId: 'sess_1', message: content);
+
+    expect(posts['/api/sessions/sess_1/chat/stream'], {'message': content});
+    expect(posts['/v1/runs'], {
+      'session_id': 'sess_1',
+      'input': [
+        {'role': 'user', 'content': content},
+      ],
+      'message': content,
+    });
+  });
 
   test(
     'run transport: starts a run, streams run events over GET SSE, responds to approval, and stops',

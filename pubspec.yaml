@@ -22,8 +22,6 @@ dependencies:
   audioplayers: ^6.5.1
   path_provider: ^2.1.5
   crypto: ^3.0.7
-  ffi: ^2.1.4
-  archive: ^4.0.2
   pocket_speech:
     git:
       url: https://github.com/TrebuchetDynamics/pocket-speech-dart.git
@@ -31,7 +29,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
   url_launcher: ^6.3.2
   markdown: ^7.3.1
-
+  file_selector: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,19 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:wing/features/settings/providers/voice_settings_provider.dart';
+import 'package:wing/l10n/app_localizations.dart';
 import 'package:wing/shared/voice/text_to_speech_service.dart';
 import 'package:wing/shared/voice/voice_capture_service.dart';
 
 import '../support/fake_hermes_channel.dart';
 
 void main() {
-  testWidgets('mobile composer keeps voice actions readable at phone width', (
+  testWidgets('mobile composer uses Telegram-style contextual actions', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 800);
@@ -31,13 +34,154 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Hands-free'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-composer-strip')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('hermes-composer-menu-button')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('hermes-emoji-button')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Message Hermes')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hermes-attachment-button')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('hermes-mic-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-send-button')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('hermes-continuous-voice-switch')),
+      findsNothing,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      'Hello',
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hermes-send-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-mic-button')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('hermes-attachment-button')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-emoji-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-emoji-0')));
+    await tester.pumpAndSettle();
+    final composer = tester.widget<TextField>(
+      find.byKey(const ValueKey('hermes-composer-field')),
+    );
+    expect(composer.controller!.text, '😀');
+
+    await tester.tap(find.byKey(const ValueKey('hermes-composer-menu-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sessions'), findsOneWidget);
+    expect(find.text('Hands-free voice'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('voice input fills the composer without sending to Hermes', (
+  testWidgets('paperclip picks and sends images and text files', (
     tester,
   ) async {
+    final channel = FakeHermesChannel();
+    var pickerCalls = 0;
+    var pickTextFile = false;
+    final png = Uint8List.fromList([
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a,
+      0x00,
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          hermesChannelProvider.overrideWithValue(channel),
+          hermesAttachmentPickerProvider.overrideWithValue(() async {
+            pickerCalls += 1;
+            return pickTextFile
+                ? XFile.fromData(
+                    Uint8List.fromList(utf8.encode('alpha\nbeta')),
+                    name: 'notes.md',
+                    path: 'notes.md',
+                    mimeType: 'text/markdown',
+                  )
+                : XFile.fromData(png, name: 'photo.png', path: 'photo.png');
+          }),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HermesChatScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-attachment-button')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+    await tester.pump();
+    expect(pickerCalls, 1);
+    expect(find.text('photo.png'), findsOneWidget);
+    expect(find.text('Ready to send'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Attached file photo.png, ready to send'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Remove attachment'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      channel.sentImageDataUrls.single,
+      startsWith('data:image/png;base64,'),
+    );
+    expect(find.textContaining('[Image: photo.png]'), findsWidgets);
+
+    pickTextFile = true;
+    await tester.tap(find.byKey(const ValueKey('hermes-attachment-button')));
+    await tester.pump();
+    expect(pickerCalls, 2);
+    expect(find.text('notes.md'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(channel.sentTextAttachments.last, 'alpha\nbeta');
+    expect(find.textContaining('[File: notes.md]'), findsWidgets);
+  });
+
+  testWidgets('passive session changes do not show voice warnings', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: const MaterialApp(home: HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await channel.createSession();
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Continuous voice paused'), findsNothing);
+  });
+
+  testWidgets('voice icon sends the transcript immediately', (tester) async {
     final channel = FakeHermesChannel();
     final capture = FakeVoiceCaptureService(
       audio: Uint8List(0),
@@ -50,6 +194,8 @@ void main() {
       ProviderScope(
         overrides: [hermesChannelProvider.overrideWithValue(channel)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: HermesChatScreen(voiceCaptureServiceOverride: capture),
         ),
       ),
@@ -66,9 +212,9 @@ void main() {
     final composer = tester.widget<TextField>(
       find.byKey(const ValueKey('hermes-composer-field')),
     );
-    expect(composer.controller?.text, 'existing draft draft from voice');
-    expect(channel.state.activeMessages, isEmpty);
-    expect(channel.sentVoiceTranscripts, isEmpty);
+    expect(composer.controller?.text, 'existing draft');
+    expect(channel.sentVoiceTranscripts, ['draft from voice']);
+    expect(channel.state.activeMessages, isNotEmpty);
   });
 
   testWidgets(

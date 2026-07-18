@@ -47,11 +47,15 @@ class HermesMessage {
   });
 
   factory HermesMessage.fromJson(Map<String, Object?> json) {
+    final role = wingStringFromJson(json['role'], fallback: '');
     return HermesMessage(
       id: wingStringFieldFromJson(json, 'id'),
       sessionId: wingStringFieldFromJson(json, 'session_id'),
-      role: wingStringFromJson(json['role'], fallback: ''),
-      content: wingStringFromJson(json['content'], fallback: ''),
+      role: role,
+      content: _hermesMessageContent(
+        json['content'],
+        summarizeTextFiles: role == 'user',
+      ),
       toolName: wingOptionalStringFromJson(json['tool_name']),
       timestamp: wingOptionalStringFromJson(json['timestamp']),
       finishReason: wingOptionalStringFromJson(json['finish_reason']),
@@ -66,3 +70,40 @@ class HermesMessage {
   final String? timestamp;
   final String? finishReason;
 }
+
+String _hermesMessageContent(
+  Object? value, {
+  required bool summarizeTextFiles,
+}) {
+  final content = value is String
+      ? value
+      : value is List
+      ? [
+          for (final part in value)
+            if (part is Map)
+              switch (part['type']) {
+                'text' ||
+                'input_text' => wingStringFromJson(part['text'], fallback: ''),
+                'image_url' || 'input_image' => '[Image]',
+                _ => '',
+              },
+        ].where((part) => part.isNotEmpty).join('\n\n')
+      : '';
+  if (!summarizeTextFiles) return content;
+  return content
+      .replaceFirstMapped(
+        RegExp(
+          r'(?:\n\n)?<file name="([^"]*)" mime="[^"]*">\n.*\n</file>$',
+          dotAll: true,
+        ),
+        (match) => '\n\n[File: ${_unescapeAttachmentXml(match[1]!)}]',
+      )
+      .trim();
+}
+
+String _unescapeAttachmentXml(String value) => value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&gt;', '>')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&amp;', '&');

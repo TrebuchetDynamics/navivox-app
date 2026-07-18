@@ -63,6 +63,75 @@ void main() {
     expect(find.text('Providers'), findsOneWidget);
   });
 
+  testWidgets('mobile navigation stays compact and edge aligned', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(NavigationBar)).height,
+      lessThanOrEqualTo(64),
+    );
+    expect(
+      find.byKey(const ValueKey('mobile-navigation-surface')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('mobile navigation yields space to the keyboard', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('active content can claim the full mobile screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    appShellNavigationVisible.value = false;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(() => appShellNavigationVisible.value = true);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
   testWidgets('app shell exposes Hermes and Settings destinations', (
     tester,
   ) async {
@@ -84,5 +153,10 @@ void main() {
     expect(find.text('Profiles'), findsNothing);
     expect(find.text('Memory'), findsNothing);
     expect(find.text('Config'), findsNothing);
+  });
+
+  test('settings detail routes remain settings locations', () {
+    expect(AppRoutes.isSettingsLocation(AppRoutes.settingsVoice), isTrue);
+    expect(AppRoutes.isSettingsLocation(AppRoutes.settingsDiagnostics), isTrue);
   });
 }

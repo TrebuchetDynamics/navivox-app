@@ -1,7 +1,7 @@
 import 'package:wing/core/protocol/voice_unavailable_reason.dart';
 
 const noSpeechDetectedVoiceCaptureMessage =
-    'No speech was detected. Check microphone permission, device speech recognition, or try speaking closer to the mic.';
+    'No speech was recognized. Tap Speak, wait for Listening, then speak clearly and close to the microphone.';
 const deviceSpeechUnavailableVoiceCaptureMessage =
     'Device speech recognition is unavailable. Install or enable device speech recognition, then return to Hermes Wing.';
 const microphonePermissionDeniedVoiceCaptureMessage =

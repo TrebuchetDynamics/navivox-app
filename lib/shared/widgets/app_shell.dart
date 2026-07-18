@@ -6,6 +6,9 @@ import '../../theme/wing_theme.dart';
 import 'app_shell_presentation.dart';
 import 'sheet_presenter.dart';
 
+// ponytail: one app shell; route state can replace this if nested shells arrive.
+final appShellNavigationVisible = ValueNotifier(true);
+
 class AppShell extends StatelessWidget {
   const AppShell({required this.location, required this.child, super.key});
 
@@ -19,30 +22,34 @@ class AppShell extends StatelessWidget {
     );
     final presentation = shellPresentation.stateForLocation(location);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 600) {
-          return _DesktopShell(
-            destinations: presentation.destinations,
-            selectedIndex: presentation.selectedIndex,
-            onSelected: (index) =>
-                context.go(presentation.destinations[index].path),
+    return ValueListenableBuilder<bool>(
+      valueListenable: appShellNavigationVisible,
+      builder: (context, navigationVisible, _) => LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 600) {
+            return _DesktopShell(
+              destinations: presentation.destinations,
+              selectedIndex: presentation.selectedIndex,
+              onSelected: (index) =>
+                  context.go(presentation.destinations[index].path),
+              child: child,
+            );
+          }
+          return _MobileShell(
+            mobileNavigationDestinations:
+                presentation.mobileNavigationDestinations,
+            mobileOverflowDestinations: presentation.mobileOverflowDestinations,
+            selectedIndex: presentation.selectedMobileIndex,
+            selectedPath: presentation.selectedDestination.path,
+            showNavigationMenu:
+                presentation.showNavigationMenu && navigationVisible,
+            mobileOverflowLabel: shellPresentation.mobileOverflowLabel,
+            mobileOverflowTooltip: shellPresentation.mobileOverflowTooltip,
+            onSelected: (destination) => context.go(destination.path),
             child: child,
           );
-        }
-        return _MobileShell(
-          mobileNavigationDestinations:
-              presentation.mobileNavigationDestinations,
-          mobileOverflowDestinations: presentation.mobileOverflowDestinations,
-          selectedIndex: presentation.selectedMobileIndex,
-          selectedPath: presentation.selectedDestination.path,
-          showNavigationMenu: presentation.showNavigationMenu,
-          mobileOverflowLabel: shellPresentation.mobileOverflowLabel,
-          mobileOverflowTooltip: shellPresentation.mobileOverflowTooltip,
-          onSelected: (destination) => context.go(destination.path),
-          child: child,
-        );
-      },
+        },
+      ),
     );
   }
 }
@@ -77,22 +84,34 @@ class _MobileShell extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: showNavigationMenu
+      bottomNavigationBar:
+          showNavigationMenu && MediaQuery.viewInsetsOf(context).bottom == 0
           ? SafeArea(
-              minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
+              top: false,
+              child: DecoratedBox(
+                key: const ValueKey('mobile-navigation-surface'),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  border: Border(
+                    top: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                ),
                 child: NavigationBarTheme(
                   data: NavigationBarThemeData(
-                    backgroundColor: colorScheme.surfaceContainerHigh,
-                    indicatorColor: colorScheme.primary.withValues(alpha: 0.16),
+                    backgroundColor: Colors.transparent,
+                    indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
+                    indicatorShape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     labelTextStyle: WidgetStateProperty.resolveWith((states) {
                       final selected = states.contains(WidgetState.selected);
                       return theme.textTheme.labelSmall?.copyWith(
                         color: selected
                             ? colorScheme.primary
                             : colorScheme.onSurfaceVariant,
-                        fontWeight: selected ? FontWeight.w700 : null,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       );
                     }),
                     iconTheme: WidgetStateProperty.resolveWith((states) {
@@ -101,11 +120,12 @@ class _MobileShell extends StatelessWidget {
                         color: selected
                             ? colorScheme.primary
                             : colorScheme.onSurfaceVariant,
+                        size: 23,
                       );
                     }),
                   ),
                   child: NavigationBar(
-                    height: 68,
+                    height: 64,
                     elevation: 0,
                     selectedIndex: selectedIndex,
                     labelBehavior:

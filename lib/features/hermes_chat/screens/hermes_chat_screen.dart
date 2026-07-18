@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,13 +22,13 @@ import '../../../l10n/app_localizations.dart';
 import '../../../router/routes/app_routes.dart';
 import '../../agents/providers/profile_selection_provider.dart';
 import '../../../shared/voice/voice_capture_service.dart';
+import '../../../shared/widgets/app_shell.dart';
 import '../../settings/providers/voice_settings_provider.dart';
 import '../../voice/services/platform/default_voice_capture_service.dart';
 import '../../voice/services/tts/text_to_speech_service.dart';
-import '../../voice_commands/models/voice_command.dart';
-import '../../voice_commands/providers/voice_command_providers.dart';
-import '../../voice_commands/widgets/voice_command_chip.dart';
 import '../controllers/hermes_voice_input_controller.dart';
+import '../gateways/gateway_contact.dart';
+import '../gateways/gateway_contacts_view.dart';
 import '../diagnostics/hermes_diagnostics_export.dart';
 import '../providers/hermes_channel_provider.dart';
 import '../widgets/hermes_rich_text.dart';
@@ -40,11 +42,14 @@ part 'state/hermes_chat_layout.dart';
 part 'state/hermes_chat_connection.dart';
 part 'state/hermes_chat_session_actions.dart';
 part 'state/hermes_chat_message_flow.dart';
-part 'state/hermes_chat_voice_commands.dart';
 
 /// Voice-capture/TTS services for the Hermes chat screen.
 final hermesVoiceCaptureServiceProvider = Provider<VoiceCaptureService?>(
   (_) => createDefaultVoiceCaptureService(),
+);
+
+final hermesAttachmentPickerProvider = Provider<Future<XFile?> Function()>(
+  (_) => openFile,
 );
 
 final hermesTextToSpeechServiceProvider = Provider<TextToSpeechService?>((ref) {
@@ -70,7 +75,96 @@ const _hermesBaseUrlHint =
     'Android emulator: http://10.0.2.2:8642\n'
     'Physical device: LAN/VPN/Tailscale URL';
 const _maxQueuedFollowUps = 5;
+const _maxAttachmentBytes = 10 * 1024 * 1024;
+const _maxTextAttachmentBytes = 256 * 1024;
+const _textAttachmentExtensions = {
+  'md',
+  'markdown',
+  'txt',
+  'text',
+  'log',
+  'csv',
+  'tsv',
+  'json',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'env',
+  'xml',
+  'html',
+  'htm',
+  'css',
+  'scss',
+  'less',
+  'sql',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'ps1',
+  'py',
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'mjs',
+  'cjs',
+  'dart',
+  'go',
+  'rs',
+  'c',
+  'cc',
+  'cpp',
+  'cxx',
+  'h',
+  'hpp',
+  'java',
+  'kt',
+  'kts',
+  'rb',
+  'php',
+  'swift',
+  'scala',
+  'lua',
+  'r',
+  'pl',
+  'vue',
+  'svelte',
+  'dockerfile',
+  'makefile',
+  'gitignore',
+  'editorconfig',
+};
 const _configuredHermesBaseUrl = String.fromEnvironment('WING_HERMES_BASE_URL');
+const _composerEmojis = [
+  '😀',
+  '😂',
+  '🥰',
+  '😍',
+  '😊',
+  '😉',
+  '😎',
+  '🤔',
+  '👍',
+  '👏',
+  '🙏',
+  '💪',
+  '🎉',
+  '🔥',
+  '❤️',
+  '✨',
+  '✅',
+  '👀',
+  '💡',
+  '🚀',
+  '🤝',
+  '💯',
+  '🙌',
+  '🫡',
+];
+
+enum _ComposerMenuAction { sessions, handsFree }
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 String get _defaultHermesBaseUrl => _configuredHermesBaseUrl;
@@ -107,6 +201,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   final _composerController = TextEditingController();
   final _transcriptScrollController = ScrollController();
   late final HermesVoiceInputController _voiceInputController;
+  Uint8List? _pendingImageBytes;
+  String? _pendingImageName;
+  String? _pendingImageMimeType;
+  String? _pendingTextAttachment;
+  String? _pendingTextAttachmentName;
+
+  String? get _pendingAttachmentName =>
+      _pendingImageName ?? _pendingTextAttachmentName;
 
   HermesChannel? _subscribed;
   late final ProviderSubscription<HermesChannel> _channelProviderSubscription;
@@ -116,18 +218,12 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   final Queue<HermesApprovalRequest> _pendingApprovals = Queue();
   String? _answeringApprovalId;
   String? _approvalSessionId;
+  String? _lastCompletedAssistantTurnId;
   int _connectAttemptId = 0;
   bool _reconnectingOnResume = false;
   bool _obscureApiKey = true;
+  bool? _requestedShellNavigationVisible;
   late Future<List<HermesEndpointConfig>> _endpointProfilesFuture;
-
-  // Voice-command routing (see docs/superpowers/plans/2026-07-13-needle-router.md
-  // Task 10): at most one confirm-tier chip is shown at a time, and the
-  // suspension hint fires once per screen lifetime.
-  VoiceRouteResult? _pendingVoiceCommand;
-  bool _pendingVoiceCommandAutoSend = false;
-  bool _suspensionNoticeShown = false;
-  late final VoiceCaptureHooks _voiceCaptureHooks;
 
   @override
   void initState() {
@@ -145,14 +241,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
           ref.read(hermesTextToSpeechServiceProvider),
       settings: () => ref.read(wingVoiceSettingsProvider),
       onDraft: _appendVoiceDraft,
-      routeTranscript: _routeTranscript,
-      onRoutedCommand: _onRoutedCommand,
     )..addListener(_onVoiceInputChanged);
-    _voiceCaptureHooks = ref.read(voiceCaptureHooksProvider);
-    _voiceCaptureHooks.onStop = () =>
-        _voiceInputController.pause('Stopped by voice command.');
-    _voiceCaptureHooks.onStart = () =>
-        unawaited(_voiceInputController.enableContinuous());
     _channelProviderSubscription = ref.listenManual<HermesChannel>(
       hermesChannelProvider,
       (_, channel) => _subscribeToChannel(channel),
@@ -163,11 +252,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
 
   @override
   void dispose() {
+    appShellNavigationVisible.value = true;
     WidgetsBinding.instance.removeObserver(this);
-    // Unbind the voice-capture hooks so a stop/start command dispatched
-    // after this screen is gone cannot reach a disposed controller.
-    _voiceCaptureHooks.onStop = () {};
-    _voiceCaptureHooks.onStart = () {};
     _channelProviderSubscription.close();
     _voiceInputController.removeListener(_onVoiceInputChanged);
     _voiceInputController.dispose();
@@ -181,6 +267,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     _composerController.dispose();
     _transcriptScrollController.dispose();
     super.dispose();
+  }
+
+  void _requestShellNavigation(bool visible) {
+    if (_requestedShellNavigationVisible == visible) return;
+    _requestedShellNavigationVisible = visible;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) appShellNavigationVisible.value = visible;
+    });
   }
 
   void _onConnectionFormChanged() {
@@ -308,18 +402,16 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     if (profileId == effectiveSelectedProfileId(channel.state)) return;
     // Switching agents changes the client-local profile context. Clear state
     // that belonged to the prior profile before the refresh lands: stale
-    // pending approvals, an answering-approval marker, any pending voice
-    // command, and continuous voice capture. The transcript itself is replaced
-    // by the profile-scoped session refresh inside selectProfile, so nothing
-    // from the prior profile is retained here.
+    // pending approvals, an answering-approval marker, and continuous voice
+    // capture. The transcript itself is replaced by the profile-scoped session
+    // refresh inside selectProfile, so nothing from the prior profile is
+    // retained here.
     _voiceInputController.pause(
       'Continuous voice paused while switching agents.',
     );
     setState(() {
       _pendingApprovals.clear();
       _answeringApprovalId = null;
-      _pendingVoiceCommand = null;
-      _pendingVoiceCommandAutoSend = false;
     });
     try {
       await channel.selectProfile(profileId);
@@ -345,6 +437,9 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     _pendingApprovals.clear();
     _answeringApprovalId = null;
     _approvalSessionId = channel.state.activeSessionId;
+    _lastCompletedAssistantTurnId = _latestCompletedAssistantTurnId(
+      channel.state,
+    );
     unawaited(_approvalSubscription?.cancel());
     _approvalSubscription = channel.approvalRequests.listen((request) {
       if (mounted) setState(() => _enqueueApprovalRequest(request));
@@ -352,56 +447,236 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     _onChannelChanged();
   }
 
+  bool _hasActiveGatewayWork(HermesChannel channel) =>
+      _isTurnActive(channel.state) ||
+      _pendingApprovals.isNotEmpty ||
+      _answeringApprovalId != null ||
+      _queuedFollowUps.isNotEmpty;
+
+  Future<bool> _confirmLeaveActiveContact(HermesChannel channel) async {
+    if (!_hasActiveGatewayWork(channel)) return true;
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            key: const ValueKey('hermes-gateway-switch-confirm-dialog'),
+            title: const Text('Switch chats?'),
+            content: const Text(
+              'This chat has active work or an approval. Switching closes its live stream; Hermes remains authoritative and will reconcile it when reopened.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Stay'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Switch'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  String? _latestCompletedAssistantTurnId(HermesChannelState state) {
+    for (final turn in state.activeMessages.reversed) {
+      if (turn.author == HermesTurnAuthor.assistant &&
+          turn.status == HermesTurnStatus.completed) {
+        return turn.id;
+      }
+    }
+    return null;
+  }
+
+  void _refreshActiveGatewayContact() {
+    final directory = ref.read(hermesGatewayDirectoryProvider);
+    final gatewayId = directory.activeContactId?.gatewayId;
+    if (gatewayId != null) unawaited(directory.reconnectGateway(gatewayId));
+  }
+
+  Future<void> _showGatewayContacts() async {
+    final channel = ref.read(hermesChannelProvider);
+    if (!await _confirmLeaveActiveContact(channel) || !mounted) return;
+    _voiceInputController.pause('Closed Hermes contact.');
+    _queuedFollowUps.clear();
+    _pendingApprovals.clear();
+    await ref.read(hermesGatewayDirectoryProvider).showDirectory();
+  }
+
+  Future<void> _openGatewayContact(GatewayContactId id) async {
+    final channel = ref.read(hermesChannelProvider);
+    final directory = ref.read(hermesGatewayDirectoryProvider);
+    if (directory.activeContactId != null &&
+        directory.activeContactId != id &&
+        !await _confirmLeaveActiveContact(channel)) {
+      return;
+    }
+    _voiceInputController.pause('Switched Hermes contact.');
+    _queuedFollowUps.clear();
+    _pendingApprovals.clear();
+    await directory.activate(id);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final directory = ref.watch(hermesGatewayDirectoryProvider);
     final channel = ref.watch(hermesChannelProvider);
     final state = channel.state;
     final activeSession = state.activeSession;
     final compactAppBar = MediaQuery.sizeOf(context).width < 480;
+    final hasGateways =
+        directory.contacts.isNotEmpty || directory.hasSavedGateways;
+    final legacyConnected = state.isConnected && !hasGateways;
+    final showingDirectory =
+        hasGateways && directory.activeContactId == null && !legacyConnected;
+    final activeContact = directory.activeContact;
+    _requestShellNavigation(activeContact == null);
 
-    ref.listen<String?>(voiceCommandNoticeProvider, (_, notice) {
-      if (notice == null) return;
-      ScaffoldMessenger.maybeOf(
-        context,
-      )?.showSnackBar(SnackBar(content: Text(notice)));
-      ref.read(voiceCommandNoticeProvider.notifier).state = null;
-    });
-
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
-        title: Text(
-          _safeHermesUiPreview(activeSession?.title ?? 'Hermes', maxLength: 96),
-        ),
-        actions: [
-          if (state.isConnected) ...[
-            if (state.profiles.isNotEmpty)
-              _buildProfileSwitcher(context, channel, state),
-            IconButton(
-              key: const ValueKey('hermes-sessions-button'),
-              tooltip: 'Sessions',
-              icon: const Icon(Icons.view_list_outlined),
-              onPressed: () => _showSessionsPanel(context, channel),
-            ),
-            if (_canCreateSession(state))
-              IconButton(
-                key: const ValueKey('hermes-new-session'),
-                tooltip: 'New session',
-                icon: const Icon(Icons.add_comment_outlined),
-                onPressed: () => unawaited(_createSession(context, channel)),
+        leading: activeContact == null
+            ? null
+            : IconButton(
+                key: const ValueKey('hermes-back-to-contacts'),
+                tooltip: 'All chats',
+                onPressed: () => unawaited(_showGatewayContacts()),
+                icon: const Icon(Icons.arrow_back),
               ),
+        title: activeContact == null
+            ? Text(
+                showingDirectory
+                    ? 'Hermes'
+                    : _safeHermesUiPreview(
+                        activeSession?.title ?? 'Hermes',
+                        maxLength: 96,
+                      ),
+              )
+            : TextButton(
+                key: const ValueKey('hermes-contact-header'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () => _showSessionsPanel(context, channel),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 17,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      child: Text(
+                        activeContact.profileName.trim().isEmpty
+                            ? '?'
+                            : activeContact.profileName
+                                  .trim()
+                                  .characters
+                                  .first
+                                  .toUpperCase(),
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: compactAppBar ? 140 : 240,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            activeContact.profileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${activeContact.gatewayLabel} · ${activeContact.availability.name}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color:
+                                      activeContact.availability ==
+                                          GatewayAvailability.online
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        actions: [
+          if (showingDirectory)
+            IconButton(
+              key: const ValueKey('hermes-connect-another-gateway'),
+              tooltip: 'Connect another gateway',
+              onPressed: () => context.push(AppRoutes.enroll),
+              icon: const Icon(Icons.add_link),
+            ),
+          if (!showingDirectory && state.isConnected) ...[
+            if (activeContact == null && state.profiles.isNotEmpty)
+              _buildProfileSwitcher(context, channel, state),
+            if (!compactAppBar) ...[
+              IconButton(
+                key: const ValueKey('hermes-sessions-button'),
+                tooltip: 'Sessions',
+                icon: const Icon(Icons.view_list_outlined),
+                onPressed: () => _showSessionsPanel(context, channel),
+              ),
+              if (_canCreateSession(state))
+                IconButton(
+                  key: const ValueKey('hermes-new-session'),
+                  tooltip: 'New session',
+                  icon: const Icon(Icons.add_comment_outlined),
+                  onPressed: () => unawaited(_createSession(context, channel)),
+                ),
+            ],
             if (compactAppBar)
               PopupMenuButton<String>(
                 key: const ValueKey('hermes-more-actions-button'),
                 tooltip: 'More actions',
                 onSelected: (action) {
-                  if (action == 'diagnostics') {
-                    _showDiagnosticsDialog(context, state);
-                  } else {
-                    unawaited(_confirmDisconnect(context, channel));
+                  switch (action) {
+                    case 'sessions':
+                      _showSessionsPanel(context, channel);
+                    case 'new-session':
+                      unawaited(_createSession(context, channel));
+                    case 'diagnostics':
+                      _showDiagnosticsDialog(context, state);
+                    case 'disconnect':
+                      unawaited(_confirmDisconnect(context, channel));
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'sessions',
+                    child: ListTile(
+                      leading: Icon(Icons.view_list_outlined),
+                      title: Text('Sessions'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  if (_canCreateSession(state))
+                    const PopupMenuItem(
+                      value: 'new-session',
+                      child: ListTile(
+                        leading: Icon(Icons.add_comment_outlined),
+                        title: Text('New session'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  const PopupMenuItem(
                     value: 'diagnostics',
                     child: ListTile(
                       leading: Icon(Icons.info_outline),
@@ -409,7 +684,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'disconnect',
                     child: ListTile(
                       leading: Icon(Icons.logout_outlined),
@@ -437,9 +712,29 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
           ],
         ],
       ),
-      body: state.isConnected
+      body: !hasGateways
+          ? state.isConnected
+                ? _buildChat(context, channel, state)
+                : _buildConnectForm(context, channel, state)
+          : showingDirectory
+          ? GatewayContactsView(
+              contacts: directory.contacts,
+              refreshing: directory.refreshing,
+              onRefresh: directory.refresh,
+              onOpen: (id) => unawaited(_openGatewayContact(id)),
+              onConnect: () => context.push(AppRoutes.enroll),
+            )
+          : state.isConnected
           ? _buildChat(context, channel, state)
-          : _buildConnectForm(context, channel, state),
+          : const Center(child: CircularProgressIndicator()),
+    );
+    if (activeContact == null) return scaffold;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_showGatewayContacts());
+      },
+      child: scaffold,
     );
   }
 }

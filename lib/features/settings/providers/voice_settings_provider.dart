@@ -14,7 +14,6 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
   static const _keyModelPath = 'wing.voice.kokoro_model_path';
   static const _keyVoicesPath = 'wing.voice.kokoro_voices_path';
   static const _keyCommandWord = 'wing.voice.command_word';
-  static const _keyVoiceCommandsEnabled = 'voice_commands_enabled';
   static const _keySpeechRate = 'tts_speech_rate';
   static const _keyTtsVoiceName = 'tts_voice_name';
 
@@ -58,8 +57,6 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
             )
           : null;
       final commandWord = _prefs?.getString(_keyCommandWord) ?? 'navi';
-      final voiceCommandsEnabled =
-          _prefs?.getBool(_keyVoiceCommandsEnabled) ?? false;
       final speechRate = _prefs?.getDouble(_keySpeechRate) ?? 1.0;
       final ttsVoiceName = _prefs?.getString(_keyTtsVoiceName);
       state = WingVoiceSettings(
@@ -69,7 +66,6 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
         pocketSpeechModel: model,
         pocketSpeechVoicePack: voicePack,
         commandWord: commandWord,
-        voiceCommandsEnabled: voiceCommandsEnabled,
         speechRate: speechRate,
         ttsVoiceName: ttsVoiceName,
       );
@@ -94,7 +90,6 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
       await prefs.setString(_keyVoicesPath, voicePack.voicesPath);
     }
     await prefs.setString(_keyCommandWord, state.commandWord);
-    await prefs.setBool(_keyVoiceCommandsEnabled, state.voiceCommandsEnabled);
     await prefs.setDouble(_keySpeechRate, state.speechRate);
     final ttsVoiceName = state.ttsVoiceName;
     if (ttsVoiceName == null) {
@@ -161,12 +156,6 @@ class WingVoiceSettingsController extends Notifier<WingVoiceSettings> {
     if (normalized.isEmpty || normalized.contains(RegExp(r'\s'))) return;
     _mutationGeneration += 1;
     state = state.copyWith(commandWord: normalized);
-    _save();
-  }
-
-  void setVoiceCommandsEnabled(bool enabled) {
-    _mutationGeneration += 1;
-    state = state.copyWith(voiceCommandsEnabled: enabled);
     _save();
   }
 

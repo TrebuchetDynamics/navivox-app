@@ -36,6 +36,166 @@ void main() {
     },
   );
 
+  testWidgets('short conversations stay anchored above the composer', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer');
+    final assistantId = channel.state.activeMessages.last.id;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bubbleBottom = tester
+        .getBottomLeft(find.byKey(ValueKey('hermes-turn-$assistantId')))
+        .dy;
+    final composerTop = tester
+        .getTopLeft(find.byKey(const ValueKey('hermes-composer-surface')))
+        .dy;
+    expect(composerTop - bubbleBottom, lessThan(48));
+  });
+
+  testWidgets('message bubbles keep Telegram-style bottom tails', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer');
+    final userId = channel.state.activeMessages.first.id;
+    final assistantId = channel.state.activeMessages.last.id;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    BoxDecoration decoration(String id) =>
+        tester
+                .widget<Container>(find.byKey(ValueKey('hermes-turn-$id')))
+                .decoration
+            as BoxDecoration;
+    final userRadius = decoration(userId).borderRadius! as BorderRadius;
+    final assistantRadius =
+        decoration(assistantId).borderRadius! as BorderRadius;
+    expect(userRadius.bottomRight, const Radius.circular(5));
+    expect(userRadius.topRight, const Radius.circular(16));
+    expect(assistantRadius.bottomLeft, const Radius.circular(5));
+    expect(assistantRadius.topLeft, const Radius.circular(16));
+  });
+
+  testWidgets('long press offers copy and reply actions', (tester) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer to reuse');
+    final assistantId = channel.state.activeMessages.last.id;
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bubble = find.byKey(ValueKey('hermes-turn-$assistantId'));
+    await tester.longPress(bubble);
+    await tester.pumpAndSettle();
+    expect(find.text('Copy'), findsOneWidget);
+    expect(find.text('Reply'), findsOneWidget);
+
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+    expect(copiedText, 'Answer to reuse');
+
+    await tester.longPress(bubble);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reply'));
+    await tester.pumpAndSettle();
+
+    final composer = tester.widget<TextField>(
+      find.byKey(const ValueKey('hermes-composer-field')),
+    );
+    expect(composer.controller?.text, '> Answer to reuse\n\n');
+  });
+
+  testWidgets(
+    'empty completed assistant turns do not render timestamp bubbles',
+    (tester) async {
+      final channel = FakeHermesChannel();
+      channel.beginStreamingTurn('Do not leave an empty bubble.');
+      channel.completeStreamingTurn(text: '');
+      final emptyTurnId = channel.state.activeMessages.last.id;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [hermesChannelProvider.overrideWithValue(channel)],
+          child: _localizedApp(const HermesChatScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('hermes-turn-$emptyTurnId')), findsNothing);
+    },
+  );
+
+  testWidgets('structured assistant errors render as readable messages', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Run it.');
+    channel.completeStreamingTurn(
+      text:
+          '{"status":"error","error":"BLOCKED: execution needs approval. Do not retry the command until approval is available. The requested action was not run and no external state changed. Choose another approach or review the request details.","tool_calls_made":0}',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-structured-assistant-error')),
+      findsOneWidget,
+    );
+    expect(find.text('Action blocked'), findsOneWidget);
+    expect(find.textContaining('execution needs approval'), findsOneWidget);
+    expect(find.text('Details'), findsOneWidget);
+    expect(find.textContaining('tool_calls_made'), findsNothing);
+
+    await tester.tap(find.text('Details'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hide details'), findsOneWidget);
+  });
+
   testWidgets('assistant prose remains visible to accessibility', (
     tester,
   ) async {

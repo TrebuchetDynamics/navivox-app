@@ -12,8 +12,8 @@ Hermes Wing voice is local to the client install. The app depends on `speech_to_
 Use local device packages for voice:
 
 - `speech_to_text` captures user speech as a text transcript.
-- The explicit microphone control fills the composer with the transcript for
-  review and editing; it does not send automatically.
+- The explicit microphone control submits the transcript immediately and
+  speaks the completed Hermes reply once without re-arming capture.
 - Continuous voice is a separate opt-in mode that submits the transcript,
   speaks the completed Hermes reply, and then re-arms capture.
 - Recognition requests set `onDevice: true`; unsupported on-device recognition

@@ -315,11 +315,32 @@ void main() {
     expect(scriptText, contains('tests, APK hashes, configured Hermes home'));
     expect(scriptText, contains('workflow YAML, or dispatch-only output'));
 
+    expect(auditText, startsWith('# Hermes Wing readiness audit'));
+    expect(auditText, isNot(contains('Hermes companion')));
     expect(auditText, contains('current Hermes-only Hermes Wing client goal'));
     expect(auditText, contains('Current completion audit verdict'));
     expect(
       auditText,
-      contains('The active Hermes companion goal is **not complete**'),
+      contains('## Multi-gateway plan acceptance reconciliation'),
+    );
+    for (final criterion in [
+      'Stable contact identity',
+      'Bounded refresh triggers',
+      'Single active streaming channel',
+      'Empty contacts stay sessionless',
+      'Gateway secret hygiene',
+      'Safe contact switching',
+      'Enrollment append or update',
+      'Contact-list presentation details',
+      'Gateway-aware header and history',
+      'Android and two-gateway receipts',
+    ]) {
+      expect(auditText, contains(criterion), reason: criterion);
+    }
+    expect(auditText, contains('Explicit readiness deferral'));
+    expect(
+      auditText,
+      contains('The active Hermes Wing goal is **not complete**'),
     );
     expect(auditText, contains('Objective item'));
     expect(auditText, contains('Concrete artifact/evidence inspected'));
@@ -333,10 +354,11 @@ void main() {
     expect(
       auditText,
       contains(
-        'Covered for no-human Android voice-loop mechanics; not physical-mic/provider/server-audio evidence',
+        'Historical only; the current-checkout receipt is absent, and this is not physical-mic/provider/server-audio evidence',
       ),
     );
-    expect(auditText, contains('Covered.'));
+    expect(auditText, contains('Receipt inventory for this checkout'));
+    expect(auditText, contains('`build/receipts/` is absent'));
     expect(
       auditText,
       contains(
@@ -363,10 +385,7 @@ void main() {
       auditText,
       contains('build/receipts/android-hermes-voice-loop-smoke.json'),
     );
-    expect(
-      auditText,
-      contains('Covered for no-human Android Flutter voice-loop mechanics'),
-    );
+    expect(auditText, contains('Historical no-human mechanics claim only'));
     expect(auditText, contains('docs/runbooks/android/live-mic-smoke.md'));
     expect(
       auditText,
@@ -374,11 +393,8 @@ void main() {
         'npm run hermes:readiness-audit` prints the current APK SHA-256',
       ),
     );
-    expect(
-      auditText,
-      contains('build/native units and artifact identity only'),
-    );
-    expect(auditText, contains('hosted receipts are covered'));
+    expect(auditText, contains('present APK is artifact identity'));
+    expect(auditText, contains('current-checkout receipt is absent'));
     expect(auditText, contains('Windows desktop build'));
     expect(auditText, contains('iOS simulator build'));
     expect(auditText, contains('macOS desktop build'));
@@ -393,7 +409,7 @@ void main() {
     expect(auditText, contains('produced `build/web`'));
     expect(
       auditText,
-      contains('published and visible as `Hermes platform smoke`'),
+      contains('was published and visible as `Hermes platform smoke`'),
     );
     expect(auditText, contains('build/receipts/hermes-platform-workflow.json'));
     expect(auditText, contains('successful watched receipt'));

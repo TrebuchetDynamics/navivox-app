@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/hermes/channel/hermes_api_channel.dart';
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../core/hermes/setup/secure_hermes_endpoint_store.dart';
+import '../gateways/gateway_contact_cache.dart';
+import '../gateways/hermes_gateway_directory.dart';
 
 /// Persists the Hermes endpoint (base URL + API key); see
 /// docs/adr/0004-hermes-endpoint-and-secret-storage.md.
@@ -13,24 +16,30 @@ final hermesEndpointStoreProvider = Provider<HermesEndpointStore>(
   (ref) => SecureHermesEndpointStore(),
 );
 
-/// Connects [channel] to a previously saved Hermes endpoint, if any. A no-op
-/// when nothing was saved yet, so first launch still lands on the connect
-/// form in `HermesChatScreen`.
-Future<void> hermesAutoConnect(
-  HermesChannel channel,
-  HermesEndpointStore store,
-) async {
-  final saved = await store.load();
-  if (saved == null) return;
-  await channel.connect(baseUrl: saved.baseUrl, apiKey: saved.apiKey);
-}
-
 /// Native Hermes channel; see
 /// docs/adr/0007-native-hermes-channel-not-wing-channel-adapter.md.
 final hermesChannelProvider = Provider<HermesChannel>((ref) {
-  final store = ref.watch(hermesEndpointStoreProvider);
   final channel = HermesApiChannel();
-  unawaited(hermesAutoConnect(channel, store));
   ref.onDispose(channel.dispose);
   return channel;
 });
+
+final hermesGatewaySummaryLoaderProvider = Provider<GatewaySummaryLoader>(
+  (ref) => const HermesApiGatewaySummaryLoader(),
+);
+
+final gatewayContactCacheProvider = Provider<GatewayContactCache>(
+  (ref) => GatewayContactCache(),
+);
+
+final hermesGatewayDirectoryProvider =
+    ChangeNotifierProvider<HermesGatewayDirectory>((ref) {
+      final directory = HermesGatewayDirectory(
+        store: ref.watch(hermesEndpointStoreProvider),
+        cache: ref.watch(gatewayContactCacheProvider),
+        loader: ref.watch(hermesGatewaySummaryLoaderProvider),
+        activeChannel: ref.watch(hermesChannelProvider),
+      );
+      unawaited(directory.start());
+      return directory;
+    });

@@ -58,7 +58,11 @@ void main() {
 
   test('returns null while the newest assistant turn is still streaming', () {
     final reply = hermesContinuousVoiceReplyToSpeak(
-      turns: [_assistant('a1', 'partial', status: HermesTurnStatus.streaming)],
+      turns: [
+        _assistant('a1', 'old reply'),
+        _user('u2', 'new question'),
+        _assistant('a2', 'partial', status: HermesTurnStatus.streaming),
+      ],
       enabled: true,
       lastSpokenTurnId: null,
     );

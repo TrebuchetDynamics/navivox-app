@@ -23,8 +23,17 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
 
   void _sendComposerText(HermesChannel channel) {
     final text = _composerController.text.trim();
-    if (text.isEmpty) return;
+    final imageBytes = _pendingImageBytes;
+    final textAttachment = _pendingTextAttachment;
+    if (text.isEmpty && imageBytes == null && textAttachment == null) return;
     if (_isTurnActive(channel.state)) {
+      if (imageBytes != null || textAttachment != null) {
+        _setState(() {
+          _queuedFollowUpError =
+              'Wait for Hermes to finish before sending an attachment.';
+        });
+        return;
+      }
       if (_queuedFollowUps.length >= _maxQueuedFollowUps) {
         _setState(() {
           _queuedFollowUpError =
@@ -41,11 +50,129 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
       });
       return;
     }
+    final imageDataUrl = imageBytes == null
+        ? null
+        : 'data:${_pendingImageMimeType!};base64,${base64Encode(imageBytes)}';
+    final attachmentName = _pendingAttachmentName;
     _composerController.clear();
-    if (_queuedFollowUpError != null) {
-      _setState(() => _queuedFollowUpError = null);
+    _setState(() {
+      _queuedFollowUpError = null;
+      _pendingImageBytes = null;
+      _pendingImageName = null;
+      _pendingImageMimeType = null;
+      _pendingTextAttachment = null;
+      _pendingTextAttachmentName = null;
+    });
+    _sendText(
+      channel,
+      text,
+      imageDataUrl: imageDataUrl,
+      textAttachment: textAttachment,
+      attachmentName: attachmentName,
+    );
+  }
+
+  Future<void> _pickAttachment() async {
+    try {
+      final file = await ref.read(hermesAttachmentPickerProvider)();
+      if (file == null || !mounted) return;
+      final length = await file.length();
+      final isText = _isSupportedTextAttachment(file);
+      if (isText && length > _maxTextAttachmentBytes) {
+        _showAttachmentError('Text files must be 256 KB or smaller.');
+        return;
+      }
+      if (!isText && length > _maxAttachmentBytes) {
+        _showAttachmentError('Images must be 10 MB or smaller.');
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      final mimeType = _supportedImageMimeType(bytes);
+      if (mimeType != null) {
+        if (!mounted) return;
+        _setState(() {
+          _pendingImageBytes = bytes;
+          _pendingImageName = file.name;
+          _pendingImageMimeType = mimeType;
+          _pendingTextAttachment = null;
+          _pendingTextAttachmentName = null;
+        });
+        return;
+      }
+      if (isText) {
+        final content = utf8.decode(bytes);
+        if (!mounted) return;
+        _setState(() {
+          _pendingImageBytes = null;
+          _pendingImageName = null;
+          _pendingImageMimeType = null;
+          _pendingTextAttachment = content;
+          _pendingTextAttachmentName = file.name;
+        });
+        return;
+      }
+      _showAttachmentError(
+        'Hermes accepts PNG, JPEG, GIF, WebP, and UTF-8 text files; PDFs, binary files, and videos cannot be sent.',
+      );
+    } on FormatException {
+      if (mounted) {
+        _showAttachmentError('Text attachments must contain valid UTF-8.');
+      }
+    } catch (error) {
+      if (mounted) {
+        _showAttachmentError(
+          'Could not open attachment: ${_safeHermesUiError(error)}',
+        );
+      }
     }
-    _sendText(channel, text);
+  }
+
+  bool _isSupportedTextAttachment(XFile file) {
+    if (file.mimeType?.toLowerCase().startsWith('text/') == true) return true;
+    final name = file.name.toLowerCase();
+    final dot = name.lastIndexOf('.');
+    final extension = dot < 0 || dot == name.length - 1
+        ? name
+        : name.substring(dot + 1);
+    return _textAttachmentExtensions.contains(extension);
+  }
+
+  void _showAttachmentError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String? _supportedImageMimeType(Uint8List bytes) {
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4e &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0d &&
+        bytes[5] == 0x0a &&
+        bytes[6] == 0x1a &&
+        bytes[7] == 0x0a) {
+      return 'image/png';
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xff &&
+        bytes[1] == 0xd8 &&
+        bytes[2] == 0xff) {
+      return 'image/jpeg';
+    }
+    if (bytes.length >= 6 &&
+        ascii
+            .decode(bytes.sublist(0, 6), allowInvalid: true)
+            .startsWith('GIF8')) {
+      return 'image/gif';
+    }
+    if (bytes.length >= 12 &&
+        ascii.decode(bytes.sublist(0, 4), allowInvalid: true) == 'RIFF' &&
+        ascii.decode(bytes.sublist(8, 12), allowInvalid: true) == 'WEBP') {
+      return 'image/webp';
+    }
+    return null;
   }
 
   bool _isTurnActive(HermesChannelState state) =>
@@ -142,19 +269,31 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
     String text, {
     bool requeueOnFailure = false,
     String? requeueSessionId,
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
   }) {
     final sessionId = requeueSessionId ?? channel.state.activeSessionId;
     unawaited(
-      channel.sendText(text).catchError((Object error) {
-        if (!mounted || !requeueOnFailure || !channel.state.isConnected) return;
-        _setState(() {
-          _queuedFollowUpError =
-              'Could not send queued follow-up: ${_safeHermesUiError(error)}';
-          if (_queuedFollowUps.length < _maxQueuedFollowUps) {
-            _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId));
-          }
-        });
-      }),
+      channel
+          .sendText(
+            text,
+            imageDataUrl: imageDataUrl,
+            textAttachment: textAttachment,
+            attachmentName: attachmentName,
+          )
+          .catchError((Object error) {
+            if (!mounted || !requeueOnFailure || !channel.state.isConnected) {
+              return;
+            }
+            _setState(() {
+              _queuedFollowUpError =
+                  'Could not send queued follow-up: ${_safeHermesUiError(error)}';
+              if (_queuedFollowUps.length < _maxQueuedFollowUps) {
+                _queuedFollowUps.addFirst(_QueuedFollowUp(text, sessionId));
+              }
+            });
+          }),
     );
   }
 

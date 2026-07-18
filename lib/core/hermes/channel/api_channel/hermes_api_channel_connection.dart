@@ -28,7 +28,7 @@ extension _ConnectionExtension on HermesApiChannel {
       if (!_isCurrentConnection(generation, client)) return;
       final capabilities = await client.capabilities();
       final optionalResourceErrors = <HermesOptionalResource, String>{};
-      final detailedHealth = await _loadOptional<HermesHealthStatus>(
+      final detailedHealthFuture = _loadOptional<HermesHealthStatus>(
         advertised: capabilities.advertisesEndpoint(
           'health_detailed',
           'GET',
@@ -38,75 +38,55 @@ extension _ConnectionExtension on HermesApiChannel {
         load: client.healthDetailed,
         errors: optionalResourceErrors,
       );
-      final models =
-          await _loadOptional<List<String>>(
-            advertised: capabilities.advertisesEndpoint(
-              'models',
-              'GET',
-              '/v1/models',
-            ),
-            resource: HermesOptionalResource.models,
-            load: client.listModels,
-            errors: optionalResourceErrors,
-          ) ??
-          const [];
-      final skills =
-          await _loadOptional<List<String>>(
-            advertised: capabilities.advertisesEndpoint(
-              'skills',
-              'GET',
-              '/v1/skills',
-            ),
-            resource: HermesOptionalResource.skills,
-            load: client.listSkills,
-            errors: optionalResourceErrors,
-          ) ??
-          const [];
-      final enabledToolsets =
-          await _loadOptional<List<String>>(
-            advertised: capabilities.advertisesEndpoint(
-              'toolsets',
-              'GET',
-              '/v1/toolsets',
-            ),
-            resource: HermesOptionalResource.toolsets,
-            load: client.listEnabledToolsets,
-            errors: optionalResourceErrors,
-          ) ??
-          const [];
-      final jobs =
-          await _loadOptional<List<HermesJob>>(
-            advertised: capabilities.advertisesEndpoint(
-              'jobs',
-              'GET',
-              '/api/jobs',
-            ),
-            resource: HermesOptionalResource.jobs,
-            load: client.listJobs,
-            errors: optionalResourceErrors,
-          ) ??
-          const [];
+      final modelsFuture = _loadOptional<List<String>>(
+        advertised: capabilities.advertisesEndpoint(
+          'models',
+          'GET',
+          '/v1/models',
+        ),
+        resource: HermesOptionalResource.models,
+        load: client.listModels,
+        errors: optionalResourceErrors,
+      );
+      final skillsFuture = _loadOptional<List<String>>(
+        advertised: capabilities.advertisesEndpoint(
+          'skills',
+          'GET',
+          '/v1/skills',
+        ),
+        resource: HermesOptionalResource.skills,
+        load: client.listSkills,
+        errors: optionalResourceErrors,
+      );
+      final enabledToolsetsFuture = _loadOptional<List<String>>(
+        advertised: capabilities.advertisesEndpoint(
+          'toolsets',
+          'GET',
+          '/v1/toolsets',
+        ),
+        resource: HermesOptionalResource.toolsets,
+        load: client.listEnabledToolsets,
+        errors: optionalResourceErrors,
+      );
+      final jobsFuture = _loadOptional<List<HermesJob>>(
+        advertised: capabilities.advertisesEndpoint('jobs', 'GET', '/api/jobs'),
+        resource: HermesOptionalResource.jobs,
+        load: client.listJobs,
+        errors: optionalResourceErrors,
+      );
+      final sessions = await client.listSessions();
       if (!_isCurrentConnection(generation, client)) return;
-      var sessions = await client.listSessions();
-      if (!_isCurrentConnection(generation, client)) return;
-      String? activeId;
+      final activeId = sessions.firstOrNull?.id;
       List<HermesChatTurn>? messages;
-      if (sessions.isEmpty) {
-        if (capabilities.advertisesEndpoint(
-          'session_create',
-          'POST',
-          '/api/sessions',
-        )) {
-          final created = await client.createSession(id: _sessionIdFactory());
-          sessions = [created];
-          activeId = created.id;
-        }
-      } else {
-        activeId = sessions.first.id;
-      }
       if (activeId != null) {
         messages = await _fetchTurns(client, activeId);
       }
+      if (!_isCurrentConnection(generation, client)) return;
+      final detailedHealth = await detailedHealthFuture;
+      final models = await modelsFuture ?? const [];
+      final skills = await skillsFuture ?? const [];
+      final enabledToolsets = await enabledToolsetsFuture ?? const [];
+      final jobs = await jobsFuture ?? const [];
       if (!_isCurrentConnection(generation, client)) return;
       _setState(
         _state.copyWith(

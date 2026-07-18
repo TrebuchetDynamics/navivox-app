@@ -126,7 +126,12 @@ class _AndroidHermesVoiceSmokeChannel extends ChangeNotifier
   }
 
   @override
-  Future<void> sendText(String text) async {
+  Future<void> sendText(
+    String text, {
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
+  }) async {
     final now = DateTime.now();
     _setMessages([
       ..._state.activeMessages,

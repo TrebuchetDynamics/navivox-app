@@ -7,6 +7,7 @@ extension _HermesChatScreenSessionActions on _HermesChatScreenState {
   ) async {
     try {
       await channel.createSession();
+      _refreshActiveGatewayContact();
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -72,6 +73,7 @@ extension _HermesChatScreenSessionActions on _HermesChatScreenState {
     if (title == null || title.isEmpty || title == currentTitle) return;
     try {
       await channel.renameSession(sessionId: session.id, title: title);
+      _refreshActiveGatewayContact();
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +93,7 @@ extension _HermesChatScreenSessionActions on _HermesChatScreenState {
   ) async {
     try {
       await channel.forkSession(session.id);
+      _refreshActiveGatewayContact();
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,6 +132,7 @@ extension _HermesChatScreenSessionActions on _HermesChatScreenState {
     if (confirmed != true) return;
     try {
       await channel.deleteSession(session.id);
+      _refreshActiveGatewayContact();
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

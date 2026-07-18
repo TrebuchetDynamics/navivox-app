@@ -5,6 +5,17 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
     if (_reconnectingOnResume || !mounted) return;
     final channel = ref.read(hermesChannelProvider);
     final state = channel.state;
+    final directory = ref.read(hermesGatewayDirectoryProvider);
+    final activeContactId = directory.activeContactId;
+    if (activeContactId != null && state.isConnected) {
+      _reconnectingOnResume = true;
+      try {
+        await directory.activate(activeContactId);
+      } finally {
+        _reconnectingOnResume = false;
+      }
+      return;
+    }
     final recoverable =
         state.status == HermesConnectionStatus.error ||
         (state.isConnected &&
@@ -26,12 +37,12 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
     final controller = _transcriptScrollController;
     final wasNearBottom =
         !controller.hasClients ||
-        controller.position.maxScrollExtent - controller.position.pixels < 160;
+        controller.position.pixels - controller.position.minScrollExtent < 160;
     if (!force && !wasNearBottom) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !controller.hasClients) return;
       controller.animateTo(
-        controller.position.maxScrollExtent,
+        controller.position.minScrollExtent,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
       );
@@ -60,11 +71,25 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
     final channel = _subscribed;
     if (channel != null) {
       if (channel.state.isConnected) {
+        final completedAssistantId = _latestCompletedAssistantTurnId(
+          channel.state,
+        );
+        if (completedAssistantId != null &&
+            completedAssistantId != _lastCompletedAssistantTurnId) {
+          _lastCompletedAssistantTurnId = completedAssistantId;
+          _refreshActiveGatewayContact();
+        }
         final activeSessionId = channel.state.activeSessionId;
         if (_approvalSessionId != null &&
             _approvalSessionId != activeSessionId) {
+          final voiceWasActive =
+              _voiceInputController.continuousEnabled ||
+              _voiceInputController.capturing ||
+              _voiceInputController.speaking;
           _voiceInputController.pause(
-            'Hermes session changed. Continuous voice paused.',
+            voiceWasActive
+                ? 'Hermes session changed. Continuous voice paused.'
+                : null,
           );
           _pendingApprovals.clear();
           _answeringApprovalId = null;
@@ -79,6 +104,7 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
         _pendingApprovals.clear();
         _answeringApprovalId = null;
         _approvalSessionId = null;
+        _lastCompletedAssistantTurnId = null;
         _voiceInputController.pause();
       }
     }

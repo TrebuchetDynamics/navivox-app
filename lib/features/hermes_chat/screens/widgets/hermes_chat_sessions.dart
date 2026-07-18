@@ -588,6 +588,7 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
               )
               .toList(growable: false);
     return SafeArea(
+      key: const ValueKey('hermes-sessions-panel'),
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height * 0.8,
         child: Column(

@@ -1,0 +1,28 @@
+# Static validation: maestro check-syntax scripts/maestro/multi_gateway_chat.yaml
+# Physical-device smoke for the saved-gateway directory and active chat.
+# Keep output in ignored test-results or an external temporary directory.
+# Preserves app data so secure endpoint credentials remain available.
+appId: com.trebuchetdynamics.hermes.wing
+---
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "(?s).*Default agent.*"
+    timeout: 60000
+- assertVisible: "(?s).*online.*"
+- takeScreenshot: gateway_contacts
+- tapOn: "(?s).*Default agent.*"
+- extendedWaitUntil:
+    visible: "(?s).*Message Hermes….*"
+    timeout: 60000
+- tapOn: "(?s).*More actions.*"
+- assertVisible: "(?s).*Sessions.*"
+- tapOn: "(?s).*New session.*"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- takeScreenshot: gateway_chat
+- tapOn: "(?s).*All chats.*"
+- extendedWaitUntil:
+    visible: "(?s).*Default agent.*"
+    timeout: 30000

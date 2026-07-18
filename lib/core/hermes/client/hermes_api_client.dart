@@ -163,7 +163,7 @@ class HermesApiClient {
 
   Stream<HermesStreamEvent> streamSessionChat(
     String sessionId, {
-    required String message,
+    required Object message,
   }) {
     final headers = <String, String>{
       ...config.headers,
@@ -182,14 +182,19 @@ class HermesApiClient {
 
   Future<HermesRun> startRun({
     required String sessionId,
-    required String message,
+    required Object message,
   }) async {
+    final input = message is String
+        ? message
+        : [
+            {'role': 'user', 'content': message},
+          ];
     final response = await _postJson(config.runsUri, {
       'session_id': sessionId,
       // Hermes Agent 0.18 accepts `input`; older test fixtures accepted
       // `message`. Send both so the client remains compatible across the
       // transition while parsing either flat or enveloped run responses below.
-      'input': message,
+      'input': input,
       'message': message,
     });
     final run = response['run'] is Map

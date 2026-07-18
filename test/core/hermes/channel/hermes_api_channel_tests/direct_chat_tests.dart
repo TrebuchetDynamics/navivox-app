@@ -29,6 +29,41 @@ void _hermesApiChannelDirectChatTests() {
     expect(channel.state.errorMessage, contains('timed out'));
   });
 
+  test('sendText safely inlines a text attachment', () async {
+    Map<String, Object?>? requestBody;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        postStream: (uri, headers, body) {
+          requestBody = jsonDecode(body) as Map<String, Object?>;
+          return Stream.value('data: [DONE]\n\n');
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText(
+      '',
+      textAttachment: 'alpha\nbeta',
+      attachmentName: 'notes<&.txt',
+    );
+
+    expect(requestBody, {
+      'message':
+          '<file name="notes&lt;&amp;.txt" mime="text/plain">\nalpha\nbeta\n</file>',
+    });
+  });
+
   test(
     'sendText appends the user turn, streams assistant deltas, then reconciles with server history',
     () async {

@@ -508,15 +508,6 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
-            if (_pendingVoiceCommand != null)
-              VoiceCommandChip(
-                result: _pendingVoiceCommand!,
-                onConfirm: _confirmVoiceCommand,
-                onDecline: _declineVoiceCommand,
-                autoDeclineAfter: _pendingVoiceCommandAutoSend
-                    ? const Duration(seconds: 5)
-                    : null,
-              ),
             _buildComposer(context, channel, state, canSendTurns, isTurnActive),
           ],
         );
@@ -573,10 +564,25 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       onResolveApproval: (decision) =>
           unawaited(_resolveApproval(channel, decision)),
       onDismissApproval: _dismissCurrentApproval,
+      onReplyTurn: _replyToTurn,
       chatError: chatError,
       onRetryError: onRetryError,
       onReconnectError: onReconnectError,
       onReauthorizeError: onReauthorizeError,
+    );
+  }
+
+  void _replyToTurn(HermesChatTurn turn) {
+    // ponytail: plain Markdown quote until Hermes exposes reply metadata.
+    final quote = _safeHermesUiPreview(
+      turn.text.trim(),
+      maxLength: 320,
+    ).replaceAll('\n', '\n> ');
+    final draft = _composerController.text.trim();
+    final text = '> $quote\n\n${draft.isEmpty ? '' : draft}';
+    _composerController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
     );
   }
 
@@ -627,7 +633,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
                     channel,
                     state,
                     canSendTurns,
-                    strip,
+                    isTurnActive || canRetry || !canSendTurns ? strip : null,
                   ),
           );
         },
@@ -640,50 +646,77 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     HermesChannel channel,
     HermesChannelState state,
     bool canSendTurns,
-    Widget strip,
+    Widget? strip,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasPayload =
+        _composerController.text.trim().isNotEmpty ||
+        _pendingImageBytes != null ||
+        _pendingTextAttachment != null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        strip,
-        const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: colorScheme.outlineVariant),
+        if (strip != null) ...[strip, const SizedBox(height: 6)],
+        if (_pendingAttachmentName != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildPendingAttachment(),
           ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 4, 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 6),
+        ],
+        Container(
+          key: const ValueKey('hermes-composer-surface'),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.72),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              TextField(
-                key: const ValueKey('hermes-composer-field'),
-                controller: _composerController,
-                enabled: canSendTurns,
-                minLines: 1,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: canSendTurns
-                      ? 'Message Hermes…'
-                      : 'Chat transport unavailable',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+              _buildComposerMenuButton(context, channel, canSendTurns),
+              _buildEmojiButton(canSendTurns),
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('hermes-composer-field'),
+                  controller: _composerController,
+                  enabled: canSendTurns,
+                  minLines: 1,
+                  maxLines: 4,
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    labelText: canSendTurns
+                        ? 'Message Hermes…'
+                        : 'Chat unavailable',
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    filled: false,
+                    isDense: true,
+                    isCollapsed: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                  onSubmitted: (_) => _sendComposerText(channel),
                 ),
-                onSubmitted: (_) => _sendComposerText(channel),
               ),
-              Row(
-                children: [
-                  _buildContinuousVoiceSwitch(canSendTurns),
-                  const Spacer(),
-                  ..._composerIconButtons(channel, canSendTurns),
-                ],
+              _buildAttachmentButton(channel, canSendTurns),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: hasPayload
+                    ? _buildSendButton(channel, canSendTurns)
+                    : _buildMicButton(canSendTurns),
               ),
             ],
           ),
@@ -713,6 +746,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (_pendingAttachmentName != null) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _buildPendingAttachment(),
+            ),
+            const SizedBox(height: 6),
+          ],
           TextField(
             key: const ValueKey('hermes-composer-field'),
             controller: _composerController,
@@ -747,9 +787,127 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     );
   }
 
+  Widget _buildComposerMenuButton(
+    BuildContext context,
+    HermesChannel channel,
+    bool canSendTurns,
+  ) {
+    final settings = ref.watch(wingVoiceSettingsProvider);
+    final handsFreeAvailable = canSendTurns && settings.continuousVoiceEnabled;
+    final handsFreeActive = _voiceInputController.continuousEnabled;
+    return PopupMenuButton<_ComposerMenuAction>(
+      key: const ValueKey('hermes-composer-menu-button'),
+      tooltip: 'Chat menu',
+      icon: const Icon(Icons.menu_rounded),
+      onSelected: (action) {
+        switch (action) {
+          case _ComposerMenuAction.sessions:
+            _showSessionsPanel(context, channel);
+          case _ComposerMenuAction.handsFree:
+            _setContinuousVoice(!handsFreeActive);
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: _ComposerMenuAction.sessions,
+          child: ListTile(
+            leading: Icon(Icons.forum_outlined),
+            title: Text('Sessions'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        CheckedPopupMenuItem(
+          value: _ComposerMenuAction.handsFree,
+          enabled: handsFreeAvailable,
+          checked: handsFreeActive,
+          child: const Text('Hands-free voice'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmojiButton(bool canSendTurns) {
+    return IconButton(
+      key: const ValueKey('hermes-emoji-button'),
+      tooltip: 'Emoji',
+      icon: const Icon(Icons.sentiment_satisfied_alt_outlined),
+      onPressed: canSendTurns ? () => unawaited(_showEmojiPicker()) : null,
+    );
+  }
+
+  Future<void> _showEmojiPicker() async {
+    final emoji = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SizedBox(
+          height: 260,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(
+                  'Emoji',
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 52,
+                  ),
+                  itemCount: _composerEmojis.length,
+                  itemBuilder: (_, index) {
+                    final value = _composerEmojis[index];
+                    return Semantics(
+                      label: 'Insert $value',
+                      button: true,
+                      child: InkResponse(
+                        key: ValueKey('hermes-emoji-$index'),
+                        radius: 24,
+                        onTap: () => Navigator.of(sheetContext).pop(value),
+                        child: Center(
+                          child: Text(
+                            value,
+                            style: const TextStyle(fontSize: 26),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (emoji == null || !mounted) return;
+    final value = _composerController.value;
+    final selection = value.selection;
+    final start = selection.isValid ? selection.start : value.text.length;
+    final end = selection.isValid ? selection.end : value.text.length;
+    _composerController.value = TextEditingValue(
+      text: value.text.replaceRange(start, end, emoji),
+      selection: TextSelection.collapsed(offset: start + emoji.length),
+    );
+  }
+
+  void _setContinuousVoice(bool value) {
+    ref.read(wingVoiceSettingsProvider.notifier).setSpeakRepliesEnabled(value);
+    if (value) {
+      unawaited(_voiceInputController.enableContinuous());
+    } else {
+      _voiceInputController.pause();
+    }
+  }
+
   Widget _buildContinuousVoiceSwitch(bool canSendTurns) {
     final settings = ref.watch(wingVoiceSettingsProvider);
     final voiceEnabled = settings.continuousVoiceEnabled;
+    final active = _voiceInputController.continuousEnabled;
     final label = _voiceInputController.capturing
         ? 'Listening'
         : _voiceInputController.speaking
@@ -763,18 +921,9 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
           Text(label),
           Switch(
             key: const ValueKey('hermes-continuous-voice-switch'),
-            value: _voiceInputController.continuousEnabled,
+            value: active,
             onChanged: canSendTurns && voiceEnabled
-                ? (value) {
-                    ref
-                        .read(wingVoiceSettingsProvider.notifier)
-                        .setSpeakRepliesEnabled(value);
-                    if (value) {
-                      unawaited(_voiceInputController.enableContinuous());
-                    } else {
-                      _voiceInputController.pause();
-                    }
-                  }
+                ? _setContinuousVoice
                 : null,
           ),
         ],
@@ -782,36 +931,124 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     );
   }
 
-  List<Widget> _composerIconButtons(HermesChannel channel, bool canSendTurns) {
+  Widget _buildPendingAttachment() {
+    final colors = Theme.of(context).colorScheme;
+    final name = _safeHermesUiPreview(_pendingAttachmentName!, maxLength: 40);
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Attached file $name, ready to send',
+      child: Container(
+        key: const ValueKey('hermes-pending-attachment'),
+        constraints: const BoxConstraints(maxWidth: 340),
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colors.outlineVariant),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExcludeSemantics(
+              child: Icon(
+                _pendingTextAttachment == null
+                    ? Icons.image_outlined
+                    : Icons.description_outlined,
+                color: colors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: ExcludeSemantics(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, overflow: TextOverflow.ellipsis),
+                    Text(
+                      'Ready to send',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Remove attachment',
+              icon: const Icon(Icons.close_rounded, size: 20),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _setState(() {
+                _pendingImageBytes = null;
+                _pendingImageName = null;
+                _pendingImageMimeType = null;
+                _pendingTextAttachment = null;
+                _pendingTextAttachmentName = null;
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentButton(HermesChannel channel, bool canSendTurns) {
+    return IconButton(
+      key: const ValueKey('hermes-attachment-button'),
+      tooltip: 'Attach image or text file',
+      icon: const Icon(Icons.attach_file),
+      onPressed: canSendTurns && !_isTurnActive(channel.state)
+          ? () => unawaited(_pickAttachment())
+          : null,
+    );
+  }
+
+  Widget _buildMicButton(bool canSendTurns) {
     final voiceEnabled = ref.watch(
       wingVoiceSettingsProvider.select(
         (settings) => settings.continuousVoiceEnabled,
       ),
     );
-    return [
-      IconButton(
-        key: const ValueKey('hermes-mic-button'),
-        tooltip: 'Speak — device STT to Hermes text',
-        icon: _voiceInputController.capturing
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.mic_none_outlined),
-        onPressed:
-            _voiceInputController.capturing || !canSendTurns || !voiceEnabled
-            ? null
-            : () => unawaited(_voiceInputController.captureDraft()),
-      ),
-      IconButton.filled(
-        key: const ValueKey('hermes-send-button'),
-        tooltip: 'Send',
-        icon: const Icon(Icons.arrow_upward),
-        onPressed: canSendTurns && _composerController.text.trim().isNotEmpty
-            ? () => _sendComposerText(channel)
-            : null,
-      ),
-    ];
+    return IconButton(
+      key: const ValueKey('hermes-mic-button'),
+      tooltip: 'Speak and send',
+      icon: _voiceInputController.capturing
+          ? const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.mic_none_outlined),
+      onPressed:
+          _voiceInputController.capturing || !canSendTurns || !voiceEnabled
+          ? null
+          : () => unawaited(_voiceInputController.captureAndSend()),
+    );
   }
+
+  Widget _buildSendButton(HermesChannel channel, bool canSendTurns) {
+    final hasPayload =
+        _composerController.text.trim().isNotEmpty ||
+        _pendingImageBytes != null ||
+        _pendingTextAttachment != null;
+    return IconButton.filled(
+      key: const ValueKey('hermes-send-button'),
+      tooltip: 'Send',
+      icon: const Icon(Icons.arrow_upward_rounded),
+      onPressed: canSendTurns && hasPayload
+          ? () => _sendComposerText(channel)
+          : null,
+    );
+  }
+
+  List<Widget> _composerIconButtons(HermesChannel channel, bool canSendTurns) =>
+      [
+        _buildAttachmentButton(channel, canSendTurns),
+        _buildMicButton(canSendTurns),
+        _buildSendButton(channel, canSendTurns),
+      ];
 }

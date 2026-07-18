@@ -1,15 +1,57 @@
 part of '../hermes_api_channel.dart';
 
 extension _MessagingExtension on HermesApiChannel {
-  Future<void> _sendText(String text) async {
+  Future<void> _sendText(
+    String text, {
+    String? imageDataUrl,
+    String? textAttachment,
+    String? attachmentName,
+  }) async {
     final message = text.trim();
-    if (message.isEmpty) {
+    final image = imageDataUrl?.trim();
+    final hasImage = image != null && image.isNotEmpty;
+    final hasTextFile = textAttachment != null;
+    if (message.isEmpty && !hasImage && !hasTextFile) {
       throw ArgumentError.value(
         text,
         'text',
         'Hermes message cannot be blank.',
       );
     }
+    if (hasImage && hasTextFile) {
+      throw ArgumentError('Send either an image or a text file, not both.');
+    }
+    if (hasImage &&
+        !image.startsWith(RegExp(r'data:image/(png|jpeg|gif|webp);base64,'))) {
+      throw ArgumentError.value(
+        imageDataUrl,
+        'imageDataUrl',
+        'Hermes attachments must be supported image data URLs.',
+      );
+    }
+    final attachmentLabel = attachmentName?.trim();
+    final safeLabel = attachmentLabel?.isNotEmpty == true
+        ? attachmentLabel!
+        : hasTextFile
+        ? 'attachment.txt'
+        : 'attachment';
+    final requestText = [
+      if (message.isNotEmpty) message,
+      if (hasTextFile)
+        '<file name="${_escapeAttachmentXml(safeLabel)}" mime="text/plain">\n$textAttachment\n</file>',
+    ].join('\n\n');
+    final displayMessage = [
+      if (message.isNotEmpty) message,
+      if (hasImage) '[Image: $safeLabel]',
+      if (hasTextFile) '[File: $safeLabel]',
+    ].join('\n\n');
+    final Object requestMessage = hasImage
+        ? [
+            if (requestText.isNotEmpty)
+              {'type': 'input_text', 'text': requestText},
+            {'type': 'input_image', 'image_url': image},
+          ]
+        : requestText;
     final client = _client;
     final sessionId = _state.activeSessionId;
     if (client == null || sessionId == null) {
@@ -38,7 +80,7 @@ extension _MessagingExtension on HermesApiChannel {
         sessionId: sessionId,
         author: HermesTurnAuthor.user,
         createdAt: now,
-        text: message,
+        text: displayMessage,
       ),
     );
     var assistantTurn = HermesChatTurn(
@@ -63,11 +105,11 @@ extension _MessagingExtension on HermesApiChannel {
       if (useRunTransport) {
         final run = await client.startRun(
           sessionId: sessionId,
-          message: message,
+          message: requestMessage,
         );
         runId = run.id;
       } else {
-        events = client.streamSessionChat(sessionId, message: message);
+        events = client.streamSessionChat(sessionId, message: requestMessage);
       }
     } catch (error) {
       if (!identical(_client, client) ||
@@ -609,3 +651,10 @@ extension _MessagingExtension on HermesApiChannel {
     _setTurns(sessionId, turns);
   }
 }
+
+String _escapeAttachmentXml(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');

@@ -5,14 +5,13 @@ abstract final class AppRoutes {
   static const agents = '/agents';
   static const providers = '/providers';
   static const settings = '/settings';
+  static const settingsVoice = '/settings/voice';
+  static const settingsDiagnostics = '/settings/diagnostics';
 
   /// One-time pairing enrollment screen reached via an Android connect
   /// intent (`wing://connect?...`); deliberately outside the
   /// authenticated shell since no endpoint is configured yet.
   static const enroll = '/enroll';
-
-  /// Needle spike evaluation screen; registered only in NEEDLE_SPIKE builds.
-  static const needleSpike = '/needle-spike';
 
   static bool isHermesLocation(String location) {
     return AppRouteLocationPattern.hasPathPrefix(

@@ -1,140 +1,167 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wing/core/hermes/channel/hermes_channel_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
+import 'package:wing/features/hermes_chat/gateways/hermes_gateway_directory.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/settings/screens/settings_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../hermes_chat/support/fake_hermes_channel.dart';
+import '../hermes_chat/support/fake_hermes_endpoint_store.dart';
+import '../hermes_chat/support/fake_hermes_gateway_directory.dart';
 
 void main() {
-  testWidgets('surfaces optional inventory failures without raw errors', (
+  testWidgets('settings manage gateways without rendering credentials', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final channel = FakeHermesChannel(
-      optionalResourceErrors: const {
-        HermesOptionalResource.skills: 'Authorization: Bearer private-value',
-        HermesOptionalResource.models: '/home/operator/private-models',
-      },
-    );
+    final channel = FakeHermesChannel.disconnected();
     addTearDown(channel.dispose);
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(
+          id: 'a',
+          label: 'Alpha',
+          baseUrl: 'https://a',
+          apiKey: 'sentinel-api-key',
+        ),
+        HermesEndpointConfig(
+          id: 'b',
+          label: 'Beta',
+          baseUrl: 'https://b',
+          apiKey: 'b-secret',
+        ),
+      ],
+    );
+    final loader = FakeGatewaySummaryLoader({
+      'a': gatewaySummary(['a1']),
+      'b': gatewaySummary(['b1']),
+    });
+    final directory = HermesGatewayDirectory(
+      store: store,
+      cache: FakeGatewayContactCache(),
+      loader: loader,
+      activeChannel: channel,
+    );
+    await directory.refresh();
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           hermesChannelProvider.overrideWithValue(channel),
-          hermesEndpointStoreProvider.overrideWithValue(
-            const EmptyHermesEndpointStore(),
-          ),
-        ],
-        child: const MaterialApp(home: SettingsScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('settings-copy-diagnostics')),
-      300,
-    );
-
-    expect(find.text('Inventory warnings'), findsOneWidget);
-    expect(find.text('Models, skills unavailable'), findsOneWidget);
-    expect(find.textContaining('private-value'), findsNothing);
-    expect(find.textContaining('/home/operator'), findsNothing);
-  });
-
-  testWidgets('copies the bounded Hermes diagnostics snapshot', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final channel = FakeHermesChannel(
-      status: HermesConnectionStatus.connected,
-      models: const ['hermes-3'],
-    );
-    addTearDown(channel.dispose);
-    String? copiedText;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-          if (call.method == 'Clipboard.setData') {
-            copiedText =
-                (call.arguments as Map<Object?, Object?>)['text'] as String?;
-          }
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null),
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          hermesChannelProvider.overrideWithValue(channel),
-          hermesEndpointStoreProvider.overrideWithValue(
-            const EmptyHermesEndpointStore(),
-          ),
+          hermesEndpointStoreProvider.overrideWithValue(store),
+          hermesGatewayDirectoryProvider.overrideWith((ref) => directory),
         ],
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
     await tester.pumpAndSettle();
 
-    final copy = find.byKey(const ValueKey('settings-copy-diagnostics'));
-    await tester.scrollUntilVisible(copy, 300);
-    await tester.tap(copy);
-    await tester.pump();
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-connect-another-gateway')),
+      findsOneWidget,
+    );
+    expect(find.text('Hermes Agent dashboard'), findsNothing);
+    expect(find.text('Appearance'), findsNothing);
+    expect(find.byKey(const ValueKey('settings-open-hermes')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('voice-continuous-enabled')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('voice-speak-replies-enabled')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('settings-voice-link')), findsOneWidget);
+    expect(
+      find.text('Credentials stay in secure storage; values hidden'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('sentinel-api-key'), findsNothing);
 
-    expect(copiedText, contains('Hermes Wing diagnostics'));
-    expect(copiedText, contains('Models: hermes-3'));
-    expect(copiedText, contains('Secrets: excluded'));
-    expect(find.text('Hermes diagnostics copied'), findsOneWidget);
+    var gatewayMenu = find.byKey(const ValueKey('settings-gateway-menu-a'));
+    await Scrollable.ensureVisible(tester.element(gatewayMenu), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(gatewayMenu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rename'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('settings-gateway-rename-field')),
+      'Work',
+    );
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+
+    gatewayMenu = find.byKey(const ValueKey('settings-gateway-menu-a'));
+    await Scrollable.ensureVisible(tester.element(gatewayMenu), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(gatewayMenu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reconnect'));
+    await tester.pumpAndSettle();
+    expect(loader.calls.where((id) => id == 'a'), hasLength(2));
+    expect(loader.calls.where((id) => id == 'b'), hasLength(1));
+
+    gatewayMenu = find.byKey(const ValueKey('settings-gateway-menu-a'));
+    await Scrollable.ensureVisible(tester.element(gatewayMenu), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(gatewayMenu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-gateway-remove-dialog')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('settings-gateway-remove-confirm')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Work'), findsNothing);
+    expect(find.text('Beta'), findsOneWidget);
+
+    final diagnostics = find.byKey(const ValueKey('settings-diagnostics-link'));
+    await tester.scrollUntilVisible(diagnostics, 300);
+    expect(diagnostics, findsOneWidget);
   });
 
-  testWidgets('Pocket Speech settings explain downloads and playback choices', (
+  testWidgets('settings overview fits a narrow phone without overflow', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(390, 844);
+    tester.view.physicalSize = const Size(320, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    SharedPreferences.setMockInitialValues({
-      'wing.voice.pocket_speech_model': 'kitten',
-      'wing.voice.kokoro_model_path': '/models/kitten/model.onnx',
-      'wing.voice.kokoro_voices_path': '/models/kitten/voices.json',
-    });
-    final channel = FakeHermesChannel();
+    SharedPreferences.setMockInitialValues({});
+    final channel = FakeHermesChannel.disconnected();
     addTearDown(channel.dispose);
+    final store = FakeHermesEndpointStore(profiles: const []);
+    final directory = HermesGatewayDirectory(
+      store: store,
+      cache: FakeGatewayContactCache(),
+      loader: FakeGatewaySummaryLoader(const {}),
+      activeChannel: channel,
+    );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           hermesChannelProvider.overrideWithValue(channel),
-          hermesEndpointStoreProvider.overrideWithValue(
-            const EmptyHermesEndpointStore(),
-          ),
+          hermesEndpointStoreProvider.overrideWithValue(store),
+          hermesGatewayDirectoryProvider.overrideWith((ref) => directory),
         ],
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
     await tester.pumpAndSettle();
 
-    final speed = find.byKey(const ValueKey('voice-pocket-speech-speed'));
-    await tester.scrollUntilVisible(speed, 300);
-
-    expect(find.byKey(const ValueKey('voice-pocket-speech-voice')), findsOne);
-    final preview = find.byKey(const ValueKey('voice-pocket-speech-preview'));
-    expect(preview, findsOne);
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.descendant(of: preview, matching: find.byType(OutlinedButton)),
-          )
-          .onPressed,
-      isNotNull,
-    );
-    expect(speed, findsOne);
-    expect(find.text('About 26 MB · English · 8 voices'), findsOneWidget);
-    expect(find.textContaining('stored on this device'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(ListView), findsOneWidget);
   });
 }

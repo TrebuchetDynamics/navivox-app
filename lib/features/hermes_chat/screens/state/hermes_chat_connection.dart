@@ -128,6 +128,7 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
             profileId: id,
           );
       _refreshEndpointProfiles();
+      unawaited(ref.read(hermesGatewayDirectoryProvider).reload());
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +151,7 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
       _profileLabelController.clear();
     }
     _refreshEndpointProfiles();
+    unawaited(ref.read(hermesGatewayDirectoryProvider).reload());
   }
 
   Future<void> _connect(HermesChannel channel) async {
@@ -265,6 +267,8 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
             label: profileLabel.isEmpty ? null : profileLabel,
           );
       _refreshEndpointProfiles();
+      await channel.disconnect();
+      unawaited(ref.read(hermesGatewayDirectoryProvider).reload());
     }
   }
 
@@ -272,15 +276,19 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
     BuildContext context,
     HermesChannel channel,
   ) async {
+    final activeContact = ref
+        .read(hermesGatewayDirectoryProvider)
+        .activeContact;
+    final target = activeContact?.gatewayLabel ?? _baseUrlController.text;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         key: const ValueKey('hermes-disconnect-confirm-dialog'),
         title: const Text('Disconnect from Hermes?'),
         content: Text(
-          'Disconnect from ${_safeHermesUiPreview(_baseUrlController.text, maxLength: 120)} '
+          'Disconnect from ${_safeHermesUiPreview(target, maxLength: 120)} '
           'and remove this saved endpoint/API key from this device. Other saved '
-          'Hermes profiles remain available.',
+          'Hermes gateways remain available.',
         ),
         actions: [
           TextButton(
@@ -300,8 +308,14 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
   }
 
   Future<void> _disconnect(HermesChannel channel) async {
-    await channel.disconnect();
-    await ref.read(hermesEndpointStoreProvider).clear();
+    final directory = ref.read(hermesGatewayDirectoryProvider);
+    final activeContact = directory.activeContact;
+    if (activeContact != null) {
+      await directory.removeGateway(activeContact.id.gatewayId);
+    } else {
+      await channel.disconnect();
+      await ref.read(hermesEndpointStoreProvider).clear();
+    }
     _refreshEndpointProfiles();
   }
 
