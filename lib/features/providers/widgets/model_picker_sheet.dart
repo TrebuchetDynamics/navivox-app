@@ -3,6 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../l10n/app_localizations.dart';
 
+const _knownAuxiliaryTasks = [
+  'vision',
+  'web_extract',
+  'compression',
+  'skills_hub',
+  'approval',
+  'mcp',
+  'title_generation',
+  'triage_specifier',
+  'kanban_decomposer',
+  'profile_describer',
+  'curator',
+];
+
 String auxiliaryTaskLabel(AppLocalizations strings, String task) =>
     switch (task) {
       'vision' => strings.auxiliaryTaskVision,
@@ -80,10 +94,16 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
     final assignment = inventory.assignment;
 
     final previousSlot = _slot;
+    final assignedTasks = assignment.auxiliary
+        .map((assignment) => assignment.task)
+        .toSet();
     final slots = [
       const _SlotOption(label: 'main', scope: 'main'),
-      for (final aux in assignment.auxiliary)
-        _SlotOption(label: aux.task, scope: 'auxiliary', task: aux.task),
+      for (final task in assignedTasks)
+        _SlotOption(label: task, scope: 'auxiliary', task: task),
+      for (final task in _knownAuxiliaryTasks)
+        if (!assignedTasks.contains(task))
+          _SlotOption(label: task, scope: 'auxiliary', task: task),
     ];
     _slots = slots;
     _slot = slots.firstWhere(
@@ -134,6 +154,13 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
       if (block.provider == _provider) return block.models;
     }
     return const [];
+  }
+
+  HermesCatalogModel? get _selectedModel {
+    for (final model in _modelsForProvider) {
+      if (model.id == _model) return model;
+    }
+    return null;
   }
 
   void _syncModel() {
@@ -330,6 +357,15 @@ class _ModelPickerSheetState extends State<ModelPickerSheet> {
                     ? null
                     : (value) => setState(() => _model = value),
               ),
+              if (_selectedModel?.description.trim().isNotEmpty ?? false) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _selectedModel!.description.trim(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),

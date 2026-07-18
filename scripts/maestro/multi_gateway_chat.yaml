@@ -6,6 +6,7 @@ appId: com.trebuchetdynamics.hermes.wing
 ---
 - launchApp:
     stopApp: true
+- setOrientation: PORTRAIT
 - extendedWaitUntil:
     visible: "(?s).*Default agent.*"
     timeout: 60000

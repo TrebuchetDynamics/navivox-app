@@ -1,0 +1,40 @@
+# Read-only bounded gateway status against a real saved gateway.
+# Static validation: maestro check-syntax scripts/maestro/gateway_status_qa.yaml
+# Preserves secure app data. Pass the saved label with
+# `-e WING_QA_GATEWAY_LABEL="<saved gateway label>"`.
+appId: com.trebuchetdynamics.hermes.wing
+name: gateway_status_qa
+---
+- launchApp:
+    clearState: false
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s)^More.*"
+- scrollUntilVisible:
+    element:
+      text: "(?s)^Gateway.*"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "(?s)^Gateway.*"
+- assertVisible: "(?s).*Select gateway.*"
+- tapOn: "(?s).*Select gateway.*"
+- tapOn: "(?s).*${WING_QA_GATEWAY_LABEL}.*"
+- extendedWaitUntil:
+    visible: "(?s).*Read-only gateway status.*"
+    timeout: 60000
+- assertVisible: "(?s).*Healthy.*"
+- assertVisible: "(?s).*Refresh gateway status.*"
+- assertNotVisible: "(?s)^Restart$"
+- assertNotVisible: "(?s)^Configure$"
+- takeScreenshot: gateway_status
+- tapOn: "(?s).*Refresh gateway status.*"
+- extendedWaitUntil:
+    visible: "(?s).*Healthy.*"
+    timeout: 60000
+- takeScreenshot: gateway_status_refreshed

@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel.dart';
 import 'package:wing/core/hermes/models/hermes_capabilities.dart';
+import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
+import 'package:wing/features/hermes_chat/gateways/hermes_gateway_directory.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/providers/screens/providers_screen.dart';
 import 'package:wing/l10n/app_localizations.dart';
 
 import '../hermes_chat/support/fake_hermes_channel.dart';
+import '../hermes_chat/support/fake_hermes_gateway_directory.dart';
 
 HermesCapabilityDocument _capabilities(List<String> scopes) =>
     HermesCapabilityDocument.fromJson({
@@ -136,6 +139,29 @@ class _FailingLoadFakeChannel extends FakeHermesChannel {
   }
 }
 
+class _GatewaySwitchingProviderChannel extends FakeHermesChannel {
+  _GatewaySwitchingProviderChannel()
+    : super(status: HermesConnectionStatus.disconnected);
+
+  String? _gatewayUrl;
+
+  @override
+  Future<void> connect({required String baseUrl, String? apiKey}) async {
+    _gatewayUrl = baseUrl;
+    await super.connect(baseUrl: baseUrl, apiKey: apiKey);
+  }
+
+  @override
+  HermesChannelState get state => super.state.copyWith(
+    capabilities: _capabilities(const ['providers:read', 'models:read']),
+    selectedProfileId: 'default',
+    providers: _gatewayUrl == 'https://beta'
+        ? const [_anthropicProvider]
+        : const [_openAiProvider],
+    modelInventory: _inventory(),
+  );
+}
+
 class _ProfileSwitchingFakeChannel extends FakeHermesChannel {
   _ProfileSwitchingFakeChannel({
     required this.providersByProfile,
@@ -164,21 +190,28 @@ class _ProfileSwitchingFakeChannel extends FakeHermesChannel {
   }
 }
 
-Widget _testApp(FakeHermesChannel channel, {double textScale = 1.0}) =>
-    ProviderScope(
-      overrides: [hermesChannelProvider.overrideWithValue(channel)],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: child!,
-        ),
-        home: const ProvidersScreen(),
-      ),
-    );
+Widget _testApp(
+  FakeHermesChannel channel, {
+  double textScale = 1.0,
+  HermesGatewayDirectory? directory,
+}) => ProviderScope(
+  overrides: [
+    hermesChannelProvider.overrideWithValue(channel),
+    if (directory != null)
+      hermesGatewayDirectoryProvider.overrideWith((ref) => directory),
+  ],
+  child: MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(textScale)),
+      child: child!,
+    ),
+    home: const ProvidersScreen(),
+  ),
+);
 
 void main() {
   testWidgets('loads providers and models on mount', (tester) async {
@@ -259,6 +292,55 @@ void main() {
     expect(channel.loadModelsCalls, 2);
     expect(find.text('OpenAI'), findsOneWidget);
   });
+
+  testWidgets(
+    'gateway picker reloads the same profile id from the selected gateway',
+    (tester) async {
+      final channel = _GatewaySwitchingProviderChannel();
+      addTearDown(channel.dispose);
+      final directory = directoryFor(
+        configs: const [
+          HermesEndpointConfig(
+            id: 'alpha',
+            label: 'Alpha',
+            baseUrl: 'https://alpha',
+          ),
+          HermesEndpointConfig(
+            id: 'beta',
+            label: 'Beta',
+            baseUrl: 'https://beta',
+          ),
+        ],
+        loader: FakeGatewaySummaryLoader({
+          'alpha': gatewaySummary(['default']),
+          'beta': gatewaySummary(['default']),
+        }),
+        activeChannel: channel,
+      );
+      await directory.refresh();
+
+      await tester.pumpWidget(_testApp(channel, directory: directory));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('providers-gateway-picker')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Alpha').last);
+      await tester.pumpAndSettle();
+      expect(channel.loadProvidersCalls, 1);
+      expect(channel.loadModelsCalls, 1);
+      expect(find.text('OpenAI'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('providers-gateway-picker')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Beta').last);
+      await tester.pumpAndSettle();
+
+      expect(directory.activeContactId?.gatewayId, 'beta');
+      expect(channel.loadProvidersCalls, 2);
+      expect(channel.loadModelsCalls, 2);
+      expect(find.text('Anthropic'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'reloads providers and models when the selected profile changes mid-session',
@@ -429,6 +511,34 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'shows advertised runtime models when admin APIs are unavailable',
+    (tester) async {
+      final channel = FakeHermesChannel(
+        capabilities: HermesCapabilityDocument.fromJson({
+          'schema_version': 1,
+          'auth': {'type': 'bearer', 'required': true},
+          'endpoints': {
+            'models': {'method': 'GET', 'path': '/v1/models'},
+          },
+        }),
+        models: const ['hermes-agent', 'openrouter/example'],
+      );
+      addTearDown(channel.dispose);
+
+      await tester.pumpWidget(_testApp(channel));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Runtime models'), findsOneWidget);
+      expect(find.text('hermes-agent'), findsOneWidget);
+      expect(find.text('openrouter/example'), findsOneWidget);
+      expect(find.text('Read-only access'), findsWidgets);
+      expect(find.text('Choose model'), findsNothing);
+      expect(channel.loadProvidersCalls, 0);
+      expect(channel.loadModelsCalls, 0);
+    },
+  );
 
   testWidgets('shows an unavailable message without provider access', (
     tester,

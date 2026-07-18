@@ -27,12 +27,16 @@ endpoint. The same Flutter client keeps streamed work, tool activity, approvals,
 profiles, models, and optional device speech within reach without replacing the
 Hermes backend.
 
-- **Follow live work** — create sessions, stream assistant and tool events, and
-  stop active runs.
+- **Follow live work** — create sessions with client-owned slash commands,
+  stream assistant, bounded reasoning, and tool events, inspect server-reported
+  token usage, and stop active runs.
 - **Keep operator control visible** — review approval requests inline before
   sensitive work continues.
 - **Manage the endpoint** — work with advertised agents, profiles, providers,
   and model assignments.
+- **Inspect advertised inventory** — search bounded installed-skill metadata,
+  review enabled toolsets and scheduled jobs, and inspect gateway health without
+  creating shadow state.
 - **Use device speech** — review recognized text before sending it; optionally
   speak completed replies.
 - **Move between layouts** — use a compact mobile flow or a desktop workspace
@@ -171,6 +175,9 @@ advertised session or run endpoints used by the client.
 - Remote transcript media and client-path attachments remain deferred.
 - Optional inventory can fail independently of an otherwise healthy connection;
   the UI distinguishes unavailable data from an empty result.
+- Per-gateway profile management requires that gateway to advertise the scoped
+  profile API. Wing does not create local shadow profiles or bypass a missing
+  server capability. See [gateway profile management and limitations](docs/product/gateway-profile-management.md).
 
 ## Development
 
@@ -194,6 +201,7 @@ preview, and reply speed without exposing model paths.
 
 - [Documentation index](docs/README.md)
 - [Hermes compatibility](docs/product/hermes-compatibility.md)
+- [Gateway profile management and limitations](docs/product/gateway-profile-management.md)
 - [Hermes Desktop parity ledger](docs/product/hermes-desktop-parity.md)
 - [Architecture decisions](docs/adr/README.md)
 - [Alpha release runbook](docs/runbooks/release-alpha.md)

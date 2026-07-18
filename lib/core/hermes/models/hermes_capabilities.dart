@@ -67,6 +67,22 @@ class HermesCapabilityDocument {
         endpoint.method == method.toUpperCase() &&
         endpoint.path == path;
   }
+
+  /// Requires the exact method/path contract and an explicit declaration that
+  /// the endpoint is protected by [scope]. Administrative clients must not
+  /// infer scope requirements from an endpoint name alone.
+  bool advertisesScopedEndpoint(
+    String name,
+    String method,
+    String path,
+    String scope,
+  ) {
+    final endpoint = endpoints[name];
+    return endpoint != null &&
+        endpoint.method == method.toUpperCase() &&
+        endpoint.path == path &&
+        endpoint.requiredScopes.contains(scope);
+  }
 }
 
 /// Describes how a profile-owned request must carry profile context.

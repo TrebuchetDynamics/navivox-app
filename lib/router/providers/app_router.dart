@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/agents/screens/agents_screen.dart';
 import '../../features/enrollment/screens/hermes_enrollment_screen.dart';
+import '../../features/gateway/screens/gateway_screen.dart';
 import '../../features/hermes_chat/screens/hermes_chat_screen.dart';
 import '../../features/providers/screens/providers_screen.dart';
+import '../../features/schedules/screens/schedules_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/tools/screens/tools_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 import '../app_routes.dart';
 
@@ -35,6 +38,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.providers,
             builder: (context, state) => const ProvidersScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.tools,
+            builder: (context, state) => const ToolsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.schedules,
+            builder: (context, state) => const SchedulesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.gateway,
+            builder: (context, state) => const GatewayScreen(),
           ),
           GoRoute(
             path: AppRoutes.settings,

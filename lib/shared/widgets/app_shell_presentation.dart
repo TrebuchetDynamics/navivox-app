@@ -12,6 +12,9 @@ class AppShellPresentation {
     _hermesDestination,
     _agentsDestination,
     _providersDestination,
+    _toolsDestination,
+    _schedulesDestination,
+    _gatewayDestination,
     _settingsDestination,
   ];
 
@@ -23,6 +26,9 @@ class AppShellPresentation {
   List<AppShellDestination> get mobileOverflowDestinations => [
     _agentsDestination,
     _providersDestination,
+    _toolsDestination,
+    _schedulesDestination,
+    _gatewayDestination,
   ];
 
   String get mobileOverflowLabel => localizations.moreDestinations;
@@ -45,6 +51,24 @@ class AppShellPresentation {
     path: AppRoutes.providers,
     icon: Icons.vpn_key_outlined,
     label: localizations.providersDestination,
+  );
+
+  AppShellDestination get _toolsDestination => AppShellDestination(
+    path: AppRoutes.tools,
+    icon: Icons.build_outlined,
+    label: localizations.toolsDestination,
+  );
+
+  AppShellDestination get _schedulesDestination => AppShellDestination(
+    path: AppRoutes.schedules,
+    icon: Icons.schedule_outlined,
+    label: localizations.schedulesDestination,
+  );
+
+  AppShellDestination get _gatewayDestination => AppShellDestination(
+    path: AppRoutes.gateway,
+    icon: Icons.dns_outlined,
+    label: localizations.gatewayDestination,
   );
 
   AppShellDestination get _settingsDestination => AppShellDestination(

@@ -10,6 +10,8 @@ import '../client/hermes_api_config.dart';
 import '../models/hermes_chat_turn.dart';
 import '../models/hermes_health.dart';
 import '../models/hermes_job.dart';
+import '../models/hermes_run.dart';
+import '../models/hermes_skill.dart';
 import '../policy/hermes_transport_policy.dart';
 import '../sse/hermes_sse_event_decoder.dart';
 import 'hermes_channel.dart';
@@ -142,6 +144,12 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     required String soul,
     required String revision,
   }) => _writeProfileSoul(profileId: profileId, soul: soul, revision: revision);
+
+  @override
+  Future<void> loadDetailedHealth() => _reloadDetailedHealth();
+
+  @override
+  Future<void> loadJobs() => _reloadJobs();
 
   @override
   Future<void> loadProviders() => _loadProviders();

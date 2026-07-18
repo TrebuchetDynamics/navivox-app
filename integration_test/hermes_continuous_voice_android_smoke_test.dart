@@ -273,6 +273,12 @@ class _AndroidHermesVoiceSmokeChannel extends ChangeNotifier
   }) async {}
 
   @override
+  Future<void> loadDetailedHealth() async {}
+
+  @override
+  Future<void> loadJobs() async {}
+
+  @override
   Future<void> loadProviders() async {}
 
   @override

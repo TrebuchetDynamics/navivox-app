@@ -1,0 +1,40 @@
+# Static validation: maestro check-syntax scripts/maestro/tools_inventory_qa.yaml
+# Physical-device receipt for gateway-scoped, read-only skill/toolset inventory.
+# Preserves app data so saved gateway credentials remain available. Pass the
+# saved label with `-e WING_QA_GATEWAY_LABEL="<saved gateway label>"`.
+appId: com.trebuchetdynamics.hermes.wing
+name: tools_inventory_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s)^More.*"
+- tapOn: "(?s)^Tools.*"
+- assertVisible: "(?s).*Select gateway.*"
+- tapOn: "(?s).*Select gateway.*"
+- tapOn: "(?s).*${WING_QA_GATEWAY_LABEL}.*"
+- extendedWaitUntil:
+    visible: "(?s).*Installed skills.*"
+    timeout: 60000
+- assertNotVisible: "(?s).*did not advertise installed skill inventory.*"
+- assertVisible: "(?s).*Search installed skills.*"
+- tapOn: "(?s).*Search installed skills.*"
+- inputText: "qa_no_installed_skill_match_98765"
+- assertVisible: "(?s).*No installed skills match this search.*"
+- eraseText: 80
+- hideKeyboard
+- takeScreenshot: tools_skills_inventory
+- scrollUntilVisible:
+    element:
+      text: "Enabled toolsets"
+    direction: DOWN
+    timeout: 30000
+- assertVisible: "(?s).*Enabled toolsets.*"
+- assertNotVisible: "(?s).*did not advertise enabled toolset inventory.*"
+- takeScreenshot: tools_toolsets_inventory

@@ -7,6 +7,7 @@ import '../models/hermes_model_assignment.dart';
 import '../models/hermes_profile.dart';
 import '../models/hermes_provider.dart';
 import '../models/hermes_session.dart';
+import '../models/hermes_skill.dart';
 
 enum HermesConnectionStatus { disconnected, connecting, connected, error }
 
@@ -20,6 +21,7 @@ class HermesChannelState {
     this.detailedHealth,
     this.models = const [],
     this.skills = const [],
+    this.skillDetails = const [],
     this.enabledToolsets = const [],
     this.jobs = const [],
     this.optionalResourceErrors = const {},
@@ -42,6 +44,7 @@ class HermesChannelState {
   final HermesHealthStatus? detailedHealth;
   final List<String> models;
   final List<String> skills;
+  final List<HermesSkill> skillDetails;
   final List<String> enabledToolsets;
   final List<HermesJob> jobs;
 
@@ -74,6 +77,14 @@ class HermesChannelState {
   /// Scope-gating visibility hooks. These mirror the milestone-1 pattern
   /// (`supportsSchema` + advertised endpoint + granted scope) so surfaces can
   /// hide read/write affordances the connected token cannot use.
+  bool get canReadSkills => _advertisesEndpoint('skills', 'GET', '/v1/skills');
+
+  bool get canReadToolsets =>
+      _advertisesEndpoint('toolsets', 'GET', '/v1/toolsets');
+
+  bool get canReadRuntimeModels =>
+      _advertisesEndpoint('models', 'GET', '/v1/models');
+
   bool get canReadProviders =>
       _allowsEndpoint('providers', 'GET', '/api/providers', 'providers:read');
 
@@ -94,12 +105,19 @@ class HermesChannelState {
     'models:write',
   );
 
+  bool _advertisesEndpoint(String name, String method, String path) {
+    final document = capabilities;
+    return document != null &&
+        document.supportsSchema &&
+        document.advertisesEndpoint(name, method, path);
+  }
+
   bool _allowsEndpoint(String name, String method, String path, String scope) {
     final document = capabilities;
     return document != null &&
         document.supportsSchema &&
         document.auth.allows(scope) &&
-        document.advertisesEndpoint(name, method, path);
+        document.advertisesScopedEndpoint(name, method, path, scope);
   }
 
   HermesProfile? get selectedProfile {
@@ -156,8 +174,10 @@ class HermesChannelState {
     bool clearErrorMessage = false,
     HermesCapabilityDocument? capabilities,
     HermesHealthStatus? detailedHealth,
+    bool clearDetailedHealth = false,
     List<String>? models,
     List<String>? skills,
+    List<HermesSkill>? skillDetails,
     List<String>? enabledToolsets,
     List<HermesJob>? jobs,
     Map<HermesOptionalResource, String>? optionalResourceErrors,
@@ -178,6 +198,10 @@ class HermesChannelState {
     bool clearActiveVoiceRunId = false,
   }) {
     assert(
+      !clearDetailedHealth || detailedHealth == null,
+      'copyWith cannot set and clear detailedHealth at the same time.',
+    );
+    assert(
       !clearActiveSessionId || activeSessionId == null,
       'copyWith cannot set and clear activeSessionId at the same time.',
     );
@@ -195,9 +219,12 @@ class HermesChannelState {
           ? null
           : errorMessage ?? this.errorMessage,
       capabilities: capabilities ?? this.capabilities,
-      detailedHealth: detailedHealth ?? this.detailedHealth,
+      detailedHealth: clearDetailedHealth
+          ? null
+          : detailedHealth ?? this.detailedHealth,
       models: models ?? this.models,
       skills: skills ?? this.skills,
+      skillDetails: skillDetails ?? this.skillDetails,
       enabledToolsets: enabledToolsets ?? this.enabledToolsets,
       jobs: jobs ?? this.jobs,
       optionalResourceErrors:

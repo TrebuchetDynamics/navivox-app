@@ -316,7 +316,7 @@ bool _canUseEndpoint(
     capabilities != null &&
     capabilities.supportsSchema &&
     capabilities.auth.allows(scope) &&
-    capabilities.advertisesEndpoint(name, method, path);
+    capabilities.advertisesScopedEndpoint(name, method, path, scope);
 
 class _AgentsHeader extends StatelessWidget {
   const _AgentsHeader({

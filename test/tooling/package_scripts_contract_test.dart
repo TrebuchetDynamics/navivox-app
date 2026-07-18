@@ -409,6 +409,11 @@ void main() {
     for (final path in [
       'scripts/maestro/chat_ux_qa.yaml',
       'scripts/maestro/multi_gateway_chat.yaml',
+      'scripts/maestro/gateway_profiles_unsupported_qa.yaml',
+      'scripts/maestro/providers_models_unsupported_qa.yaml',
+      'scripts/maestro/tools_inventory_qa.yaml',
+      'scripts/maestro/schedules_unsupported_qa.yaml',
+      'scripts/maestro/gateway_status_qa.yaml',
     ]) {
       final flow = File(path);
       final command = 'maestro check-syntax $path';
@@ -449,8 +454,13 @@ void main() {
         if (line.contains('tapOn:') && line.contains('New session')) {
           isolatedChat = true;
         }
+        final safeNonChatScreenshot =
+            line.contains('contacts') ||
+            line.contains('inventory') ||
+            line.contains('status') ||
+            line.contains('fail_closed');
         if (line.contains('takeScreenshot:') &&
-            !line.contains('contacts') &&
+            !safeNonChatScreenshot &&
             !isolatedChat) {
           fail('${flow.path} captures a live transcript before isolation');
         }

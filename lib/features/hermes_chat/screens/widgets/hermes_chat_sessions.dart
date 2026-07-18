@@ -175,7 +175,7 @@ class _HermesSessionRailState extends State<_HermesSessionRail> {
                   children: [
                     for (final group in _sessionGroups(
                       sessions,
-                      widget.state.activeSessionId,
+                      strings: _hermesStrings(context),
                     )) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
@@ -666,7 +666,7 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
                   children: [
                     for (final group in _sessionGroups(
                       sessions,
-                      widget.state.activeSessionId,
+                      strings: _hermesStrings(context),
                     )) ...[
                       Padding(
                         key: ValueKey('hermes-session-group-${group.key}'),
@@ -733,30 +733,45 @@ bool _sessionMatchesQuery(
 }
 
 List<_HermesSessionGroup> _sessionGroups(
-  List<HermesSession> sessions,
-  String? activeSessionId,
-) {
-  final active = <HermesSession>[];
-  final forked = <HermesSession>[];
-  final other = <HermesSession>[];
-  for (final session in sessions) {
-    if (session.id == activeSessionId) {
-      active.add(session);
-    } else if (session.parentSessionId != null) {
-      forked.add(session);
-    } else {
-      other.add(session);
-    }
+  List<HermesSession> sessions, {
+  required AppLocalizations strings,
+  DateTime? now,
+}) {
+  final reference = (now ?? DateTime.now()).toLocal();
+  final grouped = <String, List<HermesSession>>{};
+  for (final session in _recentFirst(sessions)) {
+    final key = _sessionDateGroup(session, reference);
+    (grouped[key] ??= []).add(session);
   }
   return [
-    if (active.isNotEmpty)
-      _HermesSessionGroup('active', 'Active session', active),
-    if (forked.isNotEmpty)
-      _HermesSessionGroup('forked', 'Forked sessions', _recentFirst(forked)),
-    if (other.isNotEmpty)
-      _HermesSessionGroup('other', 'Other sessions', _recentFirst(other)),
+    for (final group in [
+      (key: 'today', label: strings.sessionsToday),
+      (key: 'yesterday', label: strings.sessionsYesterday),
+      (key: 'this-week', label: strings.sessionsThisWeek),
+      (key: 'earlier', label: strings.sessionsEarlier),
+    ])
+      if (grouped[group.key]?.isNotEmpty ?? false)
+        _HermesSessionGroup(group.key, group.label, grouped[group.key]!),
   ];
 }
+
+String _sessionDateGroup(HermesSession session, DateTime now) {
+  final parsed = DateTime.tryParse(session.lastActive ?? '')?.toLocal();
+  if (parsed == null) return 'earlier';
+  if (_isSameDay(parsed, now)) return 'today';
+
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+  if (_isSameDay(parsed, yesterday)) return 'yesterday';
+
+  final weekAgo = now.subtract(const Duration(days: 7));
+  return parsed.isBefore(weekAgo) ? 'earlier' : 'this-week';
+}
+
+bool _isSameDay(DateTime first, DateTime second) =>
+    first.year == second.year &&
+    first.month == second.month &&
+    first.day == second.day;
 
 List<HermesSession> _recentFirst(List<HermesSession> sessions) {
   final sorted = List<HermesSession>.of(sessions);
@@ -779,6 +794,28 @@ class _HermesSessionGroup {
   final String key;
   final String label;
   final List<HermesSession> sessions;
+}
+
+String _sessionSourceLabel(BuildContext context, String source) {
+  final normalized = source.trim().replaceAll(RegExp(r'[_-]+'), ' ');
+  return _safeHermesUiPreview(
+    normalized.isEmpty
+        ? _hermesStrings(context).sessionUnknownSource
+        : normalized,
+    maxLength: 48,
+  );
+}
+
+String _sessionLastActiveLabel(BuildContext context, String value) {
+  final parsed = DateTime.tryParse(value)?.toLocal();
+  if (parsed == null) return _safeHermesUiPreview(value, maxLength: 80);
+  final localizations = MaterialLocalizations.of(context);
+  final date = localizations.formatShortDate(parsed);
+  final time = localizations.formatTimeOfDay(
+    TimeOfDay.fromDateTime(parsed),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return '$date, $time';
 }
 
 class _HermesSessionTile extends StatelessWidget {
@@ -819,15 +856,18 @@ class _HermesSessionTile extends StatelessWidget {
       ),
       subtitle: Text(
         [
+          _sessionSourceLabel(context, session.source),
+          if (session.model?.trim().isNotEmpty ?? false)
+            _safeHermesUiPreview(session.model!.trim(), maxLength: 80),
           '${session.messageCount} messages',
           if (session.parentSessionId != null)
             'Forked from ${_safeHermesUiPreview(session.parentSessionId!, maxLength: 80)}',
           if (session.lastActive != null)
-            'Last active ${_safeHermesUiPreview(session.lastActive!, maxLength: 80)}',
+            'Last active ${_sessionLastActiveLabel(context, session.lastActive!)}',
           if (session.preview != null)
             _safeHermesUiPreview(session.preview!, maxLength: 160),
         ].join(' • '),
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       onTap: () => onSelect(session),
@@ -839,7 +879,9 @@ class _HermesSessionTile extends StatelessWidget {
             case 'copy':
               unawaited(
                 Clipboard.setData(
-                  ClipboardData(text: _sessionDetailsSummary(session, active)),
+                  ClipboardData(
+                    text: _sessionDetailsSummary(context, session, active),
+                  ),
                 ),
               );
               ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -867,13 +909,30 @@ class _HermesSessionTile extends StatelessWidget {
     );
   }
 
-  String _sessionDetailsSummary(HermesSession session, bool active) {
+  String _sessionDetailsSummary(
+    BuildContext context,
+    HermesSession session,
+    bool active,
+  ) {
+    final strings = _hermesStrings(context);
     final buffer = StringBuffer()
       ..writeln('Hermes session')
       ..writeln(
         'Title: ${_safeHermesUiPreview(session.title ?? session.id, maxLength: 96)}',
       )
       ..writeln('ID: ${_safeHermesUiPreview(session.id, maxLength: 120)}')
+      ..writeln(
+        strings.sessionSourceLabel(
+          _sessionSourceLabel(context, session.source),
+        ),
+      )
+      ..writeln(
+        strings.sessionModelLabel(
+          session.model?.trim().isNotEmpty == true
+              ? _safeHermesUiPreview(session.model!.trim(), maxLength: 120)
+              : strings.sessionModelNotReported,
+        ),
+      )
       ..writeln('Active: $active')
       ..writeln('Messages: ${session.messageCount}');
     if (session.parentSessionId != null) {

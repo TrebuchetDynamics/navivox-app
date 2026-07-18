@@ -6,7 +6,9 @@ import 'package:wing/core/hermes/models/hermes_capabilities.dart';
 import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
 import 'package:wing/core/hermes/models/hermes_health.dart';
 import 'package:wing/core/hermes/models/hermes_job.dart';
+import 'package:wing/core/hermes/models/hermes_run.dart';
 import 'package:wing/core/hermes/models/hermes_session.dart';
+import 'package:wing/core/hermes/models/hermes_skill.dart';
 import 'package:wing/core/hermes/policy/hermes_transport_policy.dart';
 import 'package:wing/core/protocol/voice/models/wing_voice_run.dart';
 
@@ -32,6 +34,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     HermesHealthStatus? detailedHealth,
     List<String> models = const [],
     List<String> skills = const [],
+    List<HermesSkill> skillDetails = const [],
     List<String> enabledToolsets = const [],
     List<HermesJob> jobs = const [],
     Map<HermesOptionalResource, String> optionalResourceErrors = const {},
@@ -45,6 +48,10 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
       detail: 'Credential accepted.',
     ),
     this.profileSoul = const HermesProfileSoul(soul: '', revision: 'rev-1'),
+    this.refreshedDetailedHealth,
+    this.loadDetailedHealthFails = false,
+    this.refreshedJobs,
+    this.loadJobsFails = false,
     String connectedBaseUrl = 'http://fake-hermes:8642',
     bool connectedWithApiKey = true,
     this.createSessionFails = false,
@@ -66,6 +73,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
                detailedHealth: detailedHealth,
                models: models,
                skills: skills,
+               skillDetails: skillDetails,
                enabledToolsets: enabledToolsets,
                jobs: jobs,
                optionalResourceErrors: optionalResourceErrors,
@@ -114,6 +122,12 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   /// Provider/model seam call recording. [setProviderCredentialCalls] records
   /// the raw `value` it was given (the transport seam), but the fake never
   /// exposes that value through observable [state] — only presence.
+  int loadDetailedHealthCalls = 0;
+  final HermesHealthStatus? refreshedDetailedHealth;
+  final bool loadDetailedHealthFails;
+  int loadJobsCalls = 0;
+  final List<HermesJob>? refreshedJobs;
+  final bool loadJobsFails;
   int loadProvidersCalls = 0;
   final List<Map<String, String>> setProviderCredentialCalls = [];
   final List<Map<String, String>> removeProviderCredentialCalls = [];
@@ -163,6 +177,23 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   void _setState(HermesChannelState next) {
     _state = next;
     notifyListeners();
+  }
+
+  void replaceSessions(
+    List<HermesSession> sessions, {
+    required String? activeSessionId,
+  }) {
+    _setState(
+      _state.copyWith(
+        sessions: sessions,
+        activeSessionId: activeSessionId,
+        clearActiveSessionId: activeSessionId == null,
+        messages: {
+          for (final session in sessions)
+            session.id: _state.messages[session.id] ?? const <HermesChatTurn>[],
+        },
+      ),
+    );
   }
 
   @override
@@ -387,6 +418,39 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   }
 
   @override
+  Future<void> loadDetailedHealth() async {
+    loadDetailedHealthCalls += 1;
+    if (loadDetailedHealthFails) {
+      throw StateError('detailed health refresh failed');
+    }
+    final replacement = refreshedDetailedHealth;
+    if (replacement == null) return;
+    final errors = Map<HermesOptionalResource, String>.from(
+      _state.optionalResourceErrors,
+    )..remove(HermesOptionalResource.detailedHealth);
+    _setState(
+      _state.copyWith(
+        detailedHealth: replacement,
+        optionalResourceErrors: errors,
+      ),
+    );
+  }
+
+  @override
+  Future<void> loadJobs() async {
+    loadJobsCalls += 1;
+    if (loadJobsFails) throw StateError('jobs refresh failed');
+    final replacement = refreshedJobs;
+    if (replacement == null) return;
+    final errors = Map<HermesOptionalResource, String>.from(
+      _state.optionalResourceErrors,
+    )..remove(HermesOptionalResource.jobs);
+    _setState(
+      _state.copyWith(jobs: replacement, optionalResourceErrors: errors),
+    );
+  }
+
+  @override
   Future<void> loadProviders() async {
     loadProvidersCalls += 1;
   }
@@ -565,7 +629,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     );
   }
 
-  void completeStreamingTurn({String text = 'done'}) {
+  void completeStreamingTurn({String text = 'done', HermesRunUsage? usage}) {
     final sessionId = _state.activeSessionId;
     if (sessionId == null) return;
     final turns = List<HermesChatTurn>.from(_state.activeMessages);
@@ -577,6 +641,30 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     turns[index] = turn.copyWith(
       text: text,
       status: HermesTurnStatus.completed,
+      usage: usage,
+    );
+    _setState(
+      _state.copyWith(messages: {..._state.messages, sessionId: turns}),
+    );
+  }
+
+  void addReasoningTurn(String text) {
+    final sessionId = _state.activeSessionId;
+    if (sessionId == null) return;
+    final turns = List<HermesChatTurn>.from(_state.activeMessages);
+    final assistantIndex = turns.lastIndexWhere(
+      (turn) => turn.status == HermesTurnStatus.streaming,
+    );
+    turns.insert(
+      assistantIndex < 0 ? turns.length : assistantIndex,
+      HermesChatTurn(
+        id: 'reasoning-${turns.length}',
+        sessionId: sessionId,
+        author: HermesTurnAuthor.system,
+        createdAt: DateTime.now(),
+        kind: HermesTurnKind.reasoning,
+        text: text,
+      ),
     );
     _setState(
       _state.copyWith(messages: {..._state.messages, sessionId: turns}),

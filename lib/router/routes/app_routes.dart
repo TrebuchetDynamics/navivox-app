@@ -4,6 +4,9 @@ abstract final class AppRoutes {
   static const hermes = '/hermes';
   static const agents = '/agents';
   static const providers = '/providers';
+  static const tools = '/tools';
+  static const schedules = '/tasks';
+  static const gateway = '/gateway';
   static const settings = '/settings';
   static const settingsVoice = '/settings/voice';
   static const settingsDiagnostics = '/settings/diagnostics';

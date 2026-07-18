@@ -54,7 +54,9 @@ lockout-rate-limited); everything else requires the listed scope:
 
 Profile mutations use opaque domain revisions: a missing `If-Match` returns
 `428`, a stale revision returns `412` with no write, and the client refreshes
-the profile list on either a successful mutation or a `412`.
+the profile list on either a successful mutation or a `412`. Gateway selection,
+read-only behavior, unsupported-server handling, and the Hermes Agent ownership
+boundary are documented in [Gateway profile management and limitations](gateway-profile-management.md).
 
 Every provider-credential operation is profile-scoped through the mandatory
 `?profile=` query described below (`"current"` is not accepted as a
@@ -100,6 +102,13 @@ A usable endpoint must also advertise at least one supported chat transport:
 - `POST /api/sessions/{session_id}/chat/stream`, or
 - `POST /v1/runs` plus `GET /v1/runs/{run_id}/events`
 
+Wing owns only local navigation/draft commands (`/new`, `/sessions`, `/clear`,
+and `/settings`). They execute as client actions without sending slash text as an agent turn;
+`/new` uses the already-advertised session-create contract. They are disabled
+while a run is active. Every unknown slash command remains an ordinary server-owned message;
+Wing does not guess Hermes command semantics or claim runtime discovery without
+an advertised catalog contract.
+
 ## Capability-gated endpoints
 
 Hermes Wing may use these only when advertised:
@@ -114,11 +123,25 @@ Hermes Wing may use these only when advertised:
 - `GET /api/sessions/{session_id}/messages`
 - `POST /api/sessions/{session_id}/fork`
 - `GET /api/jobs`
+- `GET /v1/runs/{run_id}`
 - `POST /v1/runs/{run_id}/approval`
 - `POST /v1/runs/{run_id}/stop`
 
 Failure to load optional health, models, skills, toolsets, or jobs is reported
-as unavailable inventory rather than as an empty inventory.
+as unavailable inventory rather than as an empty inventory. Newer scoped
+servers may require `skills:read` and `tools:read`; authorization failures stay
+isolated as unavailable optional inventory so legacy advertised read-only
+catalogs remain compatible.
+
+For runs, Wing accepts bounded input/output/total token counts from the
+terminal SSE event. When a successful terminal event omits usage and the exact
+run-status route is advertised, Wing performs one best-effort status read and
+preserves the numeric usage through authoritative transcript reconciliation.
+Failure to read optional usage never changes run success or retries work. After
+a premature run-stream close, an advertised status read may instead reconcile a
+completed bounded output. A queued or running status blocks duplicate retry and
+directs the operator to reconnect; Wing never probes an unadvertised status
+route.
 
 ## Administrative mutation contract
 

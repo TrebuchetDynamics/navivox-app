@@ -9,6 +9,7 @@ export 'models/hermes_profile.dart';
 export 'models/hermes_provider.dart';
 export 'models/hermes_run.dart';
 export 'models/hermes_session.dart';
+export 'models/hermes_skill.dart';
 export 'policy/hermes_endpoint_security.dart';
 export 'policy/hermes_surface_readiness.dart';
 export 'policy/hermes_transport_policy.dart';

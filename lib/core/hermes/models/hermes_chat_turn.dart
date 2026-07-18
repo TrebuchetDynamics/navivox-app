@@ -1,3 +1,4 @@
+import 'hermes_run.dart';
 import 'hermes_tool_call.dart';
 
 export 'hermes_tool_call.dart';
@@ -6,7 +7,7 @@ enum HermesTurnAuthor { user, assistant, system }
 
 enum HermesTurnStatus { streaming, completed, failed }
 
-enum HermesTurnKind { text, toolCall }
+enum HermesTurnKind { text, toolCall, reasoning }
 
 /// One turn in a Hermes session transcript. Assistant turns start
 /// `streaming` and accumulate `text` via [appendDelta] as SSE deltas arrive.
@@ -21,6 +22,7 @@ class HermesChatTurn {
     this.kind = HermesTurnKind.text,
     this.text = '',
     this.toolCall,
+    this.usage,
   });
 
   final String id;
@@ -30,6 +32,7 @@ class HermesChatTurn {
   final HermesTurnKind kind;
   final String text;
   final HermesToolCall? toolCall;
+  final HermesRunUsage? usage;
   final DateTime createdAt;
 
   HermesChatTurn appendDelta(String delta) => copyWith(text: text + delta);
@@ -38,6 +41,7 @@ class HermesChatTurn {
     HermesTurnStatus? status,
     String? text,
     HermesToolCall? toolCall,
+    HermesRunUsage? usage,
   }) {
     return HermesChatTurn(
       id: id,
@@ -48,6 +52,7 @@ class HermesChatTurn {
       kind: kind,
       text: text ?? this.text,
       toolCall: toolCall ?? this.toolCall,
+      usage: usage ?? this.usage,
     );
   }
 }

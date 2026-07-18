@@ -209,7 +209,7 @@ extension _ProvidersExtension on HermesApiChannel {
     final capabilities = _state.capabilities;
     if (capabilities == null ||
         !capabilities.supportsSchema ||
-        !capabilities.advertisesEndpoint(name, method, path)) {
+        !capabilities.advertisesScopedEndpoint(name, method, path, scope)) {
       throw StateError('Hermes did not advertise support to $action.');
     }
     if (!capabilities.auth.allows(scope)) {

@@ -73,8 +73,65 @@
     }
   },
   "providersDestination": "Providers",
+  "toolsDestination": "Tools",
+  "toolsTitle": "Tools",
+  "toolsSubtitle": "Installed skills and enabled toolsets advertised by this gateway.",
+  "toolsConnectionRequiredBody": "Open a saved gateway chat before viewing its tool inventory.",
+  "toolsConnectionErrorBody": "Tool inventory could not be loaded from Hermes.",
+  "gatewayLabel": "Gateway",
+  "selectGatewayHint": "Select gateway",
+  "toolsGatewayHelp": "View tool inventory from the selected gateway.",
+  "gatewayConnectFailed": "Could not connect to this gateway.",
+  "installedSkillsTitle": "Installed skills",
+  "enabledToolsetsTitle": "Enabled toolsets",
+  "skillsUnavailableBody": "This gateway did not advertise installed skill inventory.",
+  "toolsetsUnavailableBody": "This gateway did not advertise enabled toolset inventory.",
+  "skillsEmptyBody": "No installed skills were reported.",
+  "searchInstalledSkillsLabel": "Search installed skills",
+  "noSkillsMatchBody": "No installed skills match this search.",
+  "toolsetsEmptyBody": "No enabled toolsets were reported.",
+  "skillsLoadFailedBody": "Installed skills could not be loaded from Hermes.",
+  "toolsetsLoadFailedBody": "Enabled toolsets could not be loaded from Hermes.",
+  "schedulesDestination": "Schedules",
+  "schedulesTitle": "Schedules",
+  "schedulesSubtitle": "Scheduled jobs advertised by the selected gateway and agent.",
+  "schedulesGatewayHelp": "View schedules from the selected gateway.",
+  "schedulesConnectionRequiredBody": "Open a saved gateway chat before viewing its schedules.",
+  "schedulesConnectionErrorBody": "Schedules could not be loaded from Hermes.",
+  "schedulesUnavailableBody": "This gateway did not advertise scheduled-job inventory.",
+  "schedulesLoadFailedBody": "Schedules could not be loaded from Hermes.",
+  "schedulesEmptyBody": "No scheduled jobs were reported for this agent.",
+  "schedulesReadOnlyNote": "Read-only schedule inventory. Create, pause, trigger, and delete remain hidden until this gateway advertises exact scoped administration contracts.",
+  "schedulesRefreshTooltip": "Refresh schedules",
+  "scheduleEnabled": "Enabled",
+  "scheduleDisabled": "Disabled",
+  "scheduleActive": "Active",
+  "schedulePaused": "Paused",
+  "scheduleCompleted": "Completed",
+  "scheduleStateLabel": "State",
+  "scheduleExpressionLabel": "Schedule",
+  "scheduleNextRunLabel": "Next run",
+  "scheduleLastRunLabel": "Last run",
+  "scheduleLastErrorNotice": "Last run reported an error.",
+  "gatewayDestination": "Gateway",
+  "gatewayStatusTitle": "Gateway",
+  "gatewayStatusSubtitle": "Bounded health status advertised by the selected Hermes gateway.",
+  "gatewayStatusHelp": "View status from the selected gateway.",
+  "gatewayStatusConnectionRequiredBody": "Open a saved gateway chat before viewing gateway status.",
+  "gatewayStatusConnectionErrorBody": "Gateway status could not be loaded from Hermes.",
+  "gatewayStatusUnavailableBody": "This gateway did not advertise detailed health status.",
+  "gatewayStatusLoadFailedBody": "Detailed gateway status could not be loaded from Hermes.",
+  "gatewayStatusReadOnlyNote": "Read-only gateway status. Lifecycle, logs, and messaging-platform administration remain hidden until exact scoped contracts are advertised.",
+  "gatewayStatusRefreshTooltip": "Refresh gateway status",
+  "gatewayHealthy": "Healthy",
+  "gatewayNeedsAttention": "Needs attention",
+  "gatewayPlatformLabel": "Platform",
+  "gatewayVersionLabel": "Version",
+  "gatewayRuntimeStateLabel": "Runtime state",
+  "gatewayActiveAgentsLabel": "Active agents",
   "providersTitle": "Providers",
   "providersSubtitle": "Set provider credentials and choose models for this agent.",
+  "providersGatewayHelp": "Manage providers and models on the selected gateway.",
   "providersLoading": "Loading providers",
   "providersConnectionError": "Providers could not be loaded from Hermes.",
   "providersUnavailableTitle": "Providers unavailable",
@@ -93,6 +150,9 @@
   "providerOperationFailed": "The provider operation could not be completed.",
   "modelSelectionTitle": "Model selection",
   "modelSelectionUnavailableBody": "Hermes did not advertise model access for this connection.",
+  "runtimeModelsTitle": "Runtime models",
+  "runtimeModelsBody": "Read-only models advertised by this gateway. Provider credentials and assignments remain unavailable.",
+  "runtimeModelsEmptyBody": "No runtime models were reported.",
   "activeModelLabel": "Active model",
   "noModelAssigned": "No model assigned",
   "auxiliaryModelsLabel": "Auxiliary models",
@@ -131,12 +191,87 @@
   "credentialConfiguredStatus": "Configured",
   "credentialNotConfiguredStatus": "Not configured",
   "credentialOperationFailed": "The credential operation could not be completed.",
+  "copyTranscriptAction": "Copy transcript",
+  "copyTranscriptDescription": "Choose a portable transcript format.",
+  "copyAsTextAction": "Copy as text",
+  "copyAsMarkdownAction": "Copy as Markdown",
+  "transcriptFormatText": "text",
+  "transcriptFormatMarkdown": "Markdown",
+  "transcriptCopiedMessage": "Transcript copied as {format}",
+  "@transcriptCopiedMessage": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "transcriptAuthorYou": "You",
+  "transcriptAuthorHermes": "Hermes",
+  "transcriptAuthorSystem": "System",
+  "transcriptToolHeading": "Tool: {name}",
+  "@transcriptToolHeading": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "transcriptToolStatus": "Status: {status}",
+  "@transcriptToolStatus": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "sessionsToday": "Today",
+  "sessionsYesterday": "Yesterday",
+  "sessionsThisWeek": "This week",
+  "sessionsEarlier": "Earlier",
+  "sessionUnknownSource": "Unknown source",
+  "sessionSourceLabel": "Source: {source}",
+  "@sessionSourceLabel": {
+    "placeholders": {
+      "source": {"type": "String"}
+    }
+  },
+  "sessionModelLabel": "Model: {model}",
+  "@sessionModelLabel": {
+    "placeholders": {
+      "model": {"type": "String"}
+    }
+  },
+  "sessionModelNotReported": "Not reported",
   "transcriptImageFallbackLabel": "Image",
   "transcriptImageNotLoaded": "image not loaded",
   "copyCodeAction": "Copy code",
   "codeCopiedMessage": "Code copied",
   "showMoreAction": "Show more",
   "showLessAction": "Show less",
+  "reasoningTitle": "Reasoning",
+  "localCommandsTitle": "Wing commands",
+  "localCommandNewDescription": "Start a new Hermes session.",
+  "localCommandSessionsDescription": "Open session history.",
+  "localCommandClearDescription": "Clear the current draft.",
+  "localCommandSettingsDescription": "Open Wing settings.",
+  "runTokenUsage": "{inputTokens} in · {outputTokens} out · {totalTokens} total tokens",
+  "@runTokenUsage": {
+    "placeholders": {
+      "inputTokens": {"type": "int"},
+      "outputTokens": {"type": "int"},
+      "totalTokens": {"type": "int"}
+    }
+  },
+  "transcriptRunTokenUsage": "Usage: {inputTokens} input · {outputTokens} output · {totalTokens} total tokens",
+  "@transcriptRunTokenUsage": {
+    "placeholders": {
+      "inputTokens": {"type": "int"},
+      "outputTokens": {"type": "int"},
+      "totalTokens": {"type": "int"}
+    }
+  },
+  "runTokenUsageSemantics": "Token usage: {inputTokens} input, {outputTokens} output, {totalTokens} total",
+  "@runTokenUsageSemantics": {
+    "placeholders": {
+      "inputTokens": {"type": "int"},
+      "outputTokens": {"type": "int"},
+      "totalTokens": {"type": "int"}
+    }
+  },
   "auxiliaryTaskVision": "Vision",
   "auxiliaryTaskWebExtract": "Web extract",
   "auxiliaryTaskCompression": "Compression",

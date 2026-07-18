@@ -26,6 +26,11 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
     final imageBytes = _pendingImageBytes;
     final textAttachment = _pendingTextAttachment;
     if (text.isEmpty && imageBytes == null && textAttachment == null) return;
+    if (imageBytes == null &&
+        textAttachment == null &&
+        _runExactLocalSlashCommand(text, channel)) {
+      return;
+    }
     if (_isTurnActive(channel.state)) {
       if (imageBytes != null || textAttachment != null) {
         _setState(() {

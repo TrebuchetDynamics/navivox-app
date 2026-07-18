@@ -53,6 +53,11 @@ void _hermesApiChannelConnectionTests() {
 
     expect(channel.state.models, ['hermes-agent']);
     expect(channel.state.skills, ['ascii-art', 'github']);
+    expect(
+      channel.state.skillDetails.first.description,
+      'ASCII art generation',
+    );
+    expect(channel.state.skillDetails.first.category, 'creative');
     expect(channel.state.enabledToolsets, ['default']);
   });
 
@@ -62,13 +67,13 @@ void _hermesApiChannelConnectionTests() {
   "object": "hermes.api_server.capabilities",
   "platform": "hermes-agent",
   "model": "hermes-agent",
-  "auth": {"type": "bearer", "required": true},
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["skills:read", "tools:read"]},
   "features": {},
   "endpoints": {
     "health_detailed": {"method": "GET", "path": "/health/detailed"},
     "models": {"method": "GET", "path": "/v1/models"},
-    "skills": {"method": "GET", "path": "/v1/skills"},
-    "toolsets": {"method": "GET", "path": "/v1/toolsets"},
+    "skills": {"method": "GET", "path": "/v1/skills", "required_scopes": ["skills:read"]},
+    "toolsets": {"method": "GET", "path": "/v1/toolsets", "required_scopes": ["tools:read"]},
     "jobs": {"method": "GET", "path": "/api/jobs"}
   }
 }
@@ -206,6 +211,38 @@ void _hermesApiChannelConnectionTests() {
     expect(channel.state.detailedHealth?.version, '0.16.0');
     expect(channel.state.detailedHealth?.gatewayState, 'running');
     expect(channel.state.detailedHealth?.activeAgents, 0);
+  });
+
+  test('loadDetailedHealth refreshes the advertised status', () async {
+    var activeAgents = 0;
+    final requested = <String>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          requested.add(uri.path);
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _healthCapabilitiesFixture,
+            '/health/detailed' =>
+              '{"status":"ok","platform":"hermes-agent","version":"0.18.0","gateway_state":"running","active_agents":$activeAgents}',
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    expect(channel.state.detailedHealth?.activeAgents, 0);
+    requested.clear();
+    activeAgents = 2;
+
+    await channel.loadDetailedHealth();
+
+    expect(requested, ['/health/detailed']);
+    expect(channel.state.detailedHealth?.activeAgents, 2);
   });
 
   test(

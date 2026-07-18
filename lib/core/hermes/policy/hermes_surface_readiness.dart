@@ -38,6 +38,11 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
     'POST',
     '/api/sessions',
   );
+  final advertisesDetailedHealth = capabilities.advertisesEndpoint(
+    'health_detailed',
+    'GET',
+    '/health/detailed',
+  );
   final advertisesJobsList = capabilities.advertisesEndpoint(
     'jobs',
     'GET',
@@ -48,6 +53,24 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
   final supportsAttachments =
       capabilities.supportsFeature('attachments_api') ||
       capabilities.supportsFeature('multimodal_chat');
+  final supportsPersonaRead =
+      capabilities.supportsSchema &&
+      capabilities.auth.allows('profiles:read') &&
+      capabilities.advertisesScopedEndpoint(
+        'profile_soul',
+        'GET',
+        '/api/profiles/{name}/soul',
+        'profiles:read',
+      );
+  final supportsPersonaWrite =
+      capabilities.supportsSchema &&
+      capabilities.auth.allows('profiles:write') &&
+      capabilities.advertisesScopedEndpoint(
+        'profile_soul_update',
+        'PUT',
+        '/api/profiles/{name}/soul',
+        'profiles:write',
+      );
   final advertisedServerAudio =
       policy.supportsRealtimeVoice || policy.supportsAudioApi;
 
@@ -94,6 +117,15 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
           : 'admin_config_rw is not advertised; Hermes Wing keeps this hidden.',
     ),
     HermesSurfaceReadiness(
+      title: 'Gateway health',
+      status: advertisesDetailedHealth
+          ? HermesSurfaceStatus.readOnly
+          : HermesSurfaceStatus.deferred,
+      detail: advertisesDetailedHealth
+          ? 'The gateway advertises bounded detailed health; lifecycle, logs, and configuration remain unavailable.'
+          : 'Detailed gateway health is not advertised for this connection.',
+    ),
+    HermesSurfaceReadiness(
       title: 'Memory UI',
       status: HermesSurfaceStatus.deferred,
       detail: policy.supportsMemoryWrite
@@ -113,8 +145,8 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
       title: 'Jobs/schedules admin',
       status: HermesSurfaceStatus.deferred,
       detail: supportsJobsAdmin
-          ? 'Jobs admin is advertised, but Hermes Wing has not wired create/edit/delete scheduling; no mobile mutation controls are shown.'
-          : 'Jobs create/edit/delete scheduling remains outside the mobile MVP; no mobile mutation controls are shown.',
+          ? 'Jobs admin is advertised, but Hermes Wing has not wired create/pause/resume/trigger/delete scheduling; no mobile mutation controls are shown.'
+          : 'Jobs create/pause/resume/trigger/delete scheduling remains unavailable; no mobile mutation controls are shown.',
     ),
     const HermesSurfaceReadiness(
       title: 'Messaging gateways',
@@ -122,18 +154,27 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
       detail:
           'No safe mobile Hermes gateway admin contract is wired; no gateway mutation controls are shown.',
     ),
-    const HermesSurfaceReadiness(
+    HermesSurfaceReadiness(
       title: 'Persona/SOUL',
-      status: HermesSurfaceStatus.deferred,
-      detail:
-          'Persona/SOUL editing is not wired; it needs an explicit Hermes API or safe file/CLI flow before mobile controls appear.',
+      status: supportsPersonaRead && supportsPersonaWrite
+          ? HermesSurfaceStatus.available
+          : supportsPersonaRead
+          ? HermesSurfaceStatus.readOnly
+          : HermesSurfaceStatus.deferred,
+      detail: supportsPersonaRead && supportsPersonaWrite
+          ? 'Persona/SOUL is available through the gateway-scoped profile editor.'
+          : supportsPersonaRead
+          ? 'Persona/SOUL is readable, but this device cannot write it.'
+          : 'Persona/SOUL remains hidden until the gateway advertises the exact scoped profile soul contract.',
     ),
     HermesSurfaceReadiness(
       title: 'Attachments/media',
-      status: HermesSurfaceStatus.deferred,
+      status: supportsAttachments
+          ? HermesSurfaceStatus.available
+          : HermesSurfaceStatus.deferred,
       detail: supportsAttachments
-          ? 'Attachment/multimodal capability is advertised, but Hermes Wing has not wired mobile attachments; no upload controls are shown.'
-          : 'Text-only plus local voice transcript until Hermes exposes a mobile-safe attachment contract and Hermes Wing wires it.',
+          ? 'Inline supported images and bounded UTF-8 text attachments are available; arbitrary media still requires opaque server resource handles.'
+          : 'Bounded UTF-8 text is available; images and arbitrary media remain unavailable without an advertised mobile-safe contract.',
     ),
     const HermesSurfaceReadiness(
       title: 'Files/context folders',

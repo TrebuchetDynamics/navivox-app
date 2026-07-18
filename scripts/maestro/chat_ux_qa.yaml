@@ -5,6 +5,7 @@ appId: com.trebuchetdynamics.hermes.wing
 name: chat_ux_qa
 ---
 - launchApp
+- setOrientation: PORTRAIT
 - runFlow:
     when:
       visible: "(?s).*All chats.*"
@@ -23,6 +24,14 @@ name: chat_ux_qa
     timeout: 30000
 - takeScreenshot: 01_empty_chat
 
+# Exercise functional client-owned slash discovery without sending it.
+- tapOn: "(?s).*Message Hermes….*"
+- inputText: "/s"
+- assertVisible: "(?s).*Wing commands.*"
+- assertVisible: "(?s)^/sessions.*"
+- assertVisible: "(?s)^/settings.*"
+- eraseText: 20
+
 # Exercise multiline draft layout without mutating the conversation.
 - tapOn: "(?s).*Message Hermes….*"
 - inputText: "This is a deliberately long mobile draft that verifies wrapping and keeps every composer action reachable"
@@ -37,8 +46,24 @@ name: chat_ux_qa
 - extendedWaitUntil:
     visible: "(?s)^white.*"
     timeout: 120000
+- assertVisible: "(?s).*total tokens.*"
 - hideKeyboard
 - takeScreenshot: 03_live_response
+- runFlow:
+    when:
+      visible: "(?s).*Settings.*"
+    commands:
+      - tapOn: "(?s).*Default agent.*"
+      - assertVisible: "(?s).*Message Hermes….*"
+
+# Exercise explicit transcript export without exposing clipboard contents.
+- tapOn: "(?s).*More actions.*"
+- assertVisible: "(?s).*Copy transcript.*"
+- tapOn: "(?s).*Copy transcript.*"
+- assertVisible: "(?s).*Copy as text.*"
+- assertVisible: "(?s).*Copy as Markdown.*"
+- tapOn: "(?s).*Copy as Markdown.*"
+- assertVisible: "(?s).*Transcript copied as Markdown.*"
 
 # Exercise session discovery and the empty-search state.
 - tapOn: "(?s).*More actions.*"

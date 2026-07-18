@@ -122,6 +122,66 @@ void main() {
     });
   });
 
+  testWidgets('can assign a previously unconfigured auxiliary task', (
+    tester,
+  ) async {
+    final inventory = _inventory(const ['gpt-5']);
+    final channel = FakeHermesChannel(
+      modelInventory: inventory,
+      selectedProfileId: 'default',
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel, inventory));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Main'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vision'), findsOneWidget);
+    expect(find.text('Title generation'), findsOneWidget);
+    await tester.tap(find.text('Title generation'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Assign'));
+    await tester.pumpAndSettle();
+
+    expect(channel.assignModelCalls.single, {
+      'scope': 'auxiliary',
+      'task': 'title_generation',
+      'provider': 'openai',
+      'model': 'gpt-5',
+      'revision': 'rev-1',
+    });
+  });
+
+  testWidgets('shows the selected model description', (tester) async {
+    final inventory = HermesModelInventory(
+      catalog: HermesModelCatalog.fromJson(const {
+        'providers': {
+          'openai': {
+            'models': [
+              {'id': 'gpt-5', 'description': 'Flagship reasoning model'},
+            ],
+          },
+        },
+      }),
+      assignment: const HermesModelAssignment(
+        activeProvider: 'openai',
+        activeModel: 'gpt-5',
+        revision: 'rev-1',
+      ),
+    );
+    final channel = FakeHermesChannel(
+      modelInventory: inventory,
+      selectedProfileId: 'default',
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel, inventory));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Flagship reasoning model'), findsOneWidget);
+  });
+
   testWidgets('refresh updates the open sheet with the newly fetched catalog', (
     tester,
   ) async {
@@ -146,9 +206,8 @@ void main() {
     expect(channel.refreshModelsCalls, 1);
 
     // Open the model dropdown (the second DropdownButtonFormField<String>;
-    // there is no auxiliary slot, so no slot dropdown precedes it) and
-    // confirm the freshly-fetched model id is now selectable without
-    // closing/reopening the sheet.
+    // the slot picker uses a different generic type) and confirm the freshly
+    // fetched model id is selectable without closing/reopening the sheet.
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
 

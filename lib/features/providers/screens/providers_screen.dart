@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../agents/providers/profile_selection_provider.dart';
+import '../../hermes_chat/gateways/hermes_gateway_directory.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
 import '../widgets/model_picker_sheet.dart';
 import '../widgets/provider_credential_sheet.dart';
@@ -25,7 +26,9 @@ class ProvidersScreen extends ConsumerStatefulWidget {
 }
 
 class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
-  String? _loadedProfileId;
+  String? _loadedContextKey;
+  String? _switchingGatewayId;
+  String? _actionError;
   int _loadGeneration = 0;
   bool _loading = false;
   bool _loadFailed = false;
@@ -33,15 +36,32 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
   @override
   Widget build(BuildContext context) {
     final channel = ref.watch(hermesChannelProvider);
+    final directory = ref.watch(hermesGatewayDirectoryProvider);
     final strings = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.providersTitle)),
       body: AnimatedBuilder(
-        animation: channel,
+        animation: Listenable.merge([channel, directory]),
         builder: (context, _) {
-          _maybeReload(channel);
-          return _buildBody(context, channel, strings);
+          _maybeReload(channel, directory.activeContactId?.gatewayId);
+          return Column(
+            children: [
+              if (directory.gateways.isNotEmpty)
+                _buildGatewayPicker(directory, strings),
+              if (_actionError != null)
+                MaterialBanner(
+                  content: Text(_actionError!),
+                  actions: [
+                    TextButton(
+                      onPressed: () => setState(() => _actionError = null),
+                      child: Text(strings.doneAction),
+                    ),
+                  ],
+                ),
+              Expanded(child: _buildBody(context, channel, strings)),
+            ],
+          );
         },
       ),
     );
@@ -50,19 +70,25 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
   /// Loads providers + models on mount and whenever the selected profile
   /// changes. Fire-and-forget: the channel drives state, and per-surface read
   /// gates keep unauthorized calls from being issued.
-  void _maybeReload(HermesChannel channel) {
+  void _maybeReload(HermesChannel channel, String? gatewayId) {
     final state = channel.state;
     if (state.status != HermesConnectionStatus.connected) return;
     final profileId = effectiveSelectedProfileId(state);
-    if (profileId == _loadedProfileId) return;
-    _loadedProfileId = profileId;
+    final contextKey =
+        '${gatewayId ?? state.connectedBaseUrl ?? 'legacy'}::${profileId ?? 'default'}';
+    if (contextKey == _loadedContextKey) return;
+    _loadedContextKey = contextKey;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(_reload(channel, profileId));
+      unawaited(_reload(channel, profileId, contextKey));
     });
   }
 
-  Future<void> _reload(HermesChannel channel, String? profileId) async {
+  Future<void> _reload(
+    HermesChannel channel,
+    String? profileId,
+    String contextKey,
+  ) async {
     final generation = ++_loadGeneration;
     setState(() {
       _loading = true;
@@ -76,13 +102,73 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     } catch (_) {
       if (mounted &&
           generation == _loadGeneration &&
-          effectiveSelectedProfileId(channel.state) == profileId) {
+          effectiveSelectedProfileId(channel.state) == profileId &&
+          _loadedContextKey == contextKey) {
         setState(() => _loadFailed = true);
       }
     } finally {
       if (mounted && generation == _loadGeneration) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Widget _buildGatewayPicker(
+    HermesGatewayDirectory directory,
+    AppLocalizations strings,
+  ) {
+    final selectedId = directory.activeContactId?.gatewayId;
+    final selected =
+        directory.gateways.any((gateway) => gateway.id == selectedId)
+        ? selectedId
+        : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<String>(
+            key: const ValueKey('providers-gateway-picker'),
+            initialValue: selected,
+            decoration: InputDecoration(
+              labelText: strings.gatewayLabel,
+              border: const OutlineInputBorder(),
+            ),
+            hint: Text(strings.selectGatewayHint),
+            items: [
+              for (final gateway in directory.gateways)
+                DropdownMenuItem(value: gateway.id, child: Text(gateway.label)),
+            ],
+            onChanged: _switchingGatewayId == null
+                ? (gatewayId) {
+                    if (gatewayId != null && gatewayId != selected) {
+                      unawaited(_selectGateway(directory, gatewayId, strings));
+                    }
+                  }
+                : null,
+          ),
+          const SizedBox(height: 6),
+          Text(strings.providersGatewayHelp),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectGateway(
+    HermesGatewayDirectory directory,
+    String gatewayId,
+    AppLocalizations strings,
+  ) async {
+    setState(() {
+      _switchingGatewayId = gatewayId;
+      _actionError = null;
+    });
+    try {
+      await directory.activateGateway(gatewayId);
+    } catch (_) {
+      if (mounted) setState(() => _actionError = strings.gatewayConnectFailed);
+    } finally {
+      if (mounted) setState(() => _switchingGatewayId = null);
     }
   }
 
@@ -110,10 +196,31 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       );
     }
     if (!state.canReadProviders) {
-      return _ProvidersMessage(
-        icon: Icons.lock_outline,
-        title: strings.providersUnavailableTitle,
-        body: strings.providersUnavailableBody,
+      if (!state.canReadRuntimeModels) {
+        return _ProvidersMessage(
+          icon: Icons.lock_outline,
+          title: strings.providersUnavailableTitle,
+          body: strings.providersUnavailableBody,
+        );
+      }
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+        children: [
+          _ProvidersHeader(
+            title: strings.providersTitle,
+            subtitle: strings.providersSubtitle,
+            readOnly: true,
+            readOnlyLabel: strings.readOnlyAccess,
+          ),
+          const SizedBox(height: 20),
+          _ProvidersMessage(
+            icon: Icons.lock_outline,
+            title: strings.providersUnavailableTitle,
+            body: strings.providersUnavailableBody,
+          ),
+          const SizedBox(height: 20),
+          _ModelSection(strings: strings, state: state, onChoose: () {}),
+        ],
       );
     }
     if (_loadFailed) {
@@ -125,7 +232,11 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         onAction: _loading
             ? null
             : () => unawaited(
-                _reload(channel, effectiveSelectedProfileId(state)),
+                _reload(
+                  channel,
+                  effectiveSelectedProfileId(state),
+                  _loadedContextKey ?? 'retry',
+                ),
               ),
       );
     }
@@ -358,7 +469,9 @@ class _ModelSection extends StatelessWidget {
       children: [
         Text(strings.modelSelectionTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: 12),
-        if (!state.canReadModels)
+        if (!state.canReadModels && state.canReadRuntimeModels)
+          _RuntimeModelsCard(strings: strings, models: state.models)
+        else if (!state.canReadModels)
           Text(strings.modelSelectionUnavailableBody)
         else ...[
           Card(
@@ -409,6 +522,61 @@ class _ModelSection extends StatelessWidget {
       ],
     );
   }
+}
+
+class _RuntimeModelsCard extends StatelessWidget {
+  const _RuntimeModelsCard({required this.strings, required this.models});
+
+  final AppLocalizations strings;
+  final List<String> models;
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedModels =
+        models
+            .map(_boundedRuntimeModelLabel)
+            .where((model) => model.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.runtimeModelsTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(strings.runtimeModelsBody),
+            const SizedBox(height: 12),
+            if (sortedModels.isEmpty)
+              Text(strings.runtimeModelsEmptyBody)
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final model in sortedModels) Chip(label: Text(model)),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _boundedRuntimeModelLabel(String value) {
+  final normalized = value
+      .replaceAll(RegExp(r'[\u0000-\u001f\u007f]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  const maximumLength = 120;
+  if (normalized.length <= maximumLength) return normalized;
+  return '${normalized.substring(0, maximumLength - 1)}…';
 }
 
 class _ProvidersMessage extends StatelessWidget {

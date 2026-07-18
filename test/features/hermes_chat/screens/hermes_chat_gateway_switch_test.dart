@@ -50,6 +50,96 @@ void main() {
     );
   });
 
+  testWidgets('sessions are grouped by recent activity', (tester) async {
+    final harness = await _pumpGatewayChat(tester);
+    final current = DateTime.now();
+    final now = DateTime(current.year, current.month, current.day, 12);
+    HermesSession session(String id, String title, DateTime lastActive) =>
+        HermesSession(
+          id: id,
+          source: 'test',
+          title: title,
+          lastActive: lastActive.toIso8601String(),
+        );
+    harness.channel.replaceSessions([
+      session('today', 'Today', now.subtract(const Duration(hours: 1))),
+      session('yesterday', 'Yesterday', now.subtract(const Duration(days: 1))),
+      session('week', 'This week', now.subtract(const Duration(days: 3))),
+      session('earlier', 'Earlier', now.subtract(const Duration(days: 10))),
+    ], activeSessionId: 'today');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('hermes-session-group-today')), findsOne);
+    expect(
+      find.byKey(const ValueKey('hermes-session-group-yesterday')),
+      findsOne,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-session-group-this-week')),
+      findsOne,
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('hermes-session-group-earlier')),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('hermes-sessions-list')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-session-group-earlier')),
+      findsOne,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-session-group-active')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('session rows show source and model metadata', (tester) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.replaceSessions(const [
+      HermesSession(
+        id: 'metadata',
+        source: 'api_server',
+        title: 'Metadata session',
+        model: 'anthropic/claude-sonnet',
+        messageCount: 2,
+        lastActive: '2026-07-16T10:30:00Z',
+      ),
+    ], activeSessionId: 'metadata');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('hermes-session-row-metadata'));
+    expect(
+      find.descendant(of: row, matching: find.textContaining('api server')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.textContaining('anthropic/claude-sonnet'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: row, matching: find.textContaining('2 messages')),
+      findsOneWidget,
+    );
+    final metadata = tester
+        .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
+        .map((widget) => widget.data ?? '')
+        .firstWhere((text) => text.contains('api server'));
+    expect(metadata, contains('Last active'));
+    expect(metadata, isNot(contains('2026-07-16T10:30:00Z')));
+  });
+
   testWidgets('phone header keeps secondary actions in overflow', (
     tester,
   ) async {

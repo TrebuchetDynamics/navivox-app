@@ -24,6 +24,7 @@ class _HermesChatError extends StatelessWidget {
     final unsupportedChatTransport = lower.contains(
       'did not advertise a supported chat transport',
     );
+    final runStillActive = _isHermesRunStillActiveError(lower);
     final streamOrNetworkFailure =
         _isHermesNetworkError(lower) || lower.contains('stream');
     final runCancelled = lower.contains('hermes run was cancelled');
@@ -47,6 +48,11 @@ class _HermesChatError extends StatelessWidget {
         ? (
             'Hermes endpoint does not support chat turns.',
             'Connect to a Hermes API server that advertises session chat streaming or run events.',
+          )
+        : runStillActive
+        ? (
+            'Hermes run is still active.',
+            'Reconnect to reconcile this run before sending it again.',
           )
         : runCancelled
         ? ('Hermes run was cancelled.', 'Start a new turn when you are ready.')
@@ -221,6 +227,10 @@ void _showHermesErrorDetailsSheet(
     ),
   );
 }
+
+bool _isHermesRunStillActiveError(String error) => error.toLowerCase().contains(
+  'run is still active after its event stream closed',
+);
 
 String _safeHermesUiText(String text) {
   var safe = text;

@@ -1,0 +1,31 @@
+# Static validation: maestro check-syntax scripts/maestro/providers_models_unsupported_qa.yaml
+# Physical-device receipt for a saved gateway that does not advertise provider
+# or model administration. Proves write-only credential/model controls stay
+# hidden instead of probing unadvertised routes. Pass the saved label with
+# `-e WING_QA_GATEWAY_LABEL="<saved gateway label>"`.
+appId: com.trebuchetdynamics.hermes.wing
+name: providers_models_unsupported_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Settings.*"
+- tapOn: "(?s)^More.*"
+- assertVisible: "(?s).*Providers.*"
+- tapOn: "(?s)^Providers.*"
+- assertVisible: "(?s).*Select gateway.*"
+- tapOn: "(?s).*Select gateway.*"
+- tapOn: "(?s).*${WING_QA_GATEWAY_LABEL}.*"
+- extendedWaitUntil:
+    visible: "(?s).*Providers unavailable.*"
+    timeout: 60000
+- assertVisible: "(?s).*Hermes did not advertise provider access for this connection.*"
+- assertNotVisible: "(?s).*Manage credential.*"
+- assertNotVisible: "(?s).*Choose model.*"
+- takeScreenshot: providers_models_fail_closed

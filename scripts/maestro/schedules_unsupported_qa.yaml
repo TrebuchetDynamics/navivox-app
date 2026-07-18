@@ -1,0 +1,28 @@
+# Fail-closed schedules behavior against a gateway without GET /api/jobs.
+# Static validation: maestro check-syntax scripts/maestro/schedules_unsupported_qa.yaml
+# Preserves secure app data. Pass the saved label with
+# `-e WING_QA_GATEWAY_LABEL="<saved gateway label>"`.
+appId: com.trebuchetdynamics.hermes.wing
+name: schedules_unsupported_qa
+---
+- launchApp:
+    clearState: false
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s)^More.*"
+- tapOn: "(?s)^Schedules.*"
+- assertVisible: "(?s).*Select gateway.*"
+- tapOn: "(?s).*Select gateway.*"
+- tapOn: "(?s).*${WING_QA_GATEWAY_LABEL}.*"
+- extendedWaitUntil:
+    visible: "(?s).*did not advertise scheduled-job inventory.*"
+    timeout: 60000
+- assertNotVisible: "(?s).*Read-only schedule inventory.*"
+- assertNotVisible: "(?s).*Refresh schedules.*"
+- takeScreenshot: schedules_fail_closed

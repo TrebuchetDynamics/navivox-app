@@ -41,7 +41,10 @@ class _HermesTranscriptList extends StatelessWidget {
           turn.text.trim().isEmpty) {
         continue;
       }
-      if (turn.kind == HermesTurnKind.toolCall && turn.toolCall != null) {
+      if (turn.kind == HermesTurnKind.reasoning) {
+        rows.add(_ReasoningCard(turn: turn));
+      } else if (turn.kind == HermesTurnKind.toolCall &&
+          turn.toolCall != null) {
         final group = <HermesChatTurn>[turn];
         while (index + 1 < turns.length &&
             turns[index + 1].kind == HermesTurnKind.toolCall &&
@@ -146,6 +149,39 @@ class _AssistantTimelineItem extends StatelessWidget {
   }
 }
 
+class _ReasoningCard extends StatelessWidget {
+  const _ReasoningCard({required this.turn});
+
+  final HermesChatTurn turn;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AssistantTimelineItem(
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Card(
+            key: ValueKey('hermes-reasoning-${turn.id}'),
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            child: ExpansionTile(
+              leading: const Icon(Icons.psychology_outlined),
+              title: Text(AppLocalizations.of(context).reasoningTitle),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: HermesRichText(turn.text, selectable: true),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ToolActivityGroup extends StatelessWidget {
   const _ToolActivityGroup({required this.turns});
 
@@ -241,6 +277,7 @@ class _TurnBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = turn.author == HermesTurnAuthor.user;
     final streaming = turn.status == HermesTurnStatus.streaming;
+    final usage = isUser ? null : turn.usage;
     final structuredError = isUser
         ? null
         : _structuredAssistantError(turn.text);
@@ -275,43 +312,73 @@ class _TurnBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 5 : 16),
           ),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Flexible(
-              child: isUser
-                  ? Text(
-                      turn.text,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(height: 1.35),
-                    )
-                  : structuredError != null
-                  ? _StructuredAssistantError(structuredError)
-                  : HermesRichText(turn.text, selectable: false),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Flexible(
+                  child: isUser
+                      ? Text(
+                          turn.text,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                        )
+                      : structuredError != null
+                      ? _StructuredAssistantError(structuredError)
+                      : HermesRichText(turn.text, selectable: false),
+                ),
+                if (streaming) ...[
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    height: 12,
+                    width: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                Text(
+                  MaterialLocalizations.of(context).formatTimeOfDay(
+                    TimeOfDay.fromDateTime(turn.createdAt.toLocal()),
+                    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(
+                      context,
+                    ),
+                  ),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    color: colors.onSurfaceVariant.withValues(alpha: 0.72),
+                  ),
+                ),
+              ],
             ),
-            if (streaming) ...[
-              const SizedBox(width: 8),
-              const SizedBox(
-                height: 12,
-                width: 12,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ],
-            const SizedBox(width: 8),
-            Text(
-              MaterialLocalizations.of(context).formatTimeOfDay(
-                TimeOfDay.fromDateTime(turn.createdAt.toLocal()),
-                alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(
-                  context,
+            if (usage != null)
+              Semantics(
+                container: true,
+                label: AppLocalizations.of(context).runTokenUsageSemantics(
+                  usage.inputTokens,
+                  usage.outputTokens,
+                  usage.totalTokens,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: ExcludeSemantics(
+                    child: Text(
+                      AppLocalizations.of(context).runTokenUsage(
+                        usage.inputTokens,
+                        usage.outputTokens,
+                        usage.totalTokens,
+                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 10,
-                color: colors.onSurfaceVariant.withValues(alpha: 0.72),
-              ),
-            ),
           ],
         ),
       ),

@@ -379,6 +379,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
   }) {
     final errorRetry =
         state.errorMessage != null &&
+            !_isHermesRunStillActiveError(state.errorMessage!) &&
             canSendTurns &&
             !isTurnActive &&
             _retryableFailedUserText(state) != null
@@ -641,6 +642,128 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     );
   }
 
+  List<_LocalSlashCommand> _matchingLocalSlashCommands(
+    AppLocalizations strings,
+  ) {
+    final draft = _composerController.text.trimLeft();
+    if (!draft.startsWith('/') || draft.substring(1).contains(RegExp(r'\s'))) {
+      return const [];
+    }
+    final query = draft.substring(1).toLowerCase();
+    return _localSlashCommands(
+      strings,
+    ).where((item) => item.command.substring(1).startsWith(query)).toList();
+  }
+
+  Widget? _buildLocalSlashCommandSuggestions(
+    BuildContext context,
+    HermesChannel channel,
+  ) {
+    if (_pendingAttachmentName != null || _isTurnActive(channel.state)) {
+      return null;
+    }
+    final strings = _hermesStrings(context);
+    final commands = _matchingLocalSlashCommands(strings);
+    if (commands.isEmpty) return null;
+    return Card(
+      key: const ValueKey('hermes-local-command-suggestions'),
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 232),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+              child: Text(
+                strings.localCommandsTitle,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 6),
+                children: [
+                  for (final command in commands)
+                    ListTile(
+                      key: ValueKey('hermes-local-command-${command.id}'),
+                      dense: true,
+                      leading: Icon(command.icon),
+                      title: Text(command.command),
+                      subtitle: Text(command.description),
+                      onTap: () => _runLocalSlashCommand(command, channel),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _runLocalSlashCommand(
+    _LocalSlashCommand command,
+    HermesChannel channel,
+  ) {
+    if (_isTurnActive(channel.state)) return false;
+    _composerController.clear();
+    switch (command.id) {
+      case 'new':
+        unawaited(_createSession(context, channel));
+      case 'sessions':
+        _showSessionsPanel(context, channel);
+      case 'clear':
+        break;
+      case 'settings':
+        context.go(AppRoutes.settings);
+      default:
+        return false;
+    }
+    return true;
+  }
+
+  bool _runExactLocalSlashCommand(String text, HermesChannel channel) {
+    if (_isTurnActive(channel.state)) return false;
+    final commandText = text.trim().toLowerCase();
+    final strings = AppLocalizations.of(context);
+    for (final command in _localSlashCommands(strings)) {
+      if (command.command == commandText) {
+        return _runLocalSlashCommand(command, channel);
+      }
+    }
+    return false;
+  }
+
+  List<_LocalSlashCommand> _localSlashCommands(AppLocalizations strings) => [
+    _LocalSlashCommand(
+      id: 'new',
+      command: '/new',
+      description: strings.localCommandNewDescription,
+      icon: Icons.add_comment_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'sessions',
+      command: '/sessions',
+      description: strings.localCommandSessionsDescription,
+      icon: Icons.forum_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'clear',
+      command: '/clear',
+      description: strings.localCommandClearDescription,
+      icon: Icons.backspace_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'settings',
+      command: '/settings',
+      description: strings.localCommandSettingsDescription,
+      icon: Icons.settings_outlined,
+    ),
+  ];
+
   Widget _buildMobileComposer(
     BuildContext context,
     HermesChannel channel,
@@ -658,6 +781,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (strip != null) ...[strip, const SizedBox(height: 6)],
+        ?_buildLocalSlashCommandSuggestions(context, channel),
         if (_pendingAttachmentName != null) ...[
           Align(
             alignment: Alignment.centerLeft,
@@ -748,6 +872,7 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ?_buildLocalSlashCommandSuggestions(context, channel),
           if (_pendingAttachmentName != null) ...[
             Align(
               alignment: Alignment.centerLeft,

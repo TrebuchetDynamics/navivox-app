@@ -189,11 +189,205 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providersDestination => 'Providers';
 
   @override
+  String get toolsDestination => 'Tools';
+
+  @override
+  String get toolsTitle => 'Tools';
+
+  @override
+  String get toolsSubtitle =>
+      'Installed skills and enabled toolsets advertised by this gateway.';
+
+  @override
+  String get toolsConnectionRequiredBody =>
+      'Open a saved gateway chat before viewing its tool inventory.';
+
+  @override
+  String get toolsConnectionErrorBody =>
+      'Tool inventory could not be loaded from Hermes.';
+
+  @override
+  String get gatewayLabel => 'Gateway';
+
+  @override
+  String get selectGatewayHint => 'Select gateway';
+
+  @override
+  String get toolsGatewayHelp =>
+      'View tool inventory from the selected gateway.';
+
+  @override
+  String get gatewayConnectFailed => 'Could not connect to this gateway.';
+
+  @override
+  String get installedSkillsTitle => 'Installed skills';
+
+  @override
+  String get enabledToolsetsTitle => 'Enabled toolsets';
+
+  @override
+  String get skillsUnavailableBody =>
+      'This gateway did not advertise installed skill inventory.';
+
+  @override
+  String get toolsetsUnavailableBody =>
+      'This gateway did not advertise enabled toolset inventory.';
+
+  @override
+  String get skillsEmptyBody => 'No installed skills were reported.';
+
+  @override
+  String get searchInstalledSkillsLabel => 'Search installed skills';
+
+  @override
+  String get noSkillsMatchBody => 'No installed skills match this search.';
+
+  @override
+  String get toolsetsEmptyBody => 'No enabled toolsets were reported.';
+
+  @override
+  String get skillsLoadFailedBody =>
+      'Installed skills could not be loaded from Hermes.';
+
+  @override
+  String get toolsetsLoadFailedBody =>
+      'Enabled toolsets could not be loaded from Hermes.';
+
+  @override
+  String get schedulesDestination => 'Schedules';
+
+  @override
+  String get schedulesTitle => 'Schedules';
+
+  @override
+  String get schedulesSubtitle =>
+      'Scheduled jobs advertised by the selected gateway and agent.';
+
+  @override
+  String get schedulesGatewayHelp =>
+      'View schedules from the selected gateway.';
+
+  @override
+  String get schedulesConnectionRequiredBody =>
+      'Open a saved gateway chat before viewing its schedules.';
+
+  @override
+  String get schedulesConnectionErrorBody =>
+      'Schedules could not be loaded from Hermes.';
+
+  @override
+  String get schedulesUnavailableBody =>
+      'This gateway did not advertise scheduled-job inventory.';
+
+  @override
+  String get schedulesLoadFailedBody =>
+      'Schedules could not be loaded from Hermes.';
+
+  @override
+  String get schedulesEmptyBody =>
+      'No scheduled jobs were reported for this agent.';
+
+  @override
+  String get schedulesReadOnlyNote =>
+      'Read-only schedule inventory. Create, pause, trigger, and delete remain hidden until this gateway advertises exact scoped administration contracts.';
+
+  @override
+  String get schedulesRefreshTooltip => 'Refresh schedules';
+
+  @override
+  String get scheduleEnabled => 'Enabled';
+
+  @override
+  String get scheduleDisabled => 'Disabled';
+
+  @override
+  String get scheduleActive => 'Active';
+
+  @override
+  String get schedulePaused => 'Paused';
+
+  @override
+  String get scheduleCompleted => 'Completed';
+
+  @override
+  String get scheduleStateLabel => 'State';
+
+  @override
+  String get scheduleExpressionLabel => 'Schedule';
+
+  @override
+  String get scheduleNextRunLabel => 'Next run';
+
+  @override
+  String get scheduleLastRunLabel => 'Last run';
+
+  @override
+  String get scheduleLastErrorNotice => 'Last run reported an error.';
+
+  @override
+  String get gatewayDestination => 'Gateway';
+
+  @override
+  String get gatewayStatusTitle => 'Gateway';
+
+  @override
+  String get gatewayStatusSubtitle =>
+      'Bounded health status advertised by the selected Hermes gateway.';
+
+  @override
+  String get gatewayStatusHelp => 'View status from the selected gateway.';
+
+  @override
+  String get gatewayStatusConnectionRequiredBody =>
+      'Open a saved gateway chat before viewing gateway status.';
+
+  @override
+  String get gatewayStatusConnectionErrorBody =>
+      'Gateway status could not be loaded from Hermes.';
+
+  @override
+  String get gatewayStatusUnavailableBody =>
+      'This gateway did not advertise detailed health status.';
+
+  @override
+  String get gatewayStatusLoadFailedBody =>
+      'Detailed gateway status could not be loaded from Hermes.';
+
+  @override
+  String get gatewayStatusReadOnlyNote =>
+      'Read-only gateway status. Lifecycle, logs, and messaging-platform administration remain hidden until exact scoped contracts are advertised.';
+
+  @override
+  String get gatewayStatusRefreshTooltip => 'Refresh gateway status';
+
+  @override
+  String get gatewayHealthy => 'Healthy';
+
+  @override
+  String get gatewayNeedsAttention => 'Needs attention';
+
+  @override
+  String get gatewayPlatformLabel => 'Platform';
+
+  @override
+  String get gatewayVersionLabel => 'Version';
+
+  @override
+  String get gatewayRuntimeStateLabel => 'Runtime state';
+
+  @override
+  String get gatewayActiveAgentsLabel => 'Active agents';
+
+  @override
   String get providersTitle => 'Providers';
 
   @override
   String get providersSubtitle =>
       'Set provider credentials and choose models for this agent.';
+
+  @override
+  String get providersGatewayHelp =>
+      'Manage providers and models on the selected gateway.';
 
   @override
   String get providersLoading => 'Loading providers';
@@ -240,6 +434,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelSelectionUnavailableBody =>
       'Hermes did not advertise model access for this connection.';
+
+  @override
+  String get runtimeModelsTitle => 'Runtime models';
+
+  @override
+  String get runtimeModelsBody =>
+      'Read-only models advertised by this gateway. Provider credentials and assignments remain unavailable.';
+
+  @override
+  String get runtimeModelsEmptyBody => 'No runtime models were reported.';
 
   @override
   String get activeModelLabel => 'Active model';
@@ -329,6 +533,77 @@ class AppLocalizationsEn extends AppLocalizations {
       'The credential operation could not be completed.';
 
   @override
+  String get copyTranscriptAction => 'Copy transcript';
+
+  @override
+  String get copyTranscriptDescription =>
+      'Choose a portable transcript format.';
+
+  @override
+  String get copyAsTextAction => 'Copy as text';
+
+  @override
+  String get copyAsMarkdownAction => 'Copy as Markdown';
+
+  @override
+  String get transcriptFormatText => 'text';
+
+  @override
+  String get transcriptFormatMarkdown => 'Markdown';
+
+  @override
+  String transcriptCopiedMessage(String format) {
+    return 'Transcript copied as $format';
+  }
+
+  @override
+  String get transcriptAuthorYou => 'You';
+
+  @override
+  String get transcriptAuthorHermes => 'Hermes';
+
+  @override
+  String get transcriptAuthorSystem => 'System';
+
+  @override
+  String transcriptToolHeading(String name) {
+    return 'Tool: $name';
+  }
+
+  @override
+  String transcriptToolStatus(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get sessionsToday => 'Today';
+
+  @override
+  String get sessionsYesterday => 'Yesterday';
+
+  @override
+  String get sessionsThisWeek => 'This week';
+
+  @override
+  String get sessionsEarlier => 'Earlier';
+
+  @override
+  String get sessionUnknownSource => 'Unknown source';
+
+  @override
+  String sessionSourceLabel(String source) {
+    return 'Source: $source';
+  }
+
+  @override
+  String sessionModelLabel(String model) {
+    return 'Model: $model';
+  }
+
+  @override
+  String get sessionModelNotReported => 'Not reported';
+
+  @override
   String get transcriptImageFallbackLabel => 'Image';
 
   @override
@@ -345,6 +620,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showLessAction => 'Show less';
+
+  @override
+  String get reasoningTitle => 'Reasoning';
+
+  @override
+  String get localCommandsTitle => 'Wing commands';
+
+  @override
+  String get localCommandNewDescription => 'Start a new Hermes session.';
+
+  @override
+  String get localCommandSessionsDescription => 'Open session history.';
+
+  @override
+  String get localCommandClearDescription => 'Clear the current draft.';
+
+  @override
+  String get localCommandSettingsDescription => 'Open Wing settings.';
+
+  @override
+  String runTokenUsage(int inputTokens, int outputTokens, int totalTokens) {
+    return '$inputTokens in · $outputTokens out · $totalTokens total tokens';
+  }
+
+  @override
+  String transcriptRunTokenUsage(
+    int inputTokens,
+    int outputTokens,
+    int totalTokens,
+  ) {
+    return 'Usage: $inputTokens input · $outputTokens output · $totalTokens total tokens';
+  }
+
+  @override
+  String runTokenUsageSemantics(
+    int inputTokens,
+    int outputTokens,
+    int totalTokens,
+  ) {
+    return 'Token usage: $inputTokens input, $outputTokens output, $totalTokens total';
+  }
 
   @override
   String get auxiliaryTaskVision => 'Vision';

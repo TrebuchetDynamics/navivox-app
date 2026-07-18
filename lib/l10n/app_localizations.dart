@@ -412,6 +412,342 @@ abstract class AppLocalizations {
   /// **'Providers'**
   String get providersDestination;
 
+  /// No description provided for @toolsDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get toolsDestination;
+
+  /// No description provided for @toolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get toolsTitle;
+
+  /// No description provided for @toolsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed skills and enabled toolsets advertised by this gateway.'**
+  String get toolsSubtitle;
+
+  /// No description provided for @toolsConnectionRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a saved gateway chat before viewing its tool inventory.'**
+  String get toolsConnectionRequiredBody;
+
+  /// No description provided for @toolsConnectionErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool inventory could not be loaded from Hermes.'**
+  String get toolsConnectionErrorBody;
+
+  /// No description provided for @gatewayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway'**
+  String get gatewayLabel;
+
+  /// No description provided for @selectGatewayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select gateway'**
+  String get selectGatewayHint;
+
+  /// No description provided for @toolsGatewayHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'View tool inventory from the selected gateway.'**
+  String get toolsGatewayHelp;
+
+  /// No description provided for @gatewayConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to this gateway.'**
+  String get gatewayConnectFailed;
+
+  /// No description provided for @installedSkillsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed skills'**
+  String get installedSkillsTitle;
+
+  /// No description provided for @enabledToolsetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled toolsets'**
+  String get enabledToolsetsTitle;
+
+  /// No description provided for @skillsUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This gateway did not advertise installed skill inventory.'**
+  String get skillsUnavailableBody;
+
+  /// No description provided for @toolsetsUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This gateway did not advertise enabled toolset inventory.'**
+  String get toolsetsUnavailableBody;
+
+  /// No description provided for @skillsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No installed skills were reported.'**
+  String get skillsEmptyBody;
+
+  /// No description provided for @searchInstalledSkillsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search installed skills'**
+  String get searchInstalledSkillsLabel;
+
+  /// No description provided for @noSkillsMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No installed skills match this search.'**
+  String get noSkillsMatchBody;
+
+  /// No description provided for @toolsetsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No enabled toolsets were reported.'**
+  String get toolsetsEmptyBody;
+
+  /// No description provided for @skillsLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed skills could not be loaded from Hermes.'**
+  String get skillsLoadFailedBody;
+
+  /// No description provided for @toolsetsLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled toolsets could not be loaded from Hermes.'**
+  String get toolsetsLoadFailedBody;
+
+  /// No description provided for @schedulesDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get schedulesDestination;
+
+  /// No description provided for @schedulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get schedulesTitle;
+
+  /// No description provided for @schedulesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled jobs advertised by the selected gateway and agent.'**
+  String get schedulesSubtitle;
+
+  /// No description provided for @schedulesGatewayHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'View schedules from the selected gateway.'**
+  String get schedulesGatewayHelp;
+
+  /// No description provided for @schedulesConnectionRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a saved gateway chat before viewing its schedules.'**
+  String get schedulesConnectionRequiredBody;
+
+  /// No description provided for @schedulesConnectionErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules could not be loaded from Hermes.'**
+  String get schedulesConnectionErrorBody;
+
+  /// No description provided for @schedulesUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This gateway did not advertise scheduled-job inventory.'**
+  String get schedulesUnavailableBody;
+
+  /// No description provided for @schedulesLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules could not be loaded from Hermes.'**
+  String get schedulesLoadFailedBody;
+
+  /// No description provided for @schedulesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled jobs were reported for this agent.'**
+  String get schedulesEmptyBody;
+
+  /// No description provided for @schedulesReadOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only schedule inventory. Create, pause, trigger, and delete remain hidden until this gateway advertises exact scoped administration contracts.'**
+  String get schedulesReadOnlyNote;
+
+  /// No description provided for @schedulesRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh schedules'**
+  String get schedulesRefreshTooltip;
+
+  /// No description provided for @scheduleEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get scheduleEnabled;
+
+  /// No description provided for @scheduleDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get scheduleDisabled;
+
+  /// No description provided for @scheduleActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get scheduleActive;
+
+  /// No description provided for @schedulePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get schedulePaused;
+
+  /// No description provided for @scheduleCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get scheduleCompleted;
+
+  /// No description provided for @scheduleStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get scheduleStateLabel;
+
+  /// No description provided for @scheduleExpressionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get scheduleExpressionLabel;
+
+  /// No description provided for @scheduleNextRunLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next run'**
+  String get scheduleNextRunLabel;
+
+  /// No description provided for @scheduleLastRunLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run'**
+  String get scheduleLastRunLabel;
+
+  /// No description provided for @scheduleLastErrorNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run reported an error.'**
+  String get scheduleLastErrorNotice;
+
+  /// No description provided for @gatewayDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway'**
+  String get gatewayDestination;
+
+  /// No description provided for @gatewayStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway'**
+  String get gatewayStatusTitle;
+
+  /// No description provided for @gatewayStatusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bounded health status advertised by the selected Hermes gateway.'**
+  String get gatewayStatusSubtitle;
+
+  /// No description provided for @gatewayStatusHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'View status from the selected gateway.'**
+  String get gatewayStatusHelp;
+
+  /// No description provided for @gatewayStatusConnectionRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a saved gateway chat before viewing gateway status.'**
+  String get gatewayStatusConnectionRequiredBody;
+
+  /// No description provided for @gatewayStatusConnectionErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway status could not be loaded from Hermes.'**
+  String get gatewayStatusConnectionErrorBody;
+
+  /// No description provided for @gatewayStatusUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This gateway did not advertise detailed health status.'**
+  String get gatewayStatusUnavailableBody;
+
+  /// No description provided for @gatewayStatusLoadFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed gateway status could not be loaded from Hermes.'**
+  String get gatewayStatusLoadFailedBody;
+
+  /// No description provided for @gatewayStatusReadOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only gateway status. Lifecycle, logs, and messaging-platform administration remain hidden until exact scoped contracts are advertised.'**
+  String get gatewayStatusReadOnlyNote;
+
+  /// No description provided for @gatewayStatusRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh gateway status'**
+  String get gatewayStatusRefreshTooltip;
+
+  /// No description provided for @gatewayHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get gatewayHealthy;
+
+  /// No description provided for @gatewayNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get gatewayNeedsAttention;
+
+  /// No description provided for @gatewayPlatformLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get gatewayPlatformLabel;
+
+  /// No description provided for @gatewayVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get gatewayVersionLabel;
+
+  /// No description provided for @gatewayRuntimeStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime state'**
+  String get gatewayRuntimeStateLabel;
+
+  /// No description provided for @gatewayActiveAgentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active agents'**
+  String get gatewayActiveAgentsLabel;
+
   /// No description provided for @providersTitle.
   ///
   /// In en, this message translates to:
@@ -423,6 +759,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set provider credentials and choose models for this agent.'**
   String get providersSubtitle;
+
+  /// No description provided for @providersGatewayHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage providers and models on the selected gateway.'**
+  String get providersGatewayHelp;
 
   /// No description provided for @providersLoading.
   ///
@@ -501,6 +843,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hermes did not advertise model access for this connection.'**
   String get modelSelectionUnavailableBody;
+
+  /// No description provided for @runtimeModelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime models'**
+  String get runtimeModelsTitle;
+
+  /// No description provided for @runtimeModelsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only models advertised by this gateway. Provider credentials and assignments remain unavailable.'**
+  String get runtimeModelsBody;
+
+  /// No description provided for @runtimeModelsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No runtime models were reported.'**
+  String get runtimeModelsEmptyBody;
 
   /// No description provided for @activeModelLabel.
   ///
@@ -658,6 +1018,126 @@ abstract class AppLocalizations {
   /// **'The credential operation could not be completed.'**
   String get credentialOperationFailed;
 
+  /// No description provided for @copyTranscriptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy transcript'**
+  String get copyTranscriptAction;
+
+  /// No description provided for @copyTranscriptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a portable transcript format.'**
+  String get copyTranscriptDescription;
+
+  /// No description provided for @copyAsTextAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as text'**
+  String get copyAsTextAction;
+
+  /// No description provided for @copyAsMarkdownAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Markdown'**
+  String get copyAsMarkdownAction;
+
+  /// No description provided for @transcriptFormatText.
+  ///
+  /// In en, this message translates to:
+  /// **'text'**
+  String get transcriptFormatText;
+
+  /// No description provided for @transcriptFormatMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown'**
+  String get transcriptFormatMarkdown;
+
+  /// No description provided for @transcriptCopiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript copied as {format}'**
+  String transcriptCopiedMessage(String format);
+
+  /// No description provided for @transcriptAuthorYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get transcriptAuthorYou;
+
+  /// No description provided for @transcriptAuthorHermes.
+  ///
+  /// In en, this message translates to:
+  /// **'Hermes'**
+  String get transcriptAuthorHermes;
+
+  /// No description provided for @transcriptAuthorSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get transcriptAuthorSystem;
+
+  /// No description provided for @transcriptToolHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool: {name}'**
+  String transcriptToolHeading(String name);
+
+  /// No description provided for @transcriptToolStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String transcriptToolStatus(String status);
+
+  /// No description provided for @sessionsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get sessionsToday;
+
+  /// No description provided for @sessionsYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get sessionsYesterday;
+
+  /// No description provided for @sessionsThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get sessionsThisWeek;
+
+  /// No description provided for @sessionsEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get sessionsEarlier;
+
+  /// No description provided for @sessionUnknownSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown source'**
+  String get sessionUnknownSource;
+
+  /// No description provided for @sessionSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {source}'**
+  String sessionSourceLabel(String source);
+
+  /// No description provided for @sessionModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model: {model}'**
+  String sessionModelLabel(String model);
+
+  /// No description provided for @sessionModelNotReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported'**
+  String get sessionModelNotReported;
+
   /// No description provided for @transcriptImageFallbackLabel.
   ///
   /// In en, this message translates to:
@@ -693,6 +1173,68 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show less'**
   String get showLessAction;
+
+  /// No description provided for @reasoningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get reasoningTitle;
+
+  /// No description provided for @localCommandsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wing commands'**
+  String get localCommandsTitle;
+
+  /// No description provided for @localCommandNewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new Hermes session.'**
+  String get localCommandNewDescription;
+
+  /// No description provided for @localCommandSessionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open session history.'**
+  String get localCommandSessionsDescription;
+
+  /// No description provided for @localCommandClearDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the current draft.'**
+  String get localCommandClearDescription;
+
+  /// No description provided for @localCommandSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Wing settings.'**
+  String get localCommandSettingsDescription;
+
+  /// No description provided for @runTokenUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'{inputTokens} in · {outputTokens} out · {totalTokens} total tokens'**
+  String runTokenUsage(int inputTokens, int outputTokens, int totalTokens);
+
+  /// No description provided for @transcriptRunTokenUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage: {inputTokens} input · {outputTokens} output · {totalTokens} total tokens'**
+  String transcriptRunTokenUsage(
+    int inputTokens,
+    int outputTokens,
+    int totalTokens,
+  );
+
+  /// No description provided for @runTokenUsageSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Token usage: {inputTokens} input, {outputTokens} output, {totalTokens} total'**
+  String runTokenUsageSemantics(
+    int inputTokens,
+    int outputTokens,
+    int totalTokens,
+  );
 
   /// No description provided for @auxiliaryTaskVision.
   ///

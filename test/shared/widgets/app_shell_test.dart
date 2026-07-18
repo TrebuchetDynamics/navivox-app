@@ -63,6 +63,84 @@ void main() {
     expect(find.text('Providers'), findsOneWidget);
   });
 
+  testWidgets('Tools appears in More rather than the mobile bottom bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.text('Tools'), findsNothing);
+    expect(find.text('More'), findsOneWidget);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tools'), findsOneWidget);
+  });
+
+  testWidgets('Schedules appears in More rather than the mobile bottom bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.text('Schedules'), findsNothing);
+    expect(find.text('More'), findsOneWidget);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Schedules'), findsOneWidget);
+  });
+
+  testWidgets('Gateway appears in More rather than the mobile bottom bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.text('Gateway'), findsNothing);
+    expect(find.text('More'), findsOneWidget);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateway'), findsOneWidget);
+  });
+
   testWidgets('mobile navigation stays compact and edge aligned', (
     tester,
   ) async {

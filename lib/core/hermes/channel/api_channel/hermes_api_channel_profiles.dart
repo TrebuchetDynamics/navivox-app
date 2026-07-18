@@ -20,6 +20,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profiles',
       'GET',
       '/api/profiles',
+      'profiles:read',
       'list profiles',
     );
     _requireProfileContext('select a profile');
@@ -47,16 +48,19 @@ extension _ProfilesExtension on HermesApiChannel {
           errors: errors,
         ) ??
         const <String>[];
-    final skills =
-        await _loadOptional<List<String>>(
+    final skillDetails =
+        await _loadOptional<List<HermesSkill>>(
           advertised:
               capabilities?.advertisesEndpoint('skills', 'GET', '/v1/skills') ??
               false,
           resource: HermesOptionalResource.skills,
-          load: () => client.listSkills(profile: id),
+          load: () => client.listSkillDetails(profile: id),
           errors: errors,
         ) ??
-        const <String>[];
+        const <HermesSkill>[];
+    final skills = skillDetails
+        .map((skill) => skill.name)
+        .toList(growable: false);
     final toolsets =
         await _loadOptional<List<String>>(
           advertised:
@@ -101,6 +105,7 @@ extension _ProfilesExtension on HermesApiChannel {
         clearActiveSessionId: activeId == null,
         models: models,
         skills: skills,
+        skillDetails: skillDetails,
         enabledToolsets: toolsets,
         jobs: jobs,
         optionalResourceErrors: errors,
@@ -121,6 +126,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profile_create',
       'POST',
       '/api/profiles',
+      'profiles:write',
       'create profiles',
     );
     await _runProfileMutation(
@@ -143,6 +149,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profile_update',
       'PATCH',
       '/api/profiles/{name}',
+      'profiles:write',
       'rename profiles',
     );
     _requireRevision(revision);
@@ -165,6 +172,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profile_delete',
       'DELETE',
       '/api/profiles/{name}',
+      'profiles:write',
       'delete profiles',
     );
     _requireRevision(revision);
@@ -180,6 +188,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profile_soul',
       'GET',
       '/api/profiles/{name}/soul',
+      'profiles:read',
       'read a persona',
     );
     _requireProfileContext('read a persona');
@@ -196,6 +205,7 @@ extension _ProfilesExtension on HermesApiChannel {
       'profile_soul_update',
       'PUT',
       '/api/profiles/{name}/soul',
+      'profiles:write',
       'edit a persona',
     );
     _requireProfileContext('edit a persona');
@@ -250,13 +260,17 @@ extension _ProfilesExtension on HermesApiChannel {
     String name,
     String method,
     String path,
+    String scope,
     String action,
   ) {
     final capabilities = _state.capabilities;
     if (capabilities == null ||
         !capabilities.supportsSchema ||
-        !capabilities.advertisesEndpoint(name, method, path)) {
+        !capabilities.advertisesScopedEndpoint(name, method, path, scope)) {
       throw StateError('Hermes did not advertise support to $action.');
+    }
+    if (!capabilities.auth.allows(scope)) {
+      throw StateError('This device is not authorized to $action.');
     }
   }
 

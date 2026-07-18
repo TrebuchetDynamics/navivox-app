@@ -30,6 +30,7 @@ void main() {
   _hermesApiChannelApprovalStopTests();
   _hermesApiChannelProfileTests();
   _hermesApiChannelProviderModelTests();
+  _hermesApiChannelJobsTests();
 }
 
 const _profileCapabilitiesFixture = '''
@@ -152,12 +153,12 @@ const _catalogCapabilitiesFixture = '''
   "object": "hermes.api_server.capabilities",
   "platform": "hermes-agent",
   "model": "hermes-agent",
-  "auth": {"type": "bearer", "required": true},
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["chat:read", "skills:read", "tools:read"]},
   "features": {},
   "endpoints": {
     "models": {"method": "GET", "path": "/v1/models"},
-    "skills": {"method": "GET", "path": "/v1/skills"},
-    "toolsets": {"method": "GET", "path": "/v1/toolsets"}
+    "skills": {"method": "GET", "path": "/v1/skills", "required_scopes": ["skills:read"]},
+    "toolsets": {"method": "GET", "path": "/v1/toolsets", "required_scopes": ["tools:read"]}
   }
 }
 ''';
@@ -264,6 +265,14 @@ const _jobsFixture = '''
 {
   "jobs": [
     {"id": "job_1", "name": "Morning check", "enabled": true, "schedule_display": "Daily"}
+  ]
+}
+''';
+
+const _jobsFixtureUpdated = '''
+{
+  "jobs": [
+    {"id": "job_2", "name": "Evening review", "enabled": false, "state": "paused", "schedule_display": "0 18 * * *"}
   ]
 }
 ''';
@@ -455,10 +464,26 @@ void _hermesApiChannelProfileTests() {
     final capabilityMap =
         jsonDecode(_profileCapabilitiesFixture) as Map<String, dynamic>;
     final endpoints = capabilityMap['endpoints'] as Map<String, dynamic>;
+    final auth = capabilityMap['auth'] as Map<String, dynamic>;
+    auth['granted_scopes'] = [
+      'profiles:read',
+      'profiles:write',
+      'chat:read',
+      'skills:read',
+      'tools:read',
+    ];
     endpoints.addAll({
       'models': {'method': 'GET', 'path': '/v1/models'},
-      'skills': {'method': 'GET', 'path': '/v1/skills'},
-      'toolsets': {'method': 'GET', 'path': '/v1/toolsets'},
+      'skills': {
+        'method': 'GET',
+        'path': '/v1/skills',
+        'required_scopes': ['skills:read'],
+      },
+      'toolsets': {
+        'method': 'GET',
+        'path': '/v1/toolsets',
+        'required_scopes': ['tools:read'],
+      },
       'jobs': {'method': 'GET', 'path': '/api/jobs'},
     });
     final capabilities = jsonEncode(capabilityMap);
@@ -645,6 +670,135 @@ void _hermesApiChannelProfileTests() {
       expect(channel.state.selectedProfileId, isNull);
     },
   );
+
+  test('profile mutations require endpoint scope declarations', () async {
+    final capabilityMap =
+        jsonDecode(_profileCapabilitiesFixture) as Map<String, dynamic>;
+    final endpoints = capabilityMap['endpoints'] as Map<String, dynamic>;
+    (endpoints['profile_create'] as Map<String, dynamic>).remove(
+      'required_scopes',
+    );
+    var posted = false;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => jsonEncode(capabilityMap),
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async {
+          posted = true;
+          return '{}';
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(channel.createProfile(name: 'X'), throwsStateError);
+
+    expect(posted, isFalse);
+  });
+
+  test('profile reads require profiles:read before network I/O', () async {
+    final capabilityMap =
+        jsonDecode(_profileCapabilitiesFixture) as Map<String, dynamic>;
+    (capabilityMap['auth'] as Map<String, dynamic>)['granted_scopes'] = [];
+    var profileRead = false;
+    var soulRead = false;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          if (uri.path == '/api/profiles') profileRead = true;
+          if (uri.path.endsWith('/soul')) soulRead = true;
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => jsonEncode(capabilityMap),
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/profiles' => _profilesFixture,
+            '/api/profiles/coder/soul' =>
+              '{"soul":"persona","revision":"rev-1"}',
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(channel.selectProfile('coder'), throwsStateError);
+    await expectLater(channel.readProfileSoul('coder'), throwsStateError);
+
+    expect(profileRead, isFalse);
+    expect(soulRead, isFalse);
+  });
+
+  test('profile mutations require profiles:write before network I/O', () async {
+    final capabilityMap =
+        jsonDecode(_profileCapabilitiesFixture) as Map<String, dynamic>;
+    (capabilityMap['auth'] as Map<String, dynamic>)['granted_scopes'] = [
+      'profiles:read',
+    ];
+    var posted = false;
+    var patched = false;
+    var deleted = false;
+    var put = false;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => jsonEncode(capabilityMap),
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          '/api/profiles' => _profilesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async {
+          posted = true;
+          return '{}';
+        },
+        patch: (uri, headers, body) async {
+          patched = true;
+          return '{}';
+        },
+        delete: (uri, headers) async {
+          deleted = true;
+          return '{}';
+        },
+        put: (uri, headers, body) async {
+          put = true;
+          return '{}';
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(channel.createProfile(name: 'X'), throwsStateError);
+    await expectLater(
+      channel.renameProfile(profileId: 'coder', name: 'X', revision: 'r'),
+      throwsStateError,
+    );
+    await expectLater(
+      channel.deleteProfile(profileId: 'coder', revision: 'r'),
+      throwsStateError,
+    );
+    await expectLater(
+      channel.writeProfileSoul(profileId: 'coder', soul: 'x', revision: 'r'),
+      throwsStateError,
+    );
+
+    expect(posted, isFalse);
+    expect(patched, isFalse);
+    expect(deleted, isFalse);
+    expect(put, isFalse);
+  });
 
   test(
     'profile edits reject a blank revision before any network call',
@@ -935,6 +1089,71 @@ Future<HermesApiChannel> _connectedProviderModelChannel({
   await channel.selectProfile('default');
   requests?.clear();
   return channel;
+}
+
+void _hermesApiChannelJobsTests() {
+  test('loadJobs refreshes advertised read-only inventory', () async {
+    var jobsBody = _jobsFixture;
+    final requests = <Uri>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          requests.add(uri);
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _jobsCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/jobs' => jobsBody,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    expect(channel.state.jobs.single.id, 'job_1');
+    requests.clear();
+    jobsBody = _jobsFixtureUpdated;
+
+    await channel.loadJobs();
+
+    expect(requests.map((uri) => uri.path), ['/api/jobs']);
+    expect(channel.state.jobs.single.id, 'job_2');
+    expect(
+      channel.state.optionalResourceErrors.containsKey(
+        HermesOptionalResource.jobs,
+      ),
+      isFalse,
+    );
+  });
+
+  test('loadJobs rejects an unadvertised route before network I/O', () async {
+    final requests = <Uri>[];
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          requests.add(uri);
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _noChatCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    requests.clear();
+
+    await expectLater(channel.loadJobs(), throwsStateError);
+
+    expect(requests, isEmpty);
+  });
 }
 
 void _hermesApiChannelProviderModelTests() {

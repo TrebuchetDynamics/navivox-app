@@ -62,6 +62,190 @@ void _hermesApiChannelRunTransportTests() {
     },
   );
 
+  test('sendText exposes bounded run token usage on the assistant turn', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async => switch (uri.path) {
+          '/v1/runs' =>
+            '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+          _ => '{}',
+        },
+        getStream: (uri, headers) => Stream.fromIterable([
+          'event: message.delta\ndata: {"delta":"Measured reply"}\n\n',
+          'event: run.completed\ndata: {"usage":{"input_tokens":12,"output_tokens":7,"total_tokens":19}}\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('measure this');
+
+    final assistant = channel.state.activeMessages.last;
+    expect(assistant.text, 'Measured reply');
+    expect(assistant.usage?.inputTokens, 12);
+    expect(assistant.usage?.outputTokens, 7);
+    expect(assistant.usage?.totalTokens, 19);
+  });
+
+  test('sendText surfaces bounded reasoning events before the reply', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async =>
+            '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+        getStream: (uri, headers) => Stream.fromIterable([
+          'data: {"event":"reasoning.available","text":"Compare the observed constraints first."}\n\n',
+          'data: {"event":"message.delta","delta":"Reasoned answer"}\n\n',
+          'data: {"event":"run.completed","usage":{"total_tokens":9}}\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('reason about this');
+
+    final turns = channel.state.activeMessages;
+    expect(turns.map((turn) => turn.kind), [
+      HermesTurnKind.text,
+      HermesTurnKind.text,
+      HermesTurnKind.reasoning,
+      HermesTurnKind.text,
+    ]);
+    expect(turns[2].text, 'Compare the observed constraints first.');
+    expect(turns.last.text, 'Reasoned answer');
+  });
+
+  test('sendText bounds oversized reasoning event text', () async {
+    final oversized = List.filled(20000, 'r').join();
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async =>
+            '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+        getStream: (uri, headers) => Stream.fromIterable([
+          'data: ${jsonEncode({'event': 'reasoning.available', 'text': oversized})}\n\n',
+          'data: {"event":"message.delta","delta":"Done"}\n\n',
+          'data: {"event":"run.completed"}\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('bound reasoning');
+
+    final reasoning = channel.state.activeMessages.singleWhere(
+      (turn) => turn.kind == HermesTurnKind.reasoning,
+    );
+    expect(reasoning.text, hasLength(16384));
+    expect(reasoning.text, endsWith('…'));
+  });
+
+  test(
+    'sendText keeps reasoning through authoritative history reconciliation',
+    () async {
+      var messagesRequests = 0;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' =>
+              (messagesRequests++ == 0)
+                  ? _messagesFixture
+                  : _reconciledMessagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          post: (uri, headers, body) async =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+          getStream: (uri, headers) => Stream.fromIterable([
+            'data: {"event":"reasoning.available","text":"Reasoning survives."}\n\n',
+            'data: {"event":"message.delta","delta":"Local"}\n\n',
+            'data: {"event":"run.completed"}\n\n',
+          ]),
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.sendText('reconcile reasoning');
+
+      expect(channel.state.activeMessages.map((turn) => turn.kind), [
+        HermesTurnKind.text,
+        HermesTurnKind.reasoning,
+        HermesTurnKind.text,
+      ]);
+      expect(channel.state.activeMessages[1].text, 'Reasoning survives.');
+      expect(channel.state.activeMessages.last.text, 'Hi there');
+    },
+  );
+
+  test(
+    'sendText recovers usage from advertised run status and keeps it through history reconciliation',
+    () async {
+      var messagesRequests = 0;
+      var statusRequests = 0;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' =>
+              (messagesRequests++ == 0)
+                  ? _messagesFixture
+                  : _reconciledMessagesFixture,
+            '/v1/runs/run_1' => () {
+              statusRequests += 1;
+              return '{"run_id":"run_1","session_id":"sess_1","status":"completed","usage":{"input_tokens":12,"output_tokens":7,"total_tokens":19}}';
+            }(),
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          post: (uri, headers, body) async => switch (uri.path) {
+            '/v1/runs' =>
+              '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+            _ => '{}',
+          },
+          getStream: (uri, headers) => Stream.fromIterable([
+            'event: message.delta\ndata: {"delta":"Local"}\n\n',
+            'event: run.completed\ndata: {}\n\n',
+          ]),
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.sendText('measure this');
+
+      expect(statusRequests, 1);
+      final assistant = channel.state.activeMessages.last;
+      expect(assistant.text, 'Hi there');
+      expect(assistant.usage?.totalTokens, 19);
+    },
+  );
+
   test('sendText accepts response SSE aliases', () async {
     final channel = HermesApiChannel(
       clientBuilder: (config) => HermesApiClient(

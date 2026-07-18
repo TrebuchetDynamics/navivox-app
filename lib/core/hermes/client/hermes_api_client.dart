@@ -10,6 +10,7 @@ import '../models/hermes_profile.dart';
 import '../models/hermes_provider.dart';
 import '../models/hermes_run.dart';
 import '../models/hermes_session.dart';
+import '../models/hermes_skill.dart';
 import '../shared/hermes_api_http.dart';
 import '../sse/hermes_sse_event_decoder.dart';
 import 'hermes_api_config.dart';
@@ -72,10 +73,17 @@ class HermesApiClient {
   }
 
   Future<List<String>> listSkills({String? profile}) async {
-    return _namedList(
-      await _getJson(_scoped(config.skillsUri, profile)),
-      const ['name'],
-    );
+    return (await listSkillDetails(
+      profile: profile,
+    )).map((skill) => skill.name).toList(growable: false);
+  }
+
+  Future<List<HermesSkill>> listSkillDetails({String? profile}) async {
+    final body = await _getJson(_scoped(config.skillsUri, profile));
+    return wingMapListFromJson(body['data'])
+        .map(HermesSkill.fromJson)
+        .where((skill) => skill.name.isNotEmpty)
+        .toList(growable: false);
   }
 
   Future<List<String>> listEnabledToolsets({String? profile}) async {
@@ -201,6 +209,10 @@ class HermesApiClient {
         ? wingMapFromJson(response['run'])
         : response;
     return HermesRun.fromJson(run);
+  }
+
+  Future<HermesRun> getRunStatus(String runId) async {
+    return HermesRun.fromJson(await _getJson(config.runUri(runId)));
   }
 
   Stream<HermesStreamEvent> runEvents(String runId) {

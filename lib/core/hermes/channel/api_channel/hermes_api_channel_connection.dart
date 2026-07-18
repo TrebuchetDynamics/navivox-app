@@ -48,14 +48,14 @@ extension _ConnectionExtension on HermesApiChannel {
         load: client.listModels,
         errors: optionalResourceErrors,
       );
-      final skillsFuture = _loadOptional<List<String>>(
+      final skillsFuture = _loadOptional<List<HermesSkill>>(
         advertised: capabilities.advertisesEndpoint(
           'skills',
           'GET',
           '/v1/skills',
         ),
         resource: HermesOptionalResource.skills,
-        load: client.listSkills,
+        load: client.listSkillDetails,
         errors: optionalResourceErrors,
       );
       final enabledToolsetsFuture = _loadOptional<List<String>>(
@@ -84,7 +84,10 @@ extension _ConnectionExtension on HermesApiChannel {
       if (!_isCurrentConnection(generation, client)) return;
       final detailedHealth = await detailedHealthFuture;
       final models = await modelsFuture ?? const [];
-      final skills = await skillsFuture ?? const [];
+      final skillDetails = await skillsFuture ?? const <HermesSkill>[];
+      final skills = skillDetails
+          .map((skill) => skill.name)
+          .toList(growable: false);
       final enabledToolsets = await enabledToolsetsFuture ?? const [];
       final jobs = await jobsFuture ?? const [];
       if (!_isCurrentConnection(generation, client)) return;
@@ -95,6 +98,7 @@ extension _ConnectionExtension on HermesApiChannel {
           detailedHealth: detailedHealth,
           models: models,
           skills: skills,
+          skillDetails: skillDetails,
           enabledToolsets: enabledToolsets,
           jobs: jobs,
           optionalResourceErrors: optionalResourceErrors,
@@ -143,6 +147,73 @@ extension _ConnectionExtension on HermesApiChannel {
     } catch (error) {
       errors[resource] = _safeHermesError(error);
       return null;
+    }
+  }
+
+  Future<void> _reloadDetailedHealth() async {
+    final client = _requireConnectedClient();
+    final capabilities = _state.capabilities;
+    if (capabilities == null ||
+        !capabilities.supportsSchema ||
+        !capabilities.advertisesEndpoint(
+          'health_detailed',
+          'GET',
+          '/health/detailed',
+        )) {
+      throw StateError('Hermes did not advertise detailed gateway health.');
+    }
+    final generation = _connectionGeneration;
+    try {
+      final health = await client.healthDetailed();
+      if (!_isCurrentConnection(generation, client)) return;
+      final errors = Map<HermesOptionalResource, String>.from(
+        _state.optionalResourceErrors,
+      )..remove(HermesOptionalResource.detailedHealth);
+      _setState(
+        _state.copyWith(detailedHealth: health, optionalResourceErrors: errors),
+      );
+    } catch (error) {
+      if (_isCurrentConnection(generation, client)) {
+        final errors = Map<HermesOptionalResource, String>.from(
+          _state.optionalResourceErrors,
+        )..[HermesOptionalResource.detailedHealth] = _safeHermesError(error);
+        _setState(
+          _state.copyWith(
+            clearDetailedHealth: true,
+            optionalResourceErrors: errors,
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _reloadJobs() async {
+    final client = _requireConnectedClient();
+    final capabilities = _state.capabilities;
+    if (capabilities == null ||
+        !capabilities.supportsSchema ||
+        !capabilities.advertisesEndpoint('jobs', 'GET', '/api/jobs')) {
+      throw StateError('Hermes did not advertise scheduled-job inventory.');
+    }
+    final generation = _connectionGeneration;
+    try {
+      final jobs = await client.listJobs(profile: _state.selectedProfileId);
+      if (!_isCurrentConnection(generation, client)) return;
+      final errors = Map<HermesOptionalResource, String>.from(
+        _state.optionalResourceErrors,
+      )..remove(HermesOptionalResource.jobs);
+      _setState(_state.copyWith(jobs: jobs, optionalResourceErrors: errors));
+    } catch (error) {
+      if (_isCurrentConnection(generation, client)) {
+        final errors = Map<HermesOptionalResource, String>.from(
+          _state.optionalResourceErrors,
+        )..[HermesOptionalResource.jobs] = _safeHermesError(error);
+        _setState(
+          _state.copyWith(jobs: const [], optionalResourceErrors: errors),
+        );
+      }
+      rethrow;
     }
   }
 

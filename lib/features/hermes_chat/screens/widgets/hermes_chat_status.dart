@@ -214,7 +214,7 @@ class _HermesCapabilityStrip extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Text(
-                  'No mobile config, memory, schedule, gateway, or persona mutation controls are enabled.',
+                  'No mobile config, memory, schedule, or messaging-gateway mutation controls are enabled.',
                   key: ValueKey('hermes-admin-surfaces-note'),
                 ),
               ),

@@ -19,6 +19,7 @@ import '../../../core/hermes/policy/hermes_endpoint_security.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations_en.dart';
 import '../../../router/routes/app_routes.dart';
 import '../../agents/providers/profile_selection_provider.dart';
 import '../../../shared/voice/voice_capture_service.dart';
@@ -166,8 +167,13 @@ const _composerEmojis = [
 
 enum _ComposerMenuAction { sessions, handsFree }
 
+enum _TranscriptCopyFormat { text, markdown }
+
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 String get _defaultHermesBaseUrl => _configuredHermesBaseUrl;
+AppLocalizations _hermesStrings(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    AppLocalizationsEn();
 
 bool _isValidHermesBaseUrl(String value) {
   final uri = Uri.tryParse(value.trim());
@@ -517,10 +523,65 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     await directory.activate(id);
   }
 
+  Future<void> _showTranscriptCopyOptions(
+    BuildContext context,
+    HermesChannelState state,
+  ) async {
+    final strings = _hermesStrings(context);
+    final format = await showModalBottomSheet<_TranscriptCopyFormat>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              title: Text(strings.copyTranscriptAction),
+              subtitle: Text(strings.copyTranscriptDescription),
+            ),
+            ListTile(
+              key: const ValueKey('hermes-copy-transcript-text'),
+              leading: const Icon(Icons.text_snippet_outlined),
+              title: Text(strings.copyAsTextAction),
+              onTap: () => Navigator.pop(context, _TranscriptCopyFormat.text),
+            ),
+            ListTile(
+              key: const ValueKey('hermes-copy-transcript-markdown'),
+              leading: const Icon(Icons.code_outlined),
+              title: Text(strings.copyAsMarkdownAction),
+              onTap: () =>
+                  Navigator.pop(context, _TranscriptCopyFormat.markdown),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (format == null || !context.mounted) return;
+    final transcript = switch (format) {
+      _TranscriptCopyFormat.text => _hermesTranscriptText(
+        state.activeMessages,
+        strings,
+      ),
+      _TranscriptCopyFormat.markdown => _hermesTranscriptMarkdown(
+        state.activeMessages,
+        strings,
+      ),
+    };
+    if (transcript.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: transcript));
+    if (!context.mounted) return;
+    final label = format == _TranscriptCopyFormat.markdown
+        ? strings.transcriptFormatMarkdown
+        : strings.transcriptFormatText;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(strings.transcriptCopiedMessage(label))),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final directory = ref.watch(hermesGatewayDirectoryProvider);
     final channel = ref.watch(hermesChannelProvider);
+    final strings = _hermesStrings(context);
     final state = channel.state;
     final activeSession = state.activeSession;
     final compactAppBar = MediaQuery.sizeOf(context).width < 480;
@@ -652,6 +713,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
                       _showSessionsPanel(context, channel);
                     case 'new-session':
                       unawaited(_createSession(context, channel));
+                    case 'copy-transcript':
+                      unawaited(_showTranscriptCopyOptions(context, state));
                     case 'diagnostics':
                       _showDiagnosticsDialog(context, state);
                     case 'disconnect':
@@ -676,6 +739,15 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
+                  if (state.activeMessages.isNotEmpty)
+                    PopupMenuItem(
+                      value: 'copy-transcript',
+                      child: ListTile(
+                        leading: const Icon(Icons.copy_all_outlined),
+                        title: Text(strings.copyTranscriptAction),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
                   const PopupMenuItem(
                     value: 'diagnostics',
                     child: ListTile(
@@ -695,6 +767,14 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
                 ],
               )
             else ...[
+              if (state.activeMessages.isNotEmpty)
+                IconButton(
+                  key: const ValueKey('hermes-copy-transcript-button'),
+                  tooltip: strings.copyTranscriptAction,
+                  icon: const Icon(Icons.copy_all_outlined),
+                  onPressed: () =>
+                      unawaited(_showTranscriptCopyOptions(context, state)),
+                ),
               IconButton(
                 key: const ValueKey('hermes-diagnostics-button'),
                 tooltip: 'Diagnostics',
@@ -737,6 +817,89 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
       child: scaffold,
     );
   }
+}
+
+String _hermesTranscriptText(
+  List<HermesChatTurn> turns,
+  AppLocalizations strings,
+) => _hermesTranscriptSections(
+  turns,
+  strings: strings,
+  markdown: false,
+).join('\n\n');
+
+String _hermesTranscriptMarkdown(
+  List<HermesChatTurn> turns,
+  AppLocalizations strings,
+) => _hermesTranscriptSections(
+  turns,
+  strings: strings,
+  markdown: true,
+).join('\n\n');
+
+List<String> _hermesTranscriptSections(
+  List<HermesChatTurn> turns, {
+  required AppLocalizations strings,
+  required bool markdown,
+}) {
+  final sections = <String>[];
+  for (final turn in turns) {
+    final toolCall = turn.toolCall;
+    if (turn.kind == HermesTurnKind.toolCall && toolCall != null) {
+      final detail = (toolCall.result ?? toolCall.preview)?.trim();
+      final heading = strings.transcriptToolHeading(toolCall.name);
+      sections.add(
+        [
+          markdown ? '## $heading' : heading,
+          strings.transcriptToolStatus(toolCall.status),
+          if (detail?.isNotEmpty ?? false) detail!,
+        ].join(markdown ? '\n\n' : '\n'),
+      );
+      continue;
+    }
+
+    final text = turn.text.trim();
+    if (text.isEmpty) continue;
+    final author = turn.kind == HermesTurnKind.reasoning
+        ? strings.reasoningTitle
+        : switch (turn.author) {
+            HermesTurnAuthor.user => strings.transcriptAuthorYou,
+            HermesTurnAuthor.assistant => strings.transcriptAuthorHermes,
+            HermesTurnAuthor.system => strings.transcriptAuthorSystem,
+          };
+    final usage = turn.usage;
+    final usageText = usage == null
+        ? null
+        : strings.transcriptRunTokenUsage(
+            usage.inputTokens,
+            usage.outputTokens,
+            usage.totalTokens,
+          );
+    sections.add(
+      markdown
+          ? [
+              '## $author',
+              text,
+              if (usageText != null) '_${usageText}_',
+            ].join('\n\n')
+          : ['$author:', text, ?usageText].join('\n'),
+    );
+  }
+  return sections;
+}
+
+class _LocalSlashCommand {
+  const _LocalSlashCommand({
+    required this.id,
+    required this.command,
+    required this.description,
+    required this.icon,
+  });
+
+  final String id;
+  final String command;
+  final String description;
+  final IconData icon;
 }
 
 class _QueuedFollowUp {

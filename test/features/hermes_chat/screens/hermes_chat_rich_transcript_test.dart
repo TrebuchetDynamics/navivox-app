@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
+import 'package:wing/core/hermes/models/hermes_run.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:wing/features/hermes_chat/widgets/hermes_rich_text.dart';
@@ -35,6 +37,103 @@ void main() {
       expect(find.text('Strong answer', findRichText: true), findsOneWidget);
     },
   );
+
+  testWidgets('reasoning is available in a collapsed readable card', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Reason about this.');
+    channel.addReasoningTurn('Compare constraints before answering.');
+    channel.completeStreamingTurn(text: 'Reasoned answer.');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reasoning'), findsOneWidget);
+    expect(find.text('Compare constraints before answering.'), findsNothing);
+
+    await tester.tap(find.text('Reasoning'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Compare constraints before answering.'), findsOneWidget);
+  });
+
+  testWidgets('assistant replies show server-reported token usage', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Measure this.');
+    channel.completeStreamingTurn(
+      text: 'Measured answer.',
+      usage: const HermesRunUsage(
+        inputTokens: 12,
+        outputTokens: 7,
+        totalTokens: 19,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('12 in · 7 out · 19 total tokens'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Token usage: 12 input, 7 output, 19 total'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('token usage remains readable at 200% text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Measure this.');
+    channel.completeStreamingTurn(
+      text: 'Measured answer.',
+      usage: const HermesRunUsage(
+        inputTokens: 1200,
+        outputTokens: 700,
+        totalTokens: 1900,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: const HermesChatScreen(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('1200 in · 700 out · 1900 total tokens'), findsOneWidget);
+  });
 
   testWidgets('short conversations stay anchored above the composer', (
     tester,
@@ -144,6 +243,129 @@ void main() {
     expect(composer.controller?.text, '> Answer to reuse\n\n');
   });
 
+  testWidgets('copies the active transcript as Markdown', (tester) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer with **Markdown**.');
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-copy-transcript-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Copy as text'), findsOneWidget);
+    expect(find.text('Copy as Markdown'), findsOneWidget);
+
+    await tester.tap(find.text('Copy as Markdown'));
+    await tester.pumpAndSettle();
+
+    expect(
+      copiedText,
+      '## You\n\nQuestion\n\n## Hermes\n\nAnswer with **Markdown**.',
+    );
+    expect(find.text('Transcript copied as Markdown'), findsOneWidget);
+  });
+
+  testWidgets('copies the active transcript as plain text', (tester) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(
+      text: 'Answer',
+      usage: const HermesRunUsage(
+        inputTokens: 12,
+        outputTokens: 7,
+        totalTokens: 19,
+      ),
+    );
+    channel.addReasoningTurn('Checked constraints.');
+    channel.addToolCallTurn(
+      const HermesToolCall(
+        name: 'web_search',
+        status: 'completed',
+        result: '2 results',
+      ),
+    );
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-copy-transcript-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy as text'));
+    await tester.pumpAndSettle();
+
+    expect(
+      copiedText,
+      'You:\nQuestion\n\nHermes:\nAnswer\nUsage: 12 input · 7 output · 19 total tokens\n\nReasoning:\nChecked constraints.\n\nTool: web_search\nStatus: completed\n2 results',
+    );
+    expect(find.text('Transcript copied as text'), findsOneWidget);
+  });
+
+  testWidgets('compact header offers transcript copy in overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-more-actions-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy transcript'), findsOneWidget);
+  });
+
   testWidgets(
     'empty completed assistant turns do not render timestamp bubbles',
     (tester) async {
@@ -163,6 +385,32 @@ void main() {
       expect(find.byKey(ValueKey('hermes-turn-$emptyTurnId')), findsNothing);
     },
   );
+
+  testWidgets('active run recovery never offers a duplicate retry', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.addFailedExchange(
+      'Perform this once.',
+      errorMessage:
+          'Hermes run is still active after its event stream closed. Reconnect before retrying.',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-chat-error-reconnect')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('hermes-chat-error-retry')), findsNothing);
+    expect(find.textContaining('send again'), findsNothing);
+  });
 
   testWidgets('structured assistant errors render as readable messages', (
     tester,

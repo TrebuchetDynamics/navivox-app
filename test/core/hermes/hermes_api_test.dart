@@ -227,6 +227,24 @@ void main() {
     expect(document.auth.allows('profiles:write'), isFalse);
     expect(document.endpoints['profiles']!.requiredScopes, ['profiles:read']);
     expect(document.endpoints['profiles']!.profileScoped, isFalse);
+    expect(
+      document.advertisesScopedEndpoint(
+        'profiles',
+        'GET',
+        '/api/profiles',
+        'profiles:read',
+      ),
+      isTrue,
+    );
+    expect(
+      document.advertisesScopedEndpoint(
+        'profiles',
+        'GET',
+        '/api/profiles',
+        'profiles:write',
+      ),
+      isFalse,
+    );
   });
 
   test('parsed capability scopes are immutable', () {
@@ -406,6 +424,7 @@ void main() {
           'Local voice-to-text',
           'Server realtime voice/audio',
           'Config editing/admin',
+          'Gateway health',
           'Memory UI',
           'Jobs/schedules inventory',
           'Jobs/schedules admin',
@@ -430,6 +449,7 @@ void main() {
         contains('device STT -> Hermes text'),
       );
       expect(statuses['Config editing/admin'], HermesSurfaceStatus.deferred);
+      expect(statuses['Gateway health'], HermesSurfaceStatus.deferred);
       expect(statuses['Memory UI'], HermesSurfaceStatus.deferred);
       expect(
         statuses['Jobs/schedules inventory'],
@@ -438,7 +458,7 @@ void main() {
       expect(statuses['Jobs/schedules admin'], HermesSurfaceStatus.deferred);
       expect(
         details['Jobs/schedules admin'],
-        contains('create/edit/delete scheduling'),
+        contains('create/pause/resume/trigger/delete scheduling'),
       );
       expect(
         details['Jobs/schedules admin'],
@@ -452,13 +472,10 @@ void main() {
       expect(statuses['Persona/SOUL'], HermesSurfaceStatus.deferred);
       expect(
         details['Persona/SOUL'],
-        contains('Persona/SOUL editing is not wired'),
+        contains('exact scoped profile soul contract'),
       );
-      expect(statuses['Attachments/media'], HermesSurfaceStatus.deferred);
-      expect(
-        details['Attachments/media'],
-        contains('no upload controls are shown'),
-      );
+      expect(statuses['Attachments/media'], HermesSurfaceStatus.available);
+      expect(details['Attachments/media'], contains('bounded UTF-8 text'));
       expect(statuses['Files/context folders'], HermesSurfaceStatus.deferred);
       expect(
         details['Files/context folders'],
@@ -484,6 +501,53 @@ void main() {
       expect(statuses.containsKey('Legacy durable reconnect'), isFalse);
     },
   );
+
+  test('surface readiness recognizes advertised detailed gateway health', () {
+    final capabilities = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'auth': {'type': 'bearer', 'required': true},
+      'endpoints': {
+        'health_detailed': {'method': 'GET', 'path': '/health/detailed'},
+      },
+    });
+
+    final gatewayHealth = hermesSurfaceReadiness(
+      capabilities,
+    ).singleWhere((item) => item.title == 'Gateway health');
+
+    expect(gatewayHealth.status, HermesSurfaceStatus.readOnly);
+    expect(gatewayHealth.detail, contains('bounded detailed health'));
+  });
+
+  test('surface readiness recognizes exact scoped persona contracts', () {
+    final capabilities = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['profiles:read', 'profiles:write'],
+      },
+      'endpoints': {
+        'profile_soul': {
+          'method': 'GET',
+          'path': '/api/profiles/{name}/soul',
+          'required_scopes': ['profiles:read'],
+        },
+        'profile_soul_update': {
+          'method': 'PUT',
+          'path': '/api/profiles/{name}/soul',
+          'required_scopes': ['profiles:write'],
+        },
+      },
+    });
+
+    final persona = hermesSurfaceReadiness(
+      capabilities,
+    ).singleWhere((item) => item.title == 'Persona/SOUL');
+
+    expect(persona.status, HermesSurfaceStatus.available);
+    expect(persona.detail, contains('gateway-scoped profile editor'));
+  });
 
   test('audio API advertisement is blocked until server audio is wired', () {
     final readiness = hermesSurfaceReadiness(
@@ -548,6 +612,10 @@ void main() {
       expect((await client.capabilities()).model, 'hermes-agent');
       expect(await client.listModels(), ['hermes-agent']);
       expect(await client.listSkills(), ['ascii-art', 'github']);
+      final skillDetails = await client.listSkillDetails();
+      expect(skillDetails.map((skill) => skill.name), ['ascii-art', 'github']);
+      expect(skillDetails.first.description, 'ASCII art generation');
+      expect(skillDetails.first.category, 'creative');
       expect(await client.listEnabledToolsets(), ['default']);
       final jobs = await client.listJobs();
       expect(jobs.single.displayName, 'Morning check');
@@ -564,6 +632,7 @@ void main() {
         '/v1/capabilities',
         '/v1/models',
         '/v1/skills',
+        '/v1/skills',
         '/v1/toolsets',
         '/api/jobs',
         '/api/sessions',
@@ -571,6 +640,20 @@ void main() {
       ]);
     },
   );
+
+  test('installed skill metadata is normalized and bounded', () {
+    final skill = HermesSkill.fromJson({
+      'name': '  browser\u0000 skill  ',
+      'description': List.filled(1200, 'd').join(),
+      'category': List.filled(100, 'c').join(),
+    });
+
+    expect(skill.name, 'browser skill');
+    expect(skill.description, hasLength(1000));
+    expect(skill.description, endsWith('…'));
+    expect(skill.category, hasLength(80));
+    expect(skill.category, endsWith('…'));
+  });
 
   test('updates a session title over PATCH', () async {
     final patches = <String, Map<String, Object?>>{};
@@ -715,6 +798,61 @@ void main() {
       ],
       'message': content,
     });
+  });
+
+  test('run transport reads bounded status and token usage', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (uri, headers) async {
+        expect(uri.path, '/v1/runs/run_1');
+        return '''
+          {
+            "object": "hermes.run",
+            "run_id": "run_1",
+            "session_id": "sess_1",
+            "status": "completed",
+            "output": "Done",
+            "usage": {
+              "input_tokens": 12,
+              "output_tokens": 7,
+              "total_tokens": 19
+            }
+          }
+        ''';
+      },
+    );
+
+    final run = await client.getRunStatus('run_1');
+
+    expect(run.id, 'run_1');
+    expect(run.sessionId, 'sess_1');
+    expect(run.status, HermesRunLifecycle.completed);
+    expect(run.output, 'Done');
+    expect(run.usage?.inputTokens, 12);
+    expect(run.usage?.outputTokens, 7);
+    expect(run.usage?.totalTokens, 19);
+  });
+
+  test('run status preserves explicitly reported zero token usage', () {
+    final run = HermesRun.fromJson({
+      'run_id': 'run_1',
+      'usage': {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0},
+    });
+
+    expect(run.usage, isNotNull);
+    expect(run.usage?.totalTokens, 0);
+  });
+
+  test('run usage rejects negative values and caps excessive counts', () {
+    final usage = HermesRunUsage.fromJson({
+      'input_tokens': -12,
+      'output_tokens': 999999999999,
+      'total_tokens': 999999999999,
+    });
+
+    expect(usage.inputTokens, 0);
+    expect(usage.outputTokens, 999999999);
+    expect(usage.totalTokens, 999999999);
   });
 
   test(
