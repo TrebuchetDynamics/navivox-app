@@ -12,8 +12,35 @@ permissions:
   contents: read
 
 jobs:
+  validation:
+    name: Validate source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          cache: true
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          npm ci
+      - name: Format, analyze, test, and audit
+        run: |
+          dart format --output=none --set-exit-if-changed lib test integration_test
+          flutter analyze
+          flutter test --coverage --concurrency=1
+          coverage_percent=$(awk -F'[:,]' '/^DA:/{total++; if ($3 > 0) covered++} END {printf "%.0f", total ? covered * 100 / total : 0}' coverage/lcov.info)
+          test "$coverage_percent" -ge 50
+          npm audit --audit-level=high
+
   android:
     name: Signed Android APK
+    needs: validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -58,6 +85,7 @@ jobs:
 
   linux:
     name: Linux release bundle
+    needs: validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
