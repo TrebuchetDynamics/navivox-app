@@ -91,7 +91,11 @@ async function handleHermesApi(req, res, url) {
       object: 'hermes.api_server.capabilities',
       platform: 'hermes-agent',
       model: 'hermes-agent',
-      auth: { type: 'bearer', required: false },
+      auth: {
+        type: 'bearer',
+        required: false,
+        granted_scopes: ['gateway:read', 'tasks:read'],
+      },
       features: {
         session_chat_streaming: true,
         run_submission: true,
@@ -103,7 +107,11 @@ async function handleHermesApi(req, res, url) {
         realtime_voice: false,
       },
       endpoints: {
-        health_detailed: { method: 'GET', path: '/health/detailed' },
+        health_detailed: {
+          method: 'GET',
+          path: '/health/detailed',
+          required_scopes: ['gateway:read'],
+        },
         sessions: { method: 'GET', path: '/api/sessions' },
         session_create: { method: 'POST', path: '/api/sessions' },
         session_messages: { method: 'GET', path: '/api/sessions/{session_id}/messages' },
@@ -114,7 +122,11 @@ async function handleHermesApi(req, res, url) {
         models: { method: 'GET', path: '/v1/models' },
         skills: { method: 'GET', path: '/v1/skills' },
         toolsets: { method: 'GET', path: '/v1/toolsets' },
-        jobs: { method: 'GET', path: '/api/jobs' },
+        jobs: {
+          method: 'GET',
+          path: '/api/jobs',
+          required_scopes: ['tasks:read'],
+        },
         runs: { method: 'POST', path: '/v1/runs' },
         run_status: { method: 'GET', path: '/v1/runs/{run_id}' },
         run_events: { method: 'GET', path: '/v1/runs/{run_id}/events' },

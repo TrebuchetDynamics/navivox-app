@@ -52,17 +52,22 @@ class HermesTransportPolicy {
       capabilities.supportsSchema &&
       capabilities.supportsFeature('realtime_voice');
 
-  /// Gates a named endpoint on schema support and, when the server marks it
-  /// `profile_scoped`, on a declared and understood profile-context
-  /// contract. This never rejects health display and never mutates or
+  /// Gates a named endpoint on schema support, every declared caller scope,
+  /// and, when the server marks it `profile_scoped`, on a declared and
+  /// understood profile-context contract. This never mutates or
   /// erases [capabilities] itself — only the derived boolean operations are
   /// hidden when the client cannot safely use them.
   bool _endpointReady(String name, String method, String path) {
     if (!capabilities.supportsSchema) return false;
     if (!capabilities.advertisesEndpoint(name, method, path)) return false;
     final endpoint = capabilities.endpoints[name];
-    if (endpoint != null &&
-        endpoint.profileScoped &&
+    if (endpoint == null) return false;
+    if (endpoint.requiredScopes.any(
+      (scope) => !capabilities.auth.allows(scope),
+    )) {
+      return false;
+    }
+    if (endpoint.profileScoped &&
         !capabilities.profileContext.isSupportedQueryContext) {
       return false;
     }

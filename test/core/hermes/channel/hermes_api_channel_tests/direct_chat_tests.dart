@@ -572,6 +572,55 @@ void _hermesApiChannelDirectChatTests() {
     },
   );
 
+  test(
+    'sendText rejects a declared but ungranted chat scope before HTTP',
+    () async {
+      const capabilities = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "schema_version": 1,
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["chat:read"]},
+  "features": {"session_chat_streaming": true},
+  "endpoints": {
+    "session_chat_stream": {
+      "method": "POST",
+      "path": "/api/sessions/{session_id}/chat/stream",
+      "required_scopes": ["chat:write"]
+    }
+  }
+}
+''';
+      var postStreamCalled = false;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => capabilities,
+              '/api/sessions' => _sessionsFixture,
+              '/api/sessions/sess_1/messages' => _messagesFixture,
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+          postStream: (uri, headers, body) {
+            postStreamCalled = true;
+            return const Stream.empty();
+          },
+        ),
+      );
+      addTearDown(channel.dispose);
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await expectLater(channel.sendText('hello?'), throwsStateError);
+
+      expect(postStreamCalled, isFalse);
+      expect(channel.state.activeMessages.map((turn) => turn.text), ['Hello']);
+    },
+  );
+
   test('sendText rejects blank messages before touching Hermes', () async {
     var postStreamCalled = false;
     final channel = HermesApiChannel(

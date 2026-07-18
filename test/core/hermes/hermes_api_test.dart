@@ -247,6 +247,64 @@ void main() {
     );
   });
 
+  test('chat transports require every declared endpoint scope', () {
+    final readOnly = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['chat:read'],
+      },
+      'features': {
+        'run_submission': true,
+        'run_events_sse': true,
+        'session_chat_streaming': true,
+      },
+      'endpoints': {
+        'runs': {
+          'method': 'POST',
+          'path': '/v1/runs',
+          'required_scopes': ['chat:write'],
+        },
+        'run_events': {
+          'method': 'GET',
+          'path': '/v1/runs/{run_id}/events',
+          'required_scopes': ['chat:read'],
+        },
+        'session_chat_stream': {
+          'method': 'POST',
+          'path': '/api/sessions/{session_id}/chat/stream',
+          'required_scopes': ['chat:write'],
+        },
+      },
+    });
+    final authorized = HermesCapabilityDocument.fromJson({
+      'schema_version': 1,
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['chat:read', 'chat:write'],
+      },
+      'features': {
+        'run_submission': true,
+        'run_events_sse': true,
+        'session_chat_streaming': true,
+      },
+      'endpoints': readOnly.endpoints.map(
+        (name, endpoint) => MapEntry(name, {
+          'method': endpoint.method,
+          'path': endpoint.path,
+          'required_scopes': endpoint.requiredScopes,
+        }),
+      ),
+    });
+
+    expect(HermesTransportPolicy(readOnly).supportsAnyChatTransport, isFalse);
+    expect(HermesTransportPolicy(readOnly).supportsRunStatus, isFalse);
+    expect(HermesTransportPolicy(authorized).supportsSessionChatStream, isTrue);
+    expect(HermesTransportPolicy(authorized).supportsRunsTransport, isTrue);
+  });
+
   test('parsed capability scopes are immutable', () {
     final document = HermesCapabilityDocument.fromJson({
       'auth': {
