@@ -5,7 +5,7 @@
 - Scope: `.`
 - Branch: `main`
 - Baseline commit: `b4d47909943cbfd94ff3de8d1595746de0582df4`
-- Latest green commit: `be38fb295fc64b4deb5f3344a76f8dffe76a2155`
+- Latest green commit: `43c6827ae5b02a5a155d3f2f6bf4973a8c956d4c`
 - Audit passes: 1
 - Clean audit pass: not recorded
 
@@ -46,7 +46,7 @@ Mega automation contract:
 | F-003 | Medium | fixed | Gate signed alpha publishing on repository validation | .github/workflows/release-alpha.yml:14-117 builds and publishes after compilation only; docs/runbooks/release-alpha.md:21-23 leaves format/analyze/test/audit validation as an unenforced operator instruction. | c8b39c00f0b54b2a113988bce1eda4090f0d6d82 |
 | F-004 | Low | fixed | Remove stale transient validation metrics from readiness documentation | docs/runbooks/hermes-readiness-audit.md:54,83 claims a current 543-test 73.07% pass; live baseline ran 427 passing cases plus one failure and measured 73.90%. | 60a1896a5ebd701a2c035062cd057d0699215427 |
 | F-005 | Medium | blocked | Dependency review is knowingly red on every pull request | docs/runbooks/hermes-readiness-audit.md:16-18 records that GitHub dependency review is unsupported because the repository dependency graph is disabled while the PR workflow still runs the job. | — |
-| A-002 | Medium | pending | Deepen the Hermes transport seam | lib/core/hermes/client/hermes_api_client.dart:22-49 exposes seven verb callbacks; lib/core/hermes/client/hermes_api_transport.dart:1-74 mirrors those functions; 141 test constructors repeat transport wiring across real IO, web, stub, and fake adapters. | — |
+| A-002 | Medium | deferred | Deepen the Hermes transport seam | lib/core/hermes/client/hermes_api_client.dart:22-49 exposes seven verb callbacks; lib/core/hermes/client/hermes_api_transport.dart:1-74 mirrors those functions; 141 test constructors repeat transport wiring across real IO, web, stub, and fake adapters. | — |
 | A-003 | Medium | pending | Move chat workflow state behind a deep in-process coordinator | lib/features/hermes_chat/screens/hermes_chat_screen.dart and nine part files share 20+ mutable fields across more than 4,000 lines; those exact files are active owner work excluded from this audit implementation. | — |
 
 ## Validation receipts
