@@ -4,17 +4,9 @@ extension _ConnectionExtension on HermesApiChannel {
   Future<void> _connect({required String baseUrl, String? apiKey}) async {
     final generation = _connectionGeneration + 1;
     _connectionGeneration = generation;
-    _streamGeneration += 1;
     _deletingSessionIds.clear();
-    unawaited(_activeStream?.cancel());
-    _activeStream = null;
-    _activeRunId = null;
+    _clearActiveRunTracking();
     _client = null;
-    final activeCompleter = _activeStreamCompleter;
-    _activeStreamCompleter = null;
-    if (activeCompleter != null && !activeCompleter.isCompleted) {
-      activeCompleter.complete();
-    }
     _setState(
       const HermesChannelState(status: HermesConnectionStatus.connecting),
     );
@@ -42,7 +34,8 @@ extension _ConnectionExtension on HermesApiChannel {
         errors: optionalResourceErrors,
       );
       final modelsFuture = _loadOptional<List<String>>(
-        advertised: capabilities.advertisesEndpoint(
+        advertised: _capabilityEndpointAuthorized(
+          capabilities,
           'models',
           'GET',
           '/v1/models',
@@ -52,7 +45,8 @@ extension _ConnectionExtension on HermesApiChannel {
         errors: optionalResourceErrors,
       );
       final skillsFuture = _loadOptional<List<HermesSkill>>(
-        advertised: capabilities.advertisesEndpoint(
+        advertised: _capabilityEndpointAuthorized(
+          capabilities,
           'skills',
           'GET',
           '/v1/skills',
@@ -62,7 +56,8 @@ extension _ConnectionExtension on HermesApiChannel {
         errors: optionalResourceErrors,
       );
       final enabledToolsetsFuture = _loadOptional<List<String>>(
-        advertised: capabilities.advertisesEndpoint(
+        advertised: _capabilityEndpointAuthorized(
+          capabilities,
           'toolsets',
           'GET',
           '/v1/toolsets',
@@ -87,8 +82,16 @@ extension _ConnectionExtension on HermesApiChannel {
       final sessions = await client.listSessions();
       if (!_isCurrentConnection(generation, client)) return;
       final activeId = sessions.firstOrNull?.id;
+      var detachedRunStillActive = false;
       List<HermesChatTurn>? messages;
       if (activeId != null) {
+        detachedRunStillActive = await _recoverDetachedRun(
+          client: client,
+          capabilities: capabilities,
+          baseUrl: baseUrl,
+          profileId: null,
+          sessionId: activeId,
+        );
         messages = await _fetchTurns(client, activeId);
       }
       if (!_isCurrentConnection(generation, client)) return;
@@ -117,6 +120,10 @@ extension _ConnectionExtension on HermesApiChannel {
           clearActiveSessionId: activeId == null,
           connectedBaseUrl: baseUrl,
           connectedWithApiKey: apiKey?.trim().isNotEmpty ?? false,
+          errorMessage: detachedRunStillActive
+              ? 'Hermes run is still active. Reconnect later before retrying.'
+              : null,
+          clearErrorMessage: !detachedRunStillActive,
           messages: activeId == null || messages == null
               ? _state.messages
               : {...(_state.messages), activeId: messages},
@@ -237,4 +244,19 @@ extension _ConnectionExtension on HermesApiChannel {
         ),
     ];
   }
+}
+
+bool _capabilityEndpointAuthorized(
+  HermesCapabilityDocument capabilities,
+  String name,
+  String method,
+  String path,
+) {
+  if (!capabilities.supportsSchema ||
+      !capabilities.advertisesEndpoint(name, method, path)) {
+    return false;
+  }
+  final endpoint = capabilities.endpoints[name];
+  return endpoint != null &&
+      endpoint.requiredScopes.every(capabilities.auth.allows);
 }

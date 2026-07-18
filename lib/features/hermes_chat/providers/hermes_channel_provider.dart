@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../core/hermes/channel/hermes_api_channel.dart';
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/setup/hermes_endpoint_store.dart';
+import '../../../core/hermes/setup/secure_hermes_detached_run_store.dart';
 import '../../../core/hermes/setup/secure_hermes_endpoint_store.dart';
 import '../gateways/gateway_contact_cache.dart';
 import '../gateways/hermes_gateway_directory.dart';
@@ -19,7 +20,9 @@ final hermesEndpointStoreProvider = Provider<HermesEndpointStore>(
 /// Native Hermes channel; see
 /// docs/adr/0007-native-hermes-channel-not-wing-channel-adapter.md.
 final hermesChannelProvider = Provider<HermesChannel>((ref) {
-  final channel = HermesApiChannel();
+  final channel = HermesApiChannel(
+    detachedRunStore: SecureHermesDetachedRunStore(),
+  );
   ref.onDispose(channel.dispose);
   return channel;
 });

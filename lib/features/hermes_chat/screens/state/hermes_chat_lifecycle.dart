@@ -7,6 +7,11 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
     final state = channel.state;
     final directory = ref.read(hermesGatewayDirectoryProvider);
     final activeContactId = directory.activeContactId;
+    if (activeContactId != null &&
+        state.isConnected &&
+        state.hasStreamingSessions) {
+      return;
+    }
     if (activeContactId != null && state.isConnected) {
       _reconnectingOnResume = true;
       try {
@@ -71,17 +76,18 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
     final channel = _subscribed;
     if (channel != null) {
       if (channel.state.isConnected) {
-        final completedAssistantId = _latestCompletedAssistantTurnId(
+        final completedAssistantSignature = _completedAssistantTurnSignature(
           channel.state,
         );
-        if (completedAssistantId != null &&
-            completedAssistantId != _lastCompletedAssistantTurnId) {
-          _lastCompletedAssistantTurnId = completedAssistantId;
-          _refreshActiveGatewayContact();
+        if (completedAssistantSignature != _completedAssistantSignature) {
+          _completedAssistantSignature = completedAssistantSignature;
+          if (completedAssistantSignature != null) {
+            _refreshActiveGatewayContact();
+          }
         }
         final activeSessionId = channel.state.activeSessionId;
-        if (_approvalSessionId != null &&
-            _approvalSessionId != activeSessionId) {
+        if (_observedSessionId != null &&
+            _observedSessionId != activeSessionId) {
           final voiceWasActive =
               _voiceInputController.continuousEnabled ||
               _voiceInputController.capturing ||
@@ -91,10 +97,8 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
                 ? 'Hermes session changed. Continuous voice paused.'
                 : null,
           );
-          _pendingApprovals.clear();
-          _answeringApprovalId = null;
         }
-        _approvalSessionId = activeSessionId;
+        _observedSessionId = activeSessionId;
         _dropQueuedFollowUpsForMissingSessions(channel.state);
         _scheduleTranscriptScrollToBottom(force: _isTurnActive(channel.state));
         _sendQueuedFollowUpIfIdle(channel);
@@ -103,8 +107,8 @@ extension _HermesChatScreenLifecycle on _HermesChatScreenState {
         _queuedFollowUpError = null;
         _pendingApprovals.clear();
         _answeringApprovalId = null;
-        _approvalSessionId = null;
-        _lastCompletedAssistantTurnId = null;
+        _observedSessionId = null;
+        _completedAssistantSignature = null;
         _voiceInputController.pause();
       }
     }

@@ -7,7 +7,6 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
       (pending) => _approvalRequestKey(pending) == requestKey,
     );
     if (duplicate || _answeringApprovalId == request.id.trim()) return;
-    _approvalSessionId = _subscribed?.state.activeSessionId;
     _pendingApprovals.addLast(request);
   }
 

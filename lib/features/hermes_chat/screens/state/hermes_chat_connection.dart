@@ -15,12 +15,17 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
   Future<void> _resolveApproval(
     HermesChannel channel,
     HermesApprovalDecision decision,
+    HermesApprovalRequest request,
   ) async {
-    if (_pendingApprovals.isEmpty || _answeringApprovalId != null) return;
-    final request = _pendingApprovals.first;
+    if (_answeringApprovalId != null ||
+        !_pendingApprovals.any(
+          (pending) =>
+              _approvalRequestKey(pending) == _approvalRequestKey(request),
+        )) {
+      return;
+    }
     final approvalId = request.id.trim();
     if (approvalId.isEmpty) return;
-    final approvalSessionId = _approvalSessionId;
     _setState(() => _answeringApprovalId = approvalId);
     try {
       await channel.respondToApproval(
@@ -29,13 +34,10 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
       );
       if (!mounted) return;
       _setState(() {
-        final stillSameSession = _approvalSessionId == approvalSessionId;
-        if (stillSameSession &&
-            _pendingApprovals.isNotEmpty &&
-            _approvalRequestKey(_pendingApprovals.first) ==
-                _approvalRequestKey(request)) {
-          _pendingApprovals.removeFirst();
-        }
+        _pendingApprovals.removeWhere(
+          (pending) =>
+              _approvalRequestKey(pending) == _approvalRequestKey(request),
+        );
         if (_answeringApprovalId == approvalId) {
           _answeringApprovalId = null;
         }
@@ -57,10 +59,12 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
     }
   }
 
-  void _dismissCurrentApproval() {
-    if (_pendingApprovals.isEmpty) return;
+  void _dismissApproval(HermesApprovalRequest request) {
     _setState(() {
-      _pendingApprovals.removeFirst();
+      _pendingApprovals.removeWhere(
+        (pending) =>
+            _approvalRequestKey(pending) == _approvalRequestKey(request),
+      );
       _answeringApprovalId = null;
     });
   }

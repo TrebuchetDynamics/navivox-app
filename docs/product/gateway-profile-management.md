@@ -56,7 +56,12 @@ Wing checks schema, scope, method, and path together before showing controls
 (`lib/features/agents/screens/agents_screen.dart:300-317`). Read-only
 credentials may list profiles but do not see create, edit, or delete controls.
 An endpoint advertised under a different method or route template is treated
-as a different contract, not guessed.
+as a different contract, not guessed. Background gateway summaries apply the
+same `profiles:read` check before requesting `/api/profiles`. They issue
+profile-qualified session reads only when `profile_context` declares the exact
+required `profile` query contract; otherwise Wing falls back to the gateway's
+unscoped default contact rather than exposing nonfunctional profile contacts or
+inferring query semantics.
 
 Mutations are revisioned. Rename, persona update, and delete use the server's
 opaque revision as an `If-Match` precondition. A stale `412` response refreshes

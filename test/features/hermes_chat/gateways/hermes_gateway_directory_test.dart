@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel_state.dart';
+import 'package:wing/core/hermes/client/hermes_api_client.dart';
 import 'package:wing/core/hermes/models/hermes_profile.dart';
 import 'package:wing/core/hermes/models/hermes_session.dart';
 import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
@@ -15,6 +16,174 @@ import '../support/fake_hermes_gateway_directory.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'API summary loader does not probe profiles without profiles read scope',
+    () async {
+      final requestedPaths = <String>[];
+      final loader = HermesApiGatewaySummaryLoader(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            requestedPaths.add(uri.path);
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' =>
+                '''
+{
+  "schema_version": 1,
+  "auth": {"type": "bearer", "required": true, "granted_scopes": []},
+  "endpoints": {
+    "profiles": {
+      "method": "GET",
+      "path": "/api/profiles",
+      "required_scopes": ["profiles:read"]
+    }
+  }
+}
+''',
+              '/api/sessions' => '{"object":"list","data":[]}',
+              '/api/profiles' => throw StateError('must not be requested'),
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+        ),
+      );
+
+      final summary = await loader.load(
+        const HermesEndpointConfig(
+          id: 'scoped',
+          baseUrl: 'https://scoped.example',
+          apiKey: 'secret',
+        ),
+      );
+
+      expect(requestedPaths, isNot(contains('/api/profiles')));
+      expect(summary.profiles, isEmpty);
+      expect(summary.sessionsByProfile, isEmpty);
+    },
+  );
+
+  test(
+    'API summary loader never infers profile session query context',
+    () async {
+      final requestedUris = <Uri>[];
+      final loader = HermesApiGatewaySummaryLoader(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            requestedUris.add(uri);
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' =>
+                '''
+{
+  "schema_version": 1,
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["profiles:read"]},
+  "endpoints": {
+    "profiles": {
+      "method": "GET",
+      "path": "/api/profiles",
+      "required_scopes": ["profiles:read"]
+    }
+  }
+}
+''',
+              '/api/profiles' => throw StateError(
+                'profiles must not be requested without query context',
+              ),
+              '/api/sessions' =>
+                '''
+{"object":"list","data":[{"id":"unscoped","source":"api"}]}
+''',
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+        ),
+      );
+
+      final summary = await loader.load(
+        const HermesEndpointConfig(
+          id: 'no-context',
+          baseUrl: 'https://no-context.example',
+        ),
+      );
+
+      expect(summary.profiles, isEmpty);
+      expect(summary.sessionsByProfile, isEmpty);
+      expect(summary.unscopedSessions.single.id, 'unscoped');
+      expect(requestedUris.any((uri) => uri.path == '/api/profiles'), isFalse);
+      expect(
+        requestedUris.any(
+          (uri) =>
+              uri.path == '/api/sessions' &&
+              uri.queryParameters.containsKey('profile'),
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test('API summary loader uses an exact declared profile context', () async {
+    final requestedUris = <Uri>[];
+    final loader = HermesApiGatewaySummaryLoader(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          requestedUris.add(uri);
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' =>
+              '''
+{
+  "schema_version": 1,
+  "profile_context": {
+    "type": "query",
+    "name": "profile",
+    "required": true,
+    "default_profile_id": "default"
+  },
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["profiles:read"]},
+  "endpoints": {
+    "profiles": {
+      "method": "GET",
+      "path": "/api/profiles",
+      "required_scopes": ["profiles:read"]
+    }
+  }
+}
+''',
+            '/api/profiles' =>
+              '''
+{"object":"list","data":[{"id":"coder","name":"Coder","revision":"p1"}]}
+''',
+            '/api/sessions' =>
+              '''
+{"object":"list","data":[{"id":"session-1","source":"api"}]}
+''',
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+      ),
+    );
+
+    final summary = await loader.load(
+      const HermesEndpointConfig(
+        id: 'scoped-context',
+        baseUrl: 'https://scoped-context.example',
+      ),
+    );
+
+    expect(summary.sessionsByProfile['coder']?.single.id, 'session-1');
+    expect(
+      requestedUris.any(
+        (uri) =>
+            uri.path == '/api/sessions' &&
+            uri.queryParameters['profile'] == 'coder',
+      ),
+      isTrue,
+    );
+  });
+
   test('activate connects the gateway, profile, and latest session', () async {
     final channel = FakeHermesChannel.disconnected();
     final directory = directoryFor(

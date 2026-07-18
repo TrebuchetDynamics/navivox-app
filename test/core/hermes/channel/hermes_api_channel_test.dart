@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel.dart';
 import 'package:wing/core/hermes/channel/hermes_api_channel.dart';
+import 'package:wing/core/hermes/channel/hermes_detached_run_store.dart';
 import 'package:wing/core/hermes/hermes_api.dart';
 import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
 import 'package:wing/core/protocol/voice/models/wing_voice_run.dart';
@@ -276,6 +277,18 @@ const _jobsFixtureUpdated = '''
   ]
 }
 ''';
+
+class _MemoryDetachedRunStore implements HermesDetachedRunStore {
+  List<HermesDetachedRunLease> leases = const [];
+
+  @override
+  Future<List<HermesDetachedRunLease>> load() async => List.of(leases);
+
+  @override
+  Future<void> save(List<HermesDetachedRunLease> leases) async {
+    this.leases = List.of(leases);
+  }
+}
 
 class _ManualStringStream extends Stream<String> {
   void Function(String)? _onData;

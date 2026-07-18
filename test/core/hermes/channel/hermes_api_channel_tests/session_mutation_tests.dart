@@ -42,7 +42,7 @@ void _hermesApiChannelSessionMutationTests() {
   );
 
   test(
-    'selectSession cancels an active stream before switching sessions',
+    'selectSession keeps a direct chat stream active in the background',
     () async {
       final stream = _ManualStringStream();
       final sendDone = Completer<void>();
@@ -73,17 +73,102 @@ void _hermesApiChannelSessionMutationTests() {
       );
 
       await channel.selectSession('sess_2');
-      stream.emit('event: assistant.delta\ndata: {"delta":"late"}\n\n');
+      stream.emit(
+        'event: assistant.delta\ndata: {"delta":"Background reply"}\n\n',
+      );
+      await pumpEventQueue();
+      stream.emit('event: assistant.completed\ndata: {}\n\n');
       await pumpEventQueue();
 
       expect(channel.state.activeSessionId, 'sess_2');
       expect(channel.state.activeMessages.single.text, 'From two');
       expect(
         channel.state.messages['sess_1']!.last.status,
+        HermesTurnStatus.completed,
+      );
+      expect(channel.state.messages['sess_1']!.last.text, 'Background reply');
+      expect(sendDone.isCompleted, isTrue);
+    },
+  );
+
+  test(
+    'reopening a streaming session preserves its live local transcript',
+    () async {
+      final stream = _ManualStringStream();
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _twoSessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/sess_2/messages' =>
+              '{"object":"list","session_id":"sess_2","data":[{"id":"msg_9","session_id":"sess_2","role":"assistant","content":"From two"}]}',
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          postStream: (uri, headers, body) => stream,
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      final send = channel.sendText('keep this turn');
+      await pumpEventQueue();
+      stream.emit('event: assistant.delta\ndata: {"delta":"Partial"}\n\n');
+      await pumpEventQueue();
+      await channel.selectSession('sess_2');
+      await channel.selectSession('sess_1');
+
+      expect(channel.state.activeMessages.map((turn) => turn.text), [
+        'Hello',
+        'keep this turn',
+        'Partial',
+      ]);
+      expect(
+        channel.state.activeMessages.last.status,
+        HermesTurnStatus.streaming,
+      );
+
+      stream.emit('event: assistant.completed\ndata: {}\n\n');
+      await pumpEventQueue();
+      await send;
+    },
+  );
+
+  test(
+    'background stream failure stays attached to its original session',
+    () async {
+      final stream = _ManualStringStream();
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _twoSessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/sess_2/messages' =>
+              '{"object":"list","session_id":"sess_2","data":[{"id":"msg_9","session_id":"sess_2","role":"assistant","content":"From two"}]}',
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          postStream: (uri, headers, body) => stream,
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      final send = channel.sendText('background failure');
+      await pumpEventQueue();
+      await channel.selectSession('sess_2');
+      stream.emit('event: assistant.failed\ndata: {}\n\n');
+      await pumpEventQueue();
+      await send;
+
+      expect(channel.state.activeSessionId, 'sess_2');
+      expect(channel.state.errorMessage, isNull);
+      expect(
+        channel.state.messages['sess_1']?.last.status,
         HermesTurnStatus.failed,
       );
-      expect(channel.state.messages['sess_1']!.last.text, 'Stopped.');
-      expect(sendDone.isCompleted, isTrue);
     },
   );
 

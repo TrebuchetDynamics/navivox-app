@@ -223,8 +223,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   final Queue<_QueuedFollowUp> _queuedFollowUps = Queue<_QueuedFollowUp>();
   final Queue<HermesApprovalRequest> _pendingApprovals = Queue();
   String? _answeringApprovalId;
-  String? _approvalSessionId;
-  String? _lastCompletedAssistantTurnId;
+  String? _observedSessionId;
+  String? _completedAssistantSignature;
   int _connectAttemptId = 0;
   bool _reconnectingOnResume = false;
   bool _obscureApiKey = true;
@@ -442,8 +442,8 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
     _subscribed = channel;
     _pendingApprovals.clear();
     _answeringApprovalId = null;
-    _approvalSessionId = channel.state.activeSessionId;
-    _lastCompletedAssistantTurnId = _latestCompletedAssistantTurnId(
+    _observedSessionId = channel.state.activeSessionId;
+    _completedAssistantSignature = _completedAssistantTurnSignature(
       channel.state,
     );
     unawaited(_approvalSubscription?.cancel());
@@ -454,7 +454,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
   }
 
   bool _hasActiveGatewayWork(HermesChannel channel) =>
-      _isTurnActive(channel.state) ||
+      channel.state.hasStreamingSessions ||
       _pendingApprovals.isNotEmpty ||
       _answeringApprovalId != null ||
       _queuedFollowUps.isNotEmpty;
@@ -467,7 +467,7 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
             key: const ValueKey('hermes-gateway-switch-confirm-dialog'),
             title: const Text('Switch chats?'),
             content: const Text(
-              'This chat has active work or an approval. Switching closes its live stream; Hermes remains authoritative and will reconcile it when reopened.',
+              'This gateway has active work or an approval. Switching closes its live streams; Hermes remains authoritative and will reconcile them when reopened.',
             ),
             actions: [
               TextButton(
@@ -484,14 +484,15 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
         false;
   }
 
-  String? _latestCompletedAssistantTurnId(HermesChannelState state) {
-    for (final turn in state.activeMessages.reversed) {
-      if (turn.author == HermesTurnAuthor.assistant &&
-          turn.status == HermesTurnStatus.completed) {
-        return turn.id;
-      }
-    }
-    return null;
+  String? _completedAssistantTurnSignature(HermesChannelState state) {
+    final ids = <String>[
+      for (final turns in state.messages.values)
+        for (final turn in turns)
+          if (turn.author == HermesTurnAuthor.assistant &&
+              turn.status == HermesTurnStatus.completed)
+            '${turn.sessionId}:${turn.id}',
+    ]..sort();
+    return ids.isEmpty ? null : ids.join('\u001f');
   }
 
   void _refreshActiveGatewayContact() {

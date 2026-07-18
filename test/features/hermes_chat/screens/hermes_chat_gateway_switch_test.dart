@@ -50,6 +50,85 @@ void main() {
     );
   });
 
+  testWidgets('session list identifies a reply streaming in the background', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('background work');
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final row = find.byKey(const ValueKey('hermes-session-row-sess_1'));
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.textContaining('Streaming reply'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('session list identifies a failed background reply', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('failed work');
+    harness.channel.stopActiveTurn();
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('hermes-session-row-sess_1'));
+    expect(
+      find.descendant(of: row, matching: find.textContaining('Reply failed')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: row, matching: find.byIcon(Icons.error_outline)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('approval stays attached to its session while switching', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.emitApprovalRequest(
+      const HermesApprovalRequest(
+        id: 'approval-background',
+        toolCallId: 'tool-background',
+        prompt: 'Approve background work?',
+        runId: 'run-background',
+        sessionId: 'sess_1',
+      ),
+    );
+    await tester.pump();
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+
+    expect(find.text('Approve background work?'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-session-row-sess_1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Approve background work?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hermes-approval-deny')), findsOneWidget);
+  });
+
   testWidgets('sessions are grouped by recent activity', (tester) async {
     final harness = await _pumpGatewayChat(tester);
     final current = DateTime.now();
@@ -320,6 +399,29 @@ void main() {
     );
   });
 
+  testWidgets('background reply preserves the gateway switch guard', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('background work');
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-back-to-contacts')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-gateway-switch-confirm-dialog')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Stay'));
+    await tester.pump();
+    expect(
+      harness.directory.activeContactId,
+      const GatewayContactId(gatewayId: 'a', profileId: 'agent-a'),
+    );
+  });
+
   testWidgets('disconnect removes only the active gateway', (tester) async {
     final harness = await _pumpGatewayChat(tester);
 
@@ -355,6 +457,24 @@ void main() {
     );
   });
 
+  testWidgets('resume preserves an attached live stream', (tester) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('keep streaming');
+    await tester.pump();
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(harness.channel.connectCalls, hasLength(1));
+    expect(harness.channel.disconnectCalls, 0);
+    expect(harness.channel.state.hasStreamingSessions, isTrue);
+  });
+
   testWidgets('completed turn refreshes active contact summary', (
     tester,
   ) async {
@@ -366,6 +486,29 @@ void main() {
     expect(harness.channel.state.activeMessages, hasLength(2));
     expect(harness.loader.calls.where((id) => id == 'a'), hasLength(2));
     expect(harness.loader.calls.where((id) => id == 'b'), hasLength(1));
+  });
+
+  testWidgets('background completion refreshes the gateway summary', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('background summary');
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+    final callsBeforeCompletion = harness.loader.calls
+        .where((id) => id == 'a')
+        .length;
+
+    harness.channel.completeStreamingTurn(
+      text: 'background done',
+      sessionId: 'sess_1',
+    );
+    await tester.pump();
+
+    expect(
+      harness.loader.calls.where((id) => id == 'a'),
+      hasLength(callsBeforeCompletion + 1),
+    );
   });
 
   testWidgets('pending approval requires confirmation before leaving contact', (

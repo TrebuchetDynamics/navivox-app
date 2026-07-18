@@ -604,6 +604,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionModelNotReported => 'Not reported';
 
   @override
+  String get sessionStreamingReply => 'Streaming reply';
+
+  @override
+  String get sessionReplyFailed => 'Reply failed';
+
+  @override
   String get transcriptImageFallbackLabel => 'Image';
 
   @override

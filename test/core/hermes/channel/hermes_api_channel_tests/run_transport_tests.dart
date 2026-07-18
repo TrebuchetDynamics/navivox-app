@@ -54,6 +54,8 @@ void _hermesApiChannelRunTransportTests() {
       expect(approvals.single.id, 'appr_1');
       expect(approvals.single.prompt, 'Run rm -rf?');
       expect(approvals.single.risk, 'high');
+      expect(approvals.single.runId, 'run_1');
+      expect(approvals.single.sessionId, 'sess_1');
       // Reconciled with server-confirmed history after the run completed.
       expect(channel.state.activeMessages.map((t) => t.text), [
         'Hello',
@@ -61,6 +63,187 @@ void _hermesApiChannelRunTransportTests() {
       ]);
     },
   );
+
+  test(
+    'session switching preserves concurrent runs and streams each transcript',
+    () async {
+      final streams = <String, _ManualStringStream>{};
+      final approvalPosts = <String>[];
+      var nextRun = 1;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' =>
+              '''
+{"object":"list","data":[{"id":"sess_1","source":"api"},{"id":"sess_2","source":"api"}]}
+''',
+            '/api/sessions/sess_1/messages' =>
+              '''
+{"object":"list","data":[{"id":"seed_1","session_id":"sess_1","role":"assistant","content":"First seed"}]}
+''',
+            '/api/sessions/sess_2/messages' =>
+              '''
+{"object":"list","data":[{"id":"seed_2","session_id":"sess_2","role":"assistant","content":"Second seed"}]}
+''',
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          post: (uri, headers, body) async {
+            if (uri.path.endsWith('/approval')) {
+              approvalPosts.add(uri.path);
+              return '{}';
+            }
+            if (uri.path != '/v1/runs') {
+              throw StateError('unexpected POST $uri');
+            }
+            final request = jsonDecode(body) as Map<String, Object?>;
+            final runId = 'run_${nextRun++}';
+            return jsonEncode({
+              'object': 'hermes.run',
+              'run': {'id': runId, 'session_id': request['session_id']},
+            });
+          },
+          getStream: (uri, headers) {
+            final runId = uri.pathSegments[2];
+            return streams.putIfAbsent(runId, _ManualStringStream.new);
+          },
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      final first = channel.sendText('first request');
+      await pumpEventQueue();
+      await channel.selectSession('sess_2');
+      await pumpEventQueue();
+      expect(
+        streams['run_1']?.cancelCount,
+        0,
+        reason: 'switching sessions must not detach the first run stream',
+      );
+      final second = channel.sendText('second request');
+      await pumpEventQueue();
+
+      streams['run_1']!.emit(
+        'event: approval.request\ndata: {"approval_id":"approval-first"}\n\n',
+      );
+      await pumpEventQueue();
+      await channel.respondToApproval(
+        approvalId: 'approval-first',
+        decision: HermesApprovalDecision.once,
+      );
+      expect(approvalPosts, ['/v1/runs/run_1/approval']);
+
+      streams['run_1']!.emit(
+        'event: message.delta\ndata: {"delta":"First reply"}\n\n',
+      );
+      await pumpEventQueue();
+      streams['run_1']!.emit('event: run.completed\ndata: {}\n\n');
+      await pumpEventQueue();
+      streams['run_2']!.emit(
+        'event: message.delta\ndata: {"delta":"Second reply"}\n\n',
+      );
+      await pumpEventQueue();
+      streams['run_2']!.emit('event: run.completed\ndata: {}\n\n');
+      await pumpEventQueue();
+      await Future.wait([first, second]);
+
+      expect(channel.state.messages['sess_1']?.map((turn) => turn.text), [
+        'First seed',
+        'first request',
+        'First reply',
+      ]);
+      expect(channel.state.messages['sess_2']?.map((turn) => turn.text), [
+        'Second seed',
+        'second request',
+        'Second reply',
+      ]);
+      expect(
+        channel.state.messages['sess_1']?.last.status,
+        HermesTurnStatus.completed,
+      );
+      expect(
+        channel.state.messages['sess_2']?.last.status,
+        HermesTurnStatus.completed,
+      );
+    },
+  );
+
+  test('stop targets only the selected session run', () async {
+    final streams = <String, _ManualStringStream>{};
+    final stopPaths = <String>[];
+    var nextRun = 1;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' =>
+            '''
+{"object":"list","data":[{"id":"sess_1","source":"api"},{"id":"sess_2","source":"api"}]}
+''',
+          '/api/sessions/sess_1/messages' => '{"object":"list","data":[]}',
+          '/api/sessions/sess_2/messages' => '{"object":"list","data":[]}',
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async {
+          if (uri.path.endsWith('/stop')) {
+            stopPaths.add(uri.path);
+            return '{}';
+          }
+          if (uri.path != '/v1/runs') {
+            throw StateError('unexpected POST $uri');
+          }
+          final request = jsonDecode(body) as Map<String, Object?>;
+          final runId = 'run_${nextRun++}';
+          return jsonEncode({
+            'object': 'hermes.run',
+            'run': {'id': runId, 'session_id': request['session_id']},
+          });
+        },
+        getStream: (uri, headers) {
+          final runId = uri.pathSegments[2];
+          return streams.putIfAbsent(runId, _ManualStringStream.new);
+        },
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final first = channel.sendText('first');
+    await pumpEventQueue();
+    await channel.selectSession('sess_2');
+    final second = channel.sendText('second');
+    await pumpEventQueue();
+
+    channel.stopActiveTurn();
+    await pumpEventQueue();
+
+    expect(stopPaths, ['/v1/runs/run_2/stop']);
+    expect(
+      channel.state.messages['sess_2']?.last.status,
+      HermesTurnStatus.failed,
+    );
+    expect(
+      channel.state.messages['sess_1']?.last.status,
+      HermesTurnStatus.streaming,
+    );
+
+    streams['run_1']!.emit(
+      'event: message.delta\ndata: {"delta":"First completed"}\n\n',
+    );
+    await pumpEventQueue();
+    streams['run_1']!.emit('event: run.completed\ndata: {}\n\n');
+    await pumpEventQueue();
+    await Future.wait([first, second]);
+
+    expect(channel.state.messages['sess_1']?.last.text, 'First completed');
+    expect(
+      channel.state.messages['sess_1']?.last.status,
+      HermesTurnStatus.completed,
+    );
+  });
 
   test('sendText exposes bounded run token usage on the assistant turn', () async {
     final channel = HermesApiChannel(

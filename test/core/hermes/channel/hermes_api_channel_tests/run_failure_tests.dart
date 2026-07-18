@@ -440,8 +440,124 @@ void _hermesApiChannelRunFailureTests() {
     expect(channel.state.errorMessage, isNull);
   });
 
-  test('sendText marks a status-confirmed active run unsafe to retry', () async {
-    var messagesRequests = 0;
+  test(
+    'sendText keeps a status-confirmed detached run unsafe after reconnect',
+    () async {
+      var messagesRequests = 0;
+      var runSubmissions = 0;
+      var statusRequests = 0;
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => () {
+              messagesRequests += 1;
+              return _messagesFixture;
+            }(),
+            '/v1/runs/run_1' => () {
+              statusRequests += 1;
+              return '{"run_id":"run_1","session_id":"sess_1","status":"running"}';
+            }(),
+            _ => throw StateError('unexpected GET $uri'),
+          },
+          post: (uri, headers, body) async {
+            runSubmissions += 1;
+            return '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}';
+          },
+          getStream: (uri, headers) => Stream<String>.fromIterable(const [
+            'event: message.delta\ndata: {"delta":"partial"}\n\n',
+          ]),
+        ),
+      );
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      await channel.sendText('do not duplicate');
+
+      expect(messagesRequests, 1);
+      expect(statusRequests, 1);
+      expect(
+        channel.state.errorMessage,
+        'Hermes run is still active after its event stream closed. Reconnect before retrying.',
+      );
+      expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
+
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+      await expectLater(channel.sendText('unsafe retry'), throwsStateError);
+
+      expect(runSubmissions, 1);
+      expect(statusRequests, 2);
+      expect(messagesRequests, 2);
+      expect(
+        channel.state.errorMessage,
+        'Hermes run is still active. Reconnect later before retrying.',
+      );
+    },
+  );
+
+  test('process recreation restores the detached-run duplicate guard', () async {
+    final store = _MemoryDetachedRunStore();
+    var runSubmissions = 0;
+    var statusRequests = 0;
+    HermesApiClient clientBuilder(HermesApiConfig config) => HermesApiClient(
+      config: config,
+      get: (uri, headers) async => switch (uri.path) {
+        '/health' => '{"status":"ok"}',
+        '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+        '/api/sessions' => _sessionsFixture,
+        '/api/sessions/sess_1/messages' => _messagesFixture,
+        '/v1/runs/run_1' => () {
+          statusRequests += 1;
+          return '{"run_id":"run_1","session_id":"sess_1","status":"running"}';
+        }(),
+        _ => throw StateError('unexpected GET $uri'),
+      },
+      post: (uri, headers, body) async {
+        runSubmissions += 1;
+        return '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}';
+      },
+      getStream: (uri, headers) => Stream<String>.fromIterable(const [
+        'event: message.delta\ndata: {"delta":"partial"}\n\n',
+      ]),
+    );
+
+    final firstChannel = HermesApiChannel(
+      clientBuilder: clientBuilder,
+      detachedRunStore: store,
+    );
+    await firstChannel.connect(
+      baseUrl:
+          'http://user:secret@127.0.0.1:8642/path?api_key=must-not-persist',
+    );
+    await firstChannel.sendText('detached before recreation');
+    expect(store.leases.single.runId, 'run_1');
+    expect(store.leases.single.baseUrl, 'http://127.0.0.1:8642');
+    firstChannel.dispose();
+
+    final recreatedChannel = HermesApiChannel(
+      clientBuilder: clientBuilder,
+      detachedRunStore: store,
+    );
+    addTearDown(recreatedChannel.dispose);
+    await recreatedChannel.connect(baseUrl: 'http://127.0.0.1:8642');
+    await expectLater(
+      recreatedChannel.sendText('must not duplicate'),
+      throwsStateError,
+    );
+
+    expect(runSubmissions, 1);
+    expect(statusRequests, 2);
+    expect(
+      recreatedChannel.state.errorMessage,
+      'Hermes run is still active. Reconnect later before retrying.',
+    );
+  });
+
+  test('reconnect releases a detached run after terminal status', () async {
+    var runSubmissions = 0;
+    var runOneStatusRequests = 0;
     final channel = HermesApiChannel(
       clientBuilder: (config) => HermesApiClient(
         config: config,
@@ -449,31 +565,40 @@ void _hermesApiChannelRunFailureTests() {
           '/health' => '{"status":"ok"}',
           '/v1/capabilities' => _runsCapableCapabilitiesFixture,
           '/api/sessions' => _sessionsFixture,
-          '/api/sessions/sess_1/messages' => () {
-            messagesRequests += 1;
-            return _messagesFixture;
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          '/v1/runs/run_1' => () {
+            runOneStatusRequests += 1;
+            return runOneStatusRequests == 1
+                ? '{"run_id":"run_1","session_id":"sess_1","status":"running"}'
+                : '{"run_id":"run_1","session_id":"sess_1","status":"completed","output":"recovered"}';
           }(),
-          '/v1/runs/run_1' =>
-            '{"run_id":"run_1","session_id":"sess_1","status":"running"}',
+          '/v1/runs/run_2' =>
+            '{"run_id":"run_2","session_id":"sess_1","status":"completed"}',
           _ => throw StateError('unexpected GET $uri'),
         },
-        post: (uri, headers, body) async =>
-            '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
-        getStream: (uri, headers) => Stream<String>.fromIterable(const [
-          'event: message.delta\ndata: {"delta":"partial"}\n\n',
-        ]),
+        post: (uri, headers, body) async {
+          runSubmissions += 1;
+          final runId = 'run_$runSubmissions';
+          return '{"object":"hermes.run","run":{"id":"$runId","session_id":"sess_1"}}';
+        },
+        getStream: (uri, headers) => uri.path.contains('run_1')
+            ? Stream<String>.fromIterable(const [
+                'event: message.delta\ndata: {"delta":"partial"}\n\n',
+              ])
+            : Stream<String>.fromIterable(const [
+                'event: run.completed\ndata: {}\n\n',
+              ]),
       ),
     );
     await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    await channel.sendText('detached');
 
-    await channel.sendText('do not duplicate');
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    expect(channel.state.errorMessage, isNull);
+    await channel.sendText('safe next turn');
 
-    expect(messagesRequests, 1);
-    expect(
-      channel.state.errorMessage,
-      'Hermes run is still active after its event stream closed. Reconnect before retrying.',
-    );
-    expect(channel.state.activeMessages.last.status, HermesTurnStatus.failed);
+    expect(runOneStatusRequests, 2);
+    expect(runSubmissions, 2);
   });
 
   test(

@@ -71,8 +71,7 @@ extension _VoiceExtension on HermesApiChannel {
         .then((_) {
           final current = _state.voiceRuns[voiceRunId];
           if (current == null || current.isTerminal) return;
-          if (current.sessionId != submittedSessionId ||
-              _state.activeSessionId != submittedSessionId) {
+          if (current.sessionId != submittedSessionId) {
             _updateVoiceRun(
               current.markFailed(
                 'Hermes session changed before voice turn completed.',

@@ -40,8 +40,12 @@ name: chat_ux_qa
 - hideKeyboard
 - pressKey: back
 
-# Exercise multiline draft layout without mutating the conversation.
-- tapOn: "(?s).*Message Hermes….*"
+# Exercise multiline draft layout without mutating the conversation. The empty
+# unfocused Telegram-style composer intentionally hides its text hint, so focus
+# its central draft area by position before addressing the text field.
+- tapOn:
+    point: "50%,90%"
+- assertVisible: "(?s).*Message Hermes….*"
 - inputText: "This is a deliberately long mobile draft that verifies wrapping and keeps every composer action reachable"
 - assertVisible: "(?s).*deliberately long mobile draft.*"
 - takeScreenshot: 02_multiline_draft_keyboard

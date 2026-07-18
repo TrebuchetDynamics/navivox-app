@@ -7,14 +7,17 @@ import '../../protocol/wing_json.dart';
 import '../../protocol/voice/models/wing_voice_run.dart';
 import '../client/hermes_api_client.dart';
 import '../client/hermes_api_config.dart';
+import '../models/hermes_capabilities.dart';
 import '../models/hermes_chat_turn.dart';
 import '../models/hermes_health.dart';
 import '../models/hermes_job.dart';
 import '../models/hermes_run.dart';
 import '../models/hermes_skill.dart';
 import '../policy/hermes_transport_policy.dart';
+import '../setup/hermes_endpoint_store.dart';
 import '../sse/hermes_sse_event_decoder.dart';
 import 'hermes_channel.dart';
+import 'hermes_detached_run_store.dart';
 
 part 'api_channel/hermes_api_channel_connection.dart';
 part 'api_channel/hermes_api_channel_sessions.dart';
@@ -32,10 +35,14 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
     HermesApiClient Function(HermesApiConfig config)? clientBuilder,
     String Function()? sessionIdFactory,
     Uuid? uuid,
+    HermesDetachedRunStore? detachedRunStore,
     this.streamIdleTimeout = const Duration(minutes: 5),
   }) : _clientBuilder =
            clientBuilder ?? ((config) => HermesApiClient(config: config)),
        _uuid = uuid ?? const Uuid(),
+       // Named public injection cannot use a private initializing formal.
+       // ignore: prefer_initializing_formals
+       _detachedRunStore = detachedRunStore,
        _sessionIdFactory =
            sessionIdFactory ??
            (() =>
@@ -44,15 +51,19 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   final HermesApiClient Function(HermesApiConfig) _clientBuilder;
   final String Function() _sessionIdFactory;
   final Uuid _uuid;
+  final HermesDetachedRunStore? _detachedRunStore;
   final Duration streamIdleTimeout;
 
   HermesApiClient? _client;
   HermesChannelState _state = const HermesChannelState();
-  StreamSubscription<HermesStreamEvent>? _activeStream;
-  Completer<void>? _activeStreamCompleter;
-  String? _activeRunId;
-  bool _activeTurnStopped = false;
-  int _streamGeneration = 0;
+  final _activeStreams = <String, StreamSubscription<HermesStreamEvent>>{};
+  final _activeStreamCompleters = <String, Completer<void>>{};
+  final _activeRunIds = <String, String>{};
+  final _approvalRunIds = <String, String>{};
+  final _sessionStreamGenerations = <String, int>{};
+  final _detachedRuns = <String, HermesDetachedRunLease>{};
+  bool _detachedRunsLoaded = false;
+  int _nextStreamGeneration = 0;
   int _connectionGeneration = 0;
   final _approvalController =
       StreamController<HermesApprovalRequest>.broadcast();
@@ -69,16 +80,9 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   void dispose() {
     _client = null;
     _connectionGeneration += 1;
-    _streamGeneration += 1;
     _deletingSessionIds.clear();
-    unawaited(_activeStream?.cancel());
-    _activeStream = null;
-    _activeRunId = null;
-    final completer = _activeStreamCompleter;
-    _activeStreamCompleter = null;
-    if (completer != null && !completer.isCompleted) {
-      completer.complete();
-    }
+    _clearActiveRunTracking();
+    _detachedRuns.clear();
     _approvalController.close();
     super.dispose();
   }
@@ -86,6 +90,20 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   void _setState(HermesChannelState next) {
     _state = next;
     notifyListeners();
+  }
+
+  void _clearActiveRunTracking() {
+    for (final stream in _activeStreams.values) {
+      unawaited(stream.cancel());
+    }
+    for (final completer in _activeStreamCompleters.values) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _activeStreams.clear();
+    _activeStreamCompleters.clear();
+    _activeRunIds.clear();
+    _approvalRunIds.clear();
+    _sessionStreamGenerations.clear();
   }
 
   @override

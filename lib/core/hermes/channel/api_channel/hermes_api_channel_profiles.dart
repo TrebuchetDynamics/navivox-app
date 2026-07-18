@@ -41,8 +41,13 @@ extension _ProfilesExtension on HermesApiChannel {
     final models =
         await _loadOptional<List<String>>(
           advertised:
-              capabilities?.advertisesEndpoint('models', 'GET', '/v1/models') ??
-              false,
+              capabilities != null &&
+              _capabilityEndpointAuthorized(
+                capabilities,
+                'models',
+                'GET',
+                '/v1/models',
+              ),
           resource: HermesOptionalResource.models,
           load: () => client.listModels(profile: id),
           errors: errors,
@@ -51,8 +56,13 @@ extension _ProfilesExtension on HermesApiChannel {
     final skillDetails =
         await _loadOptional<List<HermesSkill>>(
           advertised:
-              capabilities?.advertisesEndpoint('skills', 'GET', '/v1/skills') ??
-              false,
+              capabilities != null &&
+              _capabilityEndpointAuthorized(
+                capabilities,
+                'skills',
+                'GET',
+                '/v1/skills',
+              ),
           resource: HermesOptionalResource.skills,
           load: () => client.listSkillDetails(profile: id),
           errors: errors,
@@ -64,12 +74,13 @@ extension _ProfilesExtension on HermesApiChannel {
     final toolsets =
         await _loadOptional<List<String>>(
           advertised:
-              capabilities?.advertisesEndpoint(
+              capabilities != null &&
+              _capabilityEndpointAuthorized(
+                capabilities,
                 'toolsets',
                 'GET',
                 '/v1/toolsets',
-              ) ??
-              false,
+              ),
           resource: HermesOptionalResource.toolsets,
           load: () => client.listEnabledToolsets(profile: id),
           errors: errors,
@@ -94,14 +105,24 @@ extension _ProfilesExtension on HermesApiChannel {
     if (!_isCurrentConnection(generation, client)) return;
 
     final activeId = sessions.firstOrNull?.id;
+    var detachedRunStillActive = false;
     var messages = const <String, List<HermesChatTurn>>{};
     if (activeId != null) {
+      if (capabilities != null) {
+        detachedRunStillActive = await _recoverDetachedRun(
+          client: client,
+          capabilities: capabilities,
+          baseUrl: _state.connectedBaseUrl ?? '',
+          profileId: id,
+          sessionId: activeId,
+        );
+      }
       final turns = await _fetchTurns(client, activeId);
       if (!_isCurrentConnection(generation, client)) return;
       messages = {activeId: turns};
     }
 
-    _finishActiveTurnLocally();
+    _finishAllTurnsLocally();
     _setState(
       _state.copyWith(
         profiles: profiles,
@@ -115,6 +136,10 @@ extension _ProfilesExtension on HermesApiChannel {
         enabledToolsets: toolsets,
         jobs: jobs,
         optionalResourceErrors: errors,
+        errorMessage: detachedRunStillActive
+            ? 'Hermes run is still active. Reconnect later before retrying.'
+            : null,
+        clearErrorMessage: !detachedRunStillActive,
         messages: messages,
         voiceRuns: const {},
         clearActiveVoiceRunId: true,

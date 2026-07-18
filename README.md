@@ -27,11 +27,14 @@ endpoint. The same Flutter client keeps streamed work, tool activity, approvals,
 profiles, models, and optional device speech within reach without replacing the
 Hermes backend.
 
-- **Follow live work** — create sessions with client-owned slash commands,
-  stream assistant, bounded reasoning, and tool events, inspect server-reported
-  token usage, and stop active runs.
-- **Keep operator control visible** — review approval requests inline before
-  sensitive work continues.
+- **Follow live work** — create sessions with client-owned slash commands, run
+  concurrent session-owned streams, switch without detaching replies, recover
+  status-confirmed detached work without duplicate submission after process
+  recreation, inspect bounded reasoning, tool events, and server-reported token
+  usage, and stop the selected run.
+- **Keep operator control visible** — review approval requests in their owning
+  session before sensitive work continues, while background streaming and
+  failure states remain visible in session history.
 - **Manage the endpoint** — work with advertised agents, profiles, providers,
   and model assignments.
 - **Inspect advertised inventory** — search bounded installed-skill metadata,

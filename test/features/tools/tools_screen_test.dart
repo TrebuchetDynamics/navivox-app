@@ -219,6 +219,49 @@ void main() {
     expect(find.text('stale-toolset'), findsNothing);
   });
 
+  testWidgets('declared catalog scopes must also be granted', (tester) async {
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': <String>[],
+        },
+        'endpoints': {
+          'skills': {
+            'method': 'GET',
+            'path': '/v1/skills',
+            'required_scopes': ['skills:read'],
+          },
+          'toolsets': {
+            'method': 'GET',
+            'path': '/v1/toolsets',
+            'required_scopes': ['tools:read'],
+          },
+        },
+      }),
+      skills: const ['stale-skill'],
+      skillDetails: const [HermesSkill(name: 'stale-skill')],
+      enabledToolsets: const ['stale-toolset'],
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('This gateway did not advertise installed skill inventory.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('This gateway did not advertise enabled toolset inventory.'),
+      findsOneWidget,
+    );
+    expect(find.text('stale-skill'), findsNothing);
+    expect(find.text('stale-toolset'), findsNothing);
+  });
+
   testWidgets('unsupported inventories fail closed instead of looking empty', (
     tester,
   ) async {

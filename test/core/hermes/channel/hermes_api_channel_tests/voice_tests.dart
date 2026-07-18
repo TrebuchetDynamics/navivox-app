@@ -206,7 +206,7 @@ void _hermesApiChannelVoiceTests() {
   });
 
   test(
-    'voice submit fails instead of completing if the session changes mid-turn',
+    'voice submit completes in its original session after switching away',
     () async {
       final stream = _ManualStringStream();
       final channel = HermesApiChannel(
@@ -243,11 +243,14 @@ void _hermesApiChannelVoiceTests() {
       );
 
       await channel.selectSession('sess_2');
+      stream.emit('event: assistant.delta\ndata: {"delta":"Voice reply"}\n\n');
+      await pumpEventQueue();
+      stream.emit('event: assistant.completed\ndata: {}\n\n');
       await pumpEventQueue();
 
       final run = channel.state.voiceRuns[voiceRunId];
-      expect(run?.status, WingVoiceRunStatus.failed);
-      expect(run?.reason, 'Hermes voice turn did not complete.');
+      expect(run?.status, WingVoiceRunStatus.completed);
+      expect(run?.reason, isNull);
       expect(channel.state.activeSessionId, 'sess_2');
       expect(channel.state.activeMessages.single.text, 'From two');
     },

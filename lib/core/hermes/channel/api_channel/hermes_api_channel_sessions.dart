@@ -4,16 +4,8 @@ extension _SessionsExtension on HermesApiChannel {
   Future<void> _disconnect() async {
     _client = null;
     _connectionGeneration += 1;
-    _streamGeneration += 1;
     _deletingSessionIds.clear();
-    unawaited(_activeStream?.cancel());
-    _activeStream = null;
-    _activeRunId = null;
-    final completer = _activeStreamCompleter;
-    _activeStreamCompleter = null;
-    if (completer != null && !completer.isCompleted) {
-      completer.complete();
-    }
+    _clearActiveRunTracking();
     _setState(const HermesChannelState());
   }
 
@@ -23,12 +15,28 @@ extension _SessionsExtension on HermesApiChannel {
       throw StateError('Hermes channel is not connected.');
     }
     _requireKnownSession(sessionId);
-    _finishActiveTurnLocally();
-    final turns = await _fetchTurns(client, sessionId);
+    final baseUrl = _state.connectedBaseUrl;
+    final capabilities = _state.capabilities;
+    final detachedRunStillActive = baseUrl != null && capabilities != null
+        ? await _recoverDetachedRun(
+            client: client,
+            capabilities: capabilities,
+            baseUrl: baseUrl,
+            profileId: _state.selectedProfileId,
+            sessionId: sessionId,
+          )
+        : false;
+    final turns = _state.isSessionStreaming(sessionId)
+        ? List<HermesChatTurn>.from(_state.messages[sessionId] ?? const [])
+        : await _fetchTurns(client, sessionId);
     if (!_isConnectedClient(client)) return;
     _setState(
       _state.copyWith(
         activeSessionId: sessionId,
+        errorMessage: detachedRunStillActive
+            ? 'Hermes run is still active. Reconnect later before retrying.'
+            : null,
+        clearErrorMessage: !detachedRunStillActive,
         messages: {..._state.messages, sessionId: turns},
       ),
     );
@@ -52,7 +60,6 @@ extension _SessionsExtension on HermesApiChannel {
     if (!_isConnectedClient(client)) return;
     final turns = await _fetchTurns(client, created.id);
     if (!_isConnectedClient(client)) return;
-    _finishActiveTurnLocally();
     _setState(
       _state.copyWith(
         sessions: [..._state.sessions, created],
@@ -113,9 +120,7 @@ extension _SessionsExtension on HermesApiChannel {
       throw StateError('Hermes session delete is already in progress.');
     }
     final wasActive = _state.activeSessionId == sessionId;
-    if (wasActive) {
-      _finishActiveTurnLocally();
-    }
+    _finishSessionTurnLocally(sessionId);
     try {
       await client.deleteSession(sessionId);
       if (!_isConnectedClient(client)) return;
@@ -170,7 +175,6 @@ extension _SessionsExtension on HermesApiChannel {
     if (!_isConnectedClient(client)) return;
     final turns = await _fetchTurns(client, fork.id);
     if (!_isConnectedClient(client)) return;
-    _finishActiveTurnLocally();
     _setState(
       _state.copyWith(
         sessions: [..._state.sessions, fork],

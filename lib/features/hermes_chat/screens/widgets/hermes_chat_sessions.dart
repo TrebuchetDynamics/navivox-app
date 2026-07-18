@@ -173,6 +173,10 @@ class _HermesSessionRailState extends State<_HermesSessionRail> {
                         _HermesSessionTile(
                           session: session,
                           active: session.id == widget.state.activeSessionId,
+                          streaming: widget.state.isSessionStreaming(
+                            session.id,
+                          ),
+                          failed: widget.state.isSessionReplyFailed(session.id),
                           canRename: _canRename,
                           canFork: _canFork,
                           canDelete: _canDelete,
@@ -644,6 +648,10 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
                         _HermesSessionTile(
                           session: session,
                           active: session.id == widget.state.activeSessionId,
+                          streaming: widget.state.isSessionStreaming(
+                            session.id,
+                          ),
+                          failed: widget.state.isSessionReplyFailed(session.id),
                           canRename: _canRename,
                           canFork: _canFork,
                           canDelete: _canDelete,
@@ -786,6 +794,8 @@ class _HermesSessionTile extends StatelessWidget {
   const _HermesSessionTile({
     required this.session,
     required this.active,
+    required this.streaming,
+    required this.failed,
     required this.canRename,
     required this.canFork,
     required this.canDelete,
@@ -797,6 +807,8 @@ class _HermesSessionTile extends StatelessWidget {
 
   final HermesSession session;
   final bool active;
+  final bool streaming;
+  final bool failed;
   final bool canRename;
   final bool canFork;
   final bool canDelete;
@@ -807,10 +819,26 @@ class _HermesSessionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = _hermesStrings(context);
     return ListTile(
       key: ValueKey('hermes-session-row-${session.id}'),
       selected: active,
-      leading: active
+      leading: streaming
+          ? SizedBox.square(
+              dimension: 24,
+              child: CircularProgressIndicator(
+                key: ValueKey('hermes-session-streaming-${session.id}'),
+                strokeWidth: 2.5,
+                semanticsLabel: strings.sessionStreamingReply,
+              ),
+            )
+          : failed
+          ? Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+              semanticLabel: strings.sessionReplyFailed,
+            )
+          : active
           ? const Icon(Icons.check_circle_outline)
           : const Icon(Icons.chat_bubble_outline),
       title: Text(
@@ -824,6 +852,10 @@ class _HermesSessionTile extends StatelessWidget {
           if (session.model?.trim().isNotEmpty ?? false)
             _safeHermesUiPreview(session.model!.trim(), maxLength: 80),
           '${session.messageCount} messages',
+          if (streaming)
+            strings.sessionStreamingReply
+          else if (failed)
+            strings.sessionReplyFailed,
           if (session.parentSessionId != null)
             'Forked from ${_safeHermesUiPreview(session.parentSessionId!, maxLength: 80)}',
           if (session.lastActive != null)

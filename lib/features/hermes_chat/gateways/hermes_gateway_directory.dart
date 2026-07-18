@@ -33,23 +33,30 @@ abstract interface class GatewaySummaryLoader {
 }
 
 class HermesApiGatewaySummaryLoader implements GatewaySummaryLoader {
-  const HermesApiGatewaySummaryLoader();
+  const HermesApiGatewaySummaryLoader({this.clientBuilder});
+
+  final HermesApiClient Function(HermesApiConfig config)? clientBuilder;
 
   @override
   Future<GatewaySummary> load(HermesEndpointConfig config) async {
-    final client = HermesApiClient(
-      config: HermesApiConfig.fromBaseUrl(
-        config.baseUrl,
-        apiKey: config.apiKey,
-      ),
+    final apiConfig = HermesApiConfig.fromBaseUrl(
+      config.baseUrl,
+      apiKey: config.apiKey,
     );
+    final client =
+        clientBuilder?.call(apiConfig) ?? HermesApiClient(config: apiConfig);
     await client.health();
     final capabilities = await client.capabilities();
-    final supportsProfiles = capabilities.advertisesEndpoint(
-      'profiles',
-      'GET',
-      '/api/profiles',
-    );
+    final supportsProfiles =
+        capabilities.supportsSchema &&
+        capabilities.profileContext.isSupportedQueryContext &&
+        capabilities.auth.allows('profiles:read') &&
+        capabilities.advertisesScopedEndpoint(
+          'profiles',
+          'GET',
+          '/api/profiles',
+          'profiles:read',
+        );
     if (!supportsProfiles) {
       return GatewaySummary(
         profiles: const [],

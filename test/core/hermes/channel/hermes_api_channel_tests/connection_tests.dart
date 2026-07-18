@@ -62,6 +62,55 @@ void _hermesApiChannelConnectionTests() {
   });
 
   test(
+    'connect does not probe declared optional catalogs without their scopes',
+    () async {
+      const capabilities = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "schema_version": 1,
+  "auth": {"type": "bearer", "required": true, "granted_scopes": []},
+  "features": {},
+  "endpoints": {
+    "models": {"method": "GET", "path": "/v1/models", "required_scopes": ["chat:read"]},
+    "skills": {"method": "GET", "path": "/v1/skills", "required_scopes": ["skills:read"]},
+    "toolsets": {"method": "GET", "path": "/v1/toolsets", "required_scopes": ["tools:read"]}
+  }
+}
+''';
+      final requestedPaths = <String>[];
+      final channel = HermesApiChannel(
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async {
+            requestedPaths.add(uri.path);
+            return switch (uri.path) {
+              '/health' => '{"status":"ok"}',
+              '/v1/capabilities' => capabilities,
+              '/api/sessions' => '{"object":"list","data":[]}',
+              '/v1/models' ||
+              '/v1/skills' ||
+              '/v1/toolsets' => throw StateError('must not be requested'),
+              _ => throw StateError('unexpected GET $uri'),
+            };
+          },
+        ),
+      );
+      addTearDown(channel.dispose);
+
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      expect(requestedPaths, isNot(contains('/v1/models')));
+      expect(requestedPaths, isNot(contains('/v1/skills')));
+      expect(requestedPaths, isNot(contains('/v1/toolsets')));
+      expect(channel.state.canReadRuntimeModels, isFalse);
+      expect(channel.state.canReadSkills, isFalse);
+      expect(channel.state.canReadToolsets, isFalse);
+    },
+  );
+
+  test(
     'connect does not probe detailed health without the granted gateway scope',
     () async {
       const capabilities = '''

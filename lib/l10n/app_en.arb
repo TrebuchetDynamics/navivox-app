@@ -236,6 +236,8 @@
     }
   },
   "sessionModelNotReported": "Not reported",
+  "sessionStreamingReply": "Streaming reply",
+  "sessionReplyFailed": "Reply failed",
   "transcriptImageFallbackLabel": "Image",
   "transcriptImageNotLoaded": "image not loaded",
   "copyCodeAction": "Copy code",

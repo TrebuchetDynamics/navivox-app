@@ -1138,6 +1138,18 @@ abstract class AppLocalizations {
   /// **'Not reported'**
   String get sessionModelNotReported;
 
+  /// No description provided for @sessionStreamingReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming reply'**
+  String get sessionStreamingReply;
+
+  /// No description provided for @sessionReplyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply failed'**
+  String get sessionReplyFailed;
+
   /// No description provided for @transcriptImageFallbackLabel.
   ///
   /// In en, this message translates to:

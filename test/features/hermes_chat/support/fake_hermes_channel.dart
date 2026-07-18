@@ -629,10 +629,16 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     );
   }
 
-  void completeStreamingTurn({String text = 'done', HermesRunUsage? usage}) {
-    final sessionId = _state.activeSessionId;
-    if (sessionId == null) return;
-    final turns = List<HermesChatTurn>.from(_state.activeMessages);
+  void completeStreamingTurn({
+    String text = 'done',
+    HermesRunUsage? usage,
+    String? sessionId,
+  }) {
+    final targetSessionId = sessionId ?? _state.activeSessionId;
+    if (targetSessionId == null) return;
+    final turns = List<HermesChatTurn>.from(
+      _state.messages[targetSessionId] ?? const [],
+    );
     final index = turns.lastIndexWhere(
       (turn) => turn.status == HermesTurnStatus.streaming,
     );
@@ -644,7 +650,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
       usage: usage,
     );
     _setState(
-      _state.copyWith(messages: {..._state.messages, sessionId: turns}),
+      _state.copyWith(messages: {..._state.messages, targetSessionId: turns}),
     );
   }
 

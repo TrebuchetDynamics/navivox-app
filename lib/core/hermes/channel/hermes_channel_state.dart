@@ -112,13 +112,13 @@ class HermesChannelState {
     'gateway:read',
   );
 
-  bool get canReadSkills => _advertisesEndpoint('skills', 'GET', '/v1/skills');
+  bool get canReadSkills => _authorizesEndpoint('skills', 'GET', '/v1/skills');
 
   bool get canReadToolsets =>
-      _advertisesEndpoint('toolsets', 'GET', '/v1/toolsets');
+      _authorizesEndpoint('toolsets', 'GET', '/v1/toolsets');
 
   bool get canReadRuntimeModels =>
-      _advertisesEndpoint('models', 'GET', '/v1/models');
+      _authorizesEndpoint('models', 'GET', '/v1/models');
 
   bool get canReadJobs =>
       _allowsEndpoint('jobs', 'GET', '/api/jobs', 'tasks:read');
@@ -149,13 +149,6 @@ class HermesChannelState {
     '/api/models/assignment',
     'models:write',
   );
-
-  bool _advertisesEndpoint(String name, String method, String path) {
-    final document = capabilities;
-    return document != null &&
-        document.supportsSchema &&
-        document.advertisesEndpoint(name, method, path);
-  }
 
   bool _authorizesEndpoint(String name, String method, String path) {
     final document = capabilities;
@@ -204,6 +197,24 @@ class HermesChannelState {
 
   List<HermesChatTurn> get activeMessages =>
       messages[activeSessionId] ?? const [];
+
+  bool isSessionStreaming(String sessionId) =>
+      messages[sessionId]?.any(
+        (turn) => turn.status == HermesTurnStatus.streaming,
+      ) ??
+      false;
+
+  bool get hasStreamingSessions => messages.keys.any(isSessionStreaming);
+
+  bool isSessionReplyFailed(String sessionId) {
+    final turns = messages[sessionId] ?? const <HermesChatTurn>[];
+    for (final turn in turns.reversed) {
+      if (turn.author == HermesTurnAuthor.assistant) {
+        return turn.status == HermesTurnStatus.failed;
+      }
+    }
+    return false;
+  }
 
   WingVoiceRun? get activeVoiceRun {
     final id = activeVoiceRunId;

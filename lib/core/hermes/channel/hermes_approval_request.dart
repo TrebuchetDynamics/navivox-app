@@ -5,10 +5,14 @@ class HermesApprovalRequest {
     required this.toolCallId,
     required this.prompt,
     this.risk,
+    this.runId,
+    this.sessionId,
   });
 
   final String id;
   final String toolCallId;
   final String prompt;
   final String? risk;
+  final String? runId;
+  final String? sessionId;
 }

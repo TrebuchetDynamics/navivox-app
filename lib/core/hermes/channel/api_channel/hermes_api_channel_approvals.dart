@@ -6,13 +6,6 @@ extension _ApprovalsExtension on HermesApiChannel {
     required HermesApprovalDecision decision,
   }) async {
     final client = _client;
-    final runId = _activeRunId;
-    if (client == null || runId == null) {
-      const message =
-          'Could not answer approval: active run is no longer available.';
-      _setState(_state.copyWith(errorMessage: message));
-      throw StateError(message);
-    }
     final trimmedApprovalId = approvalId.trim();
     if (trimmedApprovalId.isEmpty) {
       const message = 'Could not answer approval: approval id is missing.';
@@ -27,14 +20,29 @@ extension _ApprovalsExtension on HermesApiChannel {
       _setState(_state.copyWith(errorMessage: message));
       throw StateError(message);
     }
+    final runId =
+        _approvalRunIds[trimmedApprovalId] ??
+        (_activeRunIds.length == 1 ? _activeRunIds.values.single : null);
+    if (client == null || runId == null) {
+      const message =
+          'Could not answer approval: active run is no longer available.';
+      _setState(_state.copyWith(errorMessage: message));
+      throw StateError(message);
+    }
     try {
       await client.respondApproval(
         runId: runId,
         approvalId: trimmedApprovalId,
         decision: decision.name,
       );
+      _approvalRunIds.remove(trimmedApprovalId);
     } catch (error) {
-      if (!identical(_client, client) || _activeRunId != runId) return;
+      final runStillActive = _activeRunIds.values.contains(runId);
+      final approvalStillMapped = _approvalRunIds[trimmedApprovalId] == runId;
+      if (!identical(_client, client) ||
+          !runStillActive && !approvalStillMapped) {
+        return;
+      }
       _setState(
         _state.copyWith(
           errorMessage: 'Could not answer approval: ${_safeHermesError(error)}',

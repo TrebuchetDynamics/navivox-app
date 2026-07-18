@@ -317,10 +317,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     HermesChannel channel,
     HermesChannelState state,
   ) {
-    final pendingApproval = _pendingApprovals.isEmpty
-        ? null
-        : _pendingApprovals.first;
-    final pendingApprovalCount = _pendingApprovals.length;
+    final activeApprovals = _pendingApprovals.where(
+      (request) =>
+          request.sessionId == null ||
+          request.sessionId == state.activeSessionId,
+    );
+    final pendingApproval = activeApprovals.firstOrNull;
+    final pendingApprovalCount = activeApprovals.length;
     final hasActiveSession = state.activeSessionId != null;
     final canSendTurns = _canSendTurns(state);
     final canRespondToApprovals = _canRespondToApprovals(state);
@@ -563,8 +566,8 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       canRespondToApprovals: canRespondToApprovals,
       respondingApprovalId: _answeringApprovalId,
       onResolveApproval: (decision) =>
-          unawaited(_resolveApproval(channel, decision)),
-      onDismissApproval: _dismissCurrentApproval,
+          unawaited(_resolveApproval(channel, decision, pendingApproval!)),
+      onDismissApproval: () => _dismissApproval(pendingApproval!),
       onReplyTurn: _replyToTurn,
       chatError: chatError,
       onRetryError: onRetryError,

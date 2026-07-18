@@ -543,6 +543,39 @@ void main() {
     },
   );
 
+  testWidgets('runtime models require every declared read scope', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': <String>[],
+        },
+        'endpoints': {
+          'models': {
+            'method': 'GET',
+            'path': '/v1/models',
+            'required_scopes': ['chat:read'],
+          },
+        },
+      }),
+      models: const ['stale-model'],
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Providers unavailable'), findsOneWidget);
+    expect(find.text('Runtime models'), findsNothing);
+    expect(find.text('stale-model'), findsNothing);
+    expect(channel.loadProvidersCalls, 0);
+    expect(channel.loadModelsCalls, 0);
+  });
+
   testWidgets('shows an unavailable message without provider access', (
     tester,
   ) async {
