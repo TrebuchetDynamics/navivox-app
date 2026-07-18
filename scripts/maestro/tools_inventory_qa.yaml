@@ -27,7 +27,8 @@ name: tools_inventory_qa
 - tapOn: "(?s).*Search installed skills.*"
 - inputText: "qa_no_installed_skill_match_98765"
 - assertVisible: "(?s).*No installed skills match this search.*"
-- eraseText: 80
+# Keep the no-match filter active while checking toolsets so a large installed
+# catalog cannot place the second read-only section hundreds of rows away.
 - hideKeyboard
 - takeScreenshot: tools_skills_inventory
 - scrollUntilVisible:
