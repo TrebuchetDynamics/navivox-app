@@ -50,7 +50,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('settings-voice-link')));
+    final voice = find.byKey(const ValueKey('settings-voice-link'));
+    await tester.scrollUntilVisible(voice, 300);
+    await Scrollable.ensureVisible(tester.element(voice), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(voice);
     await tester.pumpAndSettle();
     expect(find.text('Voice & speech'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
