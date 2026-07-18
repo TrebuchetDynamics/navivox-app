@@ -6,11 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel_state.dart';
 import 'package:wing/core/hermes/models/hermes_capabilities.dart';
 import 'package:wing/core/hermes/models/hermes_profile.dart';
+import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
 import 'package:wing/features/agents/screens/agents_screen.dart';
+import 'package:wing/features/hermes_chat/gateways/hermes_gateway_directory.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/l10n/app_localizations.dart';
 
 import '../hermes_chat/support/fake_hermes_channel.dart';
+import '../hermes_chat/support/fake_hermes_gateway_directory.dart';
 
 HermesCapabilityDocument _profileCapabilities(
   List<String> scopes, {
@@ -67,23 +70,64 @@ class _GatedProfileSelectionChannel extends FakeHermesChannel {
   }
 }
 
-Widget _agentsTestApp(FakeHermesChannel channel, {double textScale = 1.0}) =>
-    ProviderScope(
-      overrides: [hermesChannelProvider.overrideWithValue(channel)],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: child!,
-        ),
-        home: const AgentsScreen(),
-      ),
-    );
+Widget _agentsTestApp(
+  FakeHermesChannel channel, {
+  double textScale = 1.0,
+  HermesGatewayDirectory? directory,
+}) => ProviderScope(
+  overrides: [
+    hermesChannelProvider.overrideWithValue(channel),
+    hermesGatewayDirectoryProvider.overrideWith(
+      (ref) =>
+          directory ??
+          directoryFor(
+            configs: const [],
+            loader: FakeGatewaySummaryLoader(const {}),
+            activeChannel: channel,
+          ),
+    ),
+  ],
+  child: MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(textScale)),
+      child: child!,
+    ),
+    home: const AgentsScreen(),
+  ),
+);
 
 void main() {
+  testWidgets('gateway picker activates the selected gateway', (tester) async {
+    final channel = FakeHermesChannel.disconnected();
+    addTearDown(channel.dispose);
+    final directory = directoryFor(
+      configs: const [
+        HermesEndpointConfig(id: 'alpha', label: 'Alpha', baseUrl: 'https://a'),
+        HermesEndpointConfig(id: 'beta', label: 'Beta', baseUrl: 'https://b'),
+      ],
+      loader: FakeGatewaySummaryLoader({
+        'alpha': gatewaySummary(['default']),
+        'beta': gatewaySummary(['default']),
+      }),
+      activeChannel: channel,
+    );
+    await directory.refresh();
+
+    await tester.pumpWidget(_agentsTestApp(channel, directory: directory));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('agents-gateway-picker')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Beta').last);
+    await tester.pumpAndSettle();
+
+    expect(channel.connectCalls.single.baseUrl, 'https://b');
+    expect(directory.activeContactId?.gatewayId, 'beta');
+  });
+
   testWidgets('write access opens the create-agent editor', (tester) async {
     final channel = FakeHermesChannel(
       capabilities: _profileCapabilities(const [

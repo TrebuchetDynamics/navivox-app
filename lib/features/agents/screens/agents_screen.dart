@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/models/hermes_capabilities.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../hermes_chat/gateways/hermes_gateway_directory.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
 import '../providers/profile_selection_provider.dart';
 import '../widgets/profile_editor_sheet.dart';
@@ -19,18 +20,25 @@ class AgentsScreen extends ConsumerStatefulWidget {
 
 class _AgentsScreenState extends ConsumerState<AgentsScreen> {
   String? _actionError;
+  String? _switchingGatewayId;
   String? _switchingProfileId;
 
   @override
   Widget build(BuildContext context) {
     final channel = ref.watch(hermesChannelProvider);
+    final directory = ref.watch(hermesGatewayDirectoryProvider);
     final strings = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.agentsTitle)),
       body: AnimatedBuilder(
-        animation: channel,
-        builder: (context, _) => _buildBody(context, channel, strings),
+        animation: Listenable.merge([channel, directory]),
+        builder: (context, _) => Column(
+          children: [
+            if (directory.gateways.isNotEmpty) _buildGatewayPicker(directory),
+            Expanded(child: _buildBody(context, channel, strings)),
+          ],
+        ),
       ),
     );
   }
@@ -181,6 +189,68 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
           ],
       ],
     );
+  }
+
+  Widget _buildGatewayPicker(HermesGatewayDirectory directory) {
+    final selectedId = directory.activeContactId?.gatewayId;
+    final selected = directory.gateways.any((item) => item.id == selectedId)
+        ? selectedId
+        : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            key: const ValueKey('agents-gateway-picker'),
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('agents-gateway-picker-$selected'),
+              initialValue: selected,
+              decoration: const InputDecoration(
+                labelText: 'Gateway',
+                border: OutlineInputBorder(),
+              ),
+              hint: const Text('Select gateway'),
+              items: [
+                for (final gateway in directory.gateways)
+                  DropdownMenuItem(
+                    value: gateway.id,
+                    child: Text(gateway.label),
+                  ),
+              ],
+              onChanged: _switchingGatewayId == null
+                  ? (gatewayId) {
+                      if (gatewayId != null && gatewayId != selected) {
+                        unawaited(_selectGateway(directory, gatewayId));
+                      }
+                    }
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text('Add and edit profiles on the selected gateway.'),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectGateway(
+    HermesGatewayDirectory directory,
+    String gatewayId,
+  ) async {
+    setState(() {
+      _switchingGatewayId = gatewayId;
+      _actionError = null;
+    });
+    try {
+      await directory.activateGateway(gatewayId);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _actionError = 'Could not connect to this gateway.');
+      }
+    } finally {
+      if (mounted) setState(() => _switchingGatewayId = null);
+    }
   }
 
   Future<void> _openEditor({
