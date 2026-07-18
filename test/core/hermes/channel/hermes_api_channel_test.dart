@@ -181,10 +181,10 @@ const _healthCapabilitiesFixture = '''
   "object": "hermes.api_server.capabilities",
   "platform": "hermes-agent",
   "model": "hermes-agent",
-  "auth": {"type": "bearer", "required": true},
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["gateway:read"]},
   "features": {},
   "endpoints": {
-    "health_detailed": {"method": "GET", "path": "/health/detailed"}
+    "health_detailed": {"method": "GET", "path": "/health/detailed", "required_scopes": ["gateway:read"]}
   }
 }
 ''';

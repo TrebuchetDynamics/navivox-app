@@ -505,9 +505,17 @@ void main() {
   test('surface readiness recognizes advertised detailed gateway health', () {
     final capabilities = HermesCapabilityDocument.fromJson({
       'schema_version': 1,
-      'auth': {'type': 'bearer', 'required': true},
+      'auth': {
+        'type': 'bearer',
+        'required': true,
+        'granted_scopes': ['gateway:read'],
+      },
       'endpoints': {
-        'health_detailed': {'method': 'GET', 'path': '/health/detailed'},
+        'health_detailed': {
+          'method': 'GET',
+          'path': '/health/detailed',
+          'required_scopes': ['gateway:read'],
+        },
       },
     });
 

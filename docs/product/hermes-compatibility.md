@@ -115,7 +115,7 @@ an advertised catalog contract.
 
 Hermes Wing may use these only when advertised:
 
-- `GET /health/detailed`
+- `GET /health/detailed` with declared and granted `gateway:read`
 - `GET /v1/models`
 - `GET /v1/skills`
 - `GET /v1/toolsets`

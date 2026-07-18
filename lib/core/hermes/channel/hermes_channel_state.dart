@@ -77,6 +77,13 @@ class HermesChannelState {
   /// Scope-gating visibility hooks. These mirror the milestone-1 pattern
   /// (`supportsSchema` + advertised endpoint + granted scope) so surfaces can
   /// hide read/write affordances the connected token cannot use.
+  bool get canReadDetailedHealth => _allowsEndpoint(
+    'health_detailed',
+    'GET',
+    '/health/detailed',
+    'gateway:read',
+  );
+
   bool get canReadSkills => _advertisesEndpoint('skills', 'GET', '/v1/skills');
 
   bool get canReadToolsets =>

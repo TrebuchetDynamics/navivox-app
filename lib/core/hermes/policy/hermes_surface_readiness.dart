@@ -38,11 +38,15 @@ List<HermesSurfaceReadiness> hermesSurfaceReadiness(
     'POST',
     '/api/sessions',
   );
-  final advertisesDetailedHealth = capabilities.advertisesEndpoint(
-    'health_detailed',
-    'GET',
-    '/health/detailed',
-  );
+  final advertisesDetailedHealth =
+      capabilities.supportsSchema &&
+      capabilities.auth.allows('gateway:read') &&
+      capabilities.advertisesScopedEndpoint(
+        'health_detailed',
+        'GET',
+        '/health/detailed',
+        'gateway:read',
+      );
   final advertisesJobsList = capabilities.advertisesEndpoint(
     'jobs',
     'GET',

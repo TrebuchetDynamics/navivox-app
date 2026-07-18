@@ -29,11 +29,14 @@ extension _ConnectionExtension on HermesApiChannel {
       final capabilities = await client.capabilities();
       final optionalResourceErrors = <HermesOptionalResource, String>{};
       final detailedHealthFuture = _loadOptional<HermesHealthStatus>(
-        advertised: capabilities.advertisesEndpoint(
-          'health_detailed',
-          'GET',
-          '/health/detailed',
-        ),
+        advertised:
+            capabilities.auth.allows('gateway:read') &&
+            capabilities.advertisesScopedEndpoint(
+              'health_detailed',
+              'GET',
+              '/health/detailed',
+              'gateway:read',
+            ),
         resource: HermesOptionalResource.detailedHealth,
         load: client.healthDetailed,
         errors: optionalResourceErrors,
@@ -152,14 +155,7 @@ extension _ConnectionExtension on HermesApiChannel {
 
   Future<void> _reloadDetailedHealth() async {
     final client = _requireConnectedClient();
-    final capabilities = _state.capabilities;
-    if (capabilities == null ||
-        !capabilities.supportsSchema ||
-        !capabilities.advertisesEndpoint(
-          'health_detailed',
-          'GET',
-          '/health/detailed',
-        )) {
+    if (!_state.canReadDetailedHealth) {
       throw StateError('Hermes did not advertise detailed gateway health.');
     }
     final generation = _connectionGeneration;

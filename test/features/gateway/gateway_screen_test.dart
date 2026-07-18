@@ -13,15 +13,25 @@ import 'package:wing/l10n/app_localizations.dart';
 import '../hermes_chat/support/fake_hermes_channel.dart';
 import '../hermes_chat/support/fake_hermes_gateway_directory.dart';
 
-HermesCapabilityDocument _capabilities({bool detailedHealth = true}) =>
-    HermesCapabilityDocument.fromJson({
-      'schema_version': 1,
-      'auth': {'type': 'bearer', 'required': true},
-      'endpoints': {
-        if (detailedHealth)
-          'health_detailed': {'method': 'GET', 'path': '/health/detailed'},
+HermesCapabilityDocument _capabilities({
+  bool detailedHealth = true,
+  bool grantGatewayRead = true,
+}) => HermesCapabilityDocument.fromJson({
+  'schema_version': 1,
+  'auth': {
+    'type': 'bearer',
+    'required': true,
+    'granted_scopes': [if (grantGatewayRead) 'gateway:read'],
+  },
+  'endpoints': {
+    if (detailedHealth)
+      'health_detailed': {
+        'method': 'GET',
+        'path': '/health/detailed',
+        'required_scopes': ['gateway:read'],
       },
-    });
+  },
+});
 
 const _initialHealth = HermesHealthStatus(
   status: 'ok',
@@ -124,6 +134,27 @@ void main() {
     );
     expect(find.text('0.18.0'), findsNothing);
     expect(find.byKey(const ValueKey('gateway-refresh-button')), findsNothing);
+  });
+
+  testWidgets('detailed health requires the granted gateway read scope', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: _capabilities(grantGatewayRead: false),
+      detailedHealth: _initialHealth,
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('This gateway did not advertise detailed health status.'),
+      findsOneWidget,
+    );
+    expect(find.text('Healthy'), findsNothing);
+    expect(find.byKey(const ValueKey('gateway-refresh-button')), findsNothing);
+    expect(channel.loadDetailedHealthCalls, 0);
   });
 
   testWidgets('health load failure does not expose raw errors or stale data', (

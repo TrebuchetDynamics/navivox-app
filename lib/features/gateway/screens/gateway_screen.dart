@@ -329,16 +329,9 @@ class _CenteredMessage extends StatelessWidget {
   );
 }
 
-bool _detailedHealthAdvertised(HermesChannelState state) {
-  final capabilities = state.capabilities;
-  return state.status == HermesConnectionStatus.connected &&
-      capabilities?.supportsSchema == true &&
-      capabilities!.advertisesEndpoint(
-        'health_detailed',
-        'GET',
-        '/health/detailed',
-      );
-}
+bool _detailedHealthAdvertised(HermesChannelState state) =>
+    state.status == HermesConnectionStatus.connected &&
+    state.canReadDetailedHealth;
 
 String _safePreview(String value, int maxLength) {
   final normalized = value
