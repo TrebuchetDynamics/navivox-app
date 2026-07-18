@@ -65,6 +65,11 @@ class HermesVoiceInputController extends ChangeNotifier {
 
   Future<void> captureDraft() => _capture(autoSend: false);
 
+  void speakNextReply() {
+    _baselineAssistantReplies();
+    _speakNextReply = true;
+  }
+
   Future<void> captureAndSend() async {
     _baselineAssistantReplies();
     _speakNextReply = true;

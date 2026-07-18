@@ -118,6 +118,43 @@ class PluginFlutterTtsEngine implements FlutterTtsEngine {
   }
 }
 
+class FallbackTextToSpeechService implements TextToSpeechService {
+  FallbackTextToSpeechService(this._primary, this._fallback);
+
+  final TextToSpeechService _primary;
+  final TextToSpeechService _fallback;
+
+  @override
+  Future<void> speak(String text) async {
+    try {
+      await _primary.speak(text);
+    } catch (_) {
+      try {
+        await _primary.stop();
+      } catch (_) {}
+      await _fallback.speak(text);
+    }
+  }
+
+  @override
+  Future<void> stop() async {
+    try {
+      await _primary.stop();
+    } finally {
+      await _fallback.stop();
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    try {
+      await _primary.dispose();
+    } finally {
+      await _fallback.dispose();
+    }
+  }
+}
+
 class FlutterTextToSpeechService implements TextToSpeechService {
   FlutterTextToSpeechService({
     FlutterTtsEngine? engine,

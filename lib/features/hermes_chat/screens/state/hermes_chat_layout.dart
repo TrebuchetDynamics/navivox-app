@@ -689,7 +689,9 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
                   maxLines: 4,
                   textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
-                    labelText: canSendTurns
+                    labelText: _voiceInputController.speaking
+                        ? 'Speaking reply…'
+                        : canSendTurns
                         ? 'Message Hermes…'
                         : 'Chat unavailable',
                     floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -760,7 +762,9 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
             minLines: 1,
             maxLines: 4,
             decoration: InputDecoration(
-              hintText: canSendTurns
+              hintText: _voiceInputController.speaking
+                  ? 'Speaking reply…'
+                  : canSendTurns
                   ? 'Message Hermes…'
                   : 'Chat transport unavailable',
               border: InputBorder.none,
@@ -1008,6 +1012,14 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
   }
 
   Widget _buildMicButton(bool canSendTurns) {
+    if (_voiceInputController.speaking) {
+      return IconButton.filledTonal(
+        key: const ValueKey('hermes-tts-stop-button'),
+        tooltip: 'Stop speaking',
+        icon: const Icon(Icons.volume_up_rounded),
+        onPressed: _voiceInputController.pause,
+      );
+    }
     final voiceEnabled = ref.watch(
       wingVoiceSettingsProvider.select(
         (settings) => settings.continuousVoiceEnabled,

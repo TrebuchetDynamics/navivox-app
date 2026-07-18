@@ -274,6 +274,9 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
     String? attachmentName,
   }) {
     final sessionId = requeueSessionId ?? channel.state.activeSessionId;
+    if (ref.read(wingVoiceSettingsProvider).speakRepliesEnabled) {
+      _voiceInputController.speakNextReply();
+    }
     unawaited(
       channel
           .sendText(

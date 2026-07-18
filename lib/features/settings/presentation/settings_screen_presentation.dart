@@ -21,7 +21,7 @@ class SettingsScreenPresentation {
   String get speakRepliesTitle => 'Speak replies aloud';
 
   String get speakRepliesSubtitle =>
-      'Remember the foreground chat loop preference';
+      'Read Hermes replies aloud while the chat is open';
 
   String get commandWordTitle => 'Command word';
 }

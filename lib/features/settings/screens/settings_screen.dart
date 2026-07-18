@@ -82,12 +82,16 @@ class SettingsScreen extends ConsumerWidget {
                   SwitchListTile(
                     key: const ValueKey('voice-continuous-enabled'),
                     title: Text(_settingsPresentation.continuousVoiceTitle),
+                    subtitle: Text(
+                      _settingsPresentation.continuousVoiceSubtitle,
+                    ),
                     value: settings.continuousVoiceEnabled,
                     onChanged: controller.setContinuousVoiceEnabled,
                   ),
                   SwitchListTile(
                     key: const ValueKey('voice-speak-replies-enabled'),
                     title: Text(_settingsPresentation.speakRepliesTitle),
+                    subtitle: Text(_settingsPresentation.speakRepliesSubtitle),
                     value: settings.speakRepliesEnabled,
                     onChanged: controller.setSpeakRepliesEnabled,
                   ),
