@@ -29,5 +29,7 @@ name: providers_models_unsupported_qa
 - assertVisible: "(?s).*Runtime models.*"
 - assertVisible: "(?s).*Read-only models advertised by this gateway.*"
 - assertNotVisible: "(?s).*Manage credential.*"
-- assertNotVisible: "(?s).*Choose model.*"
+# Match the mutation button label exactly; the read-only explanatory copy says
+# "choose models" and must not be mistaken for an enabled control.
+- assertNotVisible: "^Choose model$"
 - takeScreenshot: providers_models_fail_closed
