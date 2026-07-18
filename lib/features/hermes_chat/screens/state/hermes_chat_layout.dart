@@ -719,6 +719,24 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         break;
       case 'settings':
         context.go(AppRoutes.settings);
+      case 'usage':
+        final turns = channel.state.activeMessages;
+        final usageIndex = turns.lastIndexWhere((turn) => turn.usage != null);
+        final usage = usageIndex < 0 ? null : turns[usageIndex].usage;
+        final strings = AppLocalizations.of(context);
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              usage == null
+                  ? strings.noRunTokenUsageMessage
+                  : strings.runTokenUsageSemantics(
+                      usage.inputTokens,
+                      usage.outputTokens,
+                      usage.totalTokens,
+                    ),
+            ),
+          ),
+        );
       default:
         return false;
     }
@@ -761,6 +779,12 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       command: '/settings',
       description: strings.localCommandSettingsDescription,
       icon: Icons.settings_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'usage',
+      command: '/usage',
+      description: strings.localCommandUsageDescription,
+      icon: Icons.data_usage_outlined,
     ),
   ];
 

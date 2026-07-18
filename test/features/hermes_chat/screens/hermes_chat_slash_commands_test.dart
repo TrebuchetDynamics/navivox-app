@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wing/core/hermes/models/hermes_run.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:wing/l10n/app_localizations.dart';
@@ -96,6 +97,64 @@ void main() {
       find.byKey(const ValueKey('hermes-composer-field')),
     );
     expect(field.controller?.text, isEmpty);
+  });
+
+  testWidgets('local usage command reports the latest server token counts', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Measure it.');
+    channel.completeStreamingTurn(
+      text: 'Measured.',
+      usage: const HermesRunUsage(
+        inputTokens: 12,
+        outputTokens: 7,
+        totalTokens: 19,
+      ),
+    );
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/usage',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump();
+
+    expect(
+      find.text('Token usage: 12 input, 7 output, 19 total'),
+      findsOneWidget,
+    );
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/usage'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('local usage command explains when metadata is unavailable', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/usage',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(
+      find.text('No server-reported token usage is available yet.'),
+      findsOneWidget,
+    );
+    expect(channel.state.activeMessages, isEmpty);
   });
 
   testWidgets('local commands cannot bypass an active run', (tester) async {

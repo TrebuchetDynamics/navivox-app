@@ -1210,6 +1210,18 @@ abstract class AppLocalizations {
   /// **'Open Wing settings.'**
   String get localCommandSettingsDescription;
 
+  /// No description provided for @localCommandUsageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show token usage for the latest reply.'**
+  String get localCommandUsageDescription;
+
+  /// No description provided for @noRunTokenUsageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No server-reported token usage is available yet.'**
+  String get noRunTokenUsageMessage;
+
   /// No description provided for @runTokenUsage.
   ///
   /// In en, this message translates to:

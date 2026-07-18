@@ -248,6 +248,8 @@
   "localCommandSessionsDescription": "Open session history.",
   "localCommandClearDescription": "Clear the current draft.",
   "localCommandSettingsDescription": "Open Wing settings.",
+  "localCommandUsageDescription": "Show token usage for the latest reply.",
+  "noRunTokenUsageMessage": "No server-reported token usage is available yet.",
   "runTokenUsage": "{inputTokens} in · {outputTokens} out · {totalTokens} total tokens",
   "@runTokenUsage": {
     "placeholders": {

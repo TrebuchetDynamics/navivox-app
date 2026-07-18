@@ -640,6 +640,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localCommandSettingsDescription => 'Open Wing settings.';
 
   @override
+  String get localCommandUsageDescription =>
+      'Show token usage for the latest reply.';
+
+  @override
+  String get noRunTokenUsageMessage =>
+      'No server-reported token usage is available yet.';
+
+  @override
   String runTokenUsage(int inputTokens, int outputTokens, int totalTokens) {
     return '$inputTokens in · $outputTokens out · $totalTokens total tokens';
   }

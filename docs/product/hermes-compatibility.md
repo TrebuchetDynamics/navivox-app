@@ -102,8 +102,8 @@ A usable endpoint must also advertise at least one supported chat transport:
 - `POST /api/sessions/{session_id}/chat/stream`, or
 - `POST /v1/runs` plus `GET /v1/runs/{run_id}/events`
 
-Wing owns only local navigation/draft commands (`/new`, `/sessions`, `/clear`,
-and `/settings`). They execute as client actions without sending slash text as an agent turn;
+Wing owns only local navigation/draft/status commands (`/new`, `/sessions`, `/clear`,
+`/settings`, and `/usage`). They execute as client actions without sending slash text as an agent turn;
 `/new` uses the already-advertised session-create contract. They are disabled
 while a run is active. Every unknown slash command remains an ordinary server-owned message;
 Wing does not guess Hermes command semantics or claim runtime discovery without
