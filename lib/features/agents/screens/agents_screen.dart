@@ -126,7 +126,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                 scope: 'profiles:write',
                 name: 'profile_update',
                 method: 'PATCH',
-                path: '/api/profiles/{profile_id}',
+                path: '/api/profiles/{name}',
               ),
               canDelete:
                   profiles[index].id != 'default' &&
@@ -135,7 +135,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                     scope: 'profiles:write',
                     name: 'profile_delete',
                     method: 'DELETE',
-                    path: '/api/profiles/{profile_id}',
+                    path: '/api/profiles/{name}',
                   ),
               strings: strings,
               switching: _switchingProfileId == profiles[index].id,
@@ -152,14 +152,14 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                       scope: 'profiles:read',
                       name: 'profile_soul',
                       method: 'GET',
-                      path: '/api/profiles/{profile_id}/soul',
+                      path: '/api/profiles/{name}/soul',
                     ) &&
                     _canUseEndpoint(
                       capabilities,
                       scope: 'profiles:write',
                       name: 'profile_soul_update',
                       method: 'PUT',
-                      path: '/api/profiles/{profile_id}/soul',
+                      path: '/api/profiles/{name}/soul',
                     ),
                 canDelete:
                     profiles[index].id != 'default' &&
@@ -168,7 +168,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
                       scope: 'profiles:write',
                       name: 'profile_delete',
                       method: 'DELETE',
-                      path: '/api/profiles/{profile_id}',
+                      path: '/api/profiles/{name}',
                     ),
               ),
               onDelete: () => _openEditor(

@@ -46,10 +46,10 @@ const _profileCapabilitiesFixture = '''
     "session_chat_stream": {"method": "POST", "path": "/api/sessions/{session_id}/chat/stream"},
     "profiles": {"method": "GET", "path": "/api/profiles", "required_scopes": ["profiles:read"]},
     "profile_create": {"method": "POST", "path": "/api/profiles", "required_scopes": ["profiles:write"]},
-    "profile_update": {"method": "PATCH", "path": "/api/profiles/{profile_id}", "required_scopes": ["profiles:write"]},
-    "profile_delete": {"method": "DELETE", "path": "/api/profiles/{profile_id}", "required_scopes": ["profiles:write"]},
-    "profile_soul": {"method": "GET", "path": "/api/profiles/{profile_id}/soul", "profile_scoped": true, "required_scopes": ["profiles:read"]},
-    "profile_soul_update": {"method": "PUT", "path": "/api/profiles/{profile_id}/soul", "profile_scoped": true, "required_scopes": ["profiles:write"]}
+    "profile_update": {"method": "PATCH", "path": "/api/profiles/{name}", "required_scopes": ["profiles:write"]},
+    "profile_delete": {"method": "DELETE", "path": "/api/profiles/{name}", "required_scopes": ["profiles:write"]},
+    "profile_soul": {"method": "GET", "path": "/api/profiles/{name}/soul", "profile_scoped": false, "required_scopes": ["profiles:read"]},
+    "profile_soul_update": {"method": "PUT", "path": "/api/profiles/{name}/soul", "profile_scoped": false, "required_scopes": ["profiles:write"]}
   }
 }
 ''';

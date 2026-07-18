@@ -142,7 +142,7 @@ extension _ProfilesExtension on HermesApiChannel {
     _requireProfileEndpoint(
       'profile_update',
       'PATCH',
-      '/api/profiles/{profile_id}',
+      '/api/profiles/{name}',
       'rename profiles',
     );
     _requireRevision(revision);
@@ -164,7 +164,7 @@ extension _ProfilesExtension on HermesApiChannel {
     _requireProfileEndpoint(
       'profile_delete',
       'DELETE',
-      '/api/profiles/{profile_id}',
+      '/api/profiles/{name}',
       'delete profiles',
     );
     _requireRevision(revision);
@@ -179,7 +179,7 @@ extension _ProfilesExtension on HermesApiChannel {
     _requireProfileEndpoint(
       'profile_soul',
       'GET',
-      '/api/profiles/{profile_id}/soul',
+      '/api/profiles/{name}/soul',
       'read a persona',
     );
     _requireProfileContext('read a persona');
@@ -195,7 +195,7 @@ extension _ProfilesExtension on HermesApiChannel {
     _requireProfileEndpoint(
       'profile_soul_update',
       'PUT',
-      '/api/profiles/{profile_id}/soul',
+      '/api/profiles/{name}/soul',
       'edit a persona',
     );
     _requireProfileContext('edit a persona');

@@ -37,13 +37,13 @@ HermesCapabilityDocument _profileCapabilities(
     },
     'profile_update': {
       'method': 'PATCH',
-      'path': '/api/profiles/{profile_id}',
+      'path': '/api/profiles/{name}',
       'required_scopes': ['profiles:write'],
     },
     if (advertisesDelete)
       'profile_delete': {
         'method': 'DELETE',
-        'path': '/api/profiles/{profile_id}',
+        'path': '/api/profiles/{name}',
         'required_scopes': ['profiles:write'],
       },
   },
@@ -134,6 +134,26 @@ void main() {
     expect(find.text('New Agent'), findsNothing);
     expect(find.text('Delete agent'), findsNothing);
     expect(find.text('Edit'), findsNothing);
+  });
+
+  testWidgets('Agent name placeholders enable profile editing', (tester) async {
+    final channel = FakeHermesChannel(
+      capabilities: _profileCapabilities(const [
+        'profiles:read',
+        'profiles:write',
+      ]),
+      profiles: const [
+        HermesProfile(id: 'coder', displayName: 'Coding Agent', revision: 'c'),
+      ],
+      selectedProfileId: 'coder',
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_agentsTestApp(channel));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(OutlinedButton, 'Edit'), findsOneWidget);
+    expect(find.text('Delete agent'), findsOneWidget);
   });
 
   testWidgets('edit sheet respects a missing profile delete endpoint', (
