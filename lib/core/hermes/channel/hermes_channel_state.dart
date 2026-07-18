@@ -77,6 +77,34 @@ class HermesChannelState {
   /// Scope-gating visibility hooks. These mirror the milestone-1 pattern
   /// (`supportsSchema` + advertised endpoint + granted scope) so surfaces can
   /// hide read/write affordances the connected token cannot use.
+  bool get canCreateSessions =>
+      capabilities == null ||
+      _authorizesEndpoint('session_create', 'POST', '/api/sessions');
+
+  bool get canUpdateSessions =>
+      capabilities == null ||
+      _authorizesEndpoint(
+        'session_update',
+        'PATCH',
+        '/api/sessions/{session_id}',
+      );
+
+  bool get canDeleteSessions =>
+      capabilities == null ||
+      _authorizesEndpoint(
+        'session_delete',
+        'DELETE',
+        '/api/sessions/{session_id}',
+      );
+
+  bool get canForkSessions =>
+      capabilities == null ||
+      _authorizesEndpoint(
+        'session_fork',
+        'POST',
+        '/api/sessions/{session_id}/fork',
+      );
+
   bool get canReadDetailedHealth => _allowsEndpoint(
     'health_detailed',
     'GET',
@@ -127,6 +155,18 @@ class HermesChannelState {
     return document != null &&
         document.supportsSchema &&
         document.advertisesEndpoint(name, method, path);
+  }
+
+  bool _authorizesEndpoint(String name, String method, String path) {
+    final document = capabilities;
+    if (document == null ||
+        !document.supportsSchema ||
+        !document.advertisesEndpoint(name, method, path)) {
+      return false;
+    }
+    final endpoint = document.endpoints[name];
+    return endpoint != null &&
+        endpoint.requiredScopes.every(document.auth.allows);
   }
 
   bool _allowsEndpoint(String name, String method, String path, String scope) {

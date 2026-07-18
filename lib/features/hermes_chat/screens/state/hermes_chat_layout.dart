@@ -898,12 +898,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
     AppLocalizations strings,
     HermesChannelState state,
   ) => [
-    _LocalSlashCommand(
-      id: 'new',
-      command: '/new',
-      description: strings.localCommandNewDescription,
-      icon: Icons.add_comment_outlined,
-    ),
+    if (state.canCreateSessions)
+      _LocalSlashCommand(
+        id: 'new',
+        command: '/new',
+        description: strings.localCommandNewDescription,
+        icon: Icons.add_comment_outlined,
+      ),
     _LocalSlashCommand(
       id: 'sessions',
       command: '/sessions',

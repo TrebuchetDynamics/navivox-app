@@ -288,6 +288,68 @@ void _hermesApiChannelSessionMutationTests() {
     },
   );
 
+  test('mutable session calls require every declared write scope', () async {
+    const capabilities = '''
+{
+  "object": "hermes.api_server.capabilities",
+  "platform": "hermes-agent",
+  "model": "hermes-agent",
+  "schema_version": 1,
+  "auth": {"type": "bearer", "required": true, "granted_scopes": ["sessions:read"]},
+  "features": {},
+  "endpoints": {
+    "session_create": {"method": "POST", "path": "/api/sessions", "required_scopes": ["sessions:write"]},
+    "session_update": {"method": "PATCH", "path": "/api/sessions/{session_id}", "required_scopes": ["sessions:write"]},
+    "session_delete": {"method": "DELETE", "path": "/api/sessions/{session_id}", "required_scopes": ["sessions:write"]},
+    "session_fork": {"method": "POST", "path": "/api/sessions/{session_id}/fork", "required_scopes": ["sessions:write"]}
+  }
+}
+''';
+    var posted = false;
+    var patched = false;
+    var deleted = false;
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => capabilities,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          posted = true;
+          return '{}';
+        },
+        patch: (uri, headers, body) async {
+          patched = true;
+          return '{}';
+        },
+        delete: (uri, headers) async {
+          deleted = true;
+          return '{}';
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await expectLater(channel.createSession(), throwsStateError);
+    await expectLater(
+      channel.renameSession(sessionId: 'sess_1', title: 'Renamed'),
+      throwsStateError,
+    );
+    await expectLater(channel.deleteSession('sess_1'), throwsStateError);
+    await expectLater(channel.forkSession('sess_1'), throwsStateError);
+
+    expect(posted, isFalse);
+    expect(patched, isFalse);
+    expect(deleted, isFalse);
+  });
+
   test('mutable session calls reject unknown sessions before HTTP', () async {
     var posted = false;
     var patched = false;

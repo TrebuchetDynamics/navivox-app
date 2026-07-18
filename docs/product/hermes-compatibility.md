@@ -114,7 +114,10 @@ an advertised catalog contract.
 
 ## Capability-gated endpoints
 
-Hermes Wing may use these only when advertised:
+Hermes Wing may use these only when advertised. Whenever an endpoint declares
+required scopes, every declared scope must also be granted before controls
+appear or network I/O begins; this includes chat/run transport and session
+create/rename/fork/delete operations.
 
 - `GET /health/detailed` with declared and granted `gateway:read`
 - `GET /v1/models`

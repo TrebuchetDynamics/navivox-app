@@ -15,6 +15,7 @@ Ordinary Hermes requests have a bounded timeout, and an SSE stream that stays op
 
 ## Consequences
 
+- Every required scope declared by a chat, run, status, approval, stop, or session-mutation endpoint must be granted before Wing enables the operation or performs network I/O; legacy endpoint declarations with no scope metadata retain their existing compatibility behavior.
 - `stopActiveTurn` should stop the server run when `/v1/runs/{run_id}/stop` is available and always cancel local stream state.
 - Approval UI must be tied to the active run and tolerate the run disappearing before an answer is sent.
 - Bounded `reasoning.available` text is treated as transcript activity, survives authoritative history reconciliation, and is exported without exposing unknown event payloads.

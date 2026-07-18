@@ -187,9 +187,17 @@ extension _SessionsExtension on HermesApiChannel {
     String action,
   ) {
     final capabilities = _state.capabilities;
-    if (capabilities != null &&
-        !capabilities.advertisesEndpoint(name, method, path)) {
-      throw StateError('Hermes did not advertise support to $action.');
+    if (capabilities == null) return;
+    final endpoint = capabilities.endpoints[name];
+    if (!capabilities.supportsSchema ||
+        !capabilities.advertisesEndpoint(name, method, path) ||
+        endpoint == null ||
+        endpoint.requiredScopes.any(
+          (scope) => !capabilities.auth.allows(scope),
+        )) {
+      throw StateError(
+        'Hermes did not advertise authorized support to $action.',
+      );
     }
   }
 

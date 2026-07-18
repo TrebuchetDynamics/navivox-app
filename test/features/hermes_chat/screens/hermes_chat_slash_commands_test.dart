@@ -103,6 +103,49 @@ void main() {
     expect(field.controller?.text, isEmpty);
   });
 
+  testWidgets('new-session command requires every declared write scope', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': ['chat:write'],
+        },
+        'features': {'session_chat_streaming': true},
+        'endpoints': {
+          'session_chat_stream': {
+            'method': 'POST',
+            'path': '/api/sessions/{session_id}/chat/stream',
+            'required_scopes': ['chat:write'],
+          },
+          'session_create': {
+            'method': 'POST',
+            'path': '/api/sessions',
+            'required_scopes': ['sessions:write'],
+          },
+        },
+      }),
+    );
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/new',
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('hermes-local-command-new')),
+      findsNothing,
+    );
+    expect(channel.createSessionCalls, isEmpty);
+  });
+
   testWidgets('slash suggestions remain usable at 200% text scale', (
     tester,
   ) async {

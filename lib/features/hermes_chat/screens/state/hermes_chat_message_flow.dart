@@ -197,13 +197,7 @@ extension _HermesChatScreenMessageFlow on _HermesChatScreenState {
     return HermesTransportPolicy(capabilities).supportsRunApprovalResponse;
   }
 
-  bool _canCreateSession(HermesChannelState state) =>
-      state.capabilities?.advertisesEndpoint(
-        'session_create',
-        'POST',
-        '/api/sessions',
-      ) ??
-      false;
+  bool _canCreateSession(HermesChannelState state) => state.canCreateSessions;
 
   void _sendQueuedFollowUpIfIdle(HermesChannel channel) {
     if (!_canSendQueuedFollowUp(channel.state)) return;

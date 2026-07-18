@@ -33,29 +33,11 @@ class _HermesSessionRailState extends State<_HermesSessionRail> {
     super.dispose();
   }
 
-  bool get _canRename =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_update',
-        'PATCH',
-        '/api/sessions/{session_id}',
-      ) ??
-      false;
+  bool get _canRename => widget.state.canUpdateSessions;
 
-  bool get _canDelete =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_delete',
-        'DELETE',
-        '/api/sessions/{session_id}',
-      ) ??
-      false;
+  bool get _canDelete => widget.state.canDeleteSessions;
 
-  bool get _canFork =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_fork',
-        'POST',
-        '/api/sessions/{session_id}/fork',
-      ) ??
-      false;
+  bool get _canFork => widget.state.canForkSessions;
 
   @override
   Widget build(BuildContext context) {
@@ -548,29 +530,11 @@ class _HermesSessionsPanelState extends State<_HermesSessionsPanel> {
     super.dispose();
   }
 
-  bool get _canRename =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_update',
-        'PATCH',
-        '/api/sessions/{session_id}',
-      ) ??
-      false;
+  bool get _canRename => widget.state.canUpdateSessions;
 
-  bool get _canDelete =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_delete',
-        'DELETE',
-        '/api/sessions/{session_id}',
-      ) ??
-      false;
+  bool get _canDelete => widget.state.canDeleteSessions;
 
-  bool get _canFork =>
-      widget.state.capabilities?.advertisesEndpoint(
-        'session_fork',
-        'POST',
-        '/api/sessions/{session_id}/fork',
-      ) ??
-      false;
+  bool get _canFork => widget.state.canForkSessions;
 
   @override
   Widget build(BuildContext context) {
