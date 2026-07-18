@@ -719,6 +719,18 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         break;
       case 'settings':
         context.go(AppRoutes.settings);
+      case 'tools':
+        context.go(AppRoutes.tools);
+      case 'gateway':
+        context.go(AppRoutes.gateway);
+      case 'agents':
+        context.go(AppRoutes.agents);
+      case 'providers':
+        context.go(AppRoutes.providers);
+      case 'schedules':
+        context.go(AppRoutes.schedules);
+      case 'help':
+        unawaited(_showLocalSlashCommandHelp(context));
       case 'usage':
         final turns = channel.state.activeMessages;
         final usageIndex = turns.lastIndexWhere((turn) => turn.usage != null);
@@ -741,6 +753,42 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         return false;
     }
     return true;
+  }
+
+  Future<void> _showLocalSlashCommandHelp(BuildContext context) async {
+    final strings = AppLocalizations.of(context);
+    final commands = _localSlashCommands(strings);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          key: const ValueKey('hermes-local-command-help'),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                header: true,
+                child: Text(
+                  strings.localCommandsHelpTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(strings.localCommandsHelpBody),
+              const SizedBox(height: 12),
+              for (final command in commands)
+                ListTile(
+                  leading: Icon(command.icon),
+                  title: Text(command.command),
+                  subtitle: Text(command.description),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   bool _runExactLocalSlashCommand(String text, HermesChannel channel) {
@@ -785,6 +833,42 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       command: '/usage',
       description: strings.localCommandUsageDescription,
       icon: Icons.data_usage_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'help',
+      command: '/help',
+      description: strings.localCommandHelpDescription,
+      icon: Icons.help_outline,
+    ),
+    _LocalSlashCommand(
+      id: 'tools',
+      command: '/tools',
+      description: strings.localCommandToolsDescription,
+      icon: Icons.build_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'gateway',
+      command: '/gateway',
+      description: strings.localCommandGatewayDescription,
+      icon: Icons.dns_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'agents',
+      command: '/agents',
+      description: strings.localCommandAgentsDescription,
+      icon: Icons.support_agent_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'providers',
+      command: '/providers',
+      description: strings.localCommandProvidersDescription,
+      icon: Icons.hub_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'schedules',
+      command: '/schedules',
+      description: strings.localCommandSchedulesDescription,
+      icon: Icons.schedule_outlined,
     ),
   ];
 

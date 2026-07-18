@@ -32,6 +32,14 @@ name: chat_ux_qa
 - assertVisible: "(?s)^/settings.*"
 - eraseText: 20
 
+# Open the local help catalog; these commands must never reach Hermes Agent.
+- inputText: "/help"
+- tapOn: "(?s).*Send.*"
+- assertVisible: "(?s).*These commands run on this device and are never sent to Hermes Agent.*"
+- assertVisible: "(?s)^/new.*"
+- hideKeyboard
+- pressKey: back
+
 # Exercise multiline draft layout without mutating the conversation.
 - tapOn: "(?s).*Message Hermes….*"
 - inputText: "This is a deliberately long mobile draft that verifies wrapping and keeps every composer action reachable"

@@ -628,6 +628,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localCommandsTitle => 'Wing commands';
 
   @override
+  String get localCommandsHelpTitle => 'Wing commands';
+
+  @override
+  String get localCommandsHelpBody =>
+      'These commands run on this device and are never sent to Hermes Agent.';
+
+  @override
+  String get localCommandHelpDescription => 'Show Wing-owned commands.';
+
+  @override
+  String get localCommandToolsDescription =>
+      'Open installed skills and toolsets.';
+
+  @override
+  String get localCommandGatewayDescription => 'Open gateway status.';
+
+  @override
+  String get localCommandAgentsDescription => 'Open gateway-scoped agents.';
+
+  @override
+  String get localCommandProvidersDescription => 'Open providers and models.';
+
+  @override
+  String get localCommandSchedulesDescription => 'Open gateway schedules.';
+
+  @override
   String get localCommandNewDescription => 'Start a new Hermes session.';
 
   @override

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:wing/core/hermes/models/hermes_run.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:wing/l10n/app_localizations.dart';
+import 'package:wing/router/routes/app_routes.dart';
 
 import '../support/fake_hermes_channel.dart';
 
@@ -23,6 +25,50 @@ Widget _testApp(FakeHermesChannel channel, {double textScale = 1}) =>
         home: const HermesChatScreen(),
       ),
     );
+
+Widget _routerTestApp(FakeHermesChannel channel) {
+  final router = GoRouter(
+    initialLocation: AppRoutes.hermes,
+    routes: [
+      GoRoute(
+        path: AppRoutes.hermes,
+        builder: (_, _) => const HermesChatScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.tools,
+        builder: (_, _) => const Scaffold(body: Text('Tools destination')),
+      ),
+      GoRoute(
+        path: AppRoutes.gateway,
+        builder: (_, _) => const Scaffold(body: Text('Gateway destination')),
+      ),
+      GoRoute(
+        path: AppRoutes.agents,
+        builder: (_, _) => const Scaffold(body: Text('Agents destination')),
+      ),
+      GoRoute(
+        path: AppRoutes.providers,
+        builder: (_, _) => const Scaffold(body: Text('Providers destination')),
+      ),
+      GoRoute(
+        path: AppRoutes.schedules,
+        builder: (_, _) => const Scaffold(body: Text('Schedules destination')),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (_, _) => const Scaffold(body: Text('Settings destination')),
+      ),
+    ],
+  );
+  return ProviderScope(
+    overrides: [hermesChannelProvider.overrideWithValue(channel)],
+    child: MaterialApp.router(
+      routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+    ),
+  );
+}
 
 void main() {
   testWidgets('slash suggestions execute the local new-session command', (
@@ -97,6 +143,175 @@ void main() {
       find.byKey(const ValueKey('hermes-composer-field')),
     );
     expect(field.controller?.text, isEmpty);
+  });
+
+  testWidgets('local help command lists Wing-owned commands at 200% scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_testApp(channel, textScale: 2));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/help',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-local-command-help')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Wing commands'), findsOneWidget);
+    expect(find.text('/new'), findsOneWidget);
+    expect(find.text('/usage'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/help'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('local tools command opens the implemented Tools surface', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/tools',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tools destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/tools'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('local agents command opens the implemented Agents surface', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/agents',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Agents destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/agents'),
+      isEmpty,
+    );
+  });
+
+  testWidgets(
+    'local providers command opens the implemented Providers surface',
+    (tester) async {
+      final channel = FakeHermesChannel();
+      addTearDown(channel.dispose);
+      await tester.pumpWidget(_routerTestApp(channel));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('hermes-composer-field')),
+        '/providers',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Providers destination'), findsOneWidget);
+      expect(
+        channel.state.activeMessages.where((turn) => turn.text == '/providers'),
+        isEmpty,
+      );
+    },
+  );
+
+  testWidgets(
+    'local schedules command opens the implemented Schedules surface',
+    (tester) async {
+      final channel = FakeHermesChannel();
+      addTearDown(channel.dispose);
+      await tester.pumpWidget(_routerTestApp(channel));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('hermes-composer-field')),
+        '/schedules',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schedules destination'), findsOneWidget);
+      expect(
+        channel.state.activeMessages.where((turn) => turn.text == '/schedules'),
+        isEmpty,
+      );
+    },
+  );
+
+  testWidgets('local settings command opens Wing settings without sending', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/settings',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/settings'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('local gateway command opens the implemented Gateway surface', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/gateway',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateway destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/gateway'),
+      isEmpty,
+    );
   });
 
   testWidgets('local usage command reports the latest server token counts', (

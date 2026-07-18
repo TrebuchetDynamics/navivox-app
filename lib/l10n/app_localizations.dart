@@ -1186,6 +1186,54 @@ abstract class AppLocalizations {
   /// **'Wing commands'**
   String get localCommandsTitle;
 
+  /// No description provided for @localCommandsHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wing commands'**
+  String get localCommandsHelpTitle;
+
+  /// No description provided for @localCommandsHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These commands run on this device and are never sent to Hermes Agent.'**
+  String get localCommandsHelpBody;
+
+  /// No description provided for @localCommandHelpDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Wing-owned commands.'**
+  String get localCommandHelpDescription;
+
+  /// No description provided for @localCommandToolsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open installed skills and toolsets.'**
+  String get localCommandToolsDescription;
+
+  /// No description provided for @localCommandGatewayDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open gateway status.'**
+  String get localCommandGatewayDescription;
+
+  /// No description provided for @localCommandAgentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open gateway-scoped agents.'**
+  String get localCommandAgentsDescription;
+
+  /// No description provided for @localCommandProvidersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open providers and models.'**
+  String get localCommandProvidersDescription;
+
+  /// No description provided for @localCommandSchedulesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open gateway schedules.'**
+  String get localCommandSchedulesDescription;
+
   /// No description provided for @localCommandNewDescription.
   ///
   /// In en, this message translates to:
