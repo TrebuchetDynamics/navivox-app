@@ -10,15 +10,15 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-3b82f6"></a>
 </p>
 
-> [!IMPORTANT]
-> Hermes Wing is independent, source-distributed alpha software. There are no
-> signed public binaries or store releases yet.
-
 <p align="center">
   <img src="./assets/readme/showcase.png" width="100%" alt="Hermes Wing adapting one Hermes session to its dark desktop workspace and light mobile interface">
 </p>
 
-<p align="center"><sub>Captured against the deterministic browser fixture; no private endpoint, credential, or transcript data is shown.</sub></p>
+<p align="center"><sub>Dark desktop workspace and light mobile interface — same session, same endpoint.</sub></p>
+
+> [!IMPORTANT]
+> Hermes Wing is independent, source-distributed alpha software. There are no
+> signed public binaries or store releases yet.
 
 ## One Hermes session model, every screen
 
@@ -27,40 +27,20 @@ endpoint. The same Flutter client keeps streamed work, tool activity, approvals,
 profiles, models, and optional device speech within reach without replacing the
 Hermes backend.
 
-- **Follow live work** — create sessions with client-owned slash commands, run
-  concurrent session-owned streams, switch without detaching replies, recover
-  status-confirmed detached work without duplicate submission after process
-  recreation, inspect bounded reasoning, tool events, and server-reported token
-  usage, and stop the selected run.
-- **Keep operator control visible** — review approval requests in their owning
-  session before sensitive work continues, while background streaming and
-  failure states remain visible in session history.
-- **Manage the endpoint** — work with advertised agents, profiles, providers,
-  and model assignments.
-- **Inspect advertised inventory** — search bounded installed-skill metadata,
-  review enabled toolsets and scheduled jobs, and inspect gateway health without
-  creating shadow state.
-- **Use device speech** — review recognized text before sending it; optionally
-  speak completed replies.
-- **Move between layouts** — use a compact mobile flow or a desktop workspace
-  from one adaptive codebase.
-
-### Multiple Hermes gateways
-
-Hermes Wing treats each saved Hermes Agent endpoint as a gateway and shows its
-Hermes profiles in one activity-ordered contact list. Only the open contact owns
-the full streaming channel; inactive gateways refresh health and session
-summaries over lightweight requests. Opening a contact activates that endpoint,
-Hermes profile, and its latest session; older sessions remain available from
-the chat header. Offline gateways remain visible from cached non-secret
-summaries.
+| Capability | What it covers |
+| --- | --- |
+| **Live streaming** | Session-owned concurrent streams, run handles, bounded reasoning, tool events, token usage, and stop controls |
+| **Operator approval** | Review approval requests in their owning session before sensitive work continues |
+| **Office** | Responsive 2D workspace of authoritative gateway contacts with availability, session counts, and direct chat |
+| **Endpoint management** | Advertised agents, profiles, providers, model assignments, and bounded runtime model inspection |
+| **Inventory** | Installed-skill metadata, toolset labels, scheduled jobs, gateway workload, readiness, and messaging-platform state |
+| **Device speech** | On-device speech-to-text with review before sending; optional reply TTS via Pocket Speech voice packs |
+| **Adaptive layouts** | Compact mobile flow and desktop workspace from one adaptive codebase |
 
 ## From source to first session
 
 Prerequisites: **Flutter 3.44.2**, the SDK for your target platform, and a
 reachable Hermes Agent endpoint.
-
-### 1. Run Hermes Wing
 
 ```bash
 git clone https://github.com/TrebuchetDynamics/hermes-wing.git
@@ -69,7 +49,7 @@ flutter pub get
 flutter run -d <device-id>
 ```
 
-### 2. Install the host helper
+### Install the host helper
 
 On the machine running Hermes Agent:
 
@@ -83,7 +63,7 @@ hint when needed. The helper uses Bash and Python 3. It discovers
 `API_SERVER_KEY` through `hermes config env-path`, or from the
 `WING_HERMES_TOKEN` environment override.
 
-### 3. Pair Android
+### Pair Android
 
 With Hermes Agent reachable through Tailscale or another trusted origin:
 
@@ -132,16 +112,32 @@ to a non-loopback plaintext HTTP endpoint. See the
 [Android setup guide](docs/runbooks/android-hermes-setup.md) and
 [Hermes compatibility contract](docs/product/hermes-compatibility.md).
 
+## Multiple Hermes gateways
+
+Hermes Wing treats each saved Hermes Agent endpoint as a gateway and shows its
+Hermes profiles in one activity-ordered contact list. Only the open contact owns
+the full streaming channel; inactive gateways refresh health and session
+summaries over lightweight requests. Opening a contact activates that endpoint,
+Hermes profile, and its latest session; older sessions remain available from
+the chat header.
+
+Session details and portable transcript exports expose only bounded
+server-reported lifecycle, token/cache/reasoning, tool/API-call, and cost
+metadata. Settings can rename, reconnect, remove, or update an inactive saved
+gateway origin and rotate or explicitly clear its write-only access token; the
+existing token is never rendered. Offline gateways remain visible from cached
+non-secret summaries.
+
 ## Project status
 
 | Platform | Current evidence | Status |
 | --- | --- | --- |
-| Android | Debug build and optional emulator integration smokes | Experimental alpha |
+| Android | Debug build plus current physical chat/session UX receipt | Experimental alpha |
 | Web | Release build and deterministic browser smoke | Alpha, text-focused |
-| Linux | Release build | Alpha, text-focused |
-| Windows | Debug compilation | Build-tested only |
+| Linux | Current release build plus isolated native-shell and transcript-context-menu receipts | Alpha, text-focused |
+| Windows | Historical debug build plus current cross-target native Settings/About/window/full-screen syntax check | Build-tested only |
 | iOS | Simulator debug compilation | Build-tested only |
-| macOS | Debug compilation | Build-tested only |
+| macOS | Debug compilation plus native Settings menu bridge | Build-tested only |
 
 Voice input requests the operating system's recognition interface on Android,
 iOS, macOS, Windows, and web. Availability and offline behavior depend on the
@@ -174,6 +170,15 @@ advertised session or run endpoints used by the client.
 
 - No signed packages or store distribution.
 - Windows, iOS, and macOS are compilation-tested, not release-supported.
+- Desktop hosts use the canonical Hermes Wing product identity. Linux,
+  Windows, and macOS expose native Settings menu actions, while Ctrl/Command+,
+  selects the same existing route through a bounded command/navigation bridge.
+  Their native About actions display only fixed local product information, and
+  Window/View actions remain local minimize/maximize/restore/full-screen
+  requests; none of these controls grant Hermes Agent authority.
+- Native desktop secondary-click menus can reply to or copy one visible message
+  and copy the authorized active transcript as text or Markdown. They reuse the
+  existing bounded transcript exporter and perform no Hermes request.
 - Hermes server audio and realtime audio are not wired; voice submits text.
 - Remote transcript media and client-path attachments remain deferred.
 - Optional inventory can fail independently of an otherwise healthy connection;
