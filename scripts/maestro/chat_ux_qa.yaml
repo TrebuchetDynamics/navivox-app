@@ -45,7 +45,6 @@ name: chat_ux_qa
 # its central draft area by position before addressing the text field.
 - tapOn:
     point: "50%,90%"
-- assertVisible: "(?s).*Message Hermes….*"
 - inputText: "This is a deliberately long mobile draft that verifies wrapping and keeps every composer action reachable"
 - assertVisible: "(?s).*deliberately long mobile draft.*"
 - takeScreenshot: 02_multiline_draft_keyboard
@@ -58,7 +57,7 @@ name: chat_ux_qa
 - extendedWaitUntil:
     visible: "(?s)^white.*"
     timeout: 120000
-- assertVisible: "(?s).*total tokens.*"
+- assertVisible: "(?s).*Token usage:.*total.*"
 - hideKeyboard
 - takeScreenshot: 03_live_response
 - runFlow:

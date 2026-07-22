@@ -4,7 +4,8 @@ extension _ConnectionExtension on HermesApiChannel {
   Future<void> _connect({required String baseUrl, String? apiKey}) async {
     final generation = _connectionGeneration + 1;
     _connectionGeneration = generation;
-    _deletingSessionIds.clear();
+    _deletingSessionOperations.clear();
+    _forkingSessionOperations.clear();
     _clearActiveRunTracking();
     _client = null;
     _setState(
@@ -33,7 +34,7 @@ extension _ConnectionExtension on HermesApiChannel {
         load: client.healthDetailed,
         errors: optionalResourceErrors,
       );
-      final modelsFuture = _loadOptional<List<String>>(
+      final modelsFuture = _loadOptional<List<HermesRuntimeModel>>(
         advertised: _capabilityEndpointAuthorized(
           capabilities,
           'models',
@@ -41,7 +42,7 @@ extension _ConnectionExtension on HermesApiChannel {
           '/v1/models',
         ),
         resource: HermesOptionalResource.models,
-        load: client.listModels,
+        load: client.listRuntimeModels,
         errors: optionalResourceErrors,
       );
       final skillsFuture = _loadOptional<List<HermesSkill>>(
@@ -55,7 +56,7 @@ extension _ConnectionExtension on HermesApiChannel {
         load: client.listSkillDetails,
         errors: optionalResourceErrors,
       );
-      final enabledToolsetsFuture = _loadOptional<List<String>>(
+      final toolsetsFuture = _loadOptional<List<HermesToolset>>(
         advertised: _capabilityEndpointAuthorized(
           capabilities,
           'toolsets',
@@ -63,7 +64,7 @@ extension _ConnectionExtension on HermesApiChannel {
           '/v1/toolsets',
         ),
         resource: HermesOptionalResource.toolsets,
-        load: client.listEnabledToolsets,
+        load: client.listToolsets,
         errors: optionalResourceErrors,
       );
       final jobsFuture = _loadOptional<List<HermesJob>>(
@@ -81,27 +82,34 @@ extension _ConnectionExtension on HermesApiChannel {
       );
       final sessions = await client.listSessions();
       if (!_isCurrentConnection(generation, client)) return;
-      final activeId = sessions.firstOrNull?.id;
-      var detachedRunStillActive = false;
+      final detachedActiveId = await _recoverActiveDetachedSession(
+        client: client,
+        capabilities: capabilities,
+        baseUrl: baseUrl,
+        profileId: null,
+        sessionIds: sessions.map((session) => session.id),
+      );
+      final activeId = detachedActiveId ?? sessions.firstOrNull?.id;
+      final detachedRunStillActive = detachedActiveId != null;
       List<HermesChatTurn>? messages;
       if (activeId != null) {
-        detachedRunStillActive = await _recoverDetachedRun(
-          client: client,
-          capabilities: capabilities,
-          baseUrl: baseUrl,
-          profileId: null,
-          sessionId: activeId,
-        );
         messages = await _fetchTurns(client, activeId);
       }
       if (!_isCurrentConnection(generation, client)) return;
       final detailedHealth = await detailedHealthFuture;
-      final models = await modelsFuture ?? const [];
+      final runtimeModels = await modelsFuture ?? const <HermesRuntimeModel>[];
+      final models = runtimeModels
+          .map((model) => model.id)
+          .toList(growable: false);
       final skillDetails = await skillsFuture ?? const <HermesSkill>[];
       final skills = skillDetails
           .map((skill) => skill.name)
           .toList(growable: false);
-      final enabledToolsets = await enabledToolsetsFuture ?? const [];
+      final toolsets = await toolsetsFuture ?? const <HermesToolset>[];
+      final enabledToolsets = toolsets
+          .where((toolset) => toolset.enabled)
+          .map((toolset) => toolset.name)
+          .toList(growable: false);
       final jobs = await jobsFuture ?? const [];
       if (!_isCurrentConnection(generation, client)) return;
       _setState(
@@ -110,8 +118,10 @@ extension _ConnectionExtension on HermesApiChannel {
           capabilities: capabilities,
           detailedHealth: detailedHealth,
           models: models,
+          runtimeModels: runtimeModels,
           skills: skills,
           skillDetails: skillDetails,
+          toolsets: toolsets,
           enabledToolsets: enabledToolsets,
           jobs: jobs,
           optionalResourceErrors: optionalResourceErrors,

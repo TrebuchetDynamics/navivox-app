@@ -8,7 +8,8 @@ import 'package:pocket_speech/pocket_speech.dart';
 
 import '../../../../shared/voice/text_to_speech_service.dart';
 import '../../../../shared/voice/voice_settings.dart';
-import 'text_to_speech_service.dart' show TtsSettingsReader;
+import 'text_to_speech_service.dart'
+    show FallbackTextToSpeechService, TtsSettingsReader;
 
 abstract interface class PocketSpeechEngine {
   Future<Uint8List> synthesizeWav(
@@ -213,15 +214,19 @@ TextToSpeechService? createPocketSpeechTextToSpeechService({
   PocketSpeechAudioSink? audioSink,
   bool useDefaultAudioSink = true,
   TtsSettingsReader? settings,
+  TextToSpeechService? fallback,
 }) {
   if (!enabled || (voicePack == null && engine == null)) return null;
   final effectiveSink =
       audioSink ??
       (useDefaultAudioSink ? AudioPlayersPocketSpeechAudioSink() : null);
   if (effectiveSink == null) return null;
-  return PocketSpeechTextToSpeechService(
+  final primary = PocketSpeechTextToSpeechService(
     engine: engine ?? PackagePocketSpeechEngine(voicePack!),
     audioSink: effectiveSink,
     settings: settings,
   );
+  return fallback == null
+      ? primary
+      : FallbackTextToSpeechService(primary, fallback);
 }

@@ -11,6 +11,32 @@ Widget _testApp(Widget home) => MaterialApp(
 );
 
 void main() {
+  testWidgets('Office appears in More rather than the mobile bottom bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _testApp(
+        const AppShell(
+          location: AppRoutes.hermes,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+
+    expect(find.text('Office'), findsNothing);
+    expect(find.text('More'), findsOneWidget);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Office'), findsOneWidget);
+  });
+
   testWidgets('Agents appears in More rather than the mobile bottom bar', (
     tester,
   ) async {
@@ -139,6 +165,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Gateway'), findsOneWidget);
+  });
+
+  testWidgets('desktop rail keeps Office usable at 200% text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: const AppShell(
+          location: AppRoutes.office,
+          child: SizedBox(key: ValueKey('body')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Office'), findsOneWidget);
+    expect(find.byKey(const ValueKey('body')), findsOneWidget);
   });
 
   testWidgets('mobile navigation stays compact and edge aligned', (

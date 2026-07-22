@@ -360,6 +360,8 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
                   unawaited(_forkSession(context, channel, session)),
               onDelete: (session) =>
                   unawaited(_deleteSession(context, channel, session)),
+              onDeleteSelected: (sessions) =>
+                  unawaited(_deleteSessions(context, channel, sessions)),
             ),
             const VerticalDivider(width: 1),
             Expanded(child: chatPane),
@@ -569,6 +571,13 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
           unawaited(_resolveApproval(channel, decision, pendingApproval!)),
       onDismissApproval: () => _dismissApproval(pendingApproval!),
       onReplyTurn: _replyToTurn,
+      onCopyTranscriptText: () => unawaited(
+        _copyTranscript(context, channel.state, _TranscriptCopyFormat.text),
+      ),
+      onCopyTranscriptMarkdown: () => unawaited(
+        _copyTranscript(context, channel.state, _TranscriptCopyFormat.markdown),
+      ),
+      enableDesktopContextMenu: _usesDesktopKeyboardShortcuts,
       chatError: chatError,
       onRetryError: onRetryError,
       onReconnectError: onReconnectError,
@@ -728,6 +737,8 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
         context.go(AppRoutes.tools);
       case 'gateway':
         context.go(AppRoutes.gateway);
+      case 'office':
+        context.go(AppRoutes.office);
       case 'agents':
         context.go(AppRoutes.agents);
       case 'providers' || 'model':
@@ -955,6 +966,12 @@ extension _HermesChatScreenLayout on _HermesChatScreenState {
       command: '/gateway',
       description: strings.localCommandGatewayDescription,
       icon: Icons.dns_outlined,
+    ),
+    _LocalSlashCommand(
+      id: 'office',
+      command: '/office',
+      description: strings.localCommandOfficeDescription,
+      icon: Icons.apartment_outlined,
     ),
     _LocalSlashCommand(
       id: 'agents',

@@ -1,0 +1,30 @@
+# Static validation: maestro check-syntax scripts/maestro/office_workspace_qa.yaml
+# Physical-device flow for the accessible, gateway-authoritative 2D Office.
+# Preserves app data and never invokes account, wallet, or profile mutation.
+appId: com.trebuchetdynamics.hermes.wing
+name: office_workspace_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s)^More.*"
+- tapOn: "^Office$"
+- assertVisible: "(?s).*accessible 2D workspace.*"
+- assertVisible: "(?s).*[1-9][0-9]* agent.*"
+- assertVisible: "(?s).*Search agents and gateways.*"
+- tapOn: "(?s).*Search agents and gateways.*"
+- inputText: "qa_no_office_agent_match_98765"
+- assertVisible: "(?s).*No agents match this search.*"
+- eraseText: 100
+- hideKeyboard
+- assertVisible: "^Open chat$"
+- tapOn: "^Open chat$"
+- extendedWaitUntil:
+    visible: "(?s).*Message Hermes….*"
+    timeout: 60000

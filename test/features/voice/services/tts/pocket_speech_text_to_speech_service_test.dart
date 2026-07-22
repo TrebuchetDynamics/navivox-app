@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/features/voice/services/tts/pocket_speech_text_to_speech_service.dart';
+import 'package:wing/shared/voice/text_to_speech_service.dart';
 import 'package:wing/shared/voice/voice_settings.dart';
 import 'package:pocket_speech/src/kokoro_engine/src/tokenizer.dart';
 
@@ -48,6 +49,20 @@ void main() {
       ),
       isA<PocketSpeechTextToSpeechService>(),
     );
+  });
+
+  test('factory falls back when Pocket Speech synthesis fails', () async {
+    final fallback = FakeTextToSpeechService();
+    final service = createPocketSpeechTextToSpeechService(
+      enabled: true,
+      engine: _FailingPocketSpeechEngine(),
+      audioSink: _FakePocketSpeechAudioSink(),
+      fallback: fallback,
+    );
+
+    await service!.speak('hello from Hermes');
+
+    expect(fallback.spoken, ['hello from Hermes']);
   });
 
   test('speak trims text, synthesizes wav, and sends it to the sink', () async {
@@ -135,6 +150,18 @@ void main() {
     expect(player.stopCalls, greaterThanOrEqualTo(1));
     expect(player.disposeCalls, 1);
   });
+}
+
+class _FailingPocketSpeechEngine implements PocketSpeechEngine {
+  @override
+  Future<Uint8List> synthesizeWav(
+    String text, {
+    String? voice,
+    double speed = 1.0,
+  }) => throw StateError('Pocket Speech synthesis failed');
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _FakePocketSpeechEngine implements PocketSpeechEngine {

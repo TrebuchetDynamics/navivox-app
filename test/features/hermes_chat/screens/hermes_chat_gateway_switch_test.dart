@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel.dart';
+import 'package:wing/core/hermes/models/hermes_capabilities.dart';
 import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
 import 'package:wing/core/hermes/models/hermes_session.dart';
 import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
@@ -30,6 +33,88 @@ void main() {
     expect(find.byKey(const ValueKey('hermes-sessions-panel')), findsOneWidget);
   });
 
+  testWidgets(
+    'desktop shortcuts open sessions and create an authorized session',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final harness = await _pumpGatewayChat(tester);
+      expect(find.byTooltip('Sessions (Ctrl+K)'), findsOneWidget);
+      expect(find.byTooltip('New session (Ctrl+N)'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('hermes-composer-field')));
+
+      await _sendControlShortcut(tester, LogicalKeyboardKey.keyK);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('hermes-sessions-panel')),
+        findsOneWidget,
+      );
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      await _sendControlShortcut(tester, LogicalKeyboardKey.keyN);
+      await tester.pumpAndSettle();
+
+      expect(harness.channel.createSessionCalls, [null]);
+      expect(harness.channel.state.activeSessionId, 'sess_2');
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
+
+  testWidgets('macOS command shortcut opens sessions', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    await _pumpGatewayChat(tester);
+    expect(find.byTooltip('Sessions (⌘+K)'), findsOneWidget);
+    expect(find.byTooltip('New session (⌘+N)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('hermes-composer-field')));
+
+    await _sendMetaShortcut(tester, LogicalKeyboardKey.keyK);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('hermes-sessions-panel')), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('desktop new-session shortcut is absent without write access', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final channel = FakeHermesChannel(
+      status: HermesConnectionStatus.disconnected,
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': ['sessions:read'],
+        },
+        'endpoints': {
+          'sessions': {
+            'method': 'GET',
+            'path': '/api/sessions',
+            'required_scopes': ['sessions:read'],
+          },
+          'session_create': {
+            'method': 'POST',
+            'path': '/api/sessions',
+            'required_scopes': ['sessions:write'],
+          },
+        },
+      }),
+    );
+    final harness = await _pumpGatewayChat(tester, channel: channel);
+    await tester.tap(find.byKey(const ValueKey('hermes-composer-field')));
+
+    await _sendControlShortcut(tester, LogicalKeyboardKey.keyN);
+    await tester.pumpAndSettle();
+
+    expect(harness.channel.createSessionCalls, isEmpty);
+    expect(find.byKey(const ValueKey('hermes-new-session')), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('header selects an older session within the active gateway', (
     tester,
   ) async {
@@ -48,6 +133,273 @@ void main() {
       harness.directory.activeContactId,
       const GatewayContactId(gatewayId: 'a', profileId: 'agent-a'),
     );
+  });
+
+  testWidgets(
+    'session branch requires confirmation and selects the child at 200% scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final harness = await _pumpGatewayChat(tester, textScale: 2);
+
+      await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('hermes-session-menu-sess_1')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Branch'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Branch this session?'), findsOneWidget);
+      expect(harness.channel.forkSessionCalls, isEmpty);
+      await tester.tap(
+        find.byKey(const ValueKey('hermes-session-branch-confirm')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(harness.channel.forkSessionCalls, ['sess_1']);
+      expect(harness.channel.state.activeSession?.parentSessionId, 'sess_1');
+      expect(tester.takeException(), isNull);
+      expect(find.text('Created a new session branch.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('authorized session history deletes multiple selected sessions', (
+    tester,
+  ) async {
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.replaceSessions(const [
+      HermesSession(id: 'keep', source: 'test', title: 'Keep session'),
+      HermesSession(id: 'delete-a', source: 'test', title: 'Delete first'),
+      HermesSession(id: 'delete-b', source: 'test', title: 'Delete second'),
+    ], activeSessionId: 'keep');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-session-search-field')),
+      'Delete',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-sessions-select-all')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 selected'), findsOneWidget);
+    await tester.tap(find.text('Delete 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete 2 sessions?'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-sessions-delete-confirm')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(harness.channel.deleteSessionCalls, ['delete-a', 'delete-b']);
+    expect(harness.channel.state.sessions.map((session) => session.id), [
+      'keep',
+    ]);
+  });
+
+  testWidgets('bulk session delete continues after a bounded partial failure', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel.disconnected(
+      deleteSessionFailureIds: const {'delete-a'},
+    );
+    final harness = await _pumpGatewayChat(tester, channel: channel);
+    harness.channel.replaceSessions(const [
+      HermesSession(id: 'keep', source: 'test', title: 'Keep session'),
+      HermesSession(id: 'delete-a', source: 'test', title: 'Delete first'),
+      HermesSession(id: 'delete-b', source: 'test', title: 'Delete second'),
+    ], activeSessionId: 'keep');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-session-search-field')),
+      'Delete',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-sessions-select-all')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete 2'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-sessions-delete-confirm')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(harness.channel.deleteSessionCalls, ['delete-a', 'delete-b']);
+    expect(
+      find.text('Deleted 1 of 2 sessions. 1 could not be deleted.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('private transport failure'), findsNothing);
+    expect(harness.channel.state.sessions.map((session) => session.id), [
+      'keep',
+      'delete-a',
+    ]);
+  });
+
+  testWidgets('bulk selection excludes sessions with an active reply', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.beginStreamingTurn('background work');
+    await harness.channel.createSession(title: 'Foreground');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Select'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const ValueKey('hermes-sessions-select-all')));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('1 selected'), findsOneWidget);
+    final activeRow = find.byKey(const ValueKey('hermes-session-row-sess_1'));
+    final activeCheckbox = find.descendant(
+      of: activeRow,
+      matching: find.byType(Checkbox),
+    );
+    expect(activeCheckbox, findsOneWidget);
+    expect(tester.widget<Checkbox>(activeCheckbox).onChanged, isNull);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pump(const Duration(milliseconds: 100));
+    final activeMenu = find.byKey(const ValueKey('hermes-session-menu-sess_1'));
+    await tester.scrollUntilVisible(
+      activeMenu,
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('hermes-sessions-list')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(activeMenu);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Delete'), findsNothing);
+    expect(find.text('Branch'), findsNothing);
+  });
+
+  testWidgets('bulk selection remains usable at 200% text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _pumpGatewayChat(tester, textScale: 2);
+    harness.channel.replaceSessions(const [
+      HermesSession(id: 'scale-a', source: 'test', title: 'Scale first'),
+      HermesSession(id: 'scale-b', source: 'test', title: 'Scale second'),
+    ], activeSessionId: 'scale-a');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-sessions-select')));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('0 selected'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hermes-sessions-select-all')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('bulk selection is absent without session-delete authorization', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      status: HermesConnectionStatus.disconnected,
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {
+          'type': 'bearer',
+          'required': true,
+          'granted_scopes': ['sessions:read'],
+        },
+        'endpoints': {
+          'sessions': {
+            'method': 'GET',
+            'path': '/api/sessions',
+            'required_scopes': ['sessions:read'],
+          },
+          'session_delete': {
+            'method': 'DELETE',
+            'path': '/api/sessions/{session_id}',
+            'required_scopes': ['sessions:write'],
+          },
+        },
+      }),
+    );
+    await _pumpGatewayChat(tester, channel: channel);
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('hermes-sessions-select')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('hermes-session-menu-sess_1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete'), findsNothing);
+    expect(find.text('Branch'), findsNothing);
+  });
+
+  testWidgets('wide session rail deletes multiple selected sessions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _pumpGatewayChat(tester);
+    harness.channel.replaceSessions(const [
+      HermesSession(id: 'keep', source: 'test', title: 'Keep session'),
+      HermesSession(id: 'rail-a', source: 'test', title: 'Rail first'),
+      HermesSession(id: 'rail-b', source: 'test', title: 'Rail second'),
+    ], activeSessionId: 'keep');
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-session-rail-search-field')),
+      'Rail',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-session-rail-select')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-session-rail-select-all')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 selected'), findsOneWidget);
+    await tester.tap(find.text('Delete 2'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-sessions-delete-confirm')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(harness.channel.deleteSessionCalls, ['rail-a', 'rail-b']);
+    expect(harness.channel.state.sessions.map((session) => session.id), [
+      'keep',
+    ]);
   });
 
   testWidgets('session list identifies a reply streaming in the background', (
@@ -217,6 +569,72 @@ void main() {
         .firstWhere((text) => text.contains('api server'));
     expect(metadata, contains('Last active'));
     expect(metadata, isNot(contains('2026-07-16T10:30:00Z')));
+  });
+
+  testWidgets('session details expose bounded server-reported usage metadata', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final harness = await _pumpGatewayChat(tester, textScale: 2);
+    harness.channel.replaceSessions(const [
+      HermesSession(
+        id: 'usage-metadata',
+        source: 'api_server',
+        title: 'Usage metadata',
+        model: 'anthropic/claude-sonnet',
+        messageCount: 2,
+        toolCallCount: 4,
+        inputTokens: 1200,
+        outputTokens: 300,
+        cacheReadTokens: 800,
+        cacheWriteTokens: 50,
+        reasoningTokens: 25,
+        apiCallCount: 3,
+        estimatedCostUsd: 0.0125,
+        actualCostUsd: 0.01,
+        startedAt: '2026-07-16T10:25:00Z',
+        endedAt: '2026-07-16T10:30:00Z',
+        endReason: 'completed',
+        hasSystemPrompt: true,
+        hasModelConfig: false,
+        preview: 'private prompt that must stay out of details',
+      ),
+    ], activeSessionId: 'usage-metadata');
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hermes-contact-header')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-session-menu-usage-metadata')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View details'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-session-details-sheet')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Tool calls: 4'), findsOneWidget);
+    expect(find.textContaining('Input tokens: 1200'), findsOneWidget);
+    expect(find.textContaining('Output tokens: 300'), findsOneWidget);
+    expect(find.textContaining('Cache read tokens: 800'), findsOneWidget);
+    expect(find.textContaining('Cache write tokens: 50'), findsOneWidget);
+    expect(find.textContaining('Reasoning tokens: 25'), findsOneWidget);
+    expect(find.textContaining('API calls: 3'), findsOneWidget);
+    expect(find.textContaining('Actual cost (USD): 0.01'), findsOneWidget);
+    expect(find.textContaining('Estimated cost (USD): 0.0125'), findsOneWidget);
+    expect(find.textContaining('End reason: completed'), findsOneWidget);
+    expect(find.textContaining('System prompt snapshot: yes'), findsOneWidget);
+    expect(find.textContaining('Model config snapshot: no'), findsOneWidget);
+    final details = tester
+        .widget<SelectableText>(find.byType(SelectableText))
+        .data;
+    expect(details, isNot(contains('private prompt')));
+    expect(details, isNot(contains('Preview:')));
   });
 
   testWidgets('phone header keeps secondary actions in overflow', (
@@ -594,6 +1012,24 @@ void main() {
   });
 }
 
+Future<void> _sendControlShortcut(
+  WidgetTester tester,
+  LogicalKeyboardKey key,
+) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+  await tester.sendKeyEvent(key);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+}
+
+Future<void> _sendMetaShortcut(
+  WidgetTester tester,
+  LogicalKeyboardKey key,
+) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+  await tester.sendKeyEvent(key);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+}
+
 Future<
   ({
     HermesGatewayDirectory directory,
@@ -602,7 +1038,11 @@ Future<
     FakeGatewaySummaryLoader loader,
   })
 >
-_pumpGatewayChat(WidgetTester tester, {FakeHermesChannel? channel}) async {
+_pumpGatewayChat(
+  WidgetTester tester, {
+  FakeHermesChannel? channel,
+  double textScale = 1,
+}) async {
   channel ??= FakeHermesChannel.disconnected();
   final store = FakeHermesEndpointStore(
     profiles: const [
@@ -644,6 +1084,12 @@ _pumpGatewayChat(WidgetTester tester, {FakeHermesChannel? channel}) async {
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: const HermesChatScreen(),
       ),
     ),

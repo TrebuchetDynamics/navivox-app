@@ -11,6 +11,7 @@ import 'package:pocket_speech/pocket_speech.dart';
 
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/policy/hermes_transport_policy.dart';
+import '../../../core/hermes/setup/hermes_endpoint_store.dart';
 import '../../../router/app_routes.dart';
 import '../../hermes_chat/diagnostics/hermes_diagnostics_export.dart';
 import '../../hermes_chat/gateways/gateway_contact.dart';
@@ -148,6 +149,7 @@ class _GatewaySettingsTile extends StatelessWidget {
       subtitle: Text('${gateway.baseUrl} · ${gateway.availability.name}'),
       trailing: PopupMenuButton<String>(
         key: ValueKey('settings-gateway-menu-${gateway.id}'),
+        tooltip: 'Gateway actions for ${gateway.label}',
         onSelected: (action) async {
           if (action == 'agents') {
             await _runGatewayAction(context, () async {
@@ -156,6 +158,8 @@ class _GatewaySettingsTile extends StatelessWidget {
             }, 'Could not connect to this gateway.');
           } else if (action == 'rename') {
             await _renameGateway(context, directory, gateway);
+          } else if (action == 'connection') {
+            await _updateGatewayConnection(context, directory, gateway);
           } else if (action == 'reconnect') {
             await _runGatewayAction(
               context,
@@ -169,6 +173,7 @@ class _GatewaySettingsTile extends StatelessWidget {
         itemBuilder: (_) => const [
           PopupMenuItem(value: 'agents', child: Text('Manage agents')),
           PopupMenuItem(value: 'rename', child: Text('Rename')),
+          PopupMenuItem(value: 'connection', child: Text('Update connection')),
           PopupMenuItem(value: 'reconnect', child: Text('Reconnect')),
           PopupMenuItem(value: 'remove', child: Text('Remove')),
         ],
@@ -212,6 +217,169 @@ Future<void> _renameGateway(
     () => directory.renameGateway(gateway.id, label),
     'Could not rename gateway.',
   );
+}
+
+Future<void> _updateGatewayConnection(
+  BuildContext context,
+  HermesGatewayDirectory directory,
+  GatewayOverview gateway,
+) async {
+  final result = await showDialog<_GatewayConnectionUpdate>(
+    context: context,
+    builder: (dialogContext) => _GatewayConnectionDialog(
+      initialBaseUrl: gateway.baseUrl,
+      active: directory.activeContactId?.gatewayId == gateway.id,
+    ),
+  );
+  if (result == null || !context.mounted) return;
+  await _runGatewayAction(
+    context,
+    () => directory.updateGatewayConnection(
+      gateway.id,
+      baseUrl: result.baseUrl,
+      apiKey: result.apiKey,
+      clearApiKey: result.clearApiKey,
+    ),
+    'Could not update gateway connection.',
+  );
+}
+
+typedef _GatewayConnectionUpdate = ({
+  String baseUrl,
+  String? apiKey,
+  bool clearApiKey,
+});
+
+class _GatewayConnectionDialog extends StatefulWidget {
+  const _GatewayConnectionDialog({
+    required this.initialBaseUrl,
+    required this.active,
+  });
+
+  final String initialBaseUrl;
+  final bool active;
+
+  @override
+  State<_GatewayConnectionDialog> createState() =>
+      _GatewayConnectionDialogState();
+}
+
+class _GatewayConnectionDialogState extends State<_GatewayConnectionDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _baseUrlController;
+  final _apiKeyController = TextEditingController();
+  var _clearApiKey = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _baseUrlController = TextEditingController(text: widget.initialBaseUrl);
+  }
+
+  @override
+  void dispose() {
+    _baseUrlController.dispose();
+    _apiKeyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Update gateway connection'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                key: const ValueKey('settings-gateway-base-url-field'),
+                controller: _baseUrlController,
+                keyboardType: TextInputType.url,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: const InputDecoration(
+                  labelText: 'Hermes gateway URL',
+                  helperText: 'HTTPS or trusted private-network origin',
+                ),
+                validator: _gatewayBaseUrlError,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: const ValueKey('settings-gateway-api-key-field'),
+                controller: _apiKeyController,
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                enabled: !_clearApiKey,
+                decoration: const InputDecoration(
+                  labelText: 'New access token (optional)',
+                  helperText:
+                      'Leave blank to keep the saved token. Its current value is never shown.',
+                  helperMaxLines: 2,
+                ),
+              ),
+              CheckboxListTile(
+                key: const ValueKey('settings-gateway-clear-api-key'),
+                contentPadding: EdgeInsets.zero,
+                value: _clearApiKey,
+                title: const Text('Remove saved access token'),
+                subtitle: const Text(
+                  'Use only when this gateway no longer requires it.',
+                ),
+                onChanged: (value) => setState(() {
+                  _clearApiKey = value ?? false;
+                  if (_clearApiKey) _apiKeyController.clear();
+                }),
+              ),
+              if (widget.active)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Return to All chats before changing the active gateway connection.',
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const ValueKey('settings-gateway-connection-save'),
+          onPressed: widget.active ? null : _submit,
+          child: const Text('Save and reconnect'),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    if (_formKey.currentState?.validate() != true) return;
+    final token = _apiKeyController.text.trim();
+    Navigator.pop(context, (
+      baseUrl: _baseUrlController.text,
+      apiKey: token.isEmpty ? null : token,
+      clearApiKey: _clearApiKey,
+    ));
+  }
+}
+
+String? _gatewayBaseUrlError(String? value) {
+  final origin = hermesPublicEndpointBaseUrl(value ?? '');
+  final uri = Uri.tryParse(origin);
+  if (uri == null ||
+      !uri.hasScheme ||
+      uri.host.isEmpty ||
+      (uri.scheme != 'http' && uri.scheme != 'https')) {
+    return 'Enter an HTTP or HTTPS gateway origin.';
+  }
+  return null;
 }
 
 Future<void> _removeGateway(

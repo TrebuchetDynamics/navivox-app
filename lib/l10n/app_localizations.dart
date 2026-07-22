@@ -112,6 +112,12 @@ abstract class AppLocalizations {
   /// **'Agents'**
   String get agentsDestination;
 
+  /// No description provided for @officeDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get officeDestination;
+
   /// No description provided for @settingsDestination.
   ///
   /// In en, this message translates to:
@@ -427,7 +433,7 @@ abstract class AppLocalizations {
   /// No description provided for @toolsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Installed skills and enabled toolsets advertised by this gateway.'**
+  /// **'Installed skills and resolved toolsets advertised by this gateway.'**
   String get toolsSubtitle;
 
   /// No description provided for @toolsConnectionRequiredBody.
@@ -466,6 +472,132 @@ abstract class AppLocalizations {
   /// **'Could not connect to this gateway.'**
   String get gatewayConnectFailed;
 
+  /// No description provided for @officeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get officeTitle;
+
+  /// No description provided for @officeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'An accessible 2D workspace for agents advertised by your saved Hermes gateways.'**
+  String get officeSubtitle;
+
+  /// No description provided for @officeAgentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 agent} other{{count} agents}}'**
+  String officeAgentCount(int count);
+
+  /// No description provided for @officeSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search agents and gateways'**
+  String get officeSearchLabel;
+
+  /// No description provided for @officeClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get officeClearSearch;
+
+  /// No description provided for @officeShowingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {visible} of {total} agents'**
+  String officeShowingCount(int visible, int total);
+
+  /// No description provided for @officeNoAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Hermes agents available'**
+  String get officeNoAgentsTitle;
+
+  /// No description provided for @officeNoAgentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect or refresh a saved gateway to populate the Office.'**
+  String get officeNoAgentsBody;
+
+  /// No description provided for @officeOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get officeOpenSettings;
+
+  /// No description provided for @officeNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No agents match this search.'**
+  String get officeNoMatches;
+
+  /// No description provided for @officeRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Office'**
+  String get officeRefresh;
+
+  /// No description provided for @officeOpenChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get officeOpenChat;
+
+  /// No description provided for @officeCurrentChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Current chat'**
+  String get officeCurrentChat;
+
+  /// No description provided for @officeReturnToChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to chat'**
+  String get officeReturnToChat;
+
+  /// No description provided for @officeOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this Hermes agent. Refresh and try again.'**
+  String get officeOpenFailed;
+
+  /// No description provided for @officeGatewayDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway default contact'**
+  String get officeGatewayDefault;
+
+  /// No description provided for @officeSessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 session} other{{count} sessions}}'**
+  String officeSessionCount(int count);
+
+  /// No description provided for @officeStatusOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get officeStatusOnline;
+
+  /// No description provided for @officeStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get officeStatusOffline;
+
+  /// No description provided for @officeStatusRefreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing'**
+  String get officeStatusRefreshing;
+
+  /// No description provided for @officeStatusAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication required'**
+  String get officeStatusAuthenticationFailed;
+
   /// No description provided for @installedSkillsTitle.
   ///
   /// In en, this message translates to:
@@ -477,6 +609,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enabled toolsets'**
   String get enabledToolsetsTitle;
+
+  /// No description provided for @toolsetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toolsets'**
+  String get toolsetsTitle;
+
+  /// No description provided for @searchToolsetsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search toolsets and resolved tools'**
+  String get searchToolsetsLabel;
+
+  /// No description provided for @noToolsetsMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No toolsets match this search.'**
+  String get noToolsetsMatchBody;
+
+  /// No description provided for @toolsetsCatalogEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No toolsets were reported.'**
+  String get toolsetsCatalogEmptyBody;
+
+  /// No description provided for @toolsetEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get toolsetEnabled;
+
+  /// No description provided for @toolsetDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get toolsetDisabled;
+
+  /// No description provided for @toolsetConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get toolsetConfigured;
+
+  /// No description provided for @toolsetNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get toolsetNotConfigured;
+
+  /// No description provided for @toolsetResolvedToolsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 resolved tool} other{{count} resolved tools}}'**
+  String toolsetResolvedToolsCount(int count);
+
+  /// No description provided for @toolsetResolvedToolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved tools'**
+  String get toolsetResolvedToolsTitle;
 
   /// No description provided for @skillsUnavailableBody.
   ///
@@ -748,6 +940,130 @@ abstract class AppLocalizations {
   /// **'Active agents'**
   String get gatewayActiveAgentsLabel;
 
+  /// No description provided for @gatewayWorkStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Work state'**
+  String get gatewayWorkStateLabel;
+
+  /// No description provided for @gatewayBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get gatewayBusy;
+
+  /// No description provided for @gatewayIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get gatewayIdle;
+
+  /// No description provided for @gatewayDrainableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe to drain'**
+  String get gatewayDrainableLabel;
+
+  /// No description provided for @gatewayYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get gatewayYes;
+
+  /// No description provided for @gatewayNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get gatewayNo;
+
+  /// No description provided for @gatewayUpdatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get gatewayUpdatedLabel;
+
+  /// No description provided for @gatewayProcessIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Process ID'**
+  String get gatewayProcessIdLabel;
+
+  /// No description provided for @gatewayExitReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit reason'**
+  String get gatewayExitReasonLabel;
+
+  /// No description provided for @gatewayRuntimeReadinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime readiness'**
+  String get gatewayRuntimeReadinessTitle;
+
+  /// No description provided for @gatewayMessagingPlatformsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messaging platforms'**
+  String get gatewayMessagingPlatformsTitle;
+
+  /// No description provided for @gatewayStateDatabaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State database'**
+  String get gatewayStateDatabaseLabel;
+
+  /// No description provided for @gatewayConfigurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get gatewayConfigurationLabel;
+
+  /// No description provided for @gatewayModelReadinessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get gatewayModelReadinessLabel;
+
+  /// No description provided for @gatewayDiskReadinessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk'**
+  String get gatewayDiskReadinessLabel;
+
+  /// No description provided for @gatewayRuntimeReadinessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway runtime'**
+  String get gatewayRuntimeReadinessLabel;
+
+  /// No description provided for @gatewayBackgroundQueuesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Background queues'**
+  String get gatewayBackgroundQueuesLabel;
+
+  /// No description provided for @gatewayReadinessDiskUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'{usedPercent}% used'**
+  String gatewayReadinessDiskUsage(String usedPercent);
+
+  /// No description provided for @gatewayReadinessPlatformCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{connected} of {configured} connected'**
+  String gatewayReadinessPlatformCounts(int connected, int configured);
+
+  /// No description provided for @gatewayReadinessQueueCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{activeRuns} API runs · {completions} completions · {delegations} delegations'**
+  String gatewayReadinessQueueCounts(
+    int activeRuns,
+    int completions,
+    int delegations,
+  );
+
   /// No description provided for @providersTitle.
   ///
   /// In en, this message translates to:
@@ -861,6 +1177,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No runtime models were reported.'**
   String get runtimeModelsEmptyBody;
+
+  /// No description provided for @runtimeModelPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary runtime model'**
+  String get runtimeModelPrimary;
+
+  /// No description provided for @runtimeModelRouteAlias.
+  ///
+  /// In en, this message translates to:
+  /// **'Route alias'**
+  String get runtimeModelRouteAlias;
+
+  /// No description provided for @runtimeModelRoutesTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes to {model}'**
+  String runtimeModelRoutesTo(String model);
+
+  /// No description provided for @runtimeModelParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent {model}'**
+  String runtimeModelParent(String model);
 
   /// No description provided for @activeModelLabel.
   ///
@@ -1234,6 +1574,12 @@ abstract class AppLocalizations {
   /// **'Open gateway status.'**
   String get localCommandGatewayDescription;
 
+  /// No description provided for @localCommandOfficeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the accessible agent workspace.'**
+  String get localCommandOfficeDescription;
+
   /// No description provided for @localCommandAgentsDescription.
   ///
   /// In en, this message translates to:
@@ -1317,6 +1663,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open session history.'**
   String get localCommandSessionsDescription;
+
+  /// No description provided for @desktopSessionsShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions ({modifier}+K)'**
+  String desktopSessionsShortcutTooltip(String modifier);
+
+  /// No description provided for @desktopNewSessionShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New session ({modifier}+N)'**
+  String desktopNewSessionShortcutTooltip(String modifier);
 
   /// No description provided for @localCommandClearDescription.
   ///

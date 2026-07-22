@@ -122,6 +122,7 @@ extension _MessagingExtension on HermesApiChannel {
           message: requestMessage,
         );
         runId = run.id;
+        await _trackDetachedRun(runId: runId, sessionId: sessionId);
       } else {
         events = client.streamSessionChat(sessionId, message: requestMessage);
       }
@@ -165,6 +166,7 @@ extension _MessagingExtension on HermesApiChannel {
     var streamFailed = false;
     var streamEndedBeforeTerminal = false;
     var terminalRunEventReceived = false;
+    var terminalRunLifecycleReceived = false;
     HermesRunUsage? runUsage;
     Timer? idleTimer;
     void armIdleTimer() {
@@ -283,11 +285,13 @@ extension _MessagingExtension on HermesApiChannel {
             runUsage = HermesRunUsage.fromJson(usageJson);
           }
           terminalRunEventReceived = true;
+          terminalRunLifecycleReceived = true;
           if (!completer.isCompleted) completer.complete();
           return;
         }
         if (_isFailedTerminalRunEvent(event.name)) {
           terminalRunEventReceived = true;
+          terminalRunLifecycleReceived = true;
           streamFailed = true;
           assistantTurn = assistantTurn.copyWith(
             status: HermesTurnStatus.failed,
@@ -361,6 +365,9 @@ extension _MessagingExtension on HermesApiChannel {
     }
     if (runId != null) {
       _approvalRunIds.removeWhere((_, approvalRunId) => approvalRunId == runId);
+      if (terminalRunLifecycleReceived) {
+        await _releaseDetachedRun(runId);
+      }
     }
     if (!identical(_client, client) ||
         _state.status != HermesConnectionStatus.connected) {
@@ -375,6 +382,11 @@ extension _MessagingExtension on HermesApiChannel {
       try {
         recoveredRun = await client.getRunStatus(runId);
         runUsage ??= recoveredRun.usage;
+        if (recoveredRun.status == HermesRunLifecycle.completed ||
+            recoveredRun.status == HermesRunLifecycle.failed ||
+            recoveredRun.status == HermesRunLifecycle.cancelled) {
+          await _releaseDetachedRun(runId);
+        }
       } catch (_) {
         // Status and usage recovery are best-effort; preserve the transcript.
       }
@@ -390,6 +402,11 @@ extension _MessagingExtension on HermesApiChannel {
         usage: runUsage,
       );
       turns[assistantIndex] = assistantTurn;
+      assistantIndex = _removeReasoningDuplicatingAssistant(
+        turns,
+        assistantIndex,
+        preSendTurnCount,
+      );
       _setTurns(sessionId, List.of(turns));
     }
 
@@ -403,6 +420,11 @@ extension _MessagingExtension on HermesApiChannel {
           usage: runUsage,
         );
         turns[assistantIndex] = assistantTurn;
+        assistantIndex = _removeReasoningDuplicatingAssistant(
+          turns,
+          assistantIndex,
+          preSendTurnCount,
+        );
         _setTurns(sessionId, List.of(turns), clearErrorMessage: true);
         return;
       }
@@ -660,6 +682,23 @@ extension _MessagingExtension on HermesApiChannel {
     return true;
   }
 
+  int _removeReasoningDuplicatingAssistant(
+    List<HermesChatTurn> turns,
+    int assistantIndex,
+    int firstRunTurnIndex,
+  ) {
+    final reply = turns[assistantIndex].text.trim();
+    if (reply.isEmpty) return assistantIndex;
+    for (var index = assistantIndex - 1; index >= firstRunTurnIndex; index--) {
+      final turn = turns[index];
+      if (turn.kind == HermesTurnKind.reasoning && turn.text.trim() == reply) {
+        turns.removeAt(index);
+        assistantIndex -= 1;
+      }
+    }
+    return assistantIndex;
+  }
+
   bool _isToolEvent(String name) {
     return name == 'tool.started' ||
         name == 'tool.progress' ||
@@ -809,6 +848,11 @@ extension _MessagingExtension on HermesApiChannel {
     await _saveDetachedRuns();
   }
 
+  Future<void> _releaseDetachedRun(String runId) async {
+    await _ensureDetachedRunsLoaded();
+    if (_detachedRuns.remove(runId) != null) await _saveDetachedRuns();
+  }
+
   bool _hasDetachedRun({
     required String baseUrl,
     required String? profileId,
@@ -819,6 +863,41 @@ extension _MessagingExtension on HermesApiChannel {
         run.profileId == profileId &&
         run.sessionId == sessionId,
   );
+
+  Future<String?> _recoverActiveDetachedSession({
+    required HermesApiClient client,
+    required HermesCapabilityDocument capabilities,
+    required String baseUrl,
+    required String? profileId,
+    required Iterable<String> sessionIds,
+  }) async {
+    await _ensureDetachedRunsLoaded();
+    final availableSessionIds = sessionIds.toSet();
+    final candidates =
+        _detachedRuns.values
+            .where(
+              (run) =>
+                  run.baseUrl == _detachedRunBaseUrl(baseUrl) &&
+                  run.profileId == profileId &&
+                  availableSessionIds.contains(run.sessionId),
+            )
+            .toList(growable: false)
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final checkedSessionIds = <String>{};
+    for (final candidate in candidates) {
+      if (!checkedSessionIds.add(candidate.sessionId)) continue;
+      if (await _recoverDetachedRun(
+        client: client,
+        capabilities: capabilities,
+        baseUrl: baseUrl,
+        profileId: profileId,
+        sessionId: candidate.sessionId,
+      )) {
+        return candidate.sessionId;
+      }
+    }
+    return null;
+  }
 
   Future<bool> _recoverDetachedRun({
     required HermesApiClient client,
@@ -892,7 +971,12 @@ extension _MessagingExtension on HermesApiChannel {
         ? true
         : HermesTransportPolicy(capabilities).supportsRunStop;
     if (client != null && runId != null && canStopRun) {
-      unawaited(client.stopRun(runId).catchError((_) {}));
+      unawaited(
+        client
+            .stopRun(runId)
+            .then((_) => _releaseDetachedRun(runId))
+            .catchError((_) {}),
+      );
     }
   }
 

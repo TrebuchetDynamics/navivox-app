@@ -6,15 +6,15 @@ usage() {
 Build a Flutter Android APK and install it on an attached Android device.
 
 Usage:
-  scripts/build_send_apk.sh [--debug|--profile|--release] [-d DEVICE_ID] [--clean] [--extra-flutter-arg ARG]...
+  ./build-send-apk.sh [--debug|--profile|--release] [-d DEVICE_ID] [--clean] [--extra-flutter-arg ARG]...
 
 Examples:
-  scripts/build_send_apk.sh
-  scripts/build_send_apk.sh -d emulator-5554
-  scripts/build_send_apk.sh --release -d R58M123ABC
+  ./build-send-apk.sh
+  ./build-send-apk.sh -d emulator-5554
+  ./build-send-apk.sh --debug -d R58M123ABC
 
 Notes:
-  - Defaults to an incremental debug build; use --clean for a clean build.
+  - Defaults to an incremental release build; use --clean for a clean build.
   - Set WING_ANDROID_HERMES_URL to prefill a private Hermes endpoint.
   - DEVICE_ID is an adb serial from `adb devices`.
   - Extra Flutter args are appended to `flutter build apk`.
@@ -22,9 +22,9 @@ USAGE
 }
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$script_dir/.."
+cd "$script_dir"
 
-mode="debug"
+mode="release"
 device_id="${ANDROID_SERIAL:-}"
 clean_first=0
 hermes_base_url="${WING_ANDROID_HERMES_URL:-}"
@@ -88,7 +88,9 @@ if [[ "$clean_first" -eq 1 ]]; then
   flutter clean
 fi
 
-flutter pub get
+# ponytail: Flutter can retain a dev-only plugin registrant across release builds.
+rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
 if [[ -n "$hermes_base_url" ]]; then
   extra_flutter_args+=(
     "--dart-define=WING_HERMES_BASE_URL=$hermes_base_url"

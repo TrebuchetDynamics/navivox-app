@@ -28,6 +28,7 @@ name: providers_models_unsupported_qa
 - assertVisible: "(?s).*Hermes did not advertise provider access for this connection.*"
 - assertVisible: "(?s).*Runtime models.*"
 - assertVisible: "(?s).*Read-only models advertised by this gateway.*"
+- assertVisible: "(?s).*Primary runtime model.*"
 - assertNotVisible: "(?s).*Manage credential.*"
 # Match the mutation button label exactly; the read-only explanatory copy says
 # "choose models" and must not be mistaken for an enabled control.

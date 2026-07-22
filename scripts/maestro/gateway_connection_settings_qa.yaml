@@ -1,0 +1,31 @@
+# Static validation: maestro check-syntax scripts/maestro/gateway_connection_settings_qa.yaml
+# Physical-device receipt for local saved-gateway connection administration.
+# The flow verifies the write-only credential editor and cancels without
+# changing the operator's endpoint or token.
+appId: com.trebuchetdynamics.hermes.wing
+name: gateway_connection_settings_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*Message Hermes….*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Settings.*"
+- tapOn: "(?s).*Settings.*"
+- assertVisible: "^Gateways$"
+- assertVisible: "(?s).*Credentials stay in secure storage; values hidden.*"
+- tapOn: "(?s).*Gateway actions for.*"
+- assertVisible: "^Update connection$"
+- tapOn: "^Update connection$"
+- assertVisible: "^Update gateway connection$"
+- assertVisible: "(?s).*Hermes gateway URL.*"
+- assertVisible: "(?s).*New access token [(]optional[)].*"
+- assertVisible: "(?s).*current value is never shown.*"
+- assertVisible: "(?s).*Remove saved access.*token.*"
+- assertVisible: "^Save and reconnect$"
+- tapOn: "^Cancel$"
+- assertVisible: "^Gateways$"
+# No screenshots: gateway origins are operator-specific connection metadata.

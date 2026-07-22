@@ -427,6 +427,10 @@ extension _HermesChatScreenConnection on _HermesChatScreenState {
           Navigator.of(sheetContext).pop();
           unawaited(_deleteSession(context, channel, session));
         },
+        onDeleteSelected: (sessions) {
+          Navigator.of(sheetContext).pop();
+          unawaited(_deleteSessions(context, channel, sessions));
+        },
       ),
     );
   }

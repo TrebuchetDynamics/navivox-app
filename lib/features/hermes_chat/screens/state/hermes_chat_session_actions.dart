@@ -91,17 +91,106 @@ extension _HermesChatScreenSessionActions on _HermesChatScreenState {
     HermesChannel channel,
     HermesSession session,
   ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Branch this session?'),
+        content: Text(
+          'Create a new session with the conversation history from “${_safeHermesUiPreview(session.title ?? session.id, maxLength: 96)}”? The original remains in Hermes and the new branch becomes active.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-session-branch-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Create branch'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     try {
       await channel.forkSession(session.id);
       _refreshActiveGatewayContact();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Created a new session branch.')),
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not fork session: ${_safeHermesUiError(error)}'),
+          content: Text(
+            'Could not create session branch: ${_safeHermesUiError(error)}',
+          ),
         ),
       );
     }
+  }
+
+  Future<void> _deleteSessions(
+    BuildContext context,
+    HermesChannel channel,
+    List<HermesSession> sessions,
+  ) async {
+    final selected = <HermesSession>[];
+    final seen = <String>{};
+    for (final session in sessions) {
+      if (seen.add(session.id) &&
+          channel.state.sessions.any((item) => item.id == session.id) &&
+          !channel.state.isSessionStreaming(session.id)) {
+        selected.add(session);
+      }
+    }
+    if (selected.isEmpty) return;
+    final count = selected.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete $count sessions?'),
+        content: const Text(
+          'Delete the selected sessions from Hermes? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('hermes-sessions-delete-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    var deleted = 0;
+    for (final session in selected) {
+      if (channel.state.isSessionStreaming(session.id) ||
+          !channel.state.sessions.any((item) => item.id == session.id)) {
+        continue;
+      }
+      try {
+        await channel.deleteSession(session.id);
+        deleted += 1;
+      } catch (_) {
+        // Keep deleting the remaining selected sessions. The final bounded
+        // summary reports partial failure without exposing server payloads.
+      }
+    }
+    _refreshActiveGatewayContact();
+    if (!context.mounted) return;
+    final message = deleted == count
+        ? 'Deleted $deleted ${deleted == 1 ? 'session' : 'sessions'}.'
+        : 'Deleted $deleted of $count sessions. ${count - deleted} could not be deleted.';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _deleteSession(

@@ -1,5 +1,18 @@
 part of '../hermes_chat_screen.dart';
 
+enum _TranscriptContextAction { copyText, copyMarkdown }
+
+RelativeRect _contextMenuPosition(BuildContext context, Offset globalPosition) {
+  final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+  final localPosition = overlay.globalToLocal(globalPosition);
+  return RelativeRect.fromLTRB(
+    localPosition.dx,
+    localPosition.dy,
+    overlay.size.width - localPosition.dx,
+    overlay.size.height - localPosition.dy,
+  );
+}
+
 class _HermesTranscriptList extends StatelessWidget {
   const _HermesTranscriptList({
     required this.controller,
@@ -11,6 +24,9 @@ class _HermesTranscriptList extends StatelessWidget {
     required this.onResolveApproval,
     required this.onDismissApproval,
     required this.onReplyTurn,
+    required this.onCopyTranscriptText,
+    required this.onCopyTranscriptMarkdown,
+    required this.enableDesktopContextMenu,
     required this.chatError,
     required this.onRetryError,
     required this.onReconnectError,
@@ -26,6 +42,9 @@ class _HermesTranscriptList extends StatelessWidget {
   final ValueChanged<HermesApprovalDecision> onResolveApproval;
   final VoidCallback onDismissApproval;
   final ValueChanged<HermesChatTurn> onReplyTurn;
+  final VoidCallback onCopyTranscriptText;
+  final VoidCallback onCopyTranscriptMarkdown;
+  final bool enableDesktopContextMenu;
   final String? chatError;
   final VoidCallback? onRetryError;
   final VoidCallback onReconnectError;
@@ -53,7 +72,15 @@ class _HermesTranscriptList extends StatelessWidget {
         }
         rows.add(_ToolActivityGroup(turns: group));
       } else {
-        rows.add(_TurnBubble(turn: turn, onReply: onReplyTurn));
+        rows.add(
+          _TurnBubble(
+            turn: turn,
+            onReply: onReplyTurn,
+            onCopyTranscriptText: onCopyTranscriptText,
+            onCopyTranscriptMarkdown: onCopyTranscriptMarkdown,
+            enableDesktopContextMenu: enableDesktopContextMenu,
+          ),
+        );
       }
     }
 
@@ -83,29 +110,67 @@ class _HermesTranscriptList extends StatelessWidget {
     }
 
     final colors = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.alphaBlend(
-              colors.primary.withValues(alpha: 0.025),
-              colors.surface,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onSecondaryTapDown: !enableDesktopContextMenu || turns.isEmpty
+          ? null
+          : (details) => unawaited(
+              _showTranscriptContextMenu(context, details.globalPosition),
             ),
-            colors.surface,
-          ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.alphaBlend(
+                colors.primary.withValues(alpha: 0.025),
+                colors.surface,
+              ),
+              colors.surface,
+            ],
+          ),
+        ),
+        child: ListView(
+          key: const ValueKey('hermes-transcript'),
+          controller: controller,
+          reverse: true,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+          children: rows.reversed.toList(growable: false),
         ),
       ),
-      child: ListView(
-        key: const ValueKey('hermes-transcript'),
-        controller: controller,
-        reverse: true,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-        children: rows.reversed.toList(growable: false),
-      ),
     );
+  }
+
+  Future<void> _showTranscriptContextMenu(
+    BuildContext context,
+    Offset globalPosition,
+  ) async {
+    final action = await showMenu<_TranscriptContextAction>(
+      context: context,
+      position: _contextMenuPosition(context, globalPosition),
+      items: const [
+        PopupMenuItem(
+          key: ValueKey('hermes-context-copy-chat-text'),
+          value: _TranscriptContextAction.copyText,
+          child: Text('Copy entire chat (text)'),
+        ),
+        PopupMenuItem(
+          key: ValueKey('hermes-context-copy-chat-markdown'),
+          value: _TranscriptContextAction.copyMarkdown,
+          child: Text('Copy entire chat (Markdown)'),
+        ),
+      ],
+    );
+    switch (action) {
+      case _TranscriptContextAction.copyText:
+        onCopyTranscriptText();
+      case _TranscriptContextAction.copyMarkdown:
+        onCopyTranscriptMarkdown();
+      case null:
+        return;
+    }
   }
 }
 
@@ -265,13 +330,22 @@ class _ToolActivityRow extends StatelessWidget {
   }
 }
 
-enum _TurnAction { copy, reply }
+enum _TurnAction { copy, reply, copyTranscriptText, copyTranscriptMarkdown }
 
 class _TurnBubble extends StatelessWidget {
-  const _TurnBubble({required this.turn, required this.onReply});
+  const _TurnBubble({
+    required this.turn,
+    required this.onReply,
+    required this.onCopyTranscriptText,
+    required this.onCopyTranscriptMarkdown,
+    required this.enableDesktopContextMenu,
+  });
 
   final HermesChatTurn turn;
   final ValueChanged<HermesChatTurn> onReply;
+  final VoidCallback onCopyTranscriptText;
+  final VoidCallback onCopyTranscriptMarkdown;
+  final bool enableDesktopContextMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -385,6 +459,10 @@ class _TurnBubble extends StatelessWidget {
     );
     final interactiveBubble = GestureDetector(
       onLongPress: () => _showActions(context),
+      onSecondaryTapDown: enableDesktopContextMenu
+          ? (details) =>
+                unawaited(_showDesktopActions(context, details.globalPosition))
+          : null,
       child: bubble,
     );
     if (isUser) return interactiveBubble;
@@ -413,6 +491,45 @@ class _TurnBubble extends StatelessWidget {
       ),
     );
     if (!context.mounted || action == null) return;
+    await _handleAction(context, action);
+  }
+
+  Future<void> _showDesktopActions(
+    BuildContext context,
+    Offset globalPosition,
+  ) async {
+    final action = await showMenu<_TurnAction>(
+      context: context,
+      position: _contextMenuPosition(context, globalPosition),
+      items: const [
+        PopupMenuItem(
+          key: ValueKey('hermes-context-reply-message'),
+          value: _TurnAction.reply,
+          child: Text('Reply'),
+        ),
+        PopupMenuItem(
+          key: ValueKey('hermes-context-copy-message'),
+          value: _TurnAction.copy,
+          child: Text('Copy'),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          key: ValueKey('hermes-context-copy-chat-text'),
+          value: _TurnAction.copyTranscriptText,
+          child: Text('Copy entire chat (text)'),
+        ),
+        PopupMenuItem(
+          key: ValueKey('hermes-context-copy-chat-markdown'),
+          value: _TurnAction.copyTranscriptMarkdown,
+          child: Text('Copy entire chat (Markdown)'),
+        ),
+      ],
+    );
+    if (!context.mounted || action == null) return;
+    await _handleAction(context, action);
+  }
+
+  Future<void> _handleAction(BuildContext context, _TurnAction action) async {
     switch (action) {
       case _TurnAction.copy:
         await Clipboard.setData(ClipboardData(text: turn.text));
@@ -421,10 +538,12 @@ class _TurnBubble extends StatelessWidget {
             context,
           ).showSnackBar(const SnackBar(content: Text('Message copied')));
         }
-        break;
       case _TurnAction.reply:
         onReply(turn);
-        break;
+      case _TurnAction.copyTranscriptText:
+        onCopyTranscriptText();
+      case _TurnAction.copyTranscriptMarkdown:
+        onCopyTranscriptMarkdown();
     }
   }
 }

@@ -412,8 +412,15 @@ void main() {
       'scripts/maestro/gateway_profiles_unsupported_qa.yaml',
       'scripts/maestro/providers_models_unsupported_qa.yaml',
       'scripts/maestro/tools_inventory_qa.yaml',
+      'scripts/maestro/office_workspace_qa.yaml',
       'scripts/maestro/schedules_unsupported_qa.yaml',
       'scripts/maestro/gateway_status_qa.yaml',
+      'scripts/maestro/gateway_connection_settings_qa.yaml',
+      'scripts/maestro/session_metadata_qa.yaml',
+      'scripts/maestro/session_bulk_selection_qa.yaml',
+      'scripts/maestro/session_branch_qa.yaml',
+      'scripts/maestro/chat_concurrent_sessions_qa.yaml',
+      'scripts/maestro/chat_process_recovery_qa.yaml',
     ]) {
       final flow = File(path);
       final command = 'maestro check-syntax $path';

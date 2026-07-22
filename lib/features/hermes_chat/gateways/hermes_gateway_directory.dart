@@ -351,6 +351,65 @@ class HermesGatewayDirectory extends ChangeNotifier
     notifyListeners();
   }
 
+  Future<void> updateGatewayConnection(
+    String gatewayId, {
+    required String baseUrl,
+    String? apiKey,
+    bool clearApiKey = false,
+  }) async {
+    final config = _configsById[gatewayId];
+    if (config == null) throw StateError('Gateway is no longer saved.');
+    if (_activeContactId?.gatewayId == gatewayId) {
+      throw StateError(
+        'Disconnect this gateway before updating its connection.',
+      );
+    }
+    final normalizedBaseUrl = hermesPublicEndpointBaseUrl(baseUrl);
+    HermesApiConfig.fromBaseUrl(normalizedBaseUrl);
+    if (_configsById.entries.any(
+      (entry) =>
+          entry.key != gatewayId && entry.value.baseUrl == normalizedBaseUrl,
+    )) {
+      throw StateError('Another saved gateway already uses this URL.');
+    }
+    final replacementApiKey = clearApiKey
+        ? null
+        : apiKey?.trim().isNotEmpty == true
+        ? apiKey!.trim()
+        : config.apiKey;
+    final replacement = HermesEndpointConfig(
+      id: gatewayId,
+      label: config.label,
+      baseUrl: normalizedBaseUrl,
+      apiKey: replacementApiKey,
+    );
+    await _store.save(
+      baseUrl: replacement.baseUrl,
+      apiKey: replacement.apiKey,
+      label: replacement.label,
+      profileId: gatewayId,
+    );
+    _configsById[gatewayId] = replacement;
+    final refreshedAt = _now().toUtc();
+    _contacts = sortGatewayContacts([
+      for (final contact in _contacts)
+        contact.id.gatewayId == gatewayId
+            ? contact.copyWith(
+                availability: GatewayAvailability.refreshing,
+                lastRefreshedAt: refreshedAt,
+              )
+            : contact,
+    ]);
+    _replaceGatewayOverview(
+      replacement,
+      GatewayAvailability.refreshing,
+      refreshedAt,
+    );
+    notifyListeners();
+    await _refreshGateway(replacement, _refreshGeneration);
+    await _cache.save(_contacts);
+  }
+
   Future<void> reconnectGateway(String gatewayId) async {
     final config = _configsById[gatewayId];
     if (config == null) throw StateError('Gateway is no longer saved.');

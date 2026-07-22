@@ -12,7 +12,9 @@ import '../models/hermes_chat_turn.dart';
 import '../models/hermes_health.dart';
 import '../models/hermes_job.dart';
 import '../models/hermes_run.dart';
+import '../models/hermes_runtime_model.dart';
 import '../models/hermes_skill.dart';
+import '../models/hermes_toolset.dart';
 import '../policy/hermes_transport_policy.dart';
 import '../setup/hermes_endpoint_store.dart';
 import '../sse/hermes_sse_event_decoder.dart';
@@ -67,7 +69,8 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   int _connectionGeneration = 0;
   final _approvalController =
       StreamController<HermesApprovalRequest>.broadcast();
-  final _deletingSessionIds = <String>{};
+  final _deletingSessionOperations = <String, Object>{};
+  final _forkingSessionOperations = <String, Object>{};
 
   @override
   HermesChannelState get state => _state;
@@ -80,7 +83,8 @@ class HermesApiChannel extends ChangeNotifier implements HermesChannel {
   void dispose() {
     _client = null;
     _connectionGeneration += 1;
-    _deletingSessionIds.clear();
+    _deletingSessionOperations.clear();
+    _forkingSessionOperations.clear();
     _clearActiveRunTracking();
     _detachedRuns.clear();
     _approvalController.close();

@@ -6,7 +6,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, 'build/web');
-const port = 8767;
+const configuredPort = Number(process.env.PORT ?? 8767);
+const port = Number.isInteger(configuredPort) && configuredPort > 0 && configuredPort <= 65535
+  ? configuredPort
+  : 8767;
 
 const MIME = {
   '.html': 'text/html',
@@ -296,7 +299,9 @@ async function handleHermesApi(req, res, url) {
             tool: 'bash',
             result_text: 'tool complete',
           })}\n\n` +
-            `event: message.delta\ndata: ${JSON.stringify({ delta: run?.reply ?? '' })}\n\ndata: [DONE]\n\n`,
+            `event: message.delta\ndata: ${JSON.stringify({ delta: run?.reply ?? '' })}\n\n` +
+            `event: run.completed\ndata: ${JSON.stringify({ status: 'completed' })}\n\n` +
+            `data: [DONE]\n\n`,
         );
       },
       run?.slow ? 8000 : 1200,

@@ -41,6 +41,47 @@ const _initialHealth = HermesHealthStatus(
   activeAgents: 1,
 );
 
+const _richHealth = HermesHealthStatus(
+  status: 'degraded',
+  platform: 'hermes-agent',
+  version: '0.18.1',
+  gatewayState: 'draining',
+  activeAgents: 2,
+  gatewayBusy: true,
+  gatewayDrainable: false,
+  updatedAt: '2026-07-18T23:10:00.000Z',
+  pid: 4321,
+  platforms: [
+    HermesGatewayPlatformStatus(name: 'discord', status: 'degraded'),
+    HermesGatewayPlatformStatus(name: 'telegram', status: 'connected'),
+  ],
+  readiness: HermesGatewayReadiness(
+    status: 'degraded',
+    checks: [
+      HermesGatewayReadinessCheck(id: 'state_db', status: 'ok'),
+      HermesGatewayReadinessCheck(
+        id: 'config',
+        status: 'degraded',
+        detail: 'using defaults',
+      ),
+      HermesGatewayReadinessCheck(id: 'disk', status: 'ok', usedPercent: 42.5),
+      HermesGatewayReadinessCheck(
+        id: 'gateway',
+        status: 'ok',
+        connectedPlatforms: 1,
+        configuredPlatforms: 2,
+      ),
+      HermesGatewayReadinessCheck(
+        id: 'background_queues',
+        status: 'ok',
+        activeApiRuns: 3,
+        processCompletions: 4,
+        activeDelegations: 5,
+      ),
+    ],
+  ),
+);
+
 Widget _testApp(
   FakeHermesChannel channel, {
   double textScale = 1,
@@ -89,6 +130,49 @@ void main() {
       expect(find.text('Logs'), findsNothing);
     },
   );
+
+  testWidgets('shows bounded readiness, workload, and platform diagnostics', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: _capabilities(),
+      detailedHealth: _richHealth,
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('Busy'), findsOneWidget);
+    expect(find.text('No'), findsOneWidget);
+    expect(find.text('2026-07-18T23:10:00.000Z'), findsOneWidget);
+    expect(find.text('4321'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Runtime readiness'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Runtime readiness'), findsOneWidget);
+    expect(find.text('State database'), findsOneWidget);
+    expect(find.textContaining('using defaults'), findsOneWidget);
+    expect(find.textContaining('42.5% used'), findsOneWidget);
+    expect(find.textContaining('1 of 2 connected'), findsOneWidget);
+    expect(
+      find.textContaining('3 API runs · 4 completions · 5 delegations'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Messaging platforms'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Messaging platforms'), findsOneWidget);
+    expect(find.text('discord'), findsOneWidget);
+    expect(find.text('telegram'), findsOneWidget);
+    expect(find.text('private stack'), findsNothing);
+    expect(find.text('Restart'), findsNothing);
+  });
 
   testWidgets('refresh reloads detailed health through the channel seam', (
     tester,
@@ -221,7 +305,7 @@ void main() {
   testWidgets('retains gateway status at 200% text scale', (tester) async {
     final channel = FakeHermesChannel(
       capabilities: _capabilities(),
-      detailedHealth: _initialHealth,
+      detailedHealth: _richHealth,
     );
     addTearDown(channel.dispose);
 
@@ -229,9 +313,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Messaging platforms'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(tester.takeException(), isNull);
-    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('Messaging platforms'), findsOneWidget);
   });
 }

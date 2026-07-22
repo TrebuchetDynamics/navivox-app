@@ -38,6 +38,10 @@ Widget _routerTestApp(FakeHermesChannel channel) {
         builder: (_, _) => const HermesChatScreen(),
       ),
       GoRoute(
+        path: AppRoutes.office,
+        builder: (_, _) => const Scaffold(body: Text('Office destination')),
+      ),
+      GoRoute(
         path: AppRoutes.tools,
         builder: (_, _) => const Scaffold(body: Text('Tools destination')),
       ),
@@ -216,6 +220,29 @@ void main() {
     expect(find.text('/usage'), findsOneWidget);
     expect(
       channel.state.activeMessages.where((turn) => turn.text == '/help'),
+      isEmpty,
+    );
+  });
+
+  testWidgets('local office command opens the accessible Office surface', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    addTearDown(channel.dispose);
+    await tester.pumpWidget(_routerTestApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('hermes-composer-field')),
+      '/office',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('hermes-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Office destination'), findsOneWidget);
+    expect(
+      channel.state.activeMessages.where((turn) => turn.text == '/office'),
       isEmpty,
     );
   });

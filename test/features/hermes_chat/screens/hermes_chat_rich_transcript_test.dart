@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
 import 'package:wing/core/hermes/models/hermes_run.dart';
+import 'package:wing/core/hermes/models/hermes_session.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
 import 'package:wing/features/hermes_chat/screens/hermes_chat_screen.dart';
 import 'package:wing/features/hermes_chat/widgets/hermes_rich_text.dart';
@@ -243,6 +246,130 @@ void main() {
     expect(composer.controller?.text, '> Answer to reuse\n\n');
   });
 
+  testWidgets('desktop context menus copy a message or the whole chat', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer with **Markdown**.');
+    final assistantId = channel.state.activeMessages.last.id;
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bubble = find.byKey(ValueKey('hermes-turn-$assistantId'));
+    await tester.tapAt(
+      tester.getCenter(bubble),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-context-reply-message')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-context-copy-message')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-context-copy-chat-markdown')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-context-copy-chat-markdown')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      copiedText,
+      '## You\n\nQuestion\n\n## Hermes\n\nAnswer with **Markdown**.',
+    );
+
+    await tester.tapAt(
+      tester.getCenter(bubble),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('hermes-context-copy-message')));
+    await tester.pumpAndSettle();
+    expect(copiedText, 'Answer with **Markdown**.');
+
+    final transcript = tester.getRect(
+      find.byKey(const ValueKey('hermes-transcript')),
+    );
+    await tester.tapAt(
+      transcript.topLeft + const Offset(24, 24),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('hermes-context-copy-chat-text')),
+      findsOneWidget,
+    );
+    expect(find.text('Reply'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('secondary transcript menus stay disabled on mobile', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final channel = FakeHermesChannel();
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer');
+    final assistantId = channel.state.activeMessages.last.id;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(
+      tester.getCenter(find.byKey(ValueKey('hermes-turn-$assistantId'))),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('hermes-context-copy-message')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('hermes-context-copy-chat-text')),
+      findsNothing,
+    );
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('copies the active transcript as Markdown', (tester) async {
     final channel = FakeHermesChannel();
     channel.beginStreamingTurn('Question');
@@ -284,6 +411,81 @@ void main() {
       '## You\n\nQuestion\n\n## Hermes\n\nAnswer with **Markdown**.',
     );
     expect(find.text('Transcript copied as Markdown'), findsOneWidget);
+  });
+
+  testWidgets('exports bounded server session metadata with the transcript', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.replaceSessions(const [
+      HermesSession(
+        id: 'sess_1',
+        source: 'api_server',
+        title: 'Export metadata',
+        model: 'anthropic/claude-sonnet',
+        messageCount: 2,
+        toolCallCount: 4,
+        inputTokens: 1200,
+        outputTokens: 300,
+        cacheReadTokens: 800,
+        cacheWriteTokens: 50,
+        reasoningTokens: 25,
+        apiCallCount: 3,
+        estimatedCostUsd: 0.0125,
+        actualCostUsd: 0.01,
+        startedAt: '2026-07-16T10:25:00Z',
+        endedAt: '2026-07-16T10:30:00Z',
+        endReason: 'completed',
+        hasSystemPrompt: true,
+        hasModelConfig: false,
+      ),
+    ], activeSessionId: 'sess_1');
+    channel.beginStreamingTurn('Question');
+    channel.completeStreamingTurn(text: 'Answer');
+    String? copiedText;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText =
+                (call.arguments as Map<Object?, Object?>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('hermes-copy-transcript-button')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy as Markdown'));
+    await tester.pumpAndSettle();
+
+    expect(copiedText, startsWith('## Session metadata\n\n'));
+    expect(copiedText, contains('Session: Export metadata'));
+    expect(copiedText, contains('Session ID: sess_1'));
+    expect(copiedText, contains('Tool calls: 4'));
+    expect(copiedText, contains('Input tokens: 1200'));
+    expect(copiedText, contains('Output tokens: 300'));
+    expect(copiedText, contains('Cache read tokens: 800'));
+    expect(copiedText, contains('Cache write tokens: 50'));
+    expect(copiedText, contains('Reasoning tokens: 25'));
+    expect(copiedText, contains('API calls: 3'));
+    expect(copiedText, contains('Actual cost (USD): 0.01'));
+    expect(copiedText, contains('Estimated cost (USD): 0.0125'));
+    expect(copiedText, contains('End reason: completed'));
+    expect(copiedText, contains('System prompt snapshot: yes'));
+    expect(copiedText, contains('Model config snapshot: no'));
+    expect(copiedText, endsWith('## You\n\nQuestion\n\n## Hermes\n\nAnswer'));
   });
 
   testWidgets('copies the active transcript as plain text', (tester) async {
@@ -410,6 +612,32 @@ void main() {
     );
     expect(find.byKey(const ValueKey('hermes-chat-error-retry')), findsNothing);
     expect(find.textContaining('send again'), findsNothing);
+  });
+
+  testWidgets('process-recreated active run offers reconciliation, not retry', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel();
+    channel.addFailedExchange(
+      'Do not duplicate this.',
+      errorMessage:
+          'Hermes run is still active. Reconnect later before retrying.',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [hermesChannelProvider.overrideWithValue(channel)],
+        child: _localizedApp(const HermesChatScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hermes run is still active.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hermes-chat-error-reconnect')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('hermes-chat-error-retry')), findsNothing);
   });
 
   testWidgets('structured assistant errors render as readable messages', (

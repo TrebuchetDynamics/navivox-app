@@ -3,6 +3,7 @@
   "appTitle": "Hermes Wing",
   "hermesDestination": "Hermes",
   "agentsDestination": "Agents",
+  "officeDestination": "Office",
   "settingsDestination": "Settings",
   "moreDestinations": "More",
   "openMoreDestinations": "Open more destinations",
@@ -75,15 +76,67 @@
   "providersDestination": "Providers",
   "toolsDestination": "Tools",
   "toolsTitle": "Tools",
-  "toolsSubtitle": "Installed skills and enabled toolsets advertised by this gateway.",
+  "toolsSubtitle": "Installed skills and resolved toolsets advertised by this gateway.",
   "toolsConnectionRequiredBody": "Open a saved gateway chat before viewing its tool inventory.",
   "toolsConnectionErrorBody": "Tool inventory could not be loaded from Hermes.",
   "gatewayLabel": "Gateway",
   "selectGatewayHint": "Select gateway",
   "toolsGatewayHelp": "View tool inventory from the selected gateway.",
   "gatewayConnectFailed": "Could not connect to this gateway.",
+  "officeTitle": "Office",
+  "officeSubtitle": "An accessible 2D workspace for agents advertised by your saved Hermes gateways.",
+  "officeAgentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
+  "@officeAgentCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "officeSearchLabel": "Search agents and gateways",
+  "officeClearSearch": "Clear search",
+  "officeShowingCount": "Showing {visible} of {total} agents",
+  "@officeShowingCount": {
+    "placeholders": {
+      "visible": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "officeNoAgentsTitle": "No Hermes agents available",
+  "officeNoAgentsBody": "Connect or refresh a saved gateway to populate the Office.",
+  "officeOpenSettings": "Open settings",
+  "officeNoMatches": "No agents match this search.",
+  "officeRefresh": "Refresh Office",
+  "officeOpenChat": "Open chat",
+  "officeCurrentChat": "Current chat",
+  "officeReturnToChat": "Return to chat",
+  "officeOpenFailed": "Could not open this Hermes agent. Refresh and try again.",
+  "officeGatewayDefault": "Gateway default contact",
+  "officeSessionCount": "{count, plural, =1{1 session} other{{count} sessions}}",
+  "@officeSessionCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "officeStatusOnline": "Online",
+  "officeStatusOffline": "Offline",
+  "officeStatusRefreshing": "Refreshing",
+  "officeStatusAuthenticationFailed": "Authentication required",
   "installedSkillsTitle": "Installed skills",
   "enabledToolsetsTitle": "Enabled toolsets",
+  "toolsetsTitle": "Toolsets",
+  "searchToolsetsLabel": "Search toolsets and resolved tools",
+  "noToolsetsMatchBody": "No toolsets match this search.",
+  "toolsetsCatalogEmptyBody": "No toolsets were reported.",
+  "toolsetEnabled": "Enabled",
+  "toolsetDisabled": "Disabled",
+  "toolsetConfigured": "Configured",
+  "toolsetNotConfigured": "Not configured",
+  "toolsetResolvedToolsCount": "{count, plural, =1{1 resolved tool} other{{count} resolved tools}}",
+  "@toolsetResolvedToolsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "toolsetResolvedToolsTitle": "Resolved tools",
   "skillsUnavailableBody": "This gateway did not advertise installed skill inventory.",
   "toolsetsUnavailableBody": "This gateway did not advertise enabled toolset inventory.",
   "skillsEmptyBody": "No installed skills were reported.",
@@ -129,6 +182,44 @@
   "gatewayVersionLabel": "Version",
   "gatewayRuntimeStateLabel": "Runtime state",
   "gatewayActiveAgentsLabel": "Active agents",
+  "gatewayWorkStateLabel": "Work state",
+  "gatewayBusy": "Busy",
+  "gatewayIdle": "Idle",
+  "gatewayDrainableLabel": "Safe to drain",
+  "gatewayYes": "Yes",
+  "gatewayNo": "No",
+  "gatewayUpdatedLabel": "Updated",
+  "gatewayProcessIdLabel": "Process ID",
+  "gatewayExitReasonLabel": "Exit reason",
+  "gatewayRuntimeReadinessTitle": "Runtime readiness",
+  "gatewayMessagingPlatformsTitle": "Messaging platforms",
+  "gatewayStateDatabaseLabel": "State database",
+  "gatewayConfigurationLabel": "Configuration",
+  "gatewayModelReadinessLabel": "Model",
+  "gatewayDiskReadinessLabel": "Disk",
+  "gatewayRuntimeReadinessLabel": "Gateway runtime",
+  "gatewayBackgroundQueuesLabel": "Background queues",
+  "gatewayReadinessDiskUsage": "{usedPercent}% used",
+  "@gatewayReadinessDiskUsage": {
+    "placeholders": {
+      "usedPercent": {"type": "String"}
+    }
+  },
+  "gatewayReadinessPlatformCounts": "{connected} of {configured} connected",
+  "@gatewayReadinessPlatformCounts": {
+    "placeholders": {
+      "connected": {"type": "int"},
+      "configured": {"type": "int"}
+    }
+  },
+  "gatewayReadinessQueueCounts": "{activeRuns} API runs · {completions} completions · {delegations} delegations",
+  "@gatewayReadinessQueueCounts": {
+    "placeholders": {
+      "activeRuns": {"type": "int"},
+      "completions": {"type": "int"},
+      "delegations": {"type": "int"}
+    }
+  },
   "providersTitle": "Providers",
   "providersSubtitle": "Set provider credentials and choose models for this agent.",
   "providersGatewayHelp": "Manage providers and models on the selected gateway.",
@@ -153,6 +244,20 @@
   "runtimeModelsTitle": "Runtime models",
   "runtimeModelsBody": "Read-only models advertised by this gateway. Provider credentials and assignments remain unavailable.",
   "runtimeModelsEmptyBody": "No runtime models were reported.",
+  "runtimeModelPrimary": "Primary runtime model",
+  "runtimeModelRouteAlias": "Route alias",
+  "runtimeModelRoutesTo": "Routes to {model}",
+  "@runtimeModelRoutesTo": {
+    "placeholders": {
+      "model": {"type": "String"}
+    }
+  },
+  "runtimeModelParent": "Parent {model}",
+  "@runtimeModelParent": {
+    "placeholders": {
+      "model": {"type": "String"}
+    }
+  },
   "activeModelLabel": "Active model",
   "noModelAssigned": "No model assigned",
   "auxiliaryModelsLabel": "Auxiliary models",
@@ -252,6 +357,7 @@
   "localCommandToolsDescription": "Open installed skills and toolsets.",
   "localCommandSkillsDescription": "Open installed skills.",
   "localCommandGatewayDescription": "Open gateway status.",
+  "localCommandOfficeDescription": "Open the accessible agent workspace.",
   "localCommandAgentsDescription": "Open gateway-scoped agents.",
   "localCommandProvidersDescription": "Open providers and models.",
   "localCommandModelDescription": "Open provider and model management.",
@@ -282,6 +388,18 @@
   },
   "localCommandNewDescription": "Start a new Hermes session.",
   "localCommandSessionsDescription": "Open session history.",
+  "desktopSessionsShortcutTooltip": "Sessions ({modifier}+K)",
+  "@desktopSessionsShortcutTooltip": {
+    "placeholders": {
+      "modifier": {"type": "String"}
+    }
+  },
+  "desktopNewSessionShortcutTooltip": "New session ({modifier}+N)",
+  "@desktopNewSessionShortcutTooltip": {
+    "placeholders": {
+      "modifier": {"type": "String"}
+    }
+  },
   "localCommandClearDescription": "Clear the current draft.",
   "localCommandSettingsDescription": "Open Wing settings.",
   "localCommandUsageDescription": "Show token usage for the latest reply.",

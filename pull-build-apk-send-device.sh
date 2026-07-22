@@ -14,9 +14,9 @@ Examples:
   ./pull-build-apk-send-device.sh -d emulator-5554
 
 Notes:
-  - Defaults to --debug.
+  - Defaults to --release.
   - DEVICE_ID is an adb serial from `adb devices`.
-  - Extra Flutter args are forwarded to scripts/build_send_apk.sh.
+  - Extra Flutter args are forwarded to ./build-send-apk.sh.
 USAGE
 }
 
@@ -54,7 +54,7 @@ require_cmd git
 require_cmd flutter
 require_cmd adb
 
-if [[ ! -f pubspec.yaml || ! -x scripts/build_send_apk.sh ]]; then
+if [[ ! -f pubspec.yaml || ! -x build-send-apk.sh ]]; then
   echo "Run this script from the project root, or keep it in the project root." >&2
   exit 1
 fi
@@ -69,4 +69,4 @@ if [[ "$pull_first" -eq 1 ]]; then
   git pull --ff-only
 fi
 
-exec scripts/build_send_apk.sh "${build_args[@]}"
+exec ./build-send-apk.sh "${build_args[@]}"

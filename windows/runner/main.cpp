@@ -2,6 +2,7 @@
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
+#include "desktop_host_commands.h"
 #include "flutter_window.h"
 #include "utils.h"
 
@@ -32,12 +33,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
   window.SetQuitOnClose(true);
 
+  ACCEL accelerators[] = {
+      {static_cast<BYTE>(FVIRTKEY | FCONTROL), VK_OEM_COMMA,
+       desktop_host_commands::kOpenSettingsCommand},
+      {FVIRTKEY, VK_F11, desktop_host_commands::kToggleFullScreenCommand},
+  };
+  HACCEL accelerator_table = ::CreateAcceleratorTable(
+      accelerators,
+      static_cast<int>(sizeof(accelerators) / sizeof(accelerators[0])));
+
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {
-    ::TranslateMessage(&msg);
-    ::DispatchMessage(&msg);
+    if (!accelerator_table ||
+        !::TranslateAccelerator(window.GetHandle(), accelerator_table, &msg)) {
+      ::TranslateMessage(&msg);
+      ::DispatchMessage(&msg);
+    }
   }
 
+  if (accelerator_table) {
+    ::DestroyAcceleratorTable(accelerator_table);
+  }
   ::CoUninitialize();
   return EXIT_SUCCESS;
 }

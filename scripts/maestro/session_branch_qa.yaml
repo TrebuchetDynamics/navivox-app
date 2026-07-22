@@ -1,0 +1,45 @@
+# Static validation: maestro check-syntax scripts/maestro/session_branch_qa.yaml
+# Physical-device receipt for capability-gated session branching. The flow
+# creates an empty QA session first, so the source conversation contains no
+# operator transcript. Hermes retains the original and selects the new child.
+appId: com.trebuchetdynamics.hermes.wing
+name: session_branch_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s).*Default agent.*"
+- extendedWaitUntil:
+    visible: "(?s).*online.*"
+    timeout: 60000
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s).*New session.*"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- tapOn: "(?s).*More actions.*"
+- tapOn: "^Sessions$"
+- extendedWaitUntil:
+    visible: "(?s).*Hermes sessions.*"
+    timeout: 30000
+- tapOn: "(?s).*Session actions.*"
+- assertVisible: "^Branch$"
+- tapOn: "^Branch$"
+- assertVisible: "^Branch this session[?]$"
+- assertVisible: "(?s).*original remains in Hermes.*"
+- tapOn: "^Create branch$"
+- assertVisible: "(?s).*Created a new session branch.*"
+- assertVisible: "(?s).*Message Hermes….*"
+- tapOn: "(?s).*More actions.*"
+- tapOn: "^Sessions$"
+- tapOn: "(?s).*Search sessions.*"
+- inputText: "forked"
+- assertVisible: "(?s).*Showing [1-9][0-9]* of [1-9][0-9]* sessions.*"
+- assertVisible: "(?s).*Forked from.*"
+# No screenshots: session identifiers and titles stay out of QA artifacts.

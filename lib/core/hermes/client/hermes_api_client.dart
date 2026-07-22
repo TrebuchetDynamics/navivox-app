@@ -9,8 +9,10 @@ import '../models/hermes_model_assignment.dart';
 import '../models/hermes_profile.dart';
 import '../models/hermes_provider.dart';
 import '../models/hermes_run.dart';
+import '../models/hermes_runtime_model.dart';
 import '../models/hermes_session.dart';
 import '../models/hermes_skill.dart';
+import '../models/hermes_toolset.dart';
 import '../shared/hermes_api_http.dart';
 import '../sse/hermes_sse_event_decoder.dart';
 import 'hermes_api_config.dart';
@@ -66,10 +68,20 @@ class HermesApiClient {
   }
 
   Future<List<String>> listModels({String? profile}) async {
-    return _namedList(
-      await _getJson(_scoped(config.modelsUri, profile)),
-      const ['id', 'root', 'model', 'name'],
-    );
+    return (await listRuntimeModels(
+      profile: profile,
+    )).map((model) => model.id).toList(growable: false);
+  }
+
+  Future<List<HermesRuntimeModel>> listRuntimeModels({String? profile}) async {
+    final body = await _getJson(_scoped(config.modelsUri, profile));
+    final models = <String, HermesRuntimeModel>{};
+    for (final row in wingMapListFromJson(body['data'])) {
+      final model = HermesRuntimeModel.fromJson(row);
+      if (model.id.isNotEmpty) models.putIfAbsent(model.id, () => model);
+      if (models.length == 128) break;
+    }
+    return List.unmodifiable(models.values);
   }
 
   Future<List<String>> listSkills({String? profile}) async {
@@ -86,12 +98,18 @@ class HermesApiClient {
         .toList(growable: false);
   }
 
-  Future<List<String>> listEnabledToolsets({String? profile}) async {
+  Future<List<HermesToolset>> listToolsets({String? profile}) async {
     final body = await _getJson(_scoped(config.toolsetsUri, profile));
     return wingMapListFromJson(body['data'])
-        .where((item) => wingBoolFromJson(item['enabled']))
-        .map((item) => wingOptionalStringFromJson(item['name']))
-        .whereType<String>()
+        .map(HermesToolset.fromJson)
+        .where((toolset) => toolset.name.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<List<String>> listEnabledToolsets({String? profile}) async {
+    return (await listToolsets(profile: profile))
+        .where((toolset) => toolset.enabled)
+        .map((toolset) => toolset.name)
         .toList(growable: false);
   }
 
@@ -543,21 +561,6 @@ class HermesApiClient {
         requestTimeout,
       ),
     );
-  }
-
-  List<String> _namedList(
-    Map<String, Object?> body,
-    List<String> candidateFields,
-  ) {
-    return wingMapListFromJson(body['data'])
-        .map(
-          (item) => candidateFields
-              .map((field) => wingOptionalStringFromJson(item[field]))
-              .whereType<String>()
-              .firstOrNull,
-        )
-        .whereType<String>()
-        .toList(growable: false);
   }
 
   Map<String, Object?> _decodeObject(String body) {

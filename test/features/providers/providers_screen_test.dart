@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel.dart';
 import 'package:wing/core/hermes/models/hermes_capabilities.dart';
+import 'package:wing/core/hermes/models/hermes_runtime_model.dart';
 import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
 import 'package:wing/features/hermes_chat/gateways/hermes_gateway_directory.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
@@ -543,6 +544,46 @@ void main() {
     },
   );
 
+  testWidgets('runtime models distinguish primary and route aliases', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final channel = FakeHermesChannel(
+      capabilities: HermesCapabilityDocument.fromJson({
+        'schema_version': 1,
+        'auth': {'type': 'bearer', 'required': true},
+        'endpoints': {
+          'models': {'method': 'GET', 'path': '/v1/models'},
+        },
+      }),
+      models: const ['hermes-agent', 'fast'],
+      runtimeModels: const [
+        HermesRuntimeModel(id: 'hermes-agent', root: 'hermes-agent'),
+        HermesRuntimeModel(
+          id: 'fast',
+          root: 'openrouter/example',
+          parent: 'hermes-agent',
+        ),
+      ],
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel, textScale: 2));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('hermes-agent'), findsOneWidget);
+    expect(find.text('Primary runtime model'), findsOneWidget);
+    expect(find.text('fast'), findsOneWidget);
+    expect(find.text('Route alias'), findsOneWidget);
+    expect(find.text('Routes to openrouter/example'), findsOneWidget);
+    expect(find.text('Parent hermes-agent'), findsOneWidget);
+    expect(find.text('Choose model'), findsNothing);
+  });
+
   testWidgets('runtime models require every declared read scope', (
     tester,
   ) async {
@@ -563,6 +604,9 @@ void main() {
         },
       }),
       models: const ['stale-model'],
+      runtimeModels: const [
+        HermesRuntimeModel(id: 'stale-model', root: 'private-stale-target'),
+      ],
     );
     addTearDown(channel.dispose);
 

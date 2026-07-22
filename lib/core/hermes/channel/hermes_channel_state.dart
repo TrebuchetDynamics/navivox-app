@@ -6,8 +6,10 @@ import '../models/hermes_job.dart';
 import '../models/hermes_model_assignment.dart';
 import '../models/hermes_profile.dart';
 import '../models/hermes_provider.dart';
+import '../models/hermes_runtime_model.dart';
 import '../models/hermes_session.dart';
 import '../models/hermes_skill.dart';
+import '../models/hermes_toolset.dart';
 
 enum HermesConnectionStatus { disconnected, connecting, connected, error }
 
@@ -20,8 +22,10 @@ class HermesChannelState {
     this.capabilities,
     this.detailedHealth,
     this.models = const [],
+    this.runtimeModels = const [],
     this.skills = const [],
     this.skillDetails = const [],
+    this.toolsets = const [],
     this.enabledToolsets = const [],
     this.jobs = const [],
     this.optionalResourceErrors = const {},
@@ -43,8 +47,10 @@ class HermesChannelState {
   final HermesCapabilityDocument? capabilities;
   final HermesHealthStatus? detailedHealth;
   final List<String> models;
+  final List<HermesRuntimeModel> runtimeModels;
   final List<String> skills;
   final List<HermesSkill> skillDetails;
+  final List<HermesToolset> toolsets;
   final List<String> enabledToolsets;
   final List<HermesJob> jobs;
 
@@ -244,8 +250,10 @@ class HermesChannelState {
     HermesHealthStatus? detailedHealth,
     bool clearDetailedHealth = false,
     List<String>? models,
+    List<HermesRuntimeModel>? runtimeModels,
     List<String>? skills,
     List<HermesSkill>? skillDetails,
+    List<HermesToolset>? toolsets,
     List<String>? enabledToolsets,
     List<HermesJob>? jobs,
     Map<HermesOptionalResource, String>? optionalResourceErrors,
@@ -291,8 +299,10 @@ class HermesChannelState {
           ? null
           : detailedHealth ?? this.detailedHealth,
       models: models ?? this.models,
+      runtimeModels: runtimeModels ?? this.runtimeModels,
       skills: skills ?? this.skills,
       skillDetails: skillDetails ?? this.skillDetails,
+      toolsets: toolsets ?? this.toolsets,
       enabledToolsets: enabledToolsets ?? this.enabledToolsets,
       jobs: jobs ?? this.jobs,
       optionalResourceErrors:

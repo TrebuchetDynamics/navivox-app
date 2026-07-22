@@ -10,9 +10,125 @@
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
+  FlMethodChannel* host_command_channel;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+static constexpr char kDesktopHostCommandChannel[] =
+    "com.trebuchetdynamics.hermes.wing/desktop_host_commands";
+
+static void open_settings_cb(GtkMenuItem* item, gpointer user_data) {
+  (void)item;
+  MyApplication* self = MY_APPLICATION(user_data);
+  if (self->host_command_channel == nullptr) {
+    return;
+  }
+  fl_method_channel_invoke_method(self->host_command_channel, "openSettings",
+                                  nullptr, nullptr, nullptr, nullptr);
+}
+
+static void show_about_cb(GtkMenuItem* item, gpointer user_data) {
+  (void)item;
+  GtkWindow* window = GTK_WINDOW(user_data);
+  gtk_show_about_dialog(
+      window, "program-name", "Hermes Wing", "comments",
+      "A cross-platform client for your Hermes Agent.", "logo-icon-name",
+      "help-about", nullptr);
+}
+
+static void minimize_window_cb(GtkMenuItem* item, gpointer user_data) {
+  (void)item;
+  gtk_window_iconify(GTK_WINDOW(user_data));
+}
+
+static void toggle_maximized_window_cb(GtkMenuItem* item,
+                                       gpointer user_data) {
+  (void)item;
+  GtkWindow* window = GTK_WINDOW(user_data);
+  if (gtk_window_is_maximized(window)) {
+    gtk_window_unmaximize(window);
+  } else {
+    gtk_window_maximize(window);
+  }
+}
+
+static void toggle_fullscreen_window_cb(GtkMenuItem* item,
+                                        gpointer user_data) {
+  (void)item;
+  GtkWindow* window = GTK_WINDOW(user_data);
+  GdkWindow* native_window = gtk_widget_get_window(GTK_WIDGET(window));
+  const bool is_fullscreen =
+      native_window != nullptr &&
+      (gdk_window_get_state(native_window) & GDK_WINDOW_STATE_FULLSCREEN) != 0;
+  if (is_fullscreen) {
+    gtk_window_unfullscreen(window);
+  } else {
+    gtk_window_fullscreen(window);
+  }
+}
+
+static GtkWidget* create_application_menu(MyApplication* self,
+                                          GtkWindow* window) {
+  GtkWidget* menu_bar = gtk_menu_bar_new();
+  GtkWidget* application_item = gtk_menu_item_new_with_label("Hermes Wing");
+  GtkWidget* application_menu = gtk_menu_new();
+  GtkWidget* settings_item = gtk_menu_item_new_with_label("Settings…");
+  GtkWidget* separator = gtk_separator_menu_item_new();
+  GtkWidget* about_item = gtk_menu_item_new_with_label("About Hermes Wing");
+  GtkWidget* window_item = gtk_menu_item_new_with_label("Window");
+  GtkWidget* window_menu = gtk_menu_new();
+  GtkWidget* minimize_item = gtk_menu_item_new_with_label("Minimize");
+  GtkWidget* maximize_item =
+      gtk_menu_item_new_with_label("Maximize / Restore");
+  GtkWidget* view_item = gtk_menu_item_new_with_label("View");
+  GtkWidget* view_menu = gtk_menu_new();
+  GtkWidget* fullscreen_item = gtk_menu_item_new_with_label("Full Screen");
+
+  GtkAccelGroup* accelerators = gtk_accel_group_new();
+  gtk_window_add_accel_group(window, accelerators);
+  gtk_widget_add_accelerator(settings_item, "activate", accelerators,
+                             GDK_KEY_comma, GDK_CONTROL_MASK,
+                             GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator(fullscreen_item, "activate", accelerators,
+                             GDK_KEY_F11, static_cast<GdkModifierType>(0),
+                             GTK_ACCEL_VISIBLE);
+  g_object_unref(accelerators);
+
+  g_signal_connect(settings_item, "activate", G_CALLBACK(open_settings_cb),
+                   self);
+  g_signal_connect(about_item, "activate", G_CALLBACK(show_about_cb), window);
+  gtk_menu_shell_append(GTK_MENU_SHELL(application_menu), settings_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(application_menu), separator);
+  gtk_menu_shell_append(GTK_MENU_SHELL(application_menu), about_item);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(application_item), application_menu);
+
+  g_signal_connect(minimize_item, "activate", G_CALLBACK(minimize_window_cb),
+                   window);
+  g_signal_connect(maximize_item, "activate",
+                   G_CALLBACK(toggle_maximized_window_cb), window);
+  gtk_menu_shell_append(GTK_MENU_SHELL(window_menu), minimize_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(window_menu), maximize_item);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(window_item), window_menu);
+
+  g_signal_connect(fullscreen_item, "activate",
+                   G_CALLBACK(toggle_fullscreen_window_cb), window);
+  gtk_menu_shell_append(GTK_MENU_SHELL(view_menu), fullscreen_item);
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_item), view_menu);
+
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), application_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), window_item);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), view_item);
+  return menu_bar;
+}
+
+static void create_host_command_channel(MyApplication* self, FlView* view) {
+  FlEngine* engine = fl_view_get_engine(view);
+  FlBinaryMessenger* messenger = fl_engine_get_binary_messenger(engine);
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  self->host_command_channel = fl_method_channel_new(
+      messenger, kDesktopHostCommandChannel, FL_METHOD_CODEC(codec));
+}
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
@@ -65,7 +181,14 @@ static void my_application_activate(GApplication* application) {
   gdk_rgba_parse(&background_color, "#000000");
   fl_view_set_background_color(view, &background_color);
   gtk_widget_show(GTK_WIDGET(view));
-  gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
+
+  GtkWidget* application_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  GtkWidget* application_menu = create_application_menu(self, window);
+  gtk_box_pack_start(GTK_BOX(application_box), application_menu, FALSE, FALSE,
+                     0);
+  gtk_box_pack_start(GTK_BOX(application_box), GTK_WIDGET(view), TRUE, TRUE, 0);
+  gtk_widget_show_all(application_box);
+  gtk_container_add(GTK_CONTAINER(window), application_box);
 
   // Show the window when Flutter renders.
   // Requires the view to be realized so we can start rendering.
@@ -74,6 +197,7 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  create_host_command_channel(self, view);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
@@ -121,6 +245,7 @@ static void my_application_shutdown(GApplication* application) {
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  g_clear_object(&self->host_command_channel);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 

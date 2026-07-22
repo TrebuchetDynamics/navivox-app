@@ -665,6 +665,266 @@ void main() {
     expect(item.detail, contains('device STT -> Hermes text'));
   });
 
+  test('detailed health parses bounded runtime readiness and platforms', () {
+    final health = HermesHealthStatus.fromJson({
+      'status': 'degraded',
+      'platform': 'hermes-agent',
+      'version': '0.18.0',
+      'gateway_state': 'draining',
+      'active_agents': 2,
+      'gateway_busy': true,
+      'gateway_drainable': false,
+      'exit_reason': 'operator request',
+      'updated_at': 1784416200,
+      'pid': 4321,
+      'platforms': {
+        'telegram': {'state': 'connected', 'token': 'must-not-escape'},
+        'discord': {'status': 'degraded', 'error': 'private stack'},
+      },
+      'readiness': {
+        'status': 'degraded',
+        'checks': {
+          'state_db': {'status': 'ok'},
+          'config': {'status': 'degraded', 'detail': 'using defaults'},
+          'model': {'status': 'ok'},
+          'disk': {
+            'status': 'ok',
+            'used_percent': 42.5,
+            'free_bytes': 123456789,
+          },
+          'gateway': {
+            'status': 'ok',
+            'state': 'draining',
+            'connected_platforms': 1,
+            'platforms': 2,
+          },
+          'background_queues': {
+            'status': 'ok',
+            'active_api_runs': 3,
+            'process_completions': 4,
+            'active_delegations': 5,
+          },
+          'unknown_private_check': {
+            'status': 'degraded',
+            'detail': 'must-not-escape',
+          },
+        },
+      },
+    });
+
+    expect(health.gatewayBusy, isTrue);
+    expect(health.gatewayDrainable, isFalse);
+    expect(health.exitReason, 'operator request');
+    expect(health.updatedAt, '2026-07-18T23:10:00.000Z');
+    expect(health.pid, 4321);
+    expect(health.platforms.map((item) => '${item.name}:${item.status}'), [
+      'discord:degraded',
+      'telegram:connected',
+    ]);
+    expect(health.readiness?.status, 'degraded');
+    expect(health.readiness?.checks.map((item) => item.id), [
+      'state_db',
+      'config',
+      'model',
+      'disk',
+      'gateway',
+      'background_queues',
+    ]);
+    final disk = health.readiness!.checks.singleWhere(
+      (item) => item.id == 'disk',
+    );
+    expect(disk.usedPercent, 42.5);
+    expect(disk.freeBytes, 123456789);
+    final queues = health.readiness!.checks.singleWhere(
+      (item) => item.id == 'background_queues',
+    );
+    expect(queues.activeApiRuns, 3);
+    expect(queues.processCompletions, 4);
+    expect(queues.activeDelegations, 5);
+    expect(
+      health.platforms.map((item) => '${item.name}:${item.status}').join(' '),
+      isNot(anyOf(contains('must-not-escape'), contains('private stack'))),
+    );
+    expect(
+      health.readiness!.checks.map((item) => item.id),
+      isNot(contains('unknown_private_check')),
+    );
+  });
+
+  test('detailed health rejects unsafe optional diagnostics', () {
+    final health = HermesHealthStatus.fromJson({
+      'status': 'ok',
+      'platform': 'hermes-agent',
+      'active_agents': -2,
+      'gateway_busy': 'yes',
+      'gateway_drainable': 1,
+      'pid': -1,
+      'platforms': {
+        for (var index = 0; index < 40; index++)
+          'platform-$index': {'status': 'connected'},
+      },
+      'readiness': {
+        'status': 'ok',
+        'checks': {
+          'disk': {
+            'status': 'ok',
+            'used_percent': double.infinity,
+            'free_bytes': -1,
+          },
+          'background_queues': {
+            'status': 'ok',
+            'active_api_runs': -1,
+            'process_completions': 1000000000,
+          },
+        },
+      },
+    });
+
+    expect(health.activeAgents, 0);
+    expect(health.gatewayBusy, isNull);
+    expect(health.gatewayDrainable, isNull);
+    expect(health.pid, isNull);
+    expect(health.platforms, hasLength(32));
+    final disk = health.readiness!.checks.singleWhere(
+      (item) => item.id == 'disk',
+    );
+    expect(disk.usedPercent, isNull);
+    expect(disk.freeBytes, isNull);
+    final queues = health.readiness!.checks.singleWhere(
+      (item) => item.id == 'background_queues',
+    );
+    expect(queues.activeApiRuns, isNull);
+    expect(queues.processCompletions, isNull);
+  });
+
+  test('runtime model inventory preserves primary and route aliases', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (uri, headers) async => '''
+        {
+          "object": "list",
+          "data": [
+            {
+              "id": " hermes-agent ",
+              "root": "hermes-agent",
+              "parent": null,
+              "owned_by": "hermes",
+              "permission": [{"private": "discard"}]
+            },
+            {
+              "id": " fast ",
+              "root": "openrouter/example",
+              "parent": "hermes-agent",
+              "owned_by": "hermes"
+            },
+            {"id": "fast", "root": "duplicate"},
+            {"name": "legacy-model"},
+            {"id": " "}
+          ]
+        }
+      ''',
+    );
+
+    final models = await client.listRuntimeModels();
+
+    expect(models, hasLength(3));
+    expect(models.first.id, 'hermes-agent');
+    expect(models.first.isRouteAlias, isFalse);
+    expect(models[1].id, 'fast');
+    expect(models[1].root, 'openrouter/example');
+    expect(models[1].parent, 'hermes-agent');
+    expect(models[1].isRouteAlias, isTrue);
+    expect(models.last.id, 'legacy-model');
+    expect(models.last.isRouteAlias, isFalse);
+    expect(await client.listModels(), ['hermes-agent', 'fast', 'legacy-model']);
+  });
+
+  test('runtime model inventory bounds fields and row count', () async {
+    final oversized = List.filled(200, 'x').join();
+    final model = HermesRuntimeModel.fromJson({
+      'id': ' model\u0000$oversized ',
+      'root': oversized,
+      'parent': oversized,
+      'permission': {'private': 'discard'},
+    });
+    expect(model.id.length, 120);
+    expect(model.id, isNot(contains('\u0000')));
+    expect(model.root.length, 120);
+    expect(model.parent.length, 120);
+
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (uri, headers) async => jsonEncode({
+        'data': [
+          for (var index = 0; index < 160; index++) {'id': 'model-$index'},
+        ],
+      }),
+    );
+    expect(await client.listRuntimeModels(), hasLength(128));
+  });
+
+  test('toolset inventory preserves bounded resolved metadata', () async {
+    final client = HermesApiClient(
+      config: HermesApiConfig.fromBaseUrl('http://127.0.0.1:8642'),
+      get: (uri, headers) async => '''
+        {
+          "object": "list",
+          "platform": "api_server",
+          "data": [
+            {
+              "name": " web\\u0000tools ",
+              "label": " Web   Tools ",
+              "description": "Search and browse approved sites.",
+              "enabled": true,
+              "configured": false,
+              "tools": ["web_search", " web_open ", "web_search", 42]
+            },
+            {
+              "name": "memory",
+              "label": "Memory",
+              "enabled": false,
+              "configured": true,
+              "tools": []
+            },
+            {"name": " ", "enabled": true}
+          ]
+        }
+      ''',
+    );
+
+    final toolsets = await client.listToolsets();
+
+    expect(toolsets, hasLength(2));
+    expect(toolsets.first.name, 'web tools');
+    expect(toolsets.first.label, 'Web Tools');
+    expect(toolsets.first.description, 'Search and browse approved sites.');
+    expect(toolsets.first.enabled, isTrue);
+    expect(toolsets.first.configured, isFalse);
+    expect(toolsets.first.tools, ['web_open', 'web_search']);
+    expect(toolsets.last.name, 'memory');
+    expect(toolsets.last.enabled, isFalse);
+    expect(toolsets.last.configured, isTrue);
+    expect(await client.listEnabledToolsets(), ['web tools']);
+  });
+
+  test('toolset inventory bounds public fields and resolved tool count', () {
+    final toolset = HermesToolset.fromJson({
+      'name': List.filled(200, 'x').join(),
+      'label': List.filled(300, 'y').join(),
+      'description': List.filled(2000, 'z').join(),
+      'enabled': 'true',
+      'configured': 'false',
+      'tools': [for (var index = 0; index < 100; index++) 'tool_$index'],
+    });
+
+    expect(toolset.name.length, 120);
+    expect(toolset.label.length, 160);
+    expect(toolset.description.length, 1000);
+    expect(toolset.enabled, isTrue);
+    expect(toolset.configured, isFalse);
+    expect(toolset.tools, hasLength(64));
+  });
+
   test(
     'client parses health, catalog, sessions, created sessions, and messages',
     () async {
@@ -716,7 +976,22 @@ void main() {
       final jobs = await client.listJobs();
       expect(jobs.single.displayName, 'Morning check');
       expect(jobs.single.scheduleDisplay, 'Every day at 09:00');
-      expect((await client.listSessions()).single.id, 'sess_1');
+      final session = (await client.listSessions()).single;
+      expect(session.id, 'sess_1');
+      expect(session.toolCallCount, 4);
+      expect(session.inputTokens, 1200);
+      expect(session.outputTokens, 300);
+      expect(session.cacheReadTokens, 800);
+      expect(session.cacheWriteTokens, 50);
+      expect(session.reasoningTokens, 25);
+      expect(session.apiCallCount, 3);
+      expect(session.estimatedCostUsd, 0.0125);
+      expect(session.actualCostUsd, 0.01);
+      expect(session.startedAt, '2026-06-25T11:55:00Z');
+      expect(session.endedAt, '2026-06-25T12:00:00Z');
+      expect(session.endReason, 'completed');
+      expect(session.hasSystemPrompt, isTrue);
+      expect(session.hasModelConfig, isFalse);
       expect((await client.sessionMessages('sess_1')).single.content, 'Hello');
 
       final created = await client.createSession(id: 'navi-1', title: 'Mobile');
@@ -736,6 +1011,42 @@ void main() {
       ]);
     },
   );
+
+  test('session usage metadata preserves zeroes and rejects unsafe values', () {
+    final session = HermesSession.fromJson({
+      'id': 'session-bounds',
+      'source': 'api_server',
+      'tool_call_count': 0,
+      'input_tokens': -1,
+      'output_tokens': 'not-a-number',
+      'cache_read_tokens': 0,
+      'cache_write_tokens': 9007199254740992,
+      'reasoning_tokens': 12,
+      'api_call_count': 0,
+      'estimated_cost_usd': double.infinity,
+      'actual_cost_usd': 0,
+      'has_system_prompt': false,
+      'has_model_config': 'invalid',
+      'started_at': 1783133420.7193103,
+      'last_active': '1784336000.2563922',
+    });
+
+    expect(session.toolCallCount, 0);
+    expect(session.inputTokens, isNull);
+    expect(session.outputTokens, isNull);
+    expect(session.cacheReadTokens, 0);
+    expect(session.cacheWriteTokens, 9007199254740991);
+    expect(session.reasoningTokens, 12);
+    expect(session.apiCallCount, 0);
+    expect(session.estimatedCostUsd, isNull);
+    expect(session.actualCostUsd, 0);
+    expect(session.hasSystemPrompt, isFalse);
+    expect(session.hasModelConfig, isNull);
+    expect(DateTime.tryParse(session.startedAt!), isNotNull);
+    expect(DateTime.tryParse(session.lastActive!), isNotNull);
+    expect(session.startedAt, isNot(contains('1783133420')));
+    expect(session.lastActive, isNot(contains('1784336000')));
+  });
 
   test('installed skill metadata is normalized and bounded', () {
     final skill = HermesSkill.fromJson({
@@ -1724,6 +2035,20 @@ const _sessionsFixture = '''
       "model": "hermes-agent",
       "title": "Demo",
       "message_count": 2,
+      "tool_call_count": 4,
+      "input_tokens": 1200,
+      "output_tokens": 300,
+      "cache_read_tokens": 800,
+      "cache_write_tokens": 50,
+      "reasoning_tokens": 25,
+      "api_call_count": 3,
+      "estimated_cost_usd": 0.0125,
+      "actual_cost_usd": 0.01,
+      "started_at": "2026-06-25T11:55:00Z",
+      "ended_at": "2026-06-25T12:00:00Z",
+      "end_reason": "completed",
+      "has_system_prompt": true,
+      "has_model_config": false,
       "last_active": "2026-06-25T12:00:00Z",
       "preview": "Hello"
     }

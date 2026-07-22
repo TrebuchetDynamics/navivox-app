@@ -344,27 +344,24 @@ void main() {
     );
     expect(auditText, contains('Objective item'));
     expect(auditText, contains('Concrete artifact/evidence inspected'));
-    expect(auditText, contains('Android physical spoken mic receipt'));
-    expect(auditText, contains('Android automated voice-loop receipt'));
-    expect(auditText, contains('Windows/iOS/macOS host receipts'));
-    expect(auditText, contains('Publish platform workflow'));
-    expect(auditText, contains('Hermes realtime/server audio'));
-    expect(auditText, contains('Deferred Hermes Desktop parity'));
-    expect(auditText, contains('Polish/hardening'));
-    expect(
-      auditText,
-      contains(
-        'Historical only; the current-checkout receipt is absent, and this is not physical-mic/provider/server-audio evidence',
-      ),
-    );
+    for (final objective in [
+      '1. Complete chat and sessions',
+      '2. Validate gateway-scoped profiles',
+      '3. Providers and models',
+      '4. Discover, Skills, Tools, and MCP',
+      '5. Memory',
+      '6. Schedules and Kanban',
+      '7. Gateway administration',
+      '8. Office, accounts, and wallets',
+      '9. Desktop host integrations',
+    ]) {
+      expect(auditText, contains(objective), reason: objective);
+    }
+    expect(auditText, contains('**Partial.**'));
+    expect(auditText, contains('**Missing/contract-blocked.**'));
+    expect(auditText, contains('**Partial/host-blocked.**'));
     expect(auditText, contains('Receipt inventory for this checkout'));
     expect(auditText, contains('`build/receipts/` is absent'));
-    expect(
-      auditText,
-      contains(
-        'Partially covered; remaining surfaces deferred/read-only by policy',
-      ),
-    );
     expect(auditText, contains('not whole-goal completion evidence by itself'));
     expect(auditText, contains('deterministic transcript voice only'));
     expect(auditText, contains('API connect/session rendering only'));
@@ -412,7 +409,7 @@ void main() {
       contains('was published and visible as `Hermes platform smoke`'),
     );
     expect(auditText, contains('build/receipts/hermes-platform-workflow.json'));
-    expect(auditText, contains('successful watched receipt'));
+    expect(auditText, contains('validated receipt'));
     expect(
       auditText,
       contains('When Android is missing, the helper prints `flutter devices`'),

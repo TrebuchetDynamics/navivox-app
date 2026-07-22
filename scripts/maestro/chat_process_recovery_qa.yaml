@@ -1,0 +1,47 @@
+# Static validation: maestro check-syntax scripts/maestro/chat_process_recovery_qa.yaml
+# Physical-device receipt for secure detached-run recovery after process death.
+# Uses a bounded synthetic prompt, preserves app data, and never retries the turn.
+appId: com.trebuchetdynamics.hermes.wing
+name: chat_process_recovery_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s).*Default agent.*"
+- extendedWaitUntil:
+    visible: "(?s).*online.*"
+    timeout: 60000
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s).*New session.*"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- tapOn:
+    point: "50%,90%"
+- inputText: "Without tools or external actions write an original two thousand word fictional story about a silver compass"
+- tapOn: "(?s).*Send.*"
+- assertVisible: "^Stop$"
+
+# Kill only the Wing process. The Hermes run remains server-owned.
+- stopApp
+- launchApp
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s).*Default agent.*"
+- extendedWaitUntil:
+    visible: "(?s).*Hermes run is still active.*"
+    timeout: 60000
+- assertVisible: "^Reconnect$"
+- assertNotVisible: "(?s).*Retry last message.*"
+- assertNotVisible: "^Stop$"

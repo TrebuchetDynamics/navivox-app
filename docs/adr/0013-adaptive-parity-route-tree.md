@@ -10,5 +10,5 @@ Android uses four primary destinations—Chat, Discover, Office, and Tasks—plu
 - `/hermes` remains the Chat route and existing deep link.
 - `/discover`, `/office`, and `/tasks` become Android primary destinations.
 - `/agents`, `/providers`, `/tools`, `/memory`, `/gateway`, and `/settings` are administrative destinations reached through More on Android.
-- Profile switching and session history remain directly reachable from Chat.
+- Profile switching and session history remain directly reachable from Chat. Native desktop Ctrl/Command+K opens that same session surface, while Ctrl/Command+N is bound only when the exact session-create contract is authorized; shortcuts never become a second authorization path.
 - Routes are added only with working vertical slices; the app does not ship placeholder destinations merely to fill the navigation.

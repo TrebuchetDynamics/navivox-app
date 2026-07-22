@@ -123,7 +123,8 @@ class _HermesChatError extends StatelessWidget {
                             icon: const Icon(Icons.key_outlined),
                             label: const Text('Update key'),
                           )
-                        else if (streamOrNetworkFailure && onReconnect != null)
+                        else if ((runStillActive || streamOrNetworkFailure) &&
+                            onReconnect != null)
                           OutlinedButton.icon(
                             key: const ValueKey('hermes-chat-error-reconnect'),
                             onPressed: onReconnect,
@@ -228,9 +229,13 @@ void _showHermesErrorDetailsSheet(
   );
 }
 
-bool _isHermesRunStillActiveError(String error) => error.toLowerCase().contains(
-  'run is still active after its event stream closed',
-);
+bool _isHermesRunStillActiveError(String error) {
+  final normalized = error.toLowerCase();
+  return normalized.contains(
+        'run is still active after its event stream closed',
+      ) ||
+      normalized.contains('hermes run is still active.');
+}
 
 String _safeHermesUiText(String text) {
   var safe = text;

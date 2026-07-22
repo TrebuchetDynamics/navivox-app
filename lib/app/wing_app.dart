@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../router/app_router.dart';
 import '../theme/wing_theme.dart';
+import 'desktop_host_command_listener.dart';
 
 class WingApp extends StatelessWidget {
   const WingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const ProviderScope(child: _WingMaterialApp());
+    return const ProviderScope(
+      child: DesktopHostCommandListener(child: _WingMaterialApp()),
+    );
   }
 }
 

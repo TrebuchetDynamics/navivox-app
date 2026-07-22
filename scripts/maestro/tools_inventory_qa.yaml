@@ -33,9 +33,13 @@ name: tools_inventory_qa
 - takeScreenshot: tools_skills_inventory
 - scrollUntilVisible:
     element:
-      text: "Enabled toolsets"
+      text: "Toolsets"
     direction: DOWN
     timeout: 30000
-- assertVisible: "(?s).*Enabled toolsets.*"
+- assertVisible: "^Toolsets$"
+- assertVisible: "(?s).*Search toolsets and resolved tools.*"
+- assertVisible: "(?s).*[1-9][0-9]* resolved tool.*"
 - assertNotVisible: "(?s).*did not advertise enabled toolset inventory.*"
+- tapOn: "(?s).*[1-9][0-9]* resolved tool.*"
+- assertVisible: "(?s).*Resolved tools.*"
 - takeScreenshot: tools_toolsets_inventory

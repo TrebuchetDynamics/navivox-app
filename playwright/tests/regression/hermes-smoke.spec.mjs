@@ -74,7 +74,9 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
   await expect(page.getByRole('heading', { name: 'Renamed e2e session' })).toBeVisible();
   await page.getByRole('button', { name: 'Sessions' }).click();
   await page.getByRole('button', { name: 'Session actions' }).first().click();
-  await page.getByRole('menuitem', { name: 'Fork' }).click();
+  await page.getByRole('menuitem', { name: 'Branch' }).click();
+  await expect(page.getByRole('alertdialog')).toContainText('Branch this session?');
+  await page.getByRole('button', { name: 'Create branch' }).click();
   await expect(page.getByRole('heading', { name: 'Renamed e2e session fork' })).toBeVisible();
 
   await page.evaluate(() => globalThis.wingE2EHermesSendText('hello hermes browser'));
@@ -91,13 +93,23 @@ test('Hermes route renders connected session/capabilities in a real browser e2e 
   await expect(page.getByText('How can Hermes help today?').first()).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Summarize what you can help me do.' })).toBeVisible();
   await page.evaluate(() => globalThis.wingE2EHermesSendText('new session browser'));
-  await page.waitForTimeout(1000);
   await expect(page.getByText('new session browser').first()).toBeVisible();
+  await expect(semanticLabel(page, 'Approve e2e browser run')).toBeVisible();
+  await page.getByRole('button', { name: 'Approve once' }).click();
+  await expect(semanticLabel(page, 'Approve e2e browser run')).not.toBeVisible();
   await expect(semanticText(page, 'Hermes echo: new session browser')).toBeVisible();
+  const reconnect = page.getByRole('button', { name: 'Reconnect' });
+  await reconnect.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  if (await reconnect.isVisible()) {
+    await reconnect.click();
+    await expect(reconnect).not.toBeVisible();
+  }
 
   await page.evaluate(() => globalThis.wingE2EHermesSubmitVoice('voice browser turn'));
-  await page.waitForTimeout(1000);
   await expect(page.getByText('voice browser turn').first()).toBeVisible();
+  await expect(semanticLabel(page, 'Approve e2e browser run')).toBeVisible();
+  await page.getByRole('button', { name: 'Approve once' }).click();
+  await expect(semanticLabel(page, 'Approve e2e browser run')).not.toBeVisible();
   await expect(semanticText(page, 'Hermes echo: voice browser turn')).toBeVisible();
 
   await page.getByRole('button', { name: 'Sessions' }).click();

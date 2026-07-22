@@ -38,8 +38,8 @@ extension _ProfilesExtension on HermesApiChannel {
     if (!_isCurrentConnection(generation, client)) return;
 
     final errors = <HermesOptionalResource, String>{};
-    final models =
-        await _loadOptional<List<String>>(
+    final runtimeModels =
+        await _loadOptional<List<HermesRuntimeModel>>(
           advertised:
               capabilities != null &&
               _capabilityEndpointAuthorized(
@@ -49,10 +49,13 @@ extension _ProfilesExtension on HermesApiChannel {
                 '/v1/models',
               ),
           resource: HermesOptionalResource.models,
-          load: () => client.listModels(profile: id),
+          load: () => client.listRuntimeModels(profile: id),
           errors: errors,
         ) ??
-        const <String>[];
+        const <HermesRuntimeModel>[];
+    final models = runtimeModels
+        .map((model) => model.id)
+        .toList(growable: false);
     final skillDetails =
         await _loadOptional<List<HermesSkill>>(
           advertised:
@@ -72,7 +75,7 @@ extension _ProfilesExtension on HermesApiChannel {
         .map((skill) => skill.name)
         .toList(growable: false);
     final toolsets =
-        await _loadOptional<List<String>>(
+        await _loadOptional<List<HermesToolset>>(
           advertised:
               capabilities != null &&
               _capabilityEndpointAuthorized(
@@ -82,10 +85,14 @@ extension _ProfilesExtension on HermesApiChannel {
                 '/v1/toolsets',
               ),
           resource: HermesOptionalResource.toolsets,
-          load: () => client.listEnabledToolsets(profile: id),
+          load: () => client.listToolsets(profile: id),
           errors: errors,
         ) ??
-        const <String>[];
+        const <HermesToolset>[];
+    final enabledToolsets = toolsets
+        .where((toolset) => toolset.enabled)
+        .map((toolset) => toolset.name)
+        .toList(growable: false);
     final jobs =
         await _loadOptional<List<HermesJob>>(
           advertised:
@@ -104,19 +111,19 @@ extension _ProfilesExtension on HermesApiChannel {
         const <HermesJob>[];
     if (!_isCurrentConnection(generation, client)) return;
 
-    final activeId = sessions.firstOrNull?.id;
-    var detachedRunStillActive = false;
+    final detachedActiveId = capabilities == null
+        ? null
+        : await _recoverActiveDetachedSession(
+            client: client,
+            capabilities: capabilities,
+            baseUrl: _state.connectedBaseUrl ?? '',
+            profileId: id,
+            sessionIds: sessions.map((session) => session.id),
+          );
+    final activeId = detachedActiveId ?? sessions.firstOrNull?.id;
+    final detachedRunStillActive = detachedActiveId != null;
     var messages = const <String, List<HermesChatTurn>>{};
     if (activeId != null) {
-      if (capabilities != null) {
-        detachedRunStillActive = await _recoverDetachedRun(
-          client: client,
-          capabilities: capabilities,
-          baseUrl: _state.connectedBaseUrl ?? '',
-          profileId: id,
-          sessionId: activeId,
-        );
-      }
       final turns = await _fetchTurns(client, activeId);
       if (!_isCurrentConnection(generation, client)) return;
       messages = {activeId: turns};
@@ -131,9 +138,11 @@ extension _ProfilesExtension on HermesApiChannel {
         activeSessionId: activeId,
         clearActiveSessionId: activeId == null,
         models: models,
+        runtimeModels: runtimeModels,
         skills: skills,
         skillDetails: skillDetails,
-        enabledToolsets: toolsets,
+        toolsets: toolsets,
+        enabledToolsets: enabledToolsets,
         jobs: jobs,
         optionalResourceErrors: errors,
         errorMessage: detachedRunStillActive

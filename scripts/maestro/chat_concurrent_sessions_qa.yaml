@@ -1,0 +1,71 @@
+# Static validation: maestro check-syntax scripts/maestro/chat_concurrent_sessions_qa.yaml
+# Physical-device receipt for session-owned concurrent runs. Prompts are bounded,
+# synthetic, and explicitly forbid tool use or external actions.
+appId: com.trebuchetdynamics.hermes.wing
+name: chat_concurrent_sessions_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s).*Default agent.*"
+- extendedWaitUntil:
+    visible: "(?s).*online.*"
+    timeout: 60000
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s).*New session.*"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- tapOn:
+    point: "50%,90%"
+- inputText: "Without tools or external actions write an original two thousand word fictional story about a blue clock"
+- tapOn: "(?s).*Send.*"
+- assertVisible: "(?s).*fictional story about a blue clock.*"
+
+# Switch to a fresh session while the first response remains attached.
+- tapOn: "(?s).*More actions.*"
+- tapOn: "^Sessions$"
+- assertVisible: "(?s).*Hermes sessions.*"
+- tapOn: "^New$"
+- extendedWaitUntil:
+    visible: "(?s).*How can Hermes help today?.*"
+    timeout: 30000
+- tapOn: "(?s).*More actions.*"
+- tapOn: "^Sessions$"
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Streaming reply.*"
+    direction: DOWN
+    timeout: 30000
+- assertVisible: "(?s).*Streaming reply.*"
+- pressKey: back
+
+# The foreground session can run independently while alpha continues behind it.
+- tapOn:
+    point: "50%,90%"
+- inputText: "Without tools or external actions reply exactly second-session-ok"
+- tapOn: "(?s).*Send.*"
+- extendedWaitUntil:
+    visible: "(?s)^second-session-ok.*"
+    timeout: 120000
+
+# The first run remains independently stoppable after the second completes.
+- tapOn: "(?s).*More actions.*"
+- tapOn: "^Sessions$"
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Streaming reply.*"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "(?s).*Streaming reply.*"
+- assertVisible: "^Stop$"
+- tapOn: "^Stop$"
+- extendedWaitUntil:
+    notVisible: "^Stop$"
+    timeout: 30000

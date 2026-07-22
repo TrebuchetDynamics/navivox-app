@@ -6,6 +6,7 @@ import '../../features/agents/screens/agents_screen.dart';
 import '../../features/enrollment/screens/hermes_enrollment_screen.dart';
 import '../../features/gateway/screens/gateway_screen.dart';
 import '../../features/hermes_chat/screens/hermes_chat_screen.dart';
+import '../../features/office/screens/office_screen.dart';
 import '../../features/providers/screens/providers_screen.dart';
 import '../../features/schedules/screens/schedules_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
@@ -30,6 +31,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.hermes,
             builder: (context, state) => const HermesChatScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.office,
+            builder: (context, state) => const OfficeScreen(),
           ),
           GoRoute(
             path: AppRoutes.agents,

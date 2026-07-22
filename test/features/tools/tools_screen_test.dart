@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wing/core/hermes/channel/hermes_channel.dart';
 import 'package:wing/core/hermes/models/hermes_capabilities.dart';
 import 'package:wing/core/hermes/models/hermes_skill.dart';
+import 'package:wing/core/hermes/models/hermes_toolset.dart';
 import 'package:wing/core/hermes/setup/hermes_endpoint_store.dart';
 import 'package:wing/features/hermes_chat/gateways/hermes_gateway_directory.dart';
 import 'package:wing/features/hermes_chat/providers/hermes_channel_provider.dart';
@@ -118,6 +119,65 @@ void main() {
     expect(find.text('No installed skills match this search.'), findsOneWidget);
   });
 
+  testWidgets('shows and searches bounded resolved toolset metadata', (
+    tester,
+  ) async {
+    final channel = FakeHermesChannel(
+      capabilities: _capabilities(),
+      toolsets: const [
+        HermesToolset(
+          name: 'default',
+          label: 'Default Tools',
+          description: 'Core file and terminal tools.',
+          enabled: true,
+          configured: true,
+          tools: ['read_file', 'terminal'],
+        ),
+        HermesToolset(
+          name: 'web',
+          label: 'Web Tools',
+          description: 'Search approved web sources.',
+          tools: ['web_search'],
+        ),
+      ],
+      enabledToolsets: const ['default'],
+    );
+    addTearDown(channel.dispose);
+
+    await tester.pumpWidget(_testApp(channel));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Toolsets'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('Default Tools'), findsOneWidget);
+    expect(find.text('Core file and terminal tools.'), findsOneWidget);
+    expect(
+      find.textContaining('Enabled · Configured · 2 resolved tools'),
+      findsOneWidget,
+    );
+    expect(find.text('Web Tools'), findsOneWidget);
+    expect(
+      find.textContaining('Disabled · Not configured · 1 resolved tool'),
+      findsOneWidget,
+    );
+    expect(find.byType(Switch), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('toolsets-search')),
+      'web_search',
+    );
+    await tester.pump();
+    expect(find.text('Web Tools'), findsOneWidget);
+    expect(find.text('Default Tools'), findsNothing);
+
+    await tester.tap(find.text('Web Tools'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'web_search'), findsOneWidget);
+  });
+
   testWidgets('gateway picker activates the selected saved gateway', (
     tester,
   ) async {
@@ -167,6 +227,16 @@ void main() {
           category: 'browser',
         ),
       ],
+      toolsets: const [
+        HermesToolset(
+          name: 'web',
+          label: 'Web Tools',
+          description: 'Search and inspect approved public web sources.',
+          enabled: true,
+          configured: true,
+          tools: ['web_search', 'web_open'],
+        ),
+      ],
       enabledToolsets: const ['web'],
     );
     addTearDown(channel.dispose);
@@ -177,10 +247,13 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('browser-use'), findsOneWidget);
     expect(find.text('Automate an approved browser session.'), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.drag(find.byType(ListView), const Offset(0, -700));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -700));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('web'), findsOneWidget);
+    expect(find.text('Web Tools'), findsOneWidget);
+    expect(find.textContaining('2 resolved tools'), findsOneWidget);
   });
 
   testWidgets('load failures are distinct and do not expose raw errors', (
@@ -193,6 +266,14 @@ void main() {
         HermesSkill(
           name: 'stale-skill',
           description: 'private stale skill description',
+        ),
+      ],
+      toolsets: const [
+        HermesToolset(
+          name: 'stale-toolset',
+          description: 'private stale toolset description',
+          enabled: true,
+          tools: ['private_tool'],
         ),
       ],
       enabledToolsets: const ['stale-toolset'],

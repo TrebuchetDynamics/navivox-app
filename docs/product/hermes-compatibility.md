@@ -104,7 +104,7 @@ A usable endpoint must also advertise at least one supported chat transport:
 
 Wing owns only local navigation/draft/status commands (`/new`, `/sessions`, `/clear`,
 `/settings`, `/usage`, `/help`, `/agents`, `/providers`, `/model`, `/tools`,
-`/skills`, `/schedules`, and `/gateway`), plus capability-gated `/persona` for
+`/skills`, `/schedules`, `/gateway`, and `/office`), plus capability-gated `/persona` for
 an exact scoped profile SOUL read and capability-gated `/version` for exact
 scoped detailed gateway health. They execute as client actions without sending slash text as an agent turn;
 `/new` uses the already-advertised session-create contract. They are disabled
@@ -114,7 +114,7 @@ an advertised catalog contract.
 
 ## Capability-gated endpoints
 
-Hermes Wing may use these only when advertised. Whenever an endpoint declares
+Hermes Wing may use these only when advertised. A handler merely present in a server route table is not an advertised client contract; for example, a server that reports `jobs_admin: false` and omits job-mutation endpoint declarations does not authorize Wing to call registered job handlers. Whenever an endpoint declares
 required scopes, every declared scope must also be granted before controls
 appear or network I/O begins; this includes chat/run transport and session
 create/rename/fork/delete operations.
@@ -133,11 +133,19 @@ create/rename/fork/delete operations.
 - `POST /v1/runs/{run_id}/approval`
 - `POST /v1/runs/{run_id}/stop`
 
+Session bulk deletion is client-side orchestration over the advertised exact per-session `DELETE` contract, not an inferred batch endpoint. Wing confirms once, deletes selected sessions sequentially, preserves successful authoritative deletions if another row fails, reports only bounded counts, and never includes a session with a live reply. Without exact delete authorization, selection and delete controls remain absent.
+
+Session branching uses only the exact advertised `POST /api/sessions/{session_id}/fork` contract after explicit confirmation. The action is absent without its authorization and while that source session has an active reply. An in-flight guard prevents duplicate branch requests. Once Hermes accepts the child, Wing selects it even if the follow-up history refresh fails, inheriting the already loaded source transcript rather than reporting a retryable mutation failure that could create duplicate children.
+
+Authorized runtime model inventory retains at most 128 rows and only bounded `id`, `root`, and `parent` strings. The provider fallback distinguishes the primary runtime model from route aliases and their resolved target without rendering permissions, credentials, or unknown payload fields. Legacy ID-only model state remains compatible.
+
+When detailed health is authorized, Wing reads only the documented bounded status surface: gateway state, busy/drainable flags, active-agent count, update/process metadata, named messaging-platform states, and the fixed state-database/config/model/disk/gateway/background-queue readiness checks. Unknown checks and platform payload fields are discarded, counts are bounded, and credentials, paths, commands, queue payloads, and exception bodies are never rendered.
+
 Failure to load optional health, models, skills, toolsets, or jobs is reported
 as unavailable inventory rather than as an empty inventory. Newer scoped
 servers may require `skills:read` and `tools:read`; authorization failures stay
 isolated as unavailable optional inventory so legacy advertised read-only
-catalogs remain compatible.
+catalogs remain compatible. Authorized toolset inventory retains only bounded name, label, description, enabled/configured flags, and at most 64 normalized resolved tool names per row. Unknown configuration fields are discarded; Wing shows disabled toolsets read-only but exposes no toggle or mutation without a separate exact administration contract.
 
 For runs, Wing accepts bounded input/output/total token counts from the
 terminal SSE event. When a successful terminal event omits usage and the exact
@@ -220,6 +228,20 @@ administration, and the typed backup/restore contract are not yet
 release-supported Hermes Wing workflows. Capability parity requires explicit Hermes
 Agent contracts and client contract tests before these surfaces are enabled;
 Flutter must not substitute direct file, database, or CLI access.
+
+## Native desktop command boundary
+
+A native desktop shell may request only explicitly implemented Wing navigation outcomes over the allow-listed `com.trebuchetdynamics.hermes.wing/desktop_host_commands` channel. The macOS adapter exposes `openSettings`, brings the existing application window forward, and selects Wing's existing `/settings` route. The Linux GTK and Windows Win32 runners expose the same payload-free method through native Hermes Wing → Settings menus and native Ctrl+, accelerators. Ctrl/Command+, also selects the same route through Flutter's bounded shortcut layer where the host does not consume it. All three hosts expose native About behavior; Linux and Windows show only a fixed local product name and description, without server or filesystem work. Their native Window/View menus also expose local minimize, maximize/restore, and full-screen behavior (the standard macOS Minimize/Zoom/Full Screen equivalents) without crossing the MethodChannel. Unknown method names are ignored. The bridge carries no endpoint, credential, transcript, filesystem path, or Hermes payload and cannot invoke Hermes Agent, create sessions, or bypass route-owned capability checks. Linux and Windows retain canonical product/window identity. Linux has current local build/runtime Settings, About, minimize, maximize, restore, and full-screen receipts; the Windows native sources pass a current MinGW cross-target syntax compile, but Windows and macOS current-checkout host builds/interactions and broader equivalent native menus remain required.
+
+Native Linux, Windows, and macOS builds also enable a Flutter-owned secondary-click menu over the authorized transcript. A message menu offers Reply, Copy, and whole-chat text/Markdown export; transcript background menus expose only whole-chat export. These actions reuse the same bounded active-session serializer as the visible toolbar, place only the selected visible message or authorized active transcript on the local clipboard, and perform no Hermes request. Android/iOS keep their existing long-press interaction, and web excludes this desktop menu because browser accessibility overlays and browser-native context policy own that surface. This is not evidence for host-native editable-field cut/paste/select-all integration.
+
+## Saved gateway connection boundary
+
+Settings may update only Wing's local saved connection record for an inactive gateway. The editor displays the sanitized HTTP(S) origin, never pre-fills or renders the existing bearer token, preserves that secure-storage value when the write-only replacement field is blank, and clears it only through a separate explicit checkbox. Origins are reduced to scheme/host/port and validated before persistence; an origin already owned by another saved gateway is rejected. Active gateways fail before persistence so credential rotation cannot disconnect live work. After a successful local save, the directory refreshes only that gateway and retains no token in contacts, cache rows, diagnostics, or physical QA artifacts. This client-local operation does not imply Hermes Agent lifecycle, key-management, configuration, or revision-safe apply support.
+
+## Office projection boundary
+
+The shared `/office` route is a client presentation over `HermesGatewayDirectory`, not a new server domain. It may display only bounded gateway/profile contact labels, explicit availability, and session counts already authorized by directory loading. Gateways without the exact profile-read and query-context contract appear only as their unscoped default contact. Office activation reuses the existing saved-gateway/contact connection path; it never probes profile routes, renders transcript previews, or persists CEO/building/representative shadow state. Account, representative, wallet, and 3D-host controls remain absent until their separate contracts and host adapters exist.
 
 ## Optional Hermes One account service
 

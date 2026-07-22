@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hermes/channel/hermes_channel.dart';
 import '../../../core/hermes/models/hermes_skill.dart';
+import '../../../core/hermes/models/hermes_toolset.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../hermes_chat/gateways/hermes_gateway_directory.dart';
 import '../../hermes_chat/providers/hermes_channel_provider.dart';
@@ -162,17 +163,14 @@ class _ToolsBody extends StatelessWidget {
           strings: strings,
         ),
         const SizedBox(height: 16),
-        _InventorySection(
-          title: strings.enabledToolsetsTitle,
-          icon: Icons.build_outlined,
+        _ToolsetsInventorySection(
           advertised: toolsetsAdvertised,
           loadFailed: state.optionalResourceErrors.containsKey(
             HermesOptionalResource.toolsets,
           ),
-          values: state.enabledToolsets,
-          unavailableBody: strings.toolsetsUnavailableBody,
-          emptyBody: strings.toolsetsEmptyBody,
-          loadFailedBody: strings.toolsetsLoadFailedBody,
+          details: state.toolsets,
+          fallbackNames: state.enabledToolsets,
+          strings: strings,
         ),
       ],
     );
@@ -324,38 +322,77 @@ class _SkillsInventorySectionState extends State<_SkillsInventorySection> {
   }
 }
 
-class _InventorySection extends StatelessWidget {
-  const _InventorySection({
-    required this.title,
-    required this.icon,
+class _ToolsetsInventorySection extends StatefulWidget {
+  const _ToolsetsInventorySection({
     required this.advertised,
     required this.loadFailed,
-    required this.values,
-    required this.unavailableBody,
-    required this.emptyBody,
-    required this.loadFailedBody,
+    required this.details,
+    required this.fallbackNames,
+    required this.strings,
   });
 
-  final String title;
-  final IconData icon;
   final bool advertised;
   final bool loadFailed;
-  final List<String> values;
-  final String unavailableBody;
-  final String emptyBody;
-  final String loadFailedBody;
+  final List<HermesToolset> details;
+  final List<String> fallbackNames;
+  final AppLocalizations strings;
+
+  @override
+  State<_ToolsetsInventorySection> createState() =>
+      _ToolsetsInventorySectionState();
+}
+
+class _ToolsetsInventorySectionState extends State<_ToolsetsInventorySection> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void didUpdateWidget(covariant _ToolsetsInventorySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.details, widget.details) ||
+        !identical(oldWidget.fallbackNames, widget.fallbackNames)) {
+      _searchController.clear();
+      _query = '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final items = [...values]
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    final message = !advertised
-        ? unavailableBody
-        : loadFailed
-        ? loadFailedBody
-        : items.isEmpty
-        ? emptyBody
+    final details = [...widget.details]
+      ..sort(
+        (left, right) => left.displayName.toLowerCase().compareTo(
+          right.displayName.toLowerCase(),
+        ),
+      );
+    final fallbackNames = [
+      ...widget.fallbackNames,
+    ]..sort((left, right) => left.toLowerCase().compareTo(right.toLowerCase()));
+    final message = !widget.advertised
+        ? widget.strings.toolsetsUnavailableBody
+        : widget.loadFailed
+        ? widget.strings.toolsetsLoadFailedBody
+        : details.isEmpty && fallbackNames.isEmpty
+        ? widget.strings.toolsetsCatalogEmptyBody
         : null;
+    final query = _query.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? details
+        : details
+              .where(
+                (toolset) => [
+                  toolset.name,
+                  toolset.label,
+                  toolset.description,
+                  ...toolset.tools,
+                ].any((value) => value.toLowerCase().contains(query)),
+              )
+              .toList(growable: false);
 
     return Card(
       child: Padding(
@@ -365,11 +402,13 @@ class _InventorySection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon),
+                const Icon(Icons.build_outlined),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    title,
+                    details.isEmpty
+                        ? widget.strings.enabledToolsetsTitle
+                        : widget.strings.toolsetsTitle,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -383,15 +422,101 @@ class _InventorySection extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               )
-            else
+            else if (details.isEmpty)
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [for (final item in items) Chip(label: Text(item))],
+                children: [
+                  for (final name in fallbackNames) Chip(label: Text(name)),
+                ],
+              )
+            else ...[
+              TextField(
+                key: const ValueKey('toolsets-search'),
+                controller: _searchController,
+                decoration: InputDecoration(
+                  labelText: widget.strings.searchToolsetsLabel,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (value) => setState(() => _query = value),
               ),
+              const SizedBox(height: 8),
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(widget.strings.noToolsetsMatchBody),
+                )
+              else
+                for (final toolset in filtered)
+                  _ToolsetTile(toolset: toolset, strings: widget.strings),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ToolsetTile extends StatelessWidget {
+  const _ToolsetTile({required this.toolset, required this.strings});
+
+  final HermesToolset toolset;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = [
+      toolset.enabled ? strings.toolsetEnabled : strings.toolsetDisabled,
+      toolset.configured
+          ? strings.toolsetConfigured
+          : strings.toolsetNotConfigured,
+      strings.toolsetResolvedToolsCount(toolset.tools.length),
+    ].join(' · ');
+    final subtitle = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (toolset.label.isNotEmpty && toolset.label != toolset.name)
+          Text(toolset.name),
+        if (toolset.description.isNotEmpty) Text(toolset.description),
+        const SizedBox(height: 4),
+        Text(status, style: Theme.of(context).textTheme.labelMedium),
+      ],
+    );
+    if (toolset.tools.isEmpty) {
+      return ListTile(
+        key: ValueKey('toolset-${toolset.name}'),
+        contentPadding: EdgeInsets.zero,
+        title: Text(toolset.displayName),
+        subtitle: subtitle,
+      );
+    }
+    return ExpansionTile(
+      key: ValueKey('toolset-${toolset.name}'),
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 12),
+      title: Text(toolset.displayName),
+      subtitle: subtitle,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            strings.toolsetResolvedToolsTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tool in toolset.tools) Chip(label: Text(tool)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

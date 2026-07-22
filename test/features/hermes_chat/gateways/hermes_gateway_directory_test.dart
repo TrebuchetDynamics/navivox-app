@@ -356,6 +356,121 @@ void main() {
     expect(loader.calls.where((id) => id == 'b'), hasLength(1));
   });
 
+  test(
+    'update connection sanitizes the origin and preserves a hidden credential',
+    () async {
+      final store = FakeHermesEndpointStore(
+        profiles: const [
+          HermesEndpointConfig(
+            id: 'a',
+            label: 'Alpha',
+            baseUrl: 'https://old.example',
+            apiKey: 'sentinel-secret',
+          ),
+        ],
+      );
+      final loader = FakeGatewaySummaryLoader({
+        'a': gatewaySummary(['a1']),
+      });
+      final directory = HermesGatewayDirectory(
+        store: store,
+        cache: FakeGatewayContactCache(),
+        loader: loader,
+        activeChannel: FakeHermesChannel.disconnected(),
+      );
+      await directory.refresh();
+
+      await directory.updateGatewayConnection(
+        'a',
+        baseUrl: 'https://new.example/private?token=discarded',
+      );
+
+      expect(store.saveCalls.single.baseUrl, 'https://new.example');
+      expect(store.saveCalls.single.apiKey, 'sentinel-secret');
+      expect(directory.gateways.single.baseUrl, 'https://new.example');
+      expect(
+        directory.contacts.map((contact) => contact.toJson()).toString(),
+        isNot(contains('sentinel-secret')),
+      );
+      expect(loader.calls, ['a', 'a']);
+    },
+  );
+
+  test(
+    'update connection can explicitly remove the saved credential',
+    () async {
+      final store = FakeHermesEndpointStore(
+        profiles: const [
+          HermesEndpointConfig(
+            id: 'a',
+            baseUrl: 'https://a.example',
+            apiKey: 'sentinel-secret',
+          ),
+        ],
+      );
+      final directory = HermesGatewayDirectory(
+        store: store,
+        cache: FakeGatewayContactCache(),
+        loader: FakeGatewaySummaryLoader({
+          'a': gatewaySummary(['a1']),
+        }),
+        activeChannel: FakeHermesChannel.disconnected(),
+      );
+      await directory.refresh();
+
+      await directory.updateGatewayConnection(
+        'a',
+        baseUrl: 'https://a.example',
+        clearApiKey: true,
+      );
+
+      expect(store.saveCalls.single.apiKey, isNull);
+    },
+  );
+
+  test(
+    'active and duplicate gateway connection updates fail before persistence',
+    () async {
+      final store = FakeHermesEndpointStore(
+        profiles: const [
+          HermesEndpointConfig(id: 'a', baseUrl: 'https://a.example'),
+          HermesEndpointConfig(id: 'b', baseUrl: 'https://b.example'),
+        ],
+      );
+      final channel = FakeHermesChannel.disconnected();
+      final directory = HermesGatewayDirectory(
+        store: store,
+        cache: FakeGatewayContactCache(),
+        loader: FakeGatewaySummaryLoader({
+          'a': gatewaySummary(['a1']),
+          'b': gatewaySummary(['b1']),
+        }),
+        activeChannel: channel,
+      );
+      await directory.refresh();
+      await directory.activate(
+        const GatewayContactId(gatewayId: 'a', profileId: 'a1'),
+      );
+
+      await expectLater(
+        directory.updateGatewayConnection(
+          'a',
+          baseUrl: 'https://changed.example',
+        ),
+        throwsStateError,
+      );
+      await expectLater(
+        directory.updateGatewayConnection(
+          'b',
+          baseUrl: 'https://a.example/path',
+        ),
+        throwsStateError,
+      );
+
+      expect(store.saveCalls, isEmpty);
+    },
+  );
+
   test('remove gateway clears only its contacts and credential', () async {
     final store = FakeHermesEndpointStore(
       profiles: const [

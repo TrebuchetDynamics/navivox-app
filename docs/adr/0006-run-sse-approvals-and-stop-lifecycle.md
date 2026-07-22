@@ -20,7 +20,7 @@ Ordinary Hermes requests have a bounded timeout, and an SSE stream that stays op
 - Approval requests carry their run and session identity. Switching sessions retains pending approvals, renders them only with their owning transcript, and routes responses to the originating run.
 - Bounded `reasoning.available` text is treated as transcript activity, survives authoritative history reconciliation, and is exported without exposing unknown event payloads.
 - SSE decoding, stream errors, dropped streams, and terminal events are core behavior and require tests.
-- After a premature stream close, Wing may perform one exact capability-gated run-status read. A completed status can recover bounded output and token usage; queued/running status records a bounded opaque detached-run lease, suppresses duplicate retry across reconnects or process recreation for the same gateway/profile/session, and directs the operator to reconnect later. Reconnect releases the guard only after an exact terminal status. An unadvertised status route is never probed.
+- As soon as the server accepts a run, Wing persists a bounded opaque detached-run lease before attaching its event stream, so abrupt process death cannot race ahead of durability. After a premature stream close, Wing may perform one exact capability-gated run-status read. Completed status can recover bounded output and token usage; queued/running status retains the lease, suppresses duplicate retry across reconnects or process recreation for the same gateway/profile/session, and directs the operator to reconcile. Reconnect reopens the newest matching leased session and releases the guard only after an exact terminal status; a confirmed stop also releases it. An unadvertised status route is never probed.
 - Compatibility shims should be removed only after supported Hermes Agent versions converge.
 
 ## Edge cases
@@ -45,3 +45,6 @@ Ordinary Hermes requests have a bounded timeout, and an SSE stream that stays op
 - `lib/features/hermes_chat/screens/widgets/hermes_chat_sessions.dart`
 - `test/core/hermes/channel/hermes_api_channel_test.dart`
 - `test/features/hermes_chat/screens/hermes_chat_gateway_switch_test.dart`
+- `test/features/hermes_chat/screens/hermes_chat_rich_transcript_test.dart`
+- `scripts/maestro/chat_concurrent_sessions_qa.yaml`
+- `scripts/maestro/chat_process_recovery_qa.yaml`

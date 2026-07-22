@@ -55,16 +55,18 @@ final hermesAttachmentPickerProvider = Provider<Future<XFile?> Function()>(
 
 final hermesTextToSpeechServiceProvider = Provider<TextToSpeechService?>((ref) {
   final settings = ref.watch(wingVoiceSettingsProvider);
+  final platformService = createDefaultTextToSpeechService(
+    settings: () => ref.read(wingVoiceSettingsProvider),
+  );
   final service =
       settings.pocketSpeechTtsEnabled && settings.pocketSpeechVoicePackReady
       ? createPocketSpeechTextToSpeechService(
           enabled: true,
           voicePack: settings.pocketSpeechVoicePack!,
           settings: () => ref.read(wingVoiceSettingsProvider),
+          fallback: platformService,
         )
-      : createDefaultTextToSpeechService(
-          settings: () => ref.read(wingVoiceSettingsProvider),
-        );
+      : platformService;
   if (service != null) {
     ref.onDispose(() => unawaited(service.dispose()));
   }
@@ -168,6 +170,22 @@ const _composerEmojis = [
 enum _ComposerMenuAction { sessions, handsFree }
 
 enum _TranscriptCopyFormat { text, markdown }
+
+class _OpenSessionsIntent extends Intent {
+  const _OpenSessionsIntent();
+}
+
+class _CreateSessionIntent extends Intent {
+  const _CreateSessionIntent();
+}
+
+bool get _usesDesktopKeyboardShortcuts =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.macOS);
+String get _desktopShortcutModifier =>
+    defaultTargetPlatform == TargetPlatform.macOS ? '⌘' : 'Ctrl';
 
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 String get _defaultHermesBaseUrl => _configuredHermesBaseUrl;
@@ -557,14 +575,25 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
       ),
     );
     if (format == null || !context.mounted) return;
+    await _copyTranscript(context, state, format);
+  }
+
+  Future<void> _copyTranscript(
+    BuildContext context,
+    HermesChannelState state,
+    _TranscriptCopyFormat format,
+  ) async {
+    final strings = _hermesStrings(context);
     final transcript = switch (format) {
       _TranscriptCopyFormat.text => _hermesTranscriptText(
         state.activeMessages,
         strings,
+        session: state.activeSession,
       ),
       _TranscriptCopyFormat.markdown => _hermesTranscriptMarkdown(
         state.activeMessages,
         strings,
+        session: state.activeSession,
       ),
     };
     if (transcript.isEmpty) return;
@@ -593,6 +622,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
         hasGateways && directory.activeContactId == null && !legacyConnected;
     final activeContact = directory.activeContact;
     _requestShellNavigation(activeContact == null);
+    final desktopShortcuts = <ShortcutActivator, Intent>{
+      if (_usesDesktopKeyboardShortcuts && state.isConnected) ...{
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true):
+            const _OpenSessionsIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+            const _OpenSessionsIntent(),
+      },
+      if (_usesDesktopKeyboardShortcuts &&
+          state.isConnected &&
+          _canCreateSession(state)) ...{
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true):
+            const _CreateSessionIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
+            const _CreateSessionIntent(),
+      },
+    };
 
     final scaffold = Scaffold(
       appBar: AppBar(
@@ -692,14 +737,22 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
             if (!compactAppBar) ...[
               IconButton(
                 key: const ValueKey('hermes-sessions-button'),
-                tooltip: 'Sessions',
+                tooltip: _usesDesktopKeyboardShortcuts
+                    ? strings.desktopSessionsShortcutTooltip(
+                        _desktopShortcutModifier,
+                      )
+                    : 'Sessions',
                 icon: const Icon(Icons.view_list_outlined),
                 onPressed: () => _showSessionsPanel(context, channel),
               ),
               if (_canCreateSession(state))
                 IconButton(
                   key: const ValueKey('hermes-new-session'),
-                  tooltip: 'New session',
+                  tooltip: _usesDesktopKeyboardShortcuts
+                      ? strings.desktopNewSessionShortcutTooltip(
+                          _desktopShortcutModifier,
+                        )
+                      : 'New session',
                   icon: const Icon(Icons.add_comment_outlined),
                   onPressed: () => unawaited(_createSession(context, channel)),
                 ),
@@ -809,41 +862,84 @@ class _HermesChatScreenState extends ConsumerState<HermesChatScreen>
           ? _buildChat(context, channel, state)
           : const Center(child: CircularProgressIndicator()),
     );
-    if (activeContact == null) return scaffold;
+    Widget content = scaffold;
+    if (desktopShortcuts.isNotEmpty) {
+      content = Shortcuts(
+        shortcuts: desktopShortcuts,
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            _OpenSessionsIntent: CallbackAction<_OpenSessionsIntent>(
+              onInvoke: (_) {
+                _showSessionsPanel(context, channel);
+                return null;
+              },
+            ),
+            _CreateSessionIntent: CallbackAction<_CreateSessionIntent>(
+              onInvoke: (_) {
+                unawaited(_createSession(context, channel));
+                return null;
+              },
+            ),
+          },
+          child: Focus(autofocus: true, child: content),
+        ),
+      );
+    }
+    if (activeContact == null) return content;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_showGatewayContacts());
       },
-      child: scaffold,
+      child: content,
     );
   }
 }
 
 String _hermesTranscriptText(
   List<HermesChatTurn> turns,
-  AppLocalizations strings,
-) => _hermesTranscriptSections(
+  AppLocalizations strings, {
+  HermesSession? session,
+}) => _hermesTranscriptSections(
   turns,
   strings: strings,
   markdown: false,
+  session: session,
 ).join('\n\n');
 
 String _hermesTranscriptMarkdown(
   List<HermesChatTurn> turns,
-  AppLocalizations strings,
-) => _hermesTranscriptSections(
+  AppLocalizations strings, {
+  HermesSession? session,
+}) => _hermesTranscriptSections(
   turns,
   strings: strings,
   markdown: true,
+  session: session,
 ).join('\n\n');
 
 List<String> _hermesTranscriptSections(
   List<HermesChatTurn> turns, {
   required AppLocalizations strings,
   required bool markdown,
+  HermesSession? session,
 }) {
   final sections = <String>[];
+  if (session != null && _hasHermesExtendedSessionMetadata(session)) {
+    final metadata = [
+      'Session: ${_safeHermesUiPreview(session.title ?? session.id, maxLength: 96)}',
+      'Session ID: ${_safeHermesUiPreview(session.id, maxLength: 120)}',
+      if (session.model?.trim().isNotEmpty ?? false)
+        'Model: ${_safeHermesUiPreview(session.model!.trim(), maxLength: 120)}',
+      'Messages: ${session.messageCount}',
+      ..._hermesExtendedSessionMetadataLines(session),
+    ];
+    sections.add(
+      markdown
+          ? ['## Session metadata', metadata.join('\n')].join('\n\n')
+          : ['Session metadata', ...metadata].join('\n'),
+    );
+  }
   for (final turn in turns) {
     final toolCall = turn.toolCall;
     if (turn.kind == HermesTurnKind.toolCall && toolCall != null) {

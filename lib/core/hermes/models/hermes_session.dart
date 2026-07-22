@@ -7,6 +7,20 @@ class HermesSession {
     this.model,
     this.title,
     this.messageCount = 0,
+    this.toolCallCount,
+    this.inputTokens,
+    this.outputTokens,
+    this.cacheReadTokens,
+    this.cacheWriteTokens,
+    this.reasoningTokens,
+    this.apiCallCount,
+    this.estimatedCostUsd,
+    this.actualCostUsd,
+    this.startedAt,
+    this.endedAt,
+    this.endReason,
+    this.hasSystemPrompt,
+    this.hasModelConfig,
     this.lastActive,
     this.preview,
     this.parentSessionId,
@@ -19,7 +33,21 @@ class HermesSession {
       model: wingOptionalStringFromJson(json['model']),
       title: wingOptionalStringFromJson(json['title']),
       messageCount: wingIntFromJson(json['message_count']),
-      lastActive: wingOptionalStringFromJson(json['last_active']),
+      toolCallCount: _optionalNonNegativeInt(json['tool_call_count']),
+      inputTokens: _optionalNonNegativeInt(json['input_tokens']),
+      outputTokens: _optionalNonNegativeInt(json['output_tokens']),
+      cacheReadTokens: _optionalNonNegativeInt(json['cache_read_tokens']),
+      cacheWriteTokens: _optionalNonNegativeInt(json['cache_write_tokens']),
+      reasoningTokens: _optionalNonNegativeInt(json['reasoning_tokens']),
+      apiCallCount: _optionalNonNegativeInt(json['api_call_count']),
+      estimatedCostUsd: _optionalNonNegativeDouble(json['estimated_cost_usd']),
+      actualCostUsd: _optionalNonNegativeDouble(json['actual_cost_usd']),
+      startedAt: _sessionTimestampFromJson(json['started_at']),
+      endedAt: _sessionTimestampFromJson(json['ended_at']),
+      endReason: wingOptionalStringFromJson(json['end_reason']),
+      hasSystemPrompt: _optionalBool(json, 'has_system_prompt'),
+      hasModelConfig: _optionalBool(json, 'has_model_config'),
+      lastActive: _sessionTimestampFromJson(json['last_active']),
       preview: wingOptionalStringFromJson(json['preview']),
       parentSessionId: wingOptionalStringFromJson(json['parent_session_id']),
     );
@@ -30,9 +58,72 @@ class HermesSession {
   final String? model;
   final String? title;
   final int messageCount;
+  final int? toolCallCount;
+  final int? inputTokens;
+  final int? outputTokens;
+  final int? cacheReadTokens;
+  final int? cacheWriteTokens;
+  final int? reasoningTokens;
+  final int? apiCallCount;
+  final double? estimatedCostUsd;
+  final double? actualCostUsd;
+  final String? startedAt;
+  final String? endedAt;
+  final String? endReason;
+  final bool? hasSystemPrompt;
+  final bool? hasModelConfig;
   final String? lastActive;
   final String? preview;
   final String? parentSessionId;
+}
+
+const _maxSafeSessionCount = 9007199254740991;
+const _maxSessionCostUsd = 1000000000000.0;
+
+int? _optionalNonNegativeInt(Object? value) {
+  if (value == null) return null;
+  final parsed = value is num
+      ? value.toInt()
+      : int.tryParse(value.toString().trim());
+  if (parsed == null || parsed < 0) return null;
+  return parsed.clamp(0, _maxSafeSessionCount);
+}
+
+double? _optionalNonNegativeDouble(Object? value) {
+  final parsed = wingDoubleFromJson(value);
+  if (parsed == null || !parsed.isFinite || parsed < 0) return null;
+  return parsed.clamp(0, _maxSessionCostUsd);
+}
+
+String? _sessionTimestampFromJson(Object? value) {
+  final text = wingOptionalStringFromJson(value);
+  if (text == null) return null;
+  if (DateTime.tryParse(text) != null) return text;
+
+  final seconds = value is num ? value.toDouble() : double.tryParse(text);
+  if (seconds == null || !seconds.isFinite || seconds < 0) return text;
+  final milliseconds = seconds * Duration.millisecondsPerSecond;
+  if (!milliseconds.isFinite || milliseconds > 8640000000000000) {
+    return text;
+  }
+  try {
+    return DateTime.fromMillisecondsSinceEpoch(
+      milliseconds.round(),
+      isUtc: true,
+    ).toIso8601String();
+  } on RangeError {
+    return text;
+  }
+}
+
+bool? _optionalBool(Map<String, Object?> json, String key) {
+  if (!json.containsKey(key)) return null;
+  final value = json[key];
+  if (value is bool) return value;
+  final normalized = value?.toString().trim().toLowerCase();
+  if (normalized == 'true') return true;
+  if (normalized == 'false') return false;
+  return null;
 }
 
 class HermesMessage {

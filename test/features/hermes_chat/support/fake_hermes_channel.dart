@@ -7,8 +7,10 @@ import 'package:wing/core/hermes/models/hermes_chat_turn.dart';
 import 'package:wing/core/hermes/models/hermes_health.dart';
 import 'package:wing/core/hermes/models/hermes_job.dart';
 import 'package:wing/core/hermes/models/hermes_run.dart';
+import 'package:wing/core/hermes/models/hermes_runtime_model.dart';
 import 'package:wing/core/hermes/models/hermes_session.dart';
 import 'package:wing/core/hermes/models/hermes_skill.dart';
+import 'package:wing/core/hermes/models/hermes_toolset.dart';
 import 'package:wing/core/hermes/policy/hermes_transport_policy.dart';
 import 'package:wing/core/protocol/voice/models/wing_voice_run.dart';
 
@@ -33,8 +35,10 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     String? activeSessionId,
     HermesHealthStatus? detailedHealth,
     List<String> models = const [],
+    List<HermesRuntimeModel> runtimeModels = const [],
     List<String> skills = const [],
     List<HermesSkill> skillDetails = const [],
+    List<HermesToolset> toolsets = const [],
     List<String> enabledToolsets = const [],
     List<HermesJob> jobs = const [],
     Map<HermesOptionalResource, String> optionalResourceErrors = const {},
@@ -57,6 +61,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     this.createSessionFails = false,
     this.selectSessionFails = false,
     this.selectSessionFailureMessage = 'select failed',
+    this.deleteSessionFailureIds = const {},
     this.approvalResponsesFail = false,
     this.approvalResponseGate,
     this.connectGate,
@@ -66,14 +71,17 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     this.deleteProfileFails = false,
     this.writeProfileSoulFails = false,
     this.profileMutationFailureMessage = 'Hermes API returned HTTP 412',
-  }) : _state = status == HermesConnectionStatus.connected
+  }) : connectCapabilities = capabilities,
+       _state = status == HermesConnectionStatus.connected
            ? HermesChannelState(
                status: status,
                capabilities: capabilities,
                detailedHealth: detailedHealth,
                models: models,
+               runtimeModels: runtimeModels,
                skills: skills,
                skillDetails: skillDetails,
+               toolsets: toolsets,
                enabledToolsets: enabledToolsets,
                jobs: jobs,
                optionalResourceErrors: optionalResourceErrors,
@@ -98,9 +106,14 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
              )
            : HermesChannelState(status: status, errorMessage: errorMessage);
 
-  factory FakeHermesChannel.disconnected() =>
-      FakeHermesChannel(status: HermesConnectionStatus.disconnected);
+  factory FakeHermesChannel.disconnected({
+    Set<String> deleteSessionFailureIds = const {},
+  }) => FakeHermesChannel(
+    status: HermesConnectionStatus.disconnected,
+    deleteSessionFailureIds: deleteSessionFailureIds,
+  );
 
+  final HermesCapabilityDocument? connectCapabilities;
   final List<FakeHermesConnectCall> connectCalls = [];
   int disconnectCalls = 0;
   final List<String> sentVoiceTranscripts = [];
@@ -141,6 +154,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   final bool createSessionFails;
   bool selectSessionFails;
   String selectSessionFailureMessage;
+  final Set<String> deleteSessionFailureIds;
   final bool approvalResponsesFail;
   final Future<void> Function()? approvalResponseGate;
   final Future<void> Function()? connectGate;
@@ -210,6 +224,7 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
     _setState(
       HermesChannelState(
         status: HermesConnectionStatus.connected,
+        capabilities: connectCapabilities,
         sessions: [const HermesSession(id: sessionId, source: 'fake')],
         activeSessionId: sessionId,
         connectedBaseUrl: baseUrl,
@@ -277,6 +292,9 @@ class FakeHermesChannel extends ChangeNotifier implements HermesChannel {
   @override
   Future<void> deleteSession(String sessionId) async {
     deleteSessionCalls.add(sessionId);
+    if (deleteSessionFailureIds.contains(sessionId)) {
+      throw StateError('private transport failure');
+    }
     final remaining = [
       for (final session in _state.sessions)
         if (session.id != sessionId) session,

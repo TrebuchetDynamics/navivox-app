@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/hermes/channel/hermes_channel.dart';
+import '../../../core/hermes/models/hermes_runtime_model.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../agents/providers/profile_selection_provider.dart';
 import '../../hermes_chat/gateways/hermes_gateway_directory.dart';
@@ -470,7 +471,11 @@ class _ModelSection extends StatelessWidget {
         Text(strings.modelSelectionTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: 12),
         if (!state.canReadModels && state.canReadRuntimeModels)
-          _RuntimeModelsCard(strings: strings, models: state.models)
+          _RuntimeModelsCard(
+            strings: strings,
+            models: state.models,
+            details: state.runtimeModels,
+          )
         else if (!state.canReadModels)
           Text(strings.modelSelectionUnavailableBody)
         else ...[
@@ -525,10 +530,15 @@ class _ModelSection extends StatelessWidget {
 }
 
 class _RuntimeModelsCard extends StatelessWidget {
-  const _RuntimeModelsCard({required this.strings, required this.models});
+  const _RuntimeModelsCard({
+    required this.strings,
+    required this.models,
+    required this.details,
+  });
 
   final AppLocalizations strings;
   final List<String> models;
+  final List<HermesRuntimeModel> details;
 
   @override
   Widget build(BuildContext context) {
@@ -552,7 +562,12 @@ class _RuntimeModelsCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(strings.runtimeModelsBody),
             const SizedBox(height: 12),
-            if (sortedModels.isEmpty)
+            if (details.isNotEmpty)
+              for (var index = 0; index < details.length; index++) ...[
+                if (index > 0) const Divider(),
+                _RuntimeModelTile(model: details[index], strings: strings),
+              ]
+            else if (sortedModels.isEmpty)
               Text(strings.runtimeModelsEmptyBody)
             else
               Wrap(
@@ -564,6 +579,41 @@ class _RuntimeModelsCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RuntimeModelTile extends StatelessWidget {
+  const _RuntimeModelTile({required this.model, required this.strings});
+
+  final HermesRuntimeModel model;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = _boundedRuntimeModelLabel(model.id);
+    final root = _boundedRuntimeModelLabel(model.root);
+    final parent = _boundedRuntimeModelLabel(model.parent);
+    final isAlias = model.isRouteAlias;
+    return ListTile(
+      key: ValueKey('runtime-model-$id'),
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(isAlias ? Icons.alt_route : Icons.memory_outlined),
+      title: Text(id),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isAlias
+                ? strings.runtimeModelRouteAlias
+                : strings.runtimeModelPrimary,
+          ),
+          if (isAlias && root.isNotEmpty)
+            Text(strings.runtimeModelRoutesTo(root)),
+          if (isAlias && parent.isNotEmpty)
+            Text(strings.runtimeModelParent(parent)),
+        ],
       ),
     );
   }

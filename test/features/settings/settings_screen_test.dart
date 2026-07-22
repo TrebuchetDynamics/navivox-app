@@ -132,6 +132,168 @@ void main() {
     expect(diagnostics, findsOneWidget);
   });
 
+  testWidgets(
+    'settings rotates an inactive gateway connection without revealing credentials',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final channel = FakeHermesChannel.disconnected();
+      addTearDown(channel.dispose);
+      final store = FakeHermesEndpointStore(
+        profiles: const [
+          HermesEndpointConfig(
+            id: 'a',
+            label: 'Alpha',
+            baseUrl: 'https://old.example',
+            apiKey: 'old-sentinel-secret',
+          ),
+        ],
+      );
+      final loader = FakeGatewaySummaryLoader({
+        'a': gatewaySummary(['a1']),
+      });
+      final directory = HermesGatewayDirectory(
+        store: store,
+        cache: FakeGatewayContactCache(),
+        loader: loader,
+        activeChannel: channel,
+      );
+      await directory.refresh();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            hermesChannelProvider.overrideWithValue(channel),
+            hermesEndpointStoreProvider.overrideWithValue(store),
+            hermesGatewayDirectoryProvider.overrideWith((ref) => directory),
+          ],
+          child: const MaterialApp(home: SettingsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('settings-gateway-menu-a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Update connection'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('settings-gateway-base-url-field')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-gateway-api-key-field')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('old-sentinel-secret'), findsNothing);
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.byKey(const ValueKey('settings-gateway-api-key-field')),
+            )
+            .controller
+            ?.text,
+        isEmpty,
+      );
+
+      await tester.enterText(
+        find.byKey(const ValueKey('settings-gateway-base-url-field')),
+        'ftp://invalid.example',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('settings-gateway-connection-save')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Enter an HTTP or HTTPS gateway origin.'),
+        findsOneWidget,
+      );
+      expect(store.saveCalls, isEmpty);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('settings-gateway-base-url-field')),
+        'https://new.example/private?secret=value',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('settings-gateway-api-key-field')),
+        'rotated-sentinel-secret',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('settings-gateway-connection-save')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(store.saveCalls.single.id, 'a');
+      expect(store.saveCalls.single.baseUrl, 'https://new.example');
+      expect(store.saveCalls.single.apiKey, 'rotated-sentinel-secret');
+      expect(directory.gateways.single.baseUrl, 'https://new.example');
+      expect(find.textContaining('rotated-sentinel-secret'), findsNothing);
+      expect(find.textContaining('old-sentinel-secret'), findsNothing);
+      expect(loader.calls, ['a', 'a']);
+    },
+  );
+
+  testWidgets('gateway connection editor fits a phone at 200% text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final channel = FakeHermesChannel.disconnected();
+    addTearDown(channel.dispose);
+    final store = FakeHermesEndpointStore(
+      profiles: const [
+        HermesEndpointConfig(id: 'a', baseUrl: 'https://a.example'),
+      ],
+    );
+    final directory = HermesGatewayDirectory(
+      store: store,
+      cache: FakeGatewayContactCache(),
+      loader: FakeGatewaySummaryLoader({
+        'a': gatewaySummary(['a1']),
+      }),
+      activeChannel: channel,
+    );
+    await directory.refresh();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          hermesChannelProvider.overrideWithValue(channel),
+          hermesEndpointStoreProvider.overrideWithValue(store),
+          hermesGatewayDirectoryProvider.overrideWith((ref) => directory),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const SettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('settings-gateway-menu-a')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Update connection'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Update gateway connection'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-gateway-base-url-field')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-gateway-connection-save')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('settings overview fits a narrow phone without overflow', (
     tester,
   ) async {

@@ -569,9 +569,11 @@ void _hermesApiChannelSessionMutationTests() {
     },
   );
 
-  test('disconnect clears pending delete in-progress guard', () async {
+  test('stale delete cleanup cannot clear a reconnected delete guard', () async {
     final firstDeleteStarted = Completer<void>();
     final releaseFirstDelete = Completer<void>();
+    final secondDeleteStarted = Completer<void>();
+    final releaseSecondDelete = Completer<void>();
     var deleteCount = 0;
     final channel = HermesApiChannel(
       clientBuilder: (config) => HermesApiClient(
@@ -590,6 +592,11 @@ void _hermesApiChannelSessionMutationTests() {
           if (deleteCount == 1) {
             firstDeleteStarted.complete();
             await releaseFirstDelete.future;
+          } else if (deleteCount == 2) {
+            secondDeleteStarted.complete();
+            await releaseSecondDelete.future;
+          } else {
+            throw StateError('duplicate reached server');
           }
           return '{"object":"hermes.session.deleted","id":"sess_1","deleted":true}';
         },
@@ -602,11 +609,16 @@ void _hermesApiChannelSessionMutationTests() {
     await channel.disconnect();
     await channel.connect(baseUrl: 'http://127.0.0.1:8642');
 
-    await channel.deleteSession('sess_1');
+    final currentDelete = channel.deleteSession('sess_1');
+    await secondDeleteStarted.future;
     releaseFirstDelete.complete();
     await firstDelete;
+    await expectLater(channel.deleteSession('sess_1'), throwsStateError);
 
     expect(deleteCount, 2);
+    releaseSecondDelete.complete();
+    await currentDelete;
+    expect(channel.state.sessions, isEmpty);
     expect(channel.state.status, HermesConnectionStatus.connected);
   });
 
@@ -636,6 +648,145 @@ void _hermesApiChannelSessionMutationTests() {
       expect(channel.state.activeSessionId, 'sess_1');
     },
   );
+
+  test('forkSession rejects an active reply before HTTP', () async {
+    final stream = _ManualStringStream();
+    var forkPosts = 0;
+    final channel = HermesApiChannel(
+      sessionIdFactory: () => 'fork_1',
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          forkPosts += 1;
+          return '{}';
+        },
+        postStream: (uri, headers, body) => stream,
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    unawaited(channel.sendText('still running'));
+    await pumpEventQueue();
+    expect(channel.state.isSessionStreaming('sess_1'), isTrue);
+
+    await expectLater(channel.forkSession('sess_1'), throwsStateError);
+
+    expect(forkPosts, 0);
+    stream.emit(
+      'event: done\ndata: {"session_id":"sess_1","content":"done"}\n\n',
+    );
+    await pumpEventQueue();
+  });
+
+  test('forkSession blocks duplicate in-flight branches before HTTP', () async {
+    final firstPostStarted = Completer<void>();
+    final releaseFirstPost = Completer<void>();
+    var forkPosts = 0;
+    final channel = HermesApiChannel(
+      sessionIdFactory: () => 'fork_1',
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/fork_1/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          forkPosts += 1;
+          if (forkPosts == 1) {
+            firstPostStarted.complete();
+            await releaseFirstPost.future;
+          } else {
+            throw StateError('duplicate reached server');
+          }
+          return '{"object":"hermes.session","session":{"id":"fork_1","source":"api_server","title":"Fork","parent_session_id":"sess_1"}}';
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final first = channel.forkSession('sess_1');
+    await firstPostStarted.future;
+    await expectLater(channel.forkSession('sess_1'), throwsStateError);
+
+    expect(forkPosts, 1);
+    releaseFirstPost.complete();
+    await first;
+    expect(channel.state.activeSession?.parentSessionId, 'sess_1');
+  });
+
+  test('stale branch cleanup cannot clear a reconnected branch guard', () async {
+    final firstPostStarted = Completer<void>();
+    final releaseFirstPost = Completer<void>();
+    final secondPostStarted = Completer<void>();
+    final releaseSecondPost = Completer<void>();
+    var forkPosts = 0;
+    var nextForkId = 0;
+    final channel = HermesApiChannel(
+      sessionIdFactory: () => 'fork_${++nextForkId}',
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async {
+          return switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _capabilitiesFixture,
+            '/api/sessions' => _sessionsFixture,
+            '/api/sessions/sess_1/messages' => _messagesFixture,
+            '/api/sessions/fork_2/messages' => _messagesFixture,
+            _ => throw StateError('unexpected GET $uri'),
+          };
+        },
+        post: (uri, headers, body) async {
+          forkPosts += 1;
+          if (forkPosts == 1) {
+            firstPostStarted.complete();
+            await releaseFirstPost.future;
+            return '{"object":"hermes.session","session":{"id":"fork_1","source":"api_server","parent_session_id":"sess_1"}}';
+          }
+          if (forkPosts == 2) {
+            secondPostStarted.complete();
+            await releaseSecondPost.future;
+            return '{"object":"hermes.session","session":{"id":"fork_2","source":"api_server","parent_session_id":"sess_1"}}';
+          }
+          throw StateError('duplicate reached server');
+        },
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    final stale = channel.forkSession('sess_1');
+    await firstPostStarted.future;
+    await channel.disconnect();
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+    final current = channel.forkSession('sess_1');
+    await secondPostStarted.future;
+
+    releaseFirstPost.complete();
+    await stale;
+    await expectLater(channel.forkSession('sess_1'), throwsStateError);
+    expect(forkPosts, 2);
+
+    releaseSecondPost.complete();
+    await current;
+    expect(channel.state.activeSessionId, 'fork_2');
+  });
 
   test('forkSession creates and selects a copied child session', () async {
     final posts = <String, Map<String, Object?>>{};
@@ -700,7 +851,7 @@ void _hermesApiChannelSessionMutationTests() {
   });
 
   test(
-    'forkSession leaves local state alone when forked history fails to load',
+    'forkSession keeps the accepted child when history refresh fails',
     () async {
       final channel = HermesApiChannel(
         sessionIdFactory: () => 'fork_1',
@@ -724,12 +875,13 @@ void _hermesApiChannelSessionMutationTests() {
       );
       await channel.connect(baseUrl: 'http://127.0.0.1:8642');
 
-      await expectLater(channel.forkSession('sess_1'), throwsStateError);
+      await channel.forkSession('sess_1');
 
-      expect(channel.state.sessions.map((s) => s.id), ['sess_1']);
-      expect(channel.state.activeSessionId, 'sess_1');
+      expect(channel.state.sessions.map((s) => s.id), ['sess_1', 'fork_1']);
+      expect(channel.state.activeSessionId, 'fork_1');
+      expect(channel.state.activeSession?.parentSessionId, 'sess_1');
       expect(channel.state.activeMessages.single.text, 'Hello');
-      expect(channel.state.messages.containsKey('fork_1'), isFalse);
+      expect(channel.state.messages.containsKey('fork_1'), isTrue);
     },
   );
 

@@ -313,6 +313,37 @@ void _hermesApiChannelRunTransportTests() {
     expect(turns.last.text, 'Reasoned answer');
   });
 
+  test('sendText drops reasoning identical to the completed reply', () async {
+    final channel = HermesApiChannel(
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async =>
+            '{"object":"hermes.run","run":{"id":"run_1","session_id":"sess_1"}}',
+        getStream: (uri, headers) => Stream.fromIterable([
+          'data: {"event":"reasoning.available","text":"Same answer"}\n\n',
+          'data: {"event":"message.delta","delta":"Same answer"}\n\n',
+          'data: {"event":"run.completed"}\n\n',
+        ]),
+      ),
+    );
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    await channel.sendText('deduplicate this');
+
+    expect(
+      channel.state.activeMessages.map((turn) => turn.kind),
+      everyElement(HermesTurnKind.text),
+    );
+    expect(channel.state.activeMessages.last.text, 'Same answer');
+  });
+
   test('sendText bounds oversized reasoning event text', () async {
     final oversized = List.filled(20000, 'r').join();
     final channel = HermesApiChannel(

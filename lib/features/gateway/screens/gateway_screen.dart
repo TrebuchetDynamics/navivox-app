@@ -220,6 +220,15 @@ class _GatewayBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _HealthCard(health: health, strings: strings),
+        if (health.readiness case final readiness?
+            when !readiness.isAbsent && readiness.checks.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _ReadinessCard(readiness: readiness, strings: strings),
+        ],
+        if (health.platforms.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _PlatformsCard(platforms: health.platforms, strings: strings),
+        ],
       ],
     );
   }
@@ -283,11 +292,108 @@ class _HealthCard extends StatelessWidget {
               label: strings.gatewayActiveAgentsLabel,
               value: health.activeAgents.toString(),
             ),
+            if (health.gatewayBusy case final busy?) ...[
+              const SizedBox(height: 10),
+              _StatusRow(
+                label: strings.gatewayWorkStateLabel,
+                value: busy ? strings.gatewayBusy : strings.gatewayIdle,
+              ),
+            ],
+            if (health.gatewayDrainable case final drainable?) ...[
+              const SizedBox(height: 10),
+              _StatusRow(
+                label: strings.gatewayDrainableLabel,
+                value: drainable ? strings.gatewayYes : strings.gatewayNo,
+              ),
+            ],
+            if (health.updatedAt case final updatedAt?) ...[
+              const SizedBox(height: 10),
+              _StatusRow(
+                label: strings.gatewayUpdatedLabel,
+                value: _safePreview(updatedAt, 80),
+              ),
+            ],
+            if (health.pid case final pid?) ...[
+              const SizedBox(height: 10),
+              _StatusRow(
+                label: strings.gatewayProcessIdLabel,
+                value: pid.toString(),
+              ),
+            ],
+            if (health.exitReason case final exitReason?) ...[
+              const SizedBox(height: 10),
+              _StatusRow(
+                label: strings.gatewayExitReasonLabel,
+                value: _safePreview(exitReason, 160),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+class _ReadinessCard extends StatelessWidget {
+  const _ReadinessCard({required this.readiness, required this.strings});
+
+  final HermesGatewayReadiness readiness;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.gatewayRuntimeReadinessTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 14),
+          for (var index = 0; index < readiness.checks.length; index++) ...[
+            if (index > 0) const SizedBox(height: 10),
+            _StatusRow(
+              label: _readinessLabel(readiness.checks[index].id, strings),
+              value: _readinessValue(readiness.checks[index], strings),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+class _PlatformsCard extends StatelessWidget {
+  const _PlatformsCard({required this.platforms, required this.strings});
+
+  final List<HermesGatewayPlatformStatus> platforms;
+  final AppLocalizations strings;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.gatewayMessagingPlatformsTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 14),
+          for (var index = 0; index < platforms.length; index++) ...[
+            if (index > 0) const SizedBox(height: 10),
+            _StatusRow(
+              label: _safePreview(platforms[index].name, 80),
+              value: _safePreview(platforms[index].status, 80),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class _StatusRow extends StatelessWidget {
@@ -327,6 +433,46 @@ class _CenteredMessage extends StatelessWidget {
       child: Text(message, textAlign: TextAlign.center),
     ),
   );
+}
+
+String _readinessLabel(String id, AppLocalizations strings) => switch (id) {
+  'state_db' => strings.gatewayStateDatabaseLabel,
+  'config' => strings.gatewayConfigurationLabel,
+  'model' => strings.gatewayModelReadinessLabel,
+  'disk' => strings.gatewayDiskReadinessLabel,
+  'gateway' => strings.gatewayRuntimeReadinessLabel,
+  'background_queues' => strings.gatewayBackgroundQueuesLabel,
+  _ => _safePreview(id, 80),
+};
+
+String _readinessValue(
+  HermesGatewayReadinessCheck check,
+  AppLocalizations strings,
+) {
+  final parts = <String>[
+    check.status.toLowerCase() == 'ok'
+        ? strings.gatewayHealthy
+        : strings.gatewayNeedsAttention,
+    if (check.detail case final detail?) _safePreview(detail, 160),
+    if (check.usedPercent case final usedPercent?)
+      strings.gatewayReadinessDiskUsage(usedPercent.toStringAsFixed(1)),
+    if (check.runtimeState case final state?) _safePreview(state, 80),
+    if (check.connectedPlatforms case final connected?
+        when check.configuredPlatforms != null)
+      strings.gatewayReadinessPlatformCounts(
+        connected,
+        check.configuredPlatforms!,
+      ),
+    if (check.activeApiRuns case final activeRuns?
+        when check.processCompletions != null &&
+            check.activeDelegations != null)
+      strings.gatewayReadinessQueueCounts(
+        activeRuns,
+        check.processCompletions!,
+        check.activeDelegations!,
+      ),
+  ];
+  return parts.join(' · ');
 }
 
 bool _detailedHealthAdvertised(HermesChannelState state) =>

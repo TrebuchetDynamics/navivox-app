@@ -236,7 +236,8 @@ const _modelsFixture = '''
 {
   "object": "list",
   "data": [
-    {"id": "hermes-agent", "owned_by": "hermes"}
+    {"id": "hermes-agent", "root": "hermes-agent", "parent": null, "owned_by": "hermes"},
+    {"id": "fast", "root": "openrouter/example", "parent": "hermes-agent", "owned_by": "hermes"}
   ]
 }
 ''';

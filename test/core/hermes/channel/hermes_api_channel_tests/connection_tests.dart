@@ -51,13 +51,22 @@ void _hermesApiChannelConnectionTests() {
 
     await channel.connect(baseUrl: 'http://127.0.0.1:8642');
 
-    expect(channel.state.models, ['hermes-agent']);
+    expect(channel.state.models, ['hermes-agent', 'fast']);
+    expect(channel.state.runtimeModels, hasLength(2));
+    expect(channel.state.runtimeModels.first.isRouteAlias, isFalse);
+    expect(channel.state.runtimeModels.last.id, 'fast');
+    expect(channel.state.runtimeModels.last.root, 'openrouter/example');
+    expect(channel.state.runtimeModels.last.isRouteAlias, isTrue);
     expect(channel.state.skills, ['ascii-art', 'github']);
     expect(
       channel.state.skillDetails.first.description,
       'ASCII art generation',
     );
     expect(channel.state.skillDetails.first.category, 'creative');
+    expect(channel.state.toolsets, hasLength(2));
+    expect(channel.state.toolsets.first.displayName, 'Default Tools');
+    expect(channel.state.toolsets.first.tools, ['read_file']);
+    expect(channel.state.toolsets.last.enabled, isFalse);
     expect(channel.state.enabledToolsets, ['default']);
   });
 

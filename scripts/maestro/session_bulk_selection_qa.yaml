@@ -1,0 +1,29 @@
+# Static validation: maestro check-syntax scripts/maestro/session_bulk_selection_qa.yaml
+# Physical-device receipt for capability-gated session bulk selection. This
+# flow intentionally cancels before deletion so it never removes operator data.
+appId: com.trebuchetdynamics.hermes.wing
+name: session_bulk_selection_qa
+---
+- launchApp:
+    stopApp: true
+- setOrientation: PORTRAIT
+- runFlow:
+    when:
+      visible: "(?s).*All chats.*"
+    commands:
+      - tapOn: "(?s).*All chats.*"
+- assertVisible: "(?s).*Default agent.*"
+- tapOn: "(?s).*Default agent.*"
+- assertVisible: "(?s).*Message Hermes….*"
+- tapOn: "(?s).*More actions.*"
+- tapOn: "(?s)^Sessions.*"
+- assertVisible: "(?s).*Hermes sessions.*"
+- assertVisible: "^Select$"
+- tapOn: "^Select$"
+- assertVisible: "^0 selected$"
+- assertVisible: "^Select all$"
+- tapOn: "^Select all$"
+- assertVisible: "^[1-9][0-9]* selected$"
+- assertVisible: "^Delete [1-9][0-9]*$"
+- tapOn: "^Cancel$"
+- assertVisible: "(?s).*Search sessions.*"

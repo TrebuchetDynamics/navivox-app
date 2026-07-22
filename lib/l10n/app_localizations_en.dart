@@ -18,6 +18,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentsDestination => 'Agents';
 
   @override
+  String get officeDestination => 'Office';
+
+  @override
   String get settingsDestination => 'Settings';
 
   @override
@@ -196,7 +199,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolsSubtitle =>
-      'Installed skills and enabled toolsets advertised by this gateway.';
+      'Installed skills and resolved toolsets advertised by this gateway.';
 
   @override
   String get toolsConnectionRequiredBody =>
@@ -220,10 +223,132 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gatewayConnectFailed => 'Could not connect to this gateway.';
 
   @override
+  String get officeTitle => 'Office';
+
+  @override
+  String get officeSubtitle =>
+      'An accessible 2D workspace for agents advertised by your saved Hermes gateways.';
+
+  @override
+  String officeAgentCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count agents',
+      one: '1 agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get officeSearchLabel => 'Search agents and gateways';
+
+  @override
+  String get officeClearSearch => 'Clear search';
+
+  @override
+  String officeShowingCount(int visible, int total) {
+    return 'Showing $visible of $total agents';
+  }
+
+  @override
+  String get officeNoAgentsTitle => 'No Hermes agents available';
+
+  @override
+  String get officeNoAgentsBody =>
+      'Connect or refresh a saved gateway to populate the Office.';
+
+  @override
+  String get officeOpenSettings => 'Open settings';
+
+  @override
+  String get officeNoMatches => 'No agents match this search.';
+
+  @override
+  String get officeRefresh => 'Refresh Office';
+
+  @override
+  String get officeOpenChat => 'Open chat';
+
+  @override
+  String get officeCurrentChat => 'Current chat';
+
+  @override
+  String get officeReturnToChat => 'Return to chat';
+
+  @override
+  String get officeOpenFailed =>
+      'Could not open this Hermes agent. Refresh and try again.';
+
+  @override
+  String get officeGatewayDefault => 'Gateway default contact';
+
+  @override
+  String officeSessionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessions',
+      one: '1 session',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get officeStatusOnline => 'Online';
+
+  @override
+  String get officeStatusOffline => 'Offline';
+
+  @override
+  String get officeStatusRefreshing => 'Refreshing';
+
+  @override
+  String get officeStatusAuthenticationFailed => 'Authentication required';
+
+  @override
   String get installedSkillsTitle => 'Installed skills';
 
   @override
   String get enabledToolsetsTitle => 'Enabled toolsets';
+
+  @override
+  String get toolsetsTitle => 'Toolsets';
+
+  @override
+  String get searchToolsetsLabel => 'Search toolsets and resolved tools';
+
+  @override
+  String get noToolsetsMatchBody => 'No toolsets match this search.';
+
+  @override
+  String get toolsetsCatalogEmptyBody => 'No toolsets were reported.';
+
+  @override
+  String get toolsetEnabled => 'Enabled';
+
+  @override
+  String get toolsetDisabled => 'Disabled';
+
+  @override
+  String get toolsetConfigured => 'Configured';
+
+  @override
+  String get toolsetNotConfigured => 'Not configured';
+
+  @override
+  String toolsetResolvedToolsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resolved tools',
+      one: '1 resolved tool',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get toolsetResolvedToolsTitle => 'Resolved tools';
 
   @override
   String get skillsUnavailableBody =>
@@ -379,6 +504,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gatewayActiveAgentsLabel => 'Active agents';
 
   @override
+  String get gatewayWorkStateLabel => 'Work state';
+
+  @override
+  String get gatewayBusy => 'Busy';
+
+  @override
+  String get gatewayIdle => 'Idle';
+
+  @override
+  String get gatewayDrainableLabel => 'Safe to drain';
+
+  @override
+  String get gatewayYes => 'Yes';
+
+  @override
+  String get gatewayNo => 'No';
+
+  @override
+  String get gatewayUpdatedLabel => 'Updated';
+
+  @override
+  String get gatewayProcessIdLabel => 'Process ID';
+
+  @override
+  String get gatewayExitReasonLabel => 'Exit reason';
+
+  @override
+  String get gatewayRuntimeReadinessTitle => 'Runtime readiness';
+
+  @override
+  String get gatewayMessagingPlatformsTitle => 'Messaging platforms';
+
+  @override
+  String get gatewayStateDatabaseLabel => 'State database';
+
+  @override
+  String get gatewayConfigurationLabel => 'Configuration';
+
+  @override
+  String get gatewayModelReadinessLabel => 'Model';
+
+  @override
+  String get gatewayDiskReadinessLabel => 'Disk';
+
+  @override
+  String get gatewayRuntimeReadinessLabel => 'Gateway runtime';
+
+  @override
+  String get gatewayBackgroundQueuesLabel => 'Background queues';
+
+  @override
+  String gatewayReadinessDiskUsage(String usedPercent) {
+    return '$usedPercent% used';
+  }
+
+  @override
+  String gatewayReadinessPlatformCounts(int connected, int configured) {
+    return '$connected of $configured connected';
+  }
+
+  @override
+  String gatewayReadinessQueueCounts(
+    int activeRuns,
+    int completions,
+    int delegations,
+  ) {
+    return '$activeRuns API runs · $completions completions · $delegations delegations';
+  }
+
+  @override
   String get providersTitle => 'Providers';
 
   @override
@@ -444,6 +639,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get runtimeModelsEmptyBody => 'No runtime models were reported.';
+
+  @override
+  String get runtimeModelPrimary => 'Primary runtime model';
+
+  @override
+  String get runtimeModelRouteAlias => 'Route alias';
+
+  @override
+  String runtimeModelRoutesTo(String model) {
+    return 'Routes to $model';
+  }
+
+  @override
+  String runtimeModelParent(String model) {
+    return 'Parent $model';
+  }
 
   @override
   String get activeModelLabel => 'Active model';
@@ -654,6 +865,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get localCommandGatewayDescription => 'Open gateway status.';
 
   @override
+  String get localCommandOfficeDescription =>
+      'Open the accessible agent workspace.';
+
+  @override
   String get localCommandAgentsDescription => 'Open gateway-scoped agents.';
 
   @override
@@ -703,6 +918,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localCommandSessionsDescription => 'Open session history.';
+
+  @override
+  String desktopSessionsShortcutTooltip(String modifier) {
+    return 'Sessions ($modifier+K)';
+  }
+
+  @override
+  String desktopNewSessionShortcutTooltip(String modifier) {
+    return 'New session ($modifier+N)';
+  }
 
   @override
   String get localCommandClearDescription => 'Clear the current draft.';

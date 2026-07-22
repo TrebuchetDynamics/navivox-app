@@ -141,10 +141,12 @@ void _hermesApiChannelRunFailureTests() {
     final firstSend = channel.sendText('first');
     await pumpEventQueue();
     channel.stopActiveTurn();
+    await pumpEventQueue();
 
     final secondSend = channel.sendText('second');
     await pumpEventQueue();
     channel.stopActiveTurn();
+    await pumpEventQueue();
 
     await firstSend;
     await secondSend;
@@ -554,6 +556,86 @@ void _hermesApiChannelRunFailureTests() {
       'Hermes run is still active. Reconnect later before retrying.',
     );
   });
+
+  test('active run lease is durable before its event stream finishes', () async {
+    final store = _MemoryDetachedRunStore();
+    final stream = _ManualStringStream();
+    final submitted = Completer<void>();
+    final channel = HermesApiChannel(
+      detachedRunStore: store,
+      clientBuilder: (config) => HermesApiClient(
+        config: config,
+        get: (uri, headers) async => switch (uri.path) {
+          '/health' => '{"status":"ok"}',
+          '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+          '/api/sessions' => _sessionsFixture,
+          '/api/sessions/sess_1/messages' => _messagesFixture,
+          _ => throw StateError('unexpected GET $uri'),
+        },
+        post: (uri, headers, body) async {
+          if (!submitted.isCompleted) submitted.complete();
+          return '{"object":"hermes.run","run":{"id":"run_live","session_id":"sess_1"}}';
+        },
+        getStream: (uri, headers) => stream,
+      ),
+    );
+    addTearDown(channel.dispose);
+    await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+    unawaited(channel.sendText('survive process death'));
+    await submitted.future;
+    await Future<void>.delayed(Duration.zero);
+
+    expect(store.leases.single.runId, 'run_live');
+    expect(store.leases.single.sessionId, 'sess_1');
+  });
+
+  test(
+    'process recreation reopens a non-default session with an active detached run',
+    () async {
+      final store = _MemoryDetachedRunStore()
+        ..leases = [
+          HermesDetachedRunLease(
+            runId: 'run_detached',
+            sessionId: 'sess_2',
+            baseUrl: 'http://127.0.0.1:8642',
+            createdAt: DateTime.now().toUtc(),
+          ),
+        ];
+      var statusRequests = 0;
+      final channel = HermesApiChannel(
+        detachedRunStore: store,
+        clientBuilder: (config) => HermesApiClient(
+          config: config,
+          get: (uri, headers) async => switch (uri.path) {
+            '/health' => '{"status":"ok"}',
+            '/v1/capabilities' => _runsCapableCapabilitiesFixture,
+            '/api/sessions' => _twoSessionsFixture,
+            '/api/sessions/sess_2/messages' => _messagesFixture,
+            '/v1/runs/run_detached' => () {
+              statusRequests += 1;
+              return '{"run_id":"run_detached","session_id":"sess_2","status":"running"}';
+            }(),
+            _ => throw StateError('unexpected GET $uri'),
+          },
+        ),
+      );
+      addTearDown(channel.dispose);
+
+      await channel.connect(baseUrl: 'http://127.0.0.1:8642');
+
+      expect(statusRequests, 1);
+      expect(channel.state.activeSessionId, 'sess_2');
+      expect(
+        channel.state.errorMessage,
+        'Hermes run is still active. Reconnect later before retrying.',
+      );
+      await expectLater(
+        channel.sendText('must not duplicate'),
+        throwsStateError,
+      );
+    },
+  );
 
   test('reconnect releases a detached run after terminal status', () async {
     var runSubmissions = 0;

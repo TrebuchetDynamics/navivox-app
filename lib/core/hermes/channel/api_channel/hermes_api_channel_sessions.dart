@@ -4,7 +4,8 @@ extension _SessionsExtension on HermesApiChannel {
   Future<void> _disconnect() async {
     _client = null;
     _connectionGeneration += 1;
-    _deletingSessionIds.clear();
+    _deletingSessionOperations.clear();
+    _forkingSessionOperations.clear();
     _clearActiveRunTracking();
     _setState(const HermesChannelState());
   }
@@ -116,9 +117,11 @@ extension _SessionsExtension on HermesApiChannel {
       'delete sessions',
     );
     _requireKnownSession(sessionId);
-    if (!_deletingSessionIds.add(sessionId)) {
+    if (_deletingSessionOperations.containsKey(sessionId)) {
       throw StateError('Hermes session delete is already in progress.');
     }
+    final operation = Object();
+    _deletingSessionOperations[sessionId] = operation;
     final wasActive = _state.activeSessionId == sessionId;
     _finishSessionTurnLocally(sessionId);
     try {
@@ -151,7 +154,9 @@ extension _SessionsExtension on HermesApiChannel {
         ),
       );
     } finally {
-      _deletingSessionIds.remove(sessionId);
+      if (identical(_deletingSessionOperations[sessionId], operation)) {
+        _deletingSessionOperations.remove(sessionId);
+      }
     }
   }
 
@@ -167,21 +172,48 @@ extension _SessionsExtension on HermesApiChannel {
       'fork sessions',
     );
     _requireKnownSession(sessionId);
-    final fork = await client.forkSession(
-      sessionId,
-      id: _sessionIdFactory(),
-      title: title,
-    );
-    if (!_isConnectedClient(client)) return;
-    final turns = await _fetchTurns(client, fork.id);
-    if (!_isConnectedClient(client)) return;
-    _setState(
-      _state.copyWith(
-        sessions: [..._state.sessions, fork],
-        activeSessionId: fork.id,
-        messages: {..._state.messages, fork.id: turns},
-      ),
-    );
+    if (_state.isSessionStreaming(sessionId)) {
+      throw StateError(
+        'Hermes cannot branch a session while its reply is active.',
+      );
+    }
+    if (_forkingSessionOperations.containsKey(sessionId)) {
+      throw StateError('Hermes session branching is already in progress.');
+    }
+    final operation = Object();
+    _forkingSessionOperations[sessionId] = operation;
+    try {
+      final inheritedTurns = List<HermesChatTurn>.from(
+        _state.messages[sessionId] ?? const [],
+      );
+      final fork = await client.forkSession(
+        sessionId,
+        id: _sessionIdFactory(),
+        title: title,
+      );
+      if (!_isConnectedClient(client)) return;
+      List<HermesChatTurn> turns;
+      try {
+        turns = await _fetchTurns(client, fork.id);
+      } catch (_) {
+        // The fork mutation is already durable on Hermes. Keep the accepted
+        // child visible and inherit the locally loaded source transcript rather
+        // than reporting a failure that could prompt a duplicate retry.
+        turns = inheritedTurns;
+      }
+      if (!_isConnectedClient(client)) return;
+      _setState(
+        _state.copyWith(
+          sessions: [..._state.sessions, fork],
+          activeSessionId: fork.id,
+          messages: {..._state.messages, fork.id: turns},
+        ),
+      );
+    } finally {
+      if (identical(_forkingSessionOperations[sessionId], operation)) {
+        _forkingSessionOperations.remove(sessionId);
+      }
+    }
   }
 
   void _requireAdvertisedEndpoint(
