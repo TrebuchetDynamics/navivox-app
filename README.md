@@ -130,12 +130,16 @@ non-secret summaries.
 
 ## Project status
 
+The [Hermes Desktop parity ledger](docs/product/hermes-desktop-parity.md) is
+the canonical source for capability status, milestone evidence, and the
+Electron retirement gate.
+
 | Platform | Current evidence | Status |
 | --- | --- | --- |
-| Android | Debug build plus current physical chat/session UX receipt | Experimental alpha |
+| Android | Debug build plus physical chat/session, concurrent-stream, process-recovery, session-metadata, bulk-selection, branch, Office, and tools-inventory receipts | Experimental alpha |
 | Web | Release build and deterministic browser smoke | Alpha, text-focused |
-| Linux | Current release build plus isolated native-shell and transcript-context-menu receipts | Alpha, text-focused |
-| Windows | Historical debug build plus current cross-target native Settings/About/window/full-screen syntax check | Build-tested only |
+| Linux | Release build plus native-shell and transcript-context-menu receipts | Alpha, text-focused |
+| Windows | Cross-target native Settings/About/window/full-screen syntax check | Build-tested only |
 | iOS | Simulator debug compilation | Build-tested only |
 | macOS | Debug compilation plus native Settings menu bridge | Build-tested only |
 
@@ -207,6 +211,7 @@ preview, and reply speed without exposing model paths.
 
 ## Project map
 
+- [Roadmap](ROADMAP.md)
 - [Documentation index](docs/README.md)
 - [Hermes compatibility](docs/product/hermes-compatibility.md)
 - [Gateway profile management and limitations](docs/product/gateway-profile-management.md)
